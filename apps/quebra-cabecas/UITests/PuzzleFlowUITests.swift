@@ -5,7 +5,7 @@ final class PuzzleFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["Encontre o seu ritmo."].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Quebra-Cabeças"].waitForExistence(timeout: 10))
         let tile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND enabled == true", "Peça")).firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 5))
         tile.tap()

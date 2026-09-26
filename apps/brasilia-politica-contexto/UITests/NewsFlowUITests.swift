@@ -12,7 +12,7 @@ final class NewsFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["CONTEÚDO FICTÍCIO · PARA AVALIAÇÃO DA INTERFACE"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Como funciona uma lei distrital?"].exists)
         app.navigationBars.buttons.firstMatch.tap()
-        let save = app.buttons["favorite-01"]
+        let save = app.buttons["favorite-toggle-01"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
         save.tap()
         app.buttons["Ver conteúdo salvo"].tap()

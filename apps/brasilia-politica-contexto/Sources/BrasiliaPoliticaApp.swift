@@ -154,7 +154,7 @@ struct ArticleCard: View {
                 Button(action: toggleFavorite) { Image(systemName: isFavorite ? "bookmark.fill" : "bookmark") }
                     .buttonStyle(.plain).foregroundStyle(.tint)
                     .accessibilityLabel(isFavorite ? "Remover dos salvos" : "Salvar matéria")
-                    .accessibilityIdentifier("favorite-\(article.id)")
+                    .accessibilityIdentifier("favorite-toggle-\(article.id)")
             }
         }
     }
