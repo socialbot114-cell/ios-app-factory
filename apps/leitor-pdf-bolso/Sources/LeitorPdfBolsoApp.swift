@@ -79,6 +79,9 @@ struct PDFLibraryView: View {
                         .foregroundStyle(.primary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(entry.name)
+                    .accessibilityIdentifier("pdf-document-\(entry.name)")
                 }
                 Button { showImporter = true } label: { Label("Importar outro PDF", systemImage: "plus") }
                     .buttonStyle(FactoryPrimaryButtonStyle())
@@ -89,7 +92,7 @@ struct PDFLibraryView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
             }
         }
-        .factoryPage().navigationTitle("Leitor PDF").navigationBarTitleDisplayMode(.inline)
+        .factoryPage(backgroundColor: Color(red: 0.97, green: 0.97, blue: 0.94)).navigationTitle("Leitor PDF").navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: PDFLibraryEntry.self) { PDFReaderScreen(entry: $0) }
     }
 
@@ -104,7 +107,9 @@ struct PDFLibraryView: View {
         let urls = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
         documents = urls.compactMap { url -> PDFLibraryEntry? in
             guard url.pathExtension.lowercased() == "pdf", let pdf = PDFDocument(url: url) else { return nil }
-            return PDFLibraryEntry(id: url.path, name: url.deletingPathExtension().lastPathComponent, url: url, pageCount: pdf.pageCount)
+            let fileName = url.deletingPathExtension().lastPathComponent
+            let displayName = fileName == "Guia-de-leitura-demonstrativo" ? "Guia de leitura demonstrativo" : fileName
+            return PDFLibraryEntry(id: url.path, name: displayName, url: url, pageCount: pdf.pageCount)
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 

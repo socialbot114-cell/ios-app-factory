@@ -108,7 +108,7 @@ struct ColoringHome: View {
             Button { showSaved = true } label: { Label("Abrir minhas artes", systemImage: "square.stack.3d.up.fill") }
                 .buttonStyle(.bordered)
         }
-        .factoryPage()
+        .factoryPage(backgroundColor: Color(red: 1.0, green: 0.976, blue: 0.94))
         .navigationTitle("Ateliê")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -212,7 +212,7 @@ struct ColoringEditor: View {
         .padding(20)
         .frame(maxWidth: 780)
         .frame(maxWidth: .infinity)
-        .background(FactoryColor.canvas.ignoresSafeArea())
+        .background(Color(red: 1.0, green: 0.976, blue: 0.94).ignoresSafeArea())
         .sheet(isPresented: $showShare) {
             if let shareImage { FactoryShareSheet(items: [shareImage]) }
         }

@@ -55,6 +55,7 @@ struct PoliticsLibrary: View {
             .navigationDestination(for: DemoArticle.self) { ArticleDetail(article: $0) }
         }
         .tint(accent)
+        .preferredColorScheme(.dark)
         .onAppear {
             if FactoryCapture.isUITesting {
                 FactoryCapture.resetAppDefaults()

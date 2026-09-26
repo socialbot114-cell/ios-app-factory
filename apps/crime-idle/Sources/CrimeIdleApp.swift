@@ -107,6 +107,7 @@ struct CrimeIdleHome: View {
             .safeAreaInset(edge: .bottom) { navigationBar }
         }
         .tint(accent)
+        .preferredColorScheme(.dark)
         .task {
             if FactoryCapture.isUITesting {
                 FactoryCapture.resetAppDefaults()

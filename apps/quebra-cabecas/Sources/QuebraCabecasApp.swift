@@ -108,7 +108,7 @@ struct PuzzleHome: View {
                     FactoryMetric(label: "Coleção", value: "1 mosaico", symbol: "square.grid.3x3.fill", tint: .orange)
                 }
             }
-            .factoryPage()
+            .factoryPage(backgroundColor: Color(red: 0.98, green: 0.97, blue: 0.94))
             .navigationTitle("Quebra-Cabeças").navigationBarTitleDisplayMode(.inline)
             .onChange(of: engine) { _, _ in engine.persist() }
             .onChange(of: engine.isSolved) { _, solved in if solved { engine.recordBest() } }

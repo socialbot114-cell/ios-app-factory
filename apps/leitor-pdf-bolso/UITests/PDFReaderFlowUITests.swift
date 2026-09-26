@@ -6,7 +6,7 @@ final class PDFReaderFlowUITests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Sua biblioteca."].waitForExistence(timeout: 10))
-        let sample = app.staticTexts["Guia de leitura demonstrativo"]
+        let sample = app.descendants(matching: .any)["pdf-document-Guia de leitura demonstrativo"]
         XCTAssertTrue(sample.waitForExistence(timeout: 8))
         sample.tap()
         XCTAssertTrue(app.buttons["Buscar"].waitForExistence(timeout: 5))

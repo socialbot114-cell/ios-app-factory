@@ -17,7 +17,7 @@ enum FactoryCapture {
 
 enum FactoryColor {
     static let ink = Color(red: 0.10, green: 0.14, blue: 0.19)
-    static let muted = Color(red: 0.40, green: 0.45, blue: 0.50)
+    static let muted = Color(uiColor: .secondaryLabel)
     static let canvas = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
 }
@@ -134,7 +134,7 @@ struct FactoryPrimaryButtonStyle: ButtonStyle {
 }
 
 extension View {
-    func factoryPage() -> some View {
+    func factoryPage(maxWidth: CGFloat = 780, backgroundColor: Color = FactoryColor.canvas) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 self
@@ -142,9 +142,9 @@ extension View {
             .padding(.horizontal, 20)
             .padding(.vertical, 20)
             .padding(.bottom, 92)
-            .frame(maxWidth: 780, alignment: .leading)
+            .frame(maxWidth: maxWidth, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
-        .background(FactoryColor.canvas.ignoresSafeArea())
+        .background(backgroundColor.ignoresSafeArea())
     }
 }

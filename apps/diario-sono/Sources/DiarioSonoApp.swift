@@ -95,6 +95,7 @@ struct SleepDiaryHome: View {
             }
         }
         .tint(accent)
+        .preferredColorScheme(.dark)
     }
 
     private var startCard: some View {
