@@ -21,9 +21,14 @@ struct PuzzleEngine: Codable, Equatable {
 
     var isSolved: Bool { tiles == Array(1..<(size * size)) + [0] }
 
-    mutating func move(tileAt index: Int) -> Bool {
+    func canMove(tileAt index: Int) -> Bool {
         guard tiles.indices.contains(index), tiles[index] != 0,
-              let blank = tiles.firstIndex(of: 0), areNeighbors(index, blank) else { return false }
+              let blank = tiles.firstIndex(of: 0) else { return false }
+        return areNeighbors(index, blank)
+    }
+
+    mutating func move(tileAt index: Int) -> Bool {
+        guard canMove(tileAt: index), let blank = tiles.firstIndex(of: 0) else { return false }
         tiles.swapAt(index, blank)
         moves += 1
         return true
@@ -74,7 +79,7 @@ struct PuzzleHome: View {
                 FactoryDemoNotice(message: "Mosaico numérico demonstrativo · sem imagens licenciadas")
                 FactoryPanel {
                     HStack {
-                        Label("\(engine.moves) movimentos", systemImage: "hand.tap.fill").font(.subheadline.weight(.semibold))
+                        Label("\(engine.moves) \(engine.moves == 1 ? "movimento" : "movimentos")", systemImage: "hand.tap.fill").font(.subheadline.weight(.semibold))
                         Spacer()
                         Text("\(engine.size) × \(engine.size)").font(.caption.bold()).foregroundStyle(.secondary)
                     }
@@ -108,6 +113,11 @@ struct PuzzleHome: View {
             .onChange(of: engine) { _, _ in engine.persist() }
             .onChange(of: engine.isSolved) { _, solved in if solved { engine.recordBest() } }
             .onAppear {
+                if FactoryCapture.isUITesting {
+                    FactoryCapture.resetAppDefaults()
+                    selectedSize = 3
+                    engine = PuzzleEngine(size: 3)
+                }
                 selectedSize = engine.size
                 if engine.isSolved { newGame(seed: capture == "board" ? 44 : 26) }
             }
@@ -135,7 +145,8 @@ struct PuzzleHome: View {
                         .frame(width: side, height: side)
                     }
                     .buttonStyle(.plain)
-                    .disabled(value == 0)
+                    .disabled(!engine.canMove(tileAt: index))
+                    .accessibilityHint(engine.canMove(tileAt: index) ? "Toque para mover para o espaço vazio." : "Esta peça não pode ser movida agora.")
                     .accessibilityLabel(value == 0 ? "Espaço vazio" : "Peça \(value)")
                 }
             }

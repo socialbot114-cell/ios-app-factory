@@ -25,11 +25,11 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.matrix.outputs.value }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: matrix
         env:
           APP: ${{ inputs.app || 'all' }}
@@ -46,7 +46,7 @@ jobs:
       max-parallel: 3
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate portfolio inputs
         run: python3 tools/validate_factory.py
       - name: Install XcodeGen
@@ -101,7 +101,7 @@ jobs:
           fi
       - name: Upload review screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screenshots-${{ matrix.slug }}
           path: ${{ runner.temp }}/screenshots/${{ matrix.slug }}

@@ -86,7 +86,10 @@ struct SleepDiaryHome: View {
             }
             .onChange(of: engine) { _, _ in engine.persist() }
             .onAppear {
-                if capture == "active", engine.activeStartedAt == nil {
+                if FactoryCapture.isUITesting {
+                    FactoryCapture.resetAppDefaults()
+                    engine = SleepSessionEngine()
+                } else if capture == "active", engine.activeStartedAt == nil {
                     engine.start(at: .now.addingTimeInterval(-3_726))
                 }
             }
@@ -132,7 +135,7 @@ struct SleepDiaryHome: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(record.startedAt.formatted(date: .abbreviated, time: .omitted)).font(.headline)
-                        Text("\(record.duration.formatted(.time(pattern: .hourMinute))) · avaliação pessoal \(record.rating)/5")
+                        Text("\(durationLabel(record.duration)) · avaliação pessoal \(record.rating)/5")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -146,6 +149,11 @@ struct SleepDiaryHome: View {
     private func finishSession() {
         guard engine.finish(at: .now, rating: rating, note: note) else { return }
         rating = 4; note = ""
+    }
+
+    private func durationLabel(_ interval: TimeInterval) -> String {
+        let minutes = max(Int(interval / 60), 0)
+        return "\(minutes / 60)h \(String(format: "%02d", minutes % 60))min"
     }
 }
 

@@ -38,7 +38,10 @@ struct PDFLibraryView: View {
                 } else { library }
             }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.pdf], allowsMultipleSelection: true, onCompletion: importFiles)
-            .onAppear(perform: refreshLibrary)
+            .onAppear {
+                if FactoryCapture.isUITesting { FactoryCapture.resetAppDefaults() }
+                refreshLibrary()
+            }
         }
         .tint(accent)
     }
@@ -98,7 +101,8 @@ struct PDFLibraryView: View {
         let directory = Self.libraryDirectory
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         if documents.isEmpty { Self.createDemoPDF(in: directory) }
-        documents = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil))?.compactMap { url in
+        let urls = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        documents = urls.compactMap { url -> PDFLibraryEntry? in
             guard url.pathExtension.lowercased() == "pdf", let pdf = PDFDocument(url: url) else { return nil }
             return PDFLibraryEntry(id: url.path, name: url.deletingPathExtension().lastPathComponent, url: url, pageCount: pdf.pageCount)
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

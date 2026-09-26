@@ -56,7 +56,7 @@ struct FootballSeason {
                 let home = round < 7 ? pair.0 : pair.1
                 let away = round < 7 ? pair.1 : pair.0
                 let localSeed = seed &+ round &* 37 &+ match &* 101 &+ home &* 13 &+ away &* 29
-                var random = UInt64(bitPattern: localSeed)
+                var random = UInt64(bitPattern: Int64(truncatingIfNeeded: localSeed))
                 random = random &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
                 let homeGoals = Int((random >> 32) % 5)
                 random = random &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
@@ -99,6 +99,7 @@ struct FootballHome: View {
     private var capture: String? { FactoryCapture.screen }
     private var lastResult: LeagueFixture? { results.last }
     private var nextFixture: LeagueFixture? {
+        guard currentRound < 14 else { return nil }
         FootballSeason.fixtures(seed: seed).first { $0.round == min(currentRound + 1, 14) && ($0.home == 0 || $0.away == 0) }
     }
 
@@ -112,6 +113,13 @@ struct FootballHome: View {
             .safeAreaInset(edge: .bottom) { navigationBar }
         }
         .tint(accent)
+        .onAppear {
+            if FactoryCapture.isUITesting {
+                FactoryCapture.resetAppDefaults()
+                seed = 26
+                currentRound = 2
+            }
+        }
     }
 
     private var dashboard: some View {
@@ -132,6 +140,7 @@ struct FootballHome: View {
                 Button { if currentRound < 14 { currentRound += 1 } else { currentRound = 0; seed += 1 } } label: {
                     Label(currentRound < 14 ? "Simular rodada \(currentRound + 1)" : "Nova temporada", systemImage: "play.fill")
                 }
+                    .accessibilityIdentifier("simulate-round")
                     .buttonStyle(FactoryPrimaryButtonStyle())
                 Text("A simulação usa a seed exibida; repetir a mesma seed gera os mesmos resultados.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -161,7 +170,7 @@ struct FootballHome: View {
             }
             FactoryPanel {
                 HStack { Text("#   CLUBE").font(.caption.bold()).foregroundStyle(.secondary); Spacer(); Text("P  V  SG").font(.caption.bold()).foregroundStyle(.secondary) }
-                ForEach(Array(FootballSeason.standings(results).enumerated()), id: \.element.team.id) { index, row in
+                ForEach(Array(FootballSeason.standings(results: results).enumerated()), id: \.element.team.id) { index, row in
                     HStack(spacing: 10) {
                         Text(String(format: "%02d", index + 1)).font(.caption.monospacedDigit().bold()).foregroundStyle(index == 0 ? accent : .secondary).frame(width: 28, alignment: .leading)
                         VStack(alignment: .leading, spacing: 2) {

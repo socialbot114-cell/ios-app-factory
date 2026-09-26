@@ -27,7 +27,7 @@ Escolha qualquer scheme listado em `project.yml`. Build de simulador não é ins
 
 ## GitHub Actions
 
-- **iOS app validation**: pull requests e pushes em `main`; roda testes em iPhone e iPad para cada app, em matriz com no máximo três jobs simultâneos.
+- **iOS app validation**: pull requests e pushes em `main`; roda testes de domínio e uma jornada UI clicável em iPhone e iPad para cada app, em matriz com no máximo três jobs simultâneos.
 - **iOS simulator screenshots**: disparo manual com um app ou `all`; constrói o app e captura estados reais do simulador para artifacts de revisão.
 
 Os artifacts são temporários de revisão, não screenshots finais de App Store. Falhas de build/captura mantêm logs e resultados para diagnóstico. Nenhum workflow assina ou envia um app.

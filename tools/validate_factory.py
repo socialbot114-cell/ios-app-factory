@@ -20,10 +20,13 @@ for app in apps:
     base = ROOT / "apps" / app["slug"]
     sources = list((base / "Sources").glob("*.swift"))
     tests = list((base / "Tests").glob("*.swift"))
+    ui_tests = list((base / "UITests").glob("*.swift"))
     if not sources:
         errors.append(f"{app['slug']}: no Swift app source")
     if not tests:
         errors.append(f"{app['slug']}: no Swift tests")
+    if not ui_tests:
+        errors.append(f"{app['slug']}: no UI interaction tests")
     if sources and not any("@main" in source.read_text(encoding="utf-8") for source in sources):
         errors.append(f"{app['slug']}: no SwiftUI application entry point")
 
@@ -56,4 +59,4 @@ if errors:
         print(f"- {error}", file=sys.stderr)
     raise SystemExit(1)
 
-print(f"Factory validation passed: {len(apps)} apps, source/tests present, no credential files or known secret patterns.")
+print(f"Factory validation passed: {len(apps)} apps, app/unit/UI-test sources present, no credential files or known secret patterns.")

@@ -38,4 +38,13 @@ final class CrimeEconomyTests: XCTestCase {
         XCTAssertFalse(game.claimMission(0))
         XCTAssertEqual(game.influence, balance)
     }
+
+    func testDistrictsUnlockInOrderAndChargeOnlyLocalInfluence() {
+        var game = CrimeEconomy()
+        XCTAssertFalse(game.unlockDistrict(2))
+        for _ in 0..<400 { game.tap() }
+        XCTAssertTrue(game.unlockDistrict(1))
+        XCTAssertEqual(game.unlockedDistricts, 2)
+        XCTAssertFalse(game.unlockDistrict(1))
+    }
 }

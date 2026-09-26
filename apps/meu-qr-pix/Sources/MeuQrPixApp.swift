@@ -44,11 +44,16 @@ enum PixPayload {
         payload += field("52", "0000") + field("53", "986")
         if !amount.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let normalized = amount.replacingOccurrences(of: ",", with: ".")
-            guard let decimal = Decimal(string: normalized), decimal > 0,
-                  decimal * 100 == (decimal * 100).rounded(.down) else { throw PixPayloadError.invalidAmount }
+            let pieces = normalized.split(separator: ".", omittingEmptySubsequences: false)
+            guard pieces.count <= 2, !pieces[0].isEmpty, pieces[0].allSatisfy(\.isNumber),
+                  pieces.count == 1 || (pieces[1].count <= 2 && pieces[1].allSatisfy(\.isNumber)) else {
+                throw PixPayloadError.invalidAmount
+            }
+            guard let decimal = Decimal(string: normalized), decimal > 0 else { throw PixPayloadError.invalidAmount }
             guard decimal * 100 == (decimal * 100).rounded(.down) else { throw PixPayloadError.invalidAmount }
             let formatter = NumberFormatter()
             formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.usesGroupingSeparator = false
             formatter.minimumFractionDigits = 2
             formatter.maximumFractionDigits = 2
             guard let formatted = formatter.string(from: NSDecimalNumber(decimal: decimal)) else { throw PixPayloadError.invalidAmount }
@@ -112,6 +117,13 @@ struct PixHome: View {
             .safeAreaInset(edge: .bottom) { navigationBar }
         }
         .tint(accent)
+        .onAppear {
+            if FactoryCapture.isUITesting {
+                FactoryCapture.resetAppDefaults()
+                history = []
+                selectedTab = 0
+            }
+        }
     }
 
     private var formView: some View {
@@ -234,7 +246,7 @@ struct PixHome: View {
             errorMessage = nil
             let normalizedAmount = amount.replacingOccurrences(of: ",", with: ".")
             if let decimal = Decimal(string: normalizedAmount) {
-                let formatter = NumberFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.minimumFractionDigits = 2; formatter.maximumFractionDigits = 2
+                let formatter = NumberFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.usesGroupingSeparator = false; formatter.minimumFractionDigits = 2; formatter.maximumFractionDigits = 2
                 amount = formatter.string(from: NSDecimalNumber(decimal: decimal)) ?? amount
             }
             let draft = PixDraft(payload: generated, name: name, city: city, key: key, amount: amount)

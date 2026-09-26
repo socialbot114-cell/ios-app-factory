@@ -11,6 +11,7 @@ struct CrimeEconomy: Codable, Equatable {
     private(set) var influence: Double = 100
     private(set) var owned = Array(repeating: 0, count: 6)
     private(set) var claimedMissions: Set<Int> = []
+    private(set) var unlockedDistricts = 1
     private(set) var lastSavedAt: Date = .now
 
     var incomePerSecond: Double { owned.enumerated().reduce(0) { $0 + Double($1.element) * Double($1.offset + 1) * 0.35 } }
@@ -43,12 +44,30 @@ struct CrimeEconomy: Codable, Equatable {
         case 0: complete = influence >= 150
         case 1: complete = owned.reduce(0, +) >= 2
         case 2: complete = owned[0] >= 3
+        case 3: complete = influence >= 500
+        case 4: complete = owned.reduce(0, +) >= 5
+        case 5: complete = owned[5] >= 1
+        case 6: complete = unlockedDistricts >= 2
+        case 7: complete = incomePerSecond >= 5
+        case 8: complete = owned.reduce(0, +) >= 12
+        case 9: complete = influence >= 2_000
+        case 10: complete = unlockedDistricts >= 3
+        case 11: complete = owned.reduce(0, +) >= 20
         default: complete = false
         }
         guard complete else { return false }
         claimedMissions.insert(id)
         influence += 25
         lastSavedAt = .now
+        return true
+    }
+
+    mutating func unlockDistrict(_ index: Int, at date: Date = .now) -> Bool {
+        let costs: [Double] = [0, 500, 2_000]
+        guard (0..<costs.count).contains(index), index == unlockedDistricts, influence >= costs[index] else { return false }
+        influence -= costs[index]
+        unlockedDistricts += 1
+        lastSavedAt = date
         return true
     }
 
@@ -76,6 +95,7 @@ struct CrimeIdleHome: View {
             Group {
                 if capture == "businesses" || activeTab == 1 { businessView }
                 else if capture == "missions" || activeTab == 2 { missionView }
+                else if capture == "districts" || activeTab == 3 { districtsView }
                 else { headquarters }
             }
             .toolbar {
@@ -88,6 +108,10 @@ struct CrimeIdleHome: View {
         }
         .tint(accent)
         .task {
+            if FactoryCapture.isUITesting {
+                FactoryCapture.resetAppDefaults()
+                game = CrimeEconomy()
+            }
             game.resume()
             game.persist()
             while !Task.isCancelled {
@@ -124,7 +148,7 @@ struct CrimeIdleHome: View {
             }
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 FactoryMetric(label: "Empreendimentos", value: "\(game.owned.reduce(0, +))/6", symbol: "building.2.fill", tint: accent)
-                FactoryMetric(label: "Bairros", value: "1/3", symbol: "map.fill", tint: .red)
+                FactoryMetric(label: "Bairros", value: "\(game.unlockedDistricts)/3", symbol: "map.fill", tint: .red)
             }
             FactoryPanel(title: "Próximo objetivo", systemImage: "target") {
                 Text("Alcance 150 de influência para abrir o próximo distrito.").foregroundStyle(.secondary)
@@ -166,7 +190,7 @@ struct CrimeIdleHome: View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(eyebrow: "Pequenas vitórias", title: "Missões", subtitle: "Objetivos simples para orientar a sua carreira fictícia.", accent: accent)
             FactoryDemoNotice()
-            ForEach(Array(["Alcance 150 de influência", "Abra dois empreendimentos", "Expanda o Café Aurora"].enumerated()), id: \.offset) { index, title in
+            ForEach(Array(missionNames.enumerated()), id: \.offset) { index, title in
                 FactoryPanel {
                     Label(title, systemImage: game.claimedMissions.contains(index) ? "checkmark.seal.fill" : "target").font(.headline)
                     ProgressView(value: missionProgress(index)).tint(accent)
@@ -180,30 +204,75 @@ struct CrimeIdleHome: View {
         .factoryPage().navigationTitle("Missões").navigationBarTitleDisplayMode(.inline)
     }
 
+    private var districtsView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryHeader(eyebrow: "Mapa fictício", title: "Distritos", subtitle: "Expanda a cidade ao atingir os requisitos de influência.", accent: accent)
+            FactoryDemoNotice(message: "Cidade inventada · progresso salvo localmente")
+            ForEach(Array([("Centro das Lanternas", "sun.max.fill", 0.0), ("Rua da Neblina", "cloud.fog.fill", 500.0), ("Colinas do Norte", "mountain.2.fill", 2_000.0)].enumerated()), id: \.offset) { index, district in
+                FactoryPanel {
+                    HStack(spacing: 14) {
+                        Image(systemName: district.1).font(.title2).foregroundStyle(accent).frame(width: 42)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(district.0).font(.headline)
+                            Text(index < game.unlockedDistricts ? "Distrito aberto · produção local" : "Requisito: \(district.2.formatted(.number.precision(.fractionLength(0)))) de influência")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                        if index < game.unlockedDistricts { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                        else {
+                            Button("Abrir") { _ = game.unlockDistrict(index) }
+                                .buttonStyle(.borderedProminent).tint(accent)
+                                .disabled(index != game.unlockedDistricts || game.influence < district.2)
+                        }
+                    }
+                }
+            }
+            Text("Desbloqueios são compras fictícias do progresso do jogo, sem pagamento ou compra no app.")
+                .font(.footnote).foregroundStyle(.secondary)
+        }.factoryPage().navigationTitle("Mapa da cidade").navigationBarTitleDisplayMode(.inline)
+    }
+
     private var navigationBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 4) {
             navButton("Cidade", symbol: "building.2.fill", index: 0)
             navButton("Negócios", symbol: "briefcase.fill", index: 1)
             navButton("Missões", symbol: "flag.fill", index: 2)
+            navButton("Mapa", symbol: "map.fill", index: 3)
         }
         .padding(10)
         .background(.regularMaterial, in: Capsule())
-        .padding(.horizontal, 22).padding(.bottom, 8)
+        .padding(.horizontal, 10).padding(.bottom, 8)
     }
 
     private func navButton(_ title: String, symbol: String, index: Int) -> some View {
         Button { activeTab = index } label: {
-            Label(title, systemImage: symbol).font(.caption.weight(.semibold))
+            Label(title, systemImage: symbol).font(.caption2.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 42)
                 .foregroundStyle(activeTab == index ? accent : .secondary)
-        }.buttonStyle(.plain)
+        }
+        .accessibilityLabel(title)
+        .accessibilityValue(activeTab == index ? "Selecionado" : "")
+        .buttonStyle(.plain)
     }
 
     private func missionProgress(_ index: Int) -> Double {
         switch index {
         case 0: min(game.influence / 150, 1)
         case 1: min(Double(game.owned.reduce(0, +)) / 2, 1)
-        default: min(Double(game.owned[0]) / 3, 1)
+        case 2: min(Double(game.owned[0]) / 3, 1)
+        case 3: min(game.influence / 500, 1)
+        case 4: min(Double(game.owned.reduce(0, +)) / 5, 1)
+        case 5: min(Double(game.owned[5]), 1)
+        case 6: min(Double(game.unlockedDistricts - 1), 1)
+        case 7: min(game.incomePerSecond / 5, 1)
+        case 8: min(Double(game.owned.reduce(0, +)) / 12, 1)
+        case 9: min(game.influence / 2_000, 1)
+        case 10: min(Double(game.unlockedDistricts - 1) / 2, 1)
+        default: min(Double(game.owned.reduce(0, +)) / 20, 1)
         }
+    }
+
+    private var missionNames: [String] {
+        ["Alcance 150 de influência", "Abra dois empreendimentos", "Expanda o Café Aurora", "Alcance 500 de influência", "Abra cinco negócios", "Compre o Hotel Horizonte", "Abra um novo distrito", "Produza 5 de influência/s", "Tenha 12 negócios", "Alcance 2.000 de influência", "Abra todos os distritos", "Construa 20 negócios"]
     }
 }

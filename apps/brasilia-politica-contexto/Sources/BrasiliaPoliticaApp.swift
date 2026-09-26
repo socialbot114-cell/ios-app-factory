@@ -47,14 +47,20 @@ struct PoliticsLibrary: View {
     var body: some View {
         NavigationStack {
             Group {
-                if capture == "article", let article = DemoArticle.all.first { ArticleDetail(article: article) }
-                else if capture == "saved" || showSaved { savedView }
+                if capture == "saved" { savedView }
+                else if showSaved { savedView }
+                else if capture == "article", let article = DemoArticle.all.first { ArticleDetail(article: article) }
                 else { homeView }
             }
             .navigationDestination(for: DemoArticle.self) { ArticleDetail(article: $0) }
         }
         .tint(accent)
         .onAppear {
+            if FactoryCapture.isUITesting {
+                FactoryCapture.resetAppDefaults()
+                favorites = []
+                showSaved = false
+            }
             if capture == "saved", favorites.isEmpty {
                 favorites.insert("01")
             }

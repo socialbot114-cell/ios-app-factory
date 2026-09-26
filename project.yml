@@ -29,6 +29,12 @@ targets:
     platform: iOS
     sources: [apps/atelie-colorir/Tests]
     dependencies: [{target: AtelieColorir}]
+  AtelieColorirUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/atelie-colorir/UITests]
+    dependencies: [{target: AtelieColorir}]
+    settings: {base: {TEST_TARGET_NAME: AtelieColorir}}
   CrimeIdle:
     type: application
     platform: iOS
@@ -42,6 +48,12 @@ targets:
     platform: iOS
     sources: [apps/crime-idle/Tests]
     dependencies: [{target: CrimeIdle}]
+  CrimeIdleUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/crime-idle/UITests]
+    dependencies: [{target: CrimeIdle}]
+    settings: {base: {TEST_TARGET_NAME: CrimeIdle}}
   DetetiveNaTesta:
     type: application
     platform: iOS
@@ -55,6 +67,12 @@ targets:
     platform: iOS
     sources: [apps/detetive-na-testa/Tests]
     dependencies: [{target: DetetiveNaTesta}]
+  DetetiveNaTestaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/detetive-na-testa/UITests]
+    dependencies: [{target: DetetiveNaTesta}]
+    settings: {base: {TEST_TARGET_NAME: DetetiveNaTesta}}
   ManagerFutebol:
     type: application
     platform: iOS
@@ -68,6 +86,12 @@ targets:
     platform: iOS
     sources: [apps/manager-futebol/Tests]
     dependencies: [{target: ManagerFutebol}]
+  ManagerFutebolUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/manager-futebol/UITests]
+    dependencies: [{target: ManagerFutebol}]
+    settings: {base: {TEST_TARGET_NAME: ManagerFutebol}}
   MeuQrPix:
     type: application
     platform: iOS
@@ -81,6 +105,12 @@ targets:
     platform: iOS
     sources: [apps/meu-qr-pix/Tests]
     dependencies: [{target: MeuQrPix}]
+  MeuQrPixUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/meu-qr-pix/UITests]
+    dependencies: [{target: MeuQrPix}]
+    settings: {base: {TEST_TARGET_NAME: MeuQrPix}}
   LeitorPdfBolso:
     type: application
     platform: iOS
@@ -94,6 +124,12 @@ targets:
     platform: iOS
     sources: [apps/leitor-pdf-bolso/Tests]
     dependencies: [{target: LeitorPdfBolso}]
+  LeitorPdfBolsoUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/leitor-pdf-bolso/UITests]
+    dependencies: [{target: LeitorPdfBolso}]
+    settings: {base: {TEST_TARGET_NAME: LeitorPdfBolso}}
   BrasiliaPolitica:
     type: application
     platform: iOS
@@ -107,6 +143,12 @@ targets:
     platform: iOS
     sources: [apps/brasilia-politica-contexto/Tests]
     dependencies: [{target: BrasiliaPolitica}]
+  BrasiliaPoliticaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/brasilia-politica-contexto/UITests]
+    dependencies: [{target: BrasiliaPolitica}]
+    settings: {base: {TEST_TARGET_NAME: BrasiliaPolitica}}
   DiarioSono:
     type: application
     platform: iOS
@@ -120,6 +162,12 @@ targets:
     platform: iOS
     sources: [apps/diario-sono/Tests]
     dependencies: [{target: DiarioSono}]
+  DiarioSonoUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/diario-sono/UITests]
+    dependencies: [{target: DiarioSono}]
+    settings: {base: {TEST_TARGET_NAME: DiarioSono}}
   QuebraCabecas:
     type: application
     platform: iOS
@@ -133,31 +181,37 @@ targets:
     platform: iOS
     sources: [apps/quebra-cabecas/Tests]
     dependencies: [{target: QuebraCabecas}]
+  QuebraCabecasUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/quebra-cabecas/UITests]
+    dependencies: [{target: QuebraCabecas}]
+    settings: {base: {TEST_TARGET_NAME: QuebraCabecas}}
 schemes:
   AtelieColorir:
-    build: {targets: {AtelieColorir: all, AtelieColorirTests: [test]}}
-    test: {targets: [AtelieColorirTests]}
+    build: {targets: {AtelieColorir: all, AtelieColorirTests: [test], AtelieColorirUITests: [test]}}
+    test: {targets: [AtelieColorirTests, AtelieColorirUITests]}
   CrimeIdle:
-    build: {targets: {CrimeIdle: all, CrimeIdleTests: [test]}}
-    test: {targets: [CrimeIdleTests]}
+    build: {targets: {CrimeIdle: all, CrimeIdleTests: [test], CrimeIdleUITests: [test]}}
+    test: {targets: [CrimeIdleTests, CrimeIdleUITests]}
   DetetiveNaTesta:
-    build: {targets: {DetetiveNaTesta: all, DetetiveNaTestaTests: [test]}}
-    test: {targets: [DetetiveNaTestaTests]}
+    build: {targets: {DetetiveNaTesta: all, DetetiveNaTestaTests: [test], DetetiveNaTestaUITests: [test]}}
+    test: {targets: [DetetiveNaTestaTests, DetetiveNaTestaUITests]}
   ManagerFutebol:
-    build: {targets: {ManagerFutebol: all, ManagerFutebolTests: [test]}}
-    test: {targets: [ManagerFutebolTests]}
+    build: {targets: {ManagerFutebol: all, ManagerFutebolTests: [test], ManagerFutebolUITests: [test]}}
+    test: {targets: [ManagerFutebolTests, ManagerFutebolUITests]}
   MeuQrPix:
-    build: {targets: {MeuQrPix: all, MeuQrPixTests: [test]}}
-    test: {targets: [MeuQrPixTests]}
+    build: {targets: {MeuQrPix: all, MeuQrPixTests: [test], MeuQrPixUITests: [test]}}
+    test: {targets: [MeuQrPixTests, MeuQrPixUITests]}
   LeitorPdfBolso:
-    build: {targets: {LeitorPdfBolso: all, LeitorPdfBolsoTests: [test]}}
-    test: {targets: [LeitorPdfBolsoTests]}
+    build: {targets: {LeitorPdfBolso: all, LeitorPdfBolsoTests: [test], LeitorPdfBolsoUITests: [test]}}
+    test: {targets: [LeitorPdfBolsoTests, LeitorPdfBolsoUITests]}
   BrasiliaPolitica:
-    build: {targets: {BrasiliaPolitica: all, BrasiliaPoliticaTests: [test]}}
-    test: {targets: [BrasiliaPoliticaTests]}
+    build: {targets: {BrasiliaPolitica: all, BrasiliaPoliticaTests: [test], BrasiliaPoliticaUITests: [test]}}
+    test: {targets: [BrasiliaPoliticaTests, BrasiliaPoliticaUITests]}
   DiarioSono:
-    build: {targets: {DiarioSono: all, DiarioSonoTests: [test]}}
-    test: {targets: [DiarioSonoTests]}
+    build: {targets: {DiarioSono: all, DiarioSonoTests: [test], DiarioSonoUITests: [test]}}
+    test: {targets: [DiarioSonoTests, DiarioSonoUITests]}
   QuebraCabecas:
-    build: {targets: {QuebraCabecas: all, QuebraCabecasTests: [test]}}
-    test: {targets: [QuebraCabecasTests]}
+    build: {targets: {QuebraCabecas: all, QuebraCabecasTests: [test], QuebraCabecasUITests: [test]}}
+    test: {targets: [QuebraCabecasTests, QuebraCabecasUITests]}

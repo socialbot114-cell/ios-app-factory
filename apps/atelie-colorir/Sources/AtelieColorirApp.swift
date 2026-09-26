@@ -54,7 +54,7 @@ struct ColoringHome: View {
                 if capture == "saved" || showSaved {
                     savedArts
                 } else if capture == "editor" || showEditor {
-                    ColoringEditor(onSave: { savedArtCount += 1 })
+                    ColoringEditor(onSave: { _ in savedArtCount += 1 })
                 } else {
                     home
                 }
@@ -68,6 +68,12 @@ struct ColoringHome: View {
             }
         }
         .tint(accent)
+        .onAppear {
+            if FactoryCapture.isUITesting {
+                FactoryCapture.resetAppDefaults()
+                savedArtCount = 1
+            }
+        }
     }
 
     private var home: some View {
@@ -113,6 +119,14 @@ struct ColoringHome: View {
             FactoryDemoNotice()
             let files = Self.exportedArtURLs
             if files.isEmpty {
+                if capture == "saved" {
+                    FactoryPanel {
+                        Label("PNG de demonstração", systemImage: "photo.artframe")
+                            .font(.headline)
+                        Text("Salve sua primeira arte no editor para criar uma imagem real nesta coleção.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
                 ContentUnavailableView("Nenhuma arte salva", systemImage: "paintpalette", description: Text("Abra o editor e salve sua primeira ilustração."))
                 Button { showSaved = false; showEditor = true } label: { Label("Começar a colorir", systemImage: "paintbrush.pointed.fill") }
                     .buttonStyle(FactoryPrimaryButtonStyle())
@@ -169,6 +183,7 @@ struct ColoringEditor: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(["Coral", "Azul petróleo", "Amarelo", "Violeta", "Verde", "Laranja"][index])
                         .accessibilityValue(selectedColor == index ? "Selecionada" : "")
+                        .accessibilityIdentifier("palette-color-\(index)")
                     }
                     Spacer(minLength: 0)
                     Button("Desfazer", systemImage: "arrow.uturn.backward") { engine.undo() }
@@ -218,15 +233,18 @@ struct ColoringArtwork: View {
                 Circle().fill(Color(red: 0.87, green: 0.78, blue: 0.60).opacity(0.32)).frame(width: side * 0.57)
                 ForEach(0..<9, id: \.self) { index in
                     let angle = Double(index) * 40 - 140
-                    PetalShape()
-                        .fill(fills[index].map { ColoringPalette.colors[$0] } ?? .white)
-                        .overlay(PetalShape().stroke(Color.black.opacity(0.82), lineWidth: 2.4))
-                        .frame(width: side * 0.28, height: side * 0.46)
-                        .offset(y: -side * 0.16)
-                        .rotationEffect(.degrees(angle))
-                        .contentShape(PetalShape())
-                        .onTapGesture { onTap?(index) }
-                        .accessibilityLabel("Região \(index + 1)")
+                    Button { onTap?(index) } label: {
+                        PetalShape()
+                            .fill(fills[index].map { ColoringPalette.colors[$0] } ?? .white)
+                            .overlay(PetalShape().stroke(Color.black.opacity(0.82), lineWidth: 2.4))
+                            .frame(width: side * 0.28, height: side * 0.46)
+                            .offset(y: -side * 0.16)
+                            .rotationEffect(.degrees(angle))
+                            .contentShape(PetalShape())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Região \(index + 1)")
+                    .accessibilityIdentifier("color-region-\(index)")
                 }
                 Circle().fill(Color(red: 0.98, green: 0.78, blue: 0.35))
                     .overlay(Circle().stroke(Color.black, lineWidth: 2.4))

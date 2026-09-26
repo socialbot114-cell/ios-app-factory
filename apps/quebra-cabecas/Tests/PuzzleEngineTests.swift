@@ -27,4 +27,12 @@ final class PuzzleEngineTests: XCTestCase {
         let restored = try JSONDecoder().decode(PuzzleEngine.self, from: JSONEncoder().encode(game))
         XCTAssertEqual(game, restored)
     }
+
+    func testSolvedBoardRecordsBestTimeOnlyOncePerSize() {
+        var game = PuzzleEngine(size: 3, startedAt: Date(timeIntervalSince1970: 100))
+        game.recordBest(at: Date(timeIntervalSince1970: 120))
+        XCTAssertEqual(game.bestTimes[3], 20)
+        game.recordBest(at: Date(timeIntervalSince1970: 125))
+        XCTAssertEqual(game.bestTimes[3], 20)
+    }
 }

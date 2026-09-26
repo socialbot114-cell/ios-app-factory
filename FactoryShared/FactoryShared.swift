@@ -2,9 +2,16 @@ import SwiftUI
 import UIKit
 
 enum FactoryCapture {
+    static var isUITesting: Bool { ProcessInfo.processInfo.arguments.contains("--uitesting") }
+
     static var screen: String? {
         ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--capture=") })?
             .replacingOccurrences(of: "--capture=", with: "")
+    }
+
+    static func resetAppDefaults() {
+        guard let identifier = Bundle.main.bundleIdentifier else { return }
+        UserDefaults.standard.removePersistentDomain(forName: identifier)
     }
 }
 
@@ -134,6 +141,7 @@ extension View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 20)
+            .padding(.bottom, 92)
             .frame(maxWidth: 780, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
