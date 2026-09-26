@@ -80,10 +80,6 @@ struct SleepDiaryHome: View {
                 Button("Apagar registros", role: .destructive) { engine.clear(); engine.persist() }
                 Button("Cancelar", role: .cancel) {}
             }
-            .sheet(isPresented: $showingFinish) {
-                FinishSleepSheet(rating: $rating, note: $note, onSave: finishSession)
-                    .presentationDetents([.medium, .large])
-            }
             .onChange(of: engine) { _, _ in engine.persist() }
             .onAppear {
                 if FactoryCapture.isUITesting {
@@ -93,6 +89,10 @@ struct SleepDiaryHome: View {
                     engine.start(at: .now.addingTimeInterval(-3_726))
                 }
             }
+        }
+        .sheet(isPresented: $showingFinish) {
+            FinishSleepSheet(rating: $rating, note: $note, onSave: finishSession)
+                .presentationDetents([.medium, .large])
         }
         .tint(accent)
         .preferredColorScheme(.dark)

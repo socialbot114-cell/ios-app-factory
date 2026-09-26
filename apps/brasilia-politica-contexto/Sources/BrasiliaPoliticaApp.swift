@@ -99,9 +99,7 @@ struct PoliticsLibrary: View {
                 }
             }
             ForEach(articles) { article in
-                NavigationLink(value: article) {
-                    ArticleCard(article: article, isFavorite: favorites.contains(article.id), toggleFavorite: { toggle(article.id) })
-                }.buttonStyle(.plain)
+                ArticleCard(article: article, isFavorite: favorites.contains(article.id), toggleFavorite: { toggle(article.id) })
             }
             if articles.isEmpty {
                 ContentUnavailableView.search(text: query)
@@ -124,8 +122,7 @@ struct PoliticsLibrary: View {
             FactoryHeader(eyebrow: "Neste aparelho", title: "Leitura salva", subtitle: "Favoritos locais para encontrar depois.", accent: accent)
             FactoryDemoNotice()
             ForEach(DemoArticle.all.filter { favorites.contains($0.id) }) { article in
-                NavigationLink(value: article) { ArticleCard(article: article, isFavorite: true, toggleFavorite: { toggle(article.id) }) }
-                    .buttonStyle(.plain)
+                ArticleCard(article: article, isFavorite: true, toggleFavorite: { toggle(article.id) })
             }
             if favorites.isEmpty { ContentUnavailableView("Nada salvo ainda", systemImage: "bookmark", description: Text("Toque no marcador de uma matéria demonstrativa.")) }
         }.factoryPage().navigationTitle("Salvos").navigationBarTitleDisplayMode(.inline)
@@ -143,18 +140,24 @@ struct ArticleCard: View {
     let toggleFavorite: () -> Void
     var body: some View {
         FactoryPanel {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
                     Text(article.category.uppercased()).font(.caption2.bold()).tracking(1).foregroundStyle(.tint)
-                    Text(article.title).font(.title3.bold()).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
-                    Text(article.summary).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    Text(article.date).font(.caption2).foregroundStyle(.tertiary)
+                    Spacer(minLength: 8)
+                    Button(action: toggleFavorite) { Image(systemName: isFavorite ? "bookmark.fill" : "bookmark") }
+                        .buttonStyle(.plain).foregroundStyle(.tint)
+                        .accessibilityLabel(isFavorite ? "Remover dos salvos" : "Salvar matéria")
+                        .accessibilityIdentifier("favorite-toggle-\(article.id)")
                 }
-                Spacer(minLength: 0)
-                Button(action: toggleFavorite) { Image(systemName: isFavorite ? "bookmark.fill" : "bookmark") }
-                    .buttonStyle(.plain).foregroundStyle(.tint)
-                    .accessibilityLabel(isFavorite ? "Remover dos salvos" : "Salvar matéria")
-                    .accessibilityIdentifier("favorite-toggle-\(article.id)")
+                NavigationLink(value: article) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(article.title).font(.title3.bold()).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                        Text(article.summary).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        Text(article.date).font(.caption2).foregroundStyle(.tertiary)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("article-\(article.id)")
             }
         }
     }

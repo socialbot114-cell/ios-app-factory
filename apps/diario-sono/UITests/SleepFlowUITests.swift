@@ -10,9 +10,10 @@ final class SleepFlowUITests: XCTestCase {
         let finish = app.buttons["Acordei — finalizar"]
         XCTAssertTrue(finish.waitForExistence(timeout: 5))
         finish.tap()
-        XCTAssertTrue(app.navigationBars["Ao acordar"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Salvar"].exists)
-        app.buttons["Salvar"].tap()
+        XCTAssertTrue(app.staticTexts["Como você se sente?"].waitForExistence(timeout: 10))
+        let save = app.buttons["Salvar"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        save.tap()
         XCTAssertTrue(app.staticTexts["Última avaliação"].exists)
     }
 }
