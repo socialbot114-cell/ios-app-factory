@@ -50,7 +50,6 @@ enum PixPayload {
                 throw PixPayloadError.invalidAmount
             }
             guard let decimal = Decimal(string: normalized), decimal > 0 else { throw PixPayloadError.invalidAmount }
-            guard decimal * 100 == (decimal * 100).rounded(.down) else { throw PixPayloadError.invalidAmount }
             let formatter = NumberFormatter()
             formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.usesGroupingSeparator = false

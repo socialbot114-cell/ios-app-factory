@@ -100,7 +100,7 @@ struct FootballHome: View {
     private var lastResult: LeagueFixture? { results.last }
     private var nextFixture: LeagueFixture? {
         guard currentRound < 14 else { return nil }
-        FootballSeason.fixtures(seed: seed).first { $0.round == min(currentRound + 1, 14) && ($0.home == 0 || $0.away == 0) }
+        return FootballSeason.fixtures(seed: seed).first { $0.round == min(currentRound + 1, 14) && ($0.home == 0 || $0.away == 0) }
     }
 
     var body: some View {

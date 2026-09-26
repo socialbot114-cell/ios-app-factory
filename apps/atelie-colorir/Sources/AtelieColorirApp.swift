@@ -126,10 +126,11 @@ struct ColoringHome: View {
                         Text("Salve sua primeira arte no editor para criar uma imagem real nesta coleção.")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
+                } else {
+                    ContentUnavailableView("Nenhuma arte salva", systemImage: "paintpalette", description: Text("Abra o editor e salve sua primeira ilustração."))
+                    Button { showSaved = false; showEditor = true } label: { Label("Começar a colorir", systemImage: "paintbrush.pointed.fill") }
+                        .buttonStyle(FactoryPrimaryButtonStyle())
                 }
-                ContentUnavailableView("Nenhuma arte salva", systemImage: "paintpalette", description: Text("Abra o editor e salve sua primeira ilustração."))
-                Button { showSaved = false; showEditor = true } label: { Label("Começar a colorir", systemImage: "paintbrush.pointed.fill") }
-                    .buttonStyle(FactoryPrimaryButtonStyle())
             } else {
                 ForEach(files, id: \.absoluteString) { url in
                     FactoryPanel {
@@ -169,7 +170,6 @@ struct ColoringEditor: View {
                 .frame(maxWidth: .infinity)
                 .padding(12)
                 .background(Color(red: 1, green: 0.97, blue: 0.91), in: RoundedRectangle(cornerRadius: 24))
-                .accessibilityIdentifier("coloring-canvas")
             FactoryPanel(title: "Sua paleta", systemImage: "paintpalette.fill") {
                 HStack(spacing: 12) {
                     ForEach(ColoringPalette.colors.indices, id: \.self) { index in
