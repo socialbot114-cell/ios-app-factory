@@ -42,7 +42,7 @@ private enum ColoringPalette {
 }
 
 struct ColoringHome: View {
-    @AppStorage("atelier.savedArtCount") private var savedArtCount = 1
+    @AppStorage("atelier.savedArtCount") private var savedArtCount = 0
     @State private var showEditor = false
     @State private var showSaved = false
     private let accent = Color(red: 0.86, green: 0.30, blue: 0.25)
@@ -71,7 +71,7 @@ struct ColoringHome: View {
         .onAppear {
             if FactoryCapture.isUITesting {
                 FactoryCapture.resetAppDefaults()
-                savedArtCount = 1
+                savedArtCount = 0
             }
         }
     }
@@ -121,10 +121,17 @@ struct ColoringHome: View {
             if files.isEmpty {
                 if capture == "saved" {
                     FactoryPanel {
-                        Label("PNG de demonstração", systemImage: "photo.artframe")
-                            .font(.headline)
-                        Text("Salve sua primeira arte no editor para criar uma imagem real nesta coleção.")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                        HStack(spacing: 16) {
+                            ColoringArtwork(fills: [0: 0, 2: 2, 4: 4, 6: 1])
+                                .frame(width: 112)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Jardim em traços").font(.headline)
+                                Label("Prévia demonstrativa", systemImage: "info.circle")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Text("As suas exportações PNG aparecerão aqui.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 } else {
                     ContentUnavailableView("Nenhuma arte salva", systemImage: "paintpalette", description: Text("Abra o editor e salve sua primeira ilustração."))

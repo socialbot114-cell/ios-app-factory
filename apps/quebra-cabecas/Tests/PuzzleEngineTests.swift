@@ -34,5 +34,7 @@ final class PuzzleEngineTests: XCTestCase {
         XCTAssertEqual(game.bestTimes[3], 20)
         game.recordBest(at: Date(timeIntervalSince1970: 125))
         XCTAssertEqual(game.bestTimes[3], 20)
+        let nextGame = PuzzleEngine(size: 4, bestTimes: game.bestTimes)
+        XCTAssertEqual(nextGame.bestTimes[3], 20)
     }
 }

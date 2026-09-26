@@ -11,7 +11,7 @@ final class PDFReaderFlowUITests: XCTestCase {
         sample.tap()
         XCTAssertTrue(app.buttons["Buscar"].waitForExistence(timeout: 5))
         app.textFields["Buscar no documento"].tap()
-        app.textFields["Buscar no documento"].typeText("biblioteca")
+        app.textFields["Buscar no documento"].typeText("localmente")
         app.buttons["Buscar"].tap()
         XCTAssertTrue(app.staticTexts["1 resultado(s) · ocorrência selecionada"].waitForExistence(timeout: 5))
     }

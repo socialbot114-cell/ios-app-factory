@@ -12,11 +12,12 @@ struct PuzzleEngine: Codable, Equatable {
     private(set) var startedAt: Date
     private(set) var bestTimes: [Int: Int] = [:]
 
-    init(size: Int = 3, startedAt: Date = .now) {
+    init(size: Int = 3, startedAt: Date = .now, bestTimes: [Int: Int] = [:]) {
         let validSize = [3, 4, 6].contains(size) ? size : 3
         self.size = validSize
         self.tiles = Array(1..<(validSize * validSize)) + [0]
         self.startedAt = startedAt
+        self.bestTimes = bestTimes
     }
 
     var isSolved: Bool { tiles == Array(1..<(size * size)) + [0] }
@@ -158,7 +159,7 @@ struct PuzzleHome: View {
     }
 
     private func newGame(seed: UInt64 = UInt64.random(in: 1...UInt64.max)) {
-        engine = PuzzleEngine(size: selectedSize)
+        engine = PuzzleEngine(size: selectedSize, bestTimes: engine.bestTimes)
         engine.shuffle(seed: seed)
     }
 

@@ -152,7 +152,9 @@ struct ArticleCard: View {
                 }
                 Spacer(minLength: 0)
                 Button(action: toggleFavorite) { Image(systemName: isFavorite ? "bookmark.fill" : "bookmark") }
-                    .buttonStyle(.plain).foregroundStyle(.tint).accessibilityLabel(isFavorite ? "Remover dos salvos" : "Salvar matéria")
+                    .buttonStyle(.plain).foregroundStyle(.tint)
+                    .accessibilityLabel(isFavorite ? "Remover dos salvos" : "Salvar matéria")
+                    .accessibilityIdentifier("favorite-\(article.id)")
             }
         }
     }

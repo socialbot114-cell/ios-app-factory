@@ -164,7 +164,10 @@ struct PDFReaderScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 9) {
                 TextField("Buscar neste documento", text: $searchText)
-                    .textFieldStyle(.roundedBorder).accessibilityLabel("Buscar no documento")
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .accessibilityLabel("Buscar no documento")
                 Button("Buscar") { searchDocument() }.buttonStyle(.borderedProminent).tint(accent)
             }.padding(12)
             if resultCount > 0 {
