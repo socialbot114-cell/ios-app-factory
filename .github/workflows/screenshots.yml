@@ -33,7 +33,9 @@ jobs:
       - id: matrix
         env:
           APP: ${{ inputs.app || 'all' }}
-        run: echo "value=$(python3 tools/make_matrix.py \"$APP\")" >> "$GITHUB_OUTPUT"
+        run: |
+          matrix=$(python3 tools/make_matrix.py "$APP")
+          echo "value=$matrix" >> "$GITHUB_OUTPUT"
 
   capture:
     needs: prepare
