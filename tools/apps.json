@@ -1,0 +1,11 @@
+[
+  {"slug":"atelie-colorir","scheme":"AtelieColorir","bundle":"br.com.socialbot114.factory.ateliecolorir","name":"Ateliê de Colorir"},
+  {"slug":"crime-idle","scheme":"CrimeIdle","bundle":"br.com.socialbot114.factory.crimeidle","name":"Crime Idle"},
+  {"slug":"detetive-na-testa","scheme":"DetetiveNaTesta","bundle":"br.com.socialbot114.factory.detetivenatesta","name":"Detetive na Testa"},
+  {"slug":"manager-futebol","scheme":"ManagerFutebol","bundle":"br.com.socialbot114.factory.managerfutebol","name":"Manager de Futebol"},
+  {"slug":"meu-qr-pix","scheme":"MeuQrPix","bundle":"br.com.socialbot114.factory.meuqrpix","name":"Meu QR Pix"},
+  {"slug":"leitor-pdf-bolso","scheme":"LeitorPdfBolso","bundle":"br.com.socialbot114.factory.leitorpdf","name":"Leitor PDF de Bolso"},
+  {"slug":"brasilia-politica-contexto","scheme":"BrasiliaPolitica","bundle":"br.com.socialbot114.factory.brasiliapolitica","name":"Brasília Política"},
+  {"slug":"diario-sono","scheme":"DiarioSono","bundle":"br.com.socialbot114.factory.diariosono","name":"Diário do Sono"},
+  {"slug":"quebra-cabecas","scheme":"QuebraCabecas","bundle":"br.com.socialbot114.factory.quebracabecas","name":"Quebra-Cabeças"}
+]

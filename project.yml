@@ -1,0 +1,163 @@
+name: IOSAppFactory
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    INFOPLIST_KEY_UIUserInterfaceStyle: Automatic
+    CODE_SIGNING_ALLOWED: NO
+    ENABLE_PREVIEWS: YES
+targets:
+  AtelieColorir:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/atelie-colorir/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.ateliecolorir
+        INFOPLIST_KEY_CFBundleDisplayName: Ateliê de Colorir
+  AtelieColorirTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/atelie-colorir/Tests]
+    dependencies: [{target: AtelieColorir}]
+  CrimeIdle:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/crime-idle/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.crimeidle
+        INFOPLIST_KEY_CFBundleDisplayName: Crime Idle
+  CrimeIdleTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/crime-idle/Tests]
+    dependencies: [{target: CrimeIdle}]
+  DetetiveNaTesta:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/detetive-na-testa/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.detetivenatesta
+        INFOPLIST_KEY_CFBundleDisplayName: Detetive na Testa
+  DetetiveNaTestaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/detetive-na-testa/Tests]
+    dependencies: [{target: DetetiveNaTesta}]
+  ManagerFutebol:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/manager-futebol/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.managerfutebol
+        INFOPLIST_KEY_CFBundleDisplayName: Manager de Futebol
+  ManagerFutebolTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/manager-futebol/Tests]
+    dependencies: [{target: ManagerFutebol}]
+  MeuQrPix:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/meu-qr-pix/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.meuqrpix
+        INFOPLIST_KEY_CFBundleDisplayName: Meu QR Pix
+  MeuQrPixTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/meu-qr-pix/Tests]
+    dependencies: [{target: MeuQrPix}]
+  LeitorPdfBolso:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/leitor-pdf-bolso/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.leitorpdf
+        INFOPLIST_KEY_CFBundleDisplayName: Leitor PDF de Bolso
+  LeitorPdfBolsoTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/leitor-pdf-bolso/Tests]
+    dependencies: [{target: LeitorPdfBolso}]
+  BrasiliaPolitica:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/brasilia-politica-contexto/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.brasiliapolitica
+        INFOPLIST_KEY_CFBundleDisplayName: Brasília Política
+  BrasiliaPoliticaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/brasilia-politica-contexto/Tests]
+    dependencies: [{target: BrasiliaPolitica}]
+  DiarioSono:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/diario-sono/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.diariosono
+        INFOPLIST_KEY_CFBundleDisplayName: Diário do Sono
+  DiarioSonoTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/diario-sono/Tests]
+    dependencies: [{target: DiarioSono}]
+  QuebraCabecas:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/quebra-cabecas/Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.quebracabecas
+        INFOPLIST_KEY_CFBundleDisplayName: Quebra-Cabeças
+  QuebraCabecasTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/quebra-cabecas/Tests]
+    dependencies: [{target: QuebraCabecas}]
+schemes:
+  AtelieColorir:
+    build: {targets: {AtelieColorir: all, AtelieColorirTests: [test]}}
+    test: {targets: [AtelieColorirTests]}
+  CrimeIdle:
+    build: {targets: {CrimeIdle: all, CrimeIdleTests: [test]}}
+    test: {targets: [CrimeIdleTests]}
+  DetetiveNaTesta:
+    build: {targets: {DetetiveNaTesta: all, DetetiveNaTestaTests: [test]}}
+    test: {targets: [DetetiveNaTestaTests]}
+  ManagerFutebol:
+    build: {targets: {ManagerFutebol: all, ManagerFutebolTests: [test]}}
+    test: {targets: [ManagerFutebolTests]}
+  MeuQrPix:
+    build: {targets: {MeuQrPix: all, MeuQrPixTests: [test]}}
+    test: {targets: [MeuQrPixTests]}
+  LeitorPdfBolso:
+    build: {targets: {LeitorPdfBolso: all, LeitorPdfBolsoTests: [test]}}
+    test: {targets: [LeitorPdfBolsoTests]}
+  BrasiliaPolitica:
+    build: {targets: {BrasiliaPolitica: all, BrasiliaPoliticaTests: [test]}}
+    test: {targets: [BrasiliaPoliticaTests]}
+  DiarioSono:
+    build: {targets: {DiarioSono: all, DiarioSonoTests: [test]}}
+    test: {targets: [DiarioSonoTests]}
+  QuebraCabecas:
+    build: {targets: {QuebraCabecas: all, QuebraCabecasTests: [test]}}
+    test: {targets: [QuebraCabecasTests]}

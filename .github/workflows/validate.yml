@@ -1,0 +1,105 @@
+name: iOS app validation
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "FactoryShared/**"
+      - "project.yml"
+      - "tools/**"
+      - ".github/workflows/validate.yml"
+      - ".github/workflows/screenshots.yml"
+      - "README.md"
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App para validar
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - atelie-colorir
+          - crime-idle
+          - detetive-na-testa
+          - manager-futebol
+          - meu-qr-pix
+          - leitor-pdf-bolso
+          - brasilia-politica-contexto
+          - diario-sono
+          - quebra-cabecas
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        env:
+          APP: ${{ inputs.app || 'all' }}
+        run: echo "value=$(python3 tools/make_matrix.py \"$APP\")" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs: prepare
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate portfolio inputs
+        run: python3 tools/validate_factory.py
+      - name: Install XcodeGen
+        run: brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+      - name: Record toolchain and simulators
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available
+      - name: Select available simulators
+        id: simulators
+        run: |
+          echo "iphone=$(python3 tools/select_simulator.py iphone)" >> "$GITHUB_OUTPUT"
+          echo "ipad=$(python3 tools/select_simulator.py ipad)" >> "$GITHUB_OUTPUT"
+          echo "iphone_name=$(python3 tools/select_simulator.py iphone --field name)" >> "$GITHUB_OUTPUT"
+          echo "ipad_name=$(python3 tools/select_simulator.py ipad --field name)" >> "$GITHUB_OUTPUT"
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+      - name: Test on iPhone simulator
+        env:
+          SCHEME: ${{ matrix.scheme }}
+          APP_SLUG: ${{ matrix.slug }}
+          SIMULATOR_ID: ${{ steps.simulators.outputs.iphone }}
+        run: |
+          xcodebuild test -project IOSAppFactory.xcodeproj -scheme "$SCHEME" \
+            -destination "id=$SIMULATOR_ID" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -resultBundlePath "$RUNNER_TEMP/$APP_SLUG-iphone.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Test on iPad simulator
+        env:
+          SCHEME: ${{ matrix.scheme }}
+          APP_SLUG: ${{ matrix.slug }}
+          SIMULATOR_ID: ${{ steps.simulators.outputs.ipad }}
+        run: |
+          xcodebuild test -project IOSAppFactory.xcodeproj -scheme "$SCHEME" \
+            -destination "id=$SIMULATOR_ID" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -resultBundlePath "$RUNNER_TEMP/$APP_SLUG-ipad.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.slug }}
+          path: ${{ runner.temp }}/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 30

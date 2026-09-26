@@ -1,0 +1,107 @@
+name: iOS simulator screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App para capturar
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - atelie-colorir
+          - crime-idle
+          - detetive-na-testa
+          - manager-futebol
+          - meu-qr-pix
+          - leitor-pdf-bolso
+          - brasilia-politica-contexto
+          - diario-sono
+          - quebra-cabecas
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        env:
+          APP: ${{ inputs.app || 'all' }}
+        run: echo "value=$(python3 tools/make_matrix.py \"$APP\")" >> "$GITHUB_OUTPUT"
+
+  capture:
+    needs: prepare
+    runs-on: macos-26
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate portfolio inputs
+        run: python3 tools/validate_factory.py
+      - name: Install XcodeGen
+        run: brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+      - name: Record toolchain and simulator inventory
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available
+      - name: Select available simulators
+        id: simulators
+        run: |
+          echo "iphone=$(python3 tools/select_simulator.py iphone)" >> "$GITHUB_OUTPUT"
+          echo "ipad=$(python3 tools/select_simulator.py ipad)" >> "$GITHUB_OUTPUT"
+          echo "iphone_name=$(python3 tools/select_simulator.py iphone --field name)" >> "$GITHUB_OUTPUT"
+          echo "ipad_name=$(python3 tools/select_simulator.py ipad --field name)" >> "$GITHUB_OUTPUT"
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+      - name: Build simulator app
+        env:
+          SCHEME: ${{ matrix.scheme }}
+        run: |
+          xcodebuild build -project IOSAppFactory.xcodeproj -scheme "$SCHEME" \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" CODE_SIGNING_ALLOWED=NO
+      - name: Capture iPhone and iPad states
+        env:
+          APP_SLUG: ${{ matrix.slug }}
+          SCHEME: ${{ matrix.scheme }}
+          APP_BUNDLE: ${{ matrix.bundle }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python3 tools/capture_screenshots.py \
+            --slug "$APP_SLUG" --scheme "$SCHEME" \
+            --bundle "$APP_BUNDLE" --derived-data "$RUNNER_TEMP/DerivedData" \
+            --output "$RUNNER_TEMP/screenshots/$APP_SLUG"
+      - name: Add capture summary
+        if: always()
+        env:
+          APP_NAME: ${{ matrix.name }}
+          APP_SLUG: ${{ matrix.slug }}
+        run: |
+          if [ -f "$RUNNER_TEMP/screenshots/$APP_SLUG/manifest.json" ]; then
+            python3 - "$RUNNER_TEMP/screenshots/$APP_SLUG/manifest.json" <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, sys
+          manifest=json.load(open(sys.argv[1]))
+          print(f"## {manifest['app']['name']}\n")
+          for item in manifest['screenshots']:
+              print(f"- {item['family']} / {item['device']} / {item['screen']}: {item['width']}×{item['height']} px")
+          PY
+          else
+            echo "Capture failed for $APP_NAME ($APP_SLUG)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.slug }}
+          path: ${{ runner.temp }}/screenshots/${{ matrix.slug }}
+          if-no-files-found: warn
+          retention-days: 30
