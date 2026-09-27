@@ -33,9 +33,9 @@ final class CrimeIdleFlowUITests: XCTestCase {
         app.buttons["Negócios"].tap()
         app.buttons["Comprar Café Aurora"].tap()
         app.buttons["História"].tap()
-        XCTAssertTrue(app.staticTexts["A primeira luz"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Festival das Lanternas"].exists)
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Escolher")).firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["A cidade comenta"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["story.chapter.0"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["story.option.0.0"].exists)
+        app.buttons["story.choose.0.0"].tap()
+        XCTAssertTrue(app.staticTexts["story.chapter.1"].waitForExistence(timeout: 5))
     }
 }

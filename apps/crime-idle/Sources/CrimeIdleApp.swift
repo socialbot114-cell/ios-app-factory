@@ -503,7 +503,9 @@ struct CrimeIdleHome: View {
             if game.currentStoryChapter < CrimeCampaign.chapters.count {
                 let chapterIndex = game.currentStoryChapter
                 let chapter = CrimeCampaign.chapters[chapterIndex]
-                FactoryPanel(title: "Capítulo \(chapterIndex + 1) · \(chapter.title)", systemImage: "book.closed.fill") {
+                FactoryPanel(systemImage: "book.closed.fill") {
+                    Text("Capítulo \(chapterIndex + 1) · \(chapter.title)")
+                        .font(.headline).accessibilityIdentifier("story.chapter.\(chapterIndex)")
                     Text(chapter.scene).foregroundStyle(.secondary)
                     if game.isStoryChapterAvailable(chapterIndex) {
                         Text("Escolha um rumo. A decisão é permanente e muda bônus futuros.")
@@ -512,11 +514,13 @@ struct CrimeIdleHome: View {
                             let option = chapter.options[optionIndex]
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(option.title).font(.headline)
+                                    .accessibilityIdentifier("story.option.\(chapterIndex).\(optionIndex)")
                                 Text(option.description).font(.subheadline).foregroundStyle(.secondary)
                                 Button("Escolher · custo \(option.cashCost.formatted(.number.precision(.fractionLength(0)))) caixa") {
                                     _ = game.chooseStory(chapterIndex, option: optionIndex)
                                 }
                                 .buttonStyle(.borderedProminent).tint(accent)
+                                .accessibilityIdentifier("story.choose.\(chapterIndex).\(optionIndex)")
                                 .disabled(game.cash < option.cashCost)
                                 if optionIndex < chapter.options.count - 1 { Divider() }
                             }
