@@ -22,8 +22,16 @@ final class ColoringFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Um momento só seu."].waitForExistence(timeout: 10))
         app.buttons["Explorar as 12 artes"].tap()
         XCTAssertTrue(app.staticTexts["O que vamos colorir?"].waitForExistence(timeout: 5))
+        // A grade é preguiçosa: usa a busca para trazer o item para a tela.
+        let search = app.textFields["Buscar arte"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("noite")
         XCTAssertTrue(app.staticTexts["Mandala da noite"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Vitral do Planalto"].exists)
+        app.buttons["Limpar busca"].tap()
+        app.swipeUp()
+        app.swipeUp()
+        XCTAssertTrue(app.staticTexts["Vitral do Planalto"].waitForExistence(timeout: 5))
     }
 
     func testGalleryOpensFromHome() {
