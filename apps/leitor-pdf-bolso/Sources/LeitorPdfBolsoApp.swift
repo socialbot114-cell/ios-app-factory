@@ -15,6 +15,34 @@ struct PDFProgress: Codable, Equatable {
     var safePage: Int { min(max(page, 0), max(pageCount - 1, 0)) }
 }
 
+struct PDFSearchCursor: Equatable {
+    private(set) var resultCount = 0
+    private(set) var index = 0
+
+    var currentPosition: Int? { resultCount > 0 ? index + 1 : nil }
+    var canMovePrevious: Bool { index > 0 }
+    var canMoveNext: Bool { index + 1 < resultCount }
+
+    mutating func reset(resultCount: Int) {
+        self.resultCount = max(resultCount, 0)
+        index = 0
+    }
+
+    @discardableResult
+    mutating func previous() -> Int? {
+        guard canMovePrevious else { return nil }
+        index -= 1
+        return index
+    }
+
+    @discardableResult
+    mutating func next() -> Int? {
+        guard canMoveNext else { return nil }
+        index += 1
+        return index
+    }
+}
+
 struct PDFLibraryEntry: Identifiable, Hashable {
     let id: String
     let name: String
@@ -33,7 +61,7 @@ struct PDFLibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if capture == "reader", let first = documents.first {
+                if capture == "reader" || capture == "search", let first = documents.first {
                     PDFReaderScreen(entry: first)
                 } else { library }
             }
@@ -140,7 +168,7 @@ struct PDFLibraryView: View {
         let data = renderer.pdfData { context in
             context.beginPage()
             let title = "Guia de leitura demonstrativo"
-            let body = "Este documento foi criado localmente para testar a biblioteca.\n\nVocê pode pesquisar esta palavra: biblioteca.\n\nO protótipo não envia arquivos para servidores."
+            let body = "Este documento foi criado localmente para testar a busca de texto.\n\nVocê pode pesquisar esta palavra: biblioteca.\n\nA palavra biblioteca aparece também nesta frase para testar a navegação entre resultados.\n\nO protótipo não envia arquivos para servidores."
             title.draw(at: CGPoint(x: 56, y: 72), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 25), .foregroundColor: UIColor.darkGray])
             body.draw(in: CGRect(x: 56, y: 130, width: 500, height: 360), withAttributes: [.font: UIFont.systemFont(ofSize: 17), .foregroundColor: UIColor.darkGray])
         }
@@ -150,8 +178,9 @@ struct PDFLibraryView: View {
 
 struct PDFReaderScreen: View {
     let entry: PDFLibraryEntry
-    @State private var searchText = ""
-    @State private var resultCount = 0
+    @State private var searchText = FactoryCapture.screen == "search" ? "biblioteca" : ""
+    @State private var searchResults: [PDFSelection] = []
+    @State private var searchCursor = PDFSearchCursor()
     @State private var selection: PDFSelection?
     @State private var bookmarked = false
     @State private var currentPage = 0
@@ -170,9 +199,36 @@ struct PDFReaderScreen: View {
                     .accessibilityLabel("Buscar no documento")
                 Button("Buscar") { searchDocument() }.buttonStyle(.borderedProminent).tint(accent)
             }.padding(12)
-            if resultCount > 0 {
-                Text("\(resultCount) resultado(s) · ocorrência selecionada")
-                    .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14)
+            if searchCursor.resultCount > 0 {
+                HStack(spacing: 8) {
+                    Text(searchSummary)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("pdf-search-summary")
+                    Spacer(minLength: 4)
+                    Button {
+                        moveToPreviousResult()
+                    } label: {
+                        Label("Anterior", systemImage: "chevron.up")
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!searchCursor.canMovePrevious)
+                    .accessibilityLabel("Resultado anterior")
+                    .accessibilityIdentifier("pdf-search-previous")
+                    Button {
+                        moveToNextResult()
+                    } label: {
+                        Label("Próximo", systemImage: "chevron.down")
+                            .labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!searchCursor.canMoveNext)
+                    .accessibilityLabel("Próximo resultado")
+                    .accessibilityIdentifier("pdf-search-next")
+                }
+                .padding(.horizontal, 14)
             } else if !searchText.isEmpty {
                 Text("Nenhum resultado de texto. PDFs formados apenas por imagem não são pesquisáveis nesta versão.")
                     .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14)
@@ -191,22 +247,56 @@ struct PDFReaderScreen: View {
             }.font(.caption).padding(12).background(.regularMaterial)
         }
         .navigationTitle(entry.name).navigationBarTitleDisplayMode(.inline)
+        .onChange(of: searchText) { _, _ in
+            searchResults = []
+            searchCursor.reset(resultCount: 0)
+            selection = nil
+        }
         .onAppear {
-            pdfDocument = PDFDocument(url: entry.url)
+            let openedDocument = PDFDocument(url: entry.url)
+            pdfDocument = openedDocument
             bookmarked = UserDefaults.standard.bool(forKey: "pdf.bookmark.\(entry.id)")
             let saved = UserDefaults.standard.integer(forKey: "pdf.page.\(entry.id)")
-            let pageCount = pdfDocument?.pageCount ?? 0
+            let pageCount = openedDocument?.pageCount ?? 0
             currentPage = PDFProgress(page: saved, pageCount: pageCount).safePage
             if bookmarked { currentPage = PDFProgress(page: UserDefaults.standard.integer(forKey: "pdf.bookmark.page.\(entry.id)"), pageCount: pageCount).safePage }
+            if FactoryCapture.screen == "search", let openedDocument {
+                let matches = openedDocument.findString(searchText, withOptions: [.caseInsensitive])
+                searchResults = matches
+                searchCursor.reset(resultCount: matches.count)
+                selection = matches.first
+            }
         }
         .onChange(of: currentPage) { _, page in UserDefaults.standard.set(page, forKey: "pdf.page.\(entry.id)") }
     }
 
     private func searchDocument() {
-        guard let document, !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { resultCount = 0; selection = nil; return }
+        guard let document, !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            searchResults = []
+            searchCursor.reset(resultCount: 0)
+            selection = nil
+            return
+        }
         let matches = document.findString(searchText, withOptions: [.caseInsensitive])
-        resultCount = matches.count
+        searchResults = matches
+        searchCursor.reset(resultCount: matches.count)
         selection = matches.first
+    }
+
+    private var searchSummary: String {
+        let count = searchCursor.resultCount
+        let noun = count == 1 ? "resultado" : "resultados"
+        return "\(count) \(noun) · \(searchCursor.currentPosition ?? 0) de \(count)"
+    }
+
+    private func moveToPreviousResult() {
+        guard let index = searchCursor.previous(), searchResults.indices.contains(index) else { return }
+        selection = searchResults[index]
+    }
+
+    private func moveToNextResult() {
+        guard let index = searchCursor.next(), searchResults.indices.contains(index) else { return }
+        selection = searchResults[index]
     }
 }
 
@@ -237,7 +327,12 @@ struct PDFKitReader: UIViewRepresentable {
             let visibleIndex = view.currentPage.map { activeDocument.index(for: $0) }
             if visibleIndex != currentPage { view.go(to: page) }
         }
-        if let selection { view.go(to: selection); view.setCurrentSelection(selection, animate: true) }
+        if let selection {
+            view.go(to: selection)
+            view.setCurrentSelection(selection, animate: true)
+        } else {
+            view.setCurrentSelection(nil, animate: false)
+        }
     }
 
     final class Coordinator: NSObject, PDFViewDelegate {

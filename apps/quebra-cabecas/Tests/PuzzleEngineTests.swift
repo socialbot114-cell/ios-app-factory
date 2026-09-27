@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import QuebraCabecas
 
@@ -36,5 +37,35 @@ final class PuzzleEngineTests: XCTestCase {
         XCTAssertEqual(game.bestTimes[3], 20)
         let nextGame = PuzzleEngine(size: 4, bestTimes: game.bestTimes)
         XCTAssertEqual(nextGame.bestTimes[3], 20)
+    }
+
+    func testPictureModeShuffleStaysSolvableAndPersistsOwnRecord() throws {
+        var game = PuzzleEngine(size: 4, mode: .picture, startedAt: Date(timeIntervalSince1970: 1_000), bestTimes: [4: 45])
+        game.shuffle(seed: 42, steps: 81, startedAt: Date(timeIntervalSince1970: 1_000))
+        XCTAssertFalse(game.isSolved)
+        XCTAssertEqual(game.tiles.sorted(), Array(0..<16))
+        XCTAssertEqual(game.mode, .picture)
+
+        let restored = try JSONDecoder().decode(PuzzleEngine.self, from: JSONEncoder().encode(game))
+        XCTAssertEqual(restored, game)
+
+        var solvedImage = PuzzleEngine(size: 3, mode: .picture, startedAt: Date(timeIntervalSince1970: 100), bestTimes: [3: 30])
+        solvedImage.recordBest(at: Date(timeIntervalSince1970: 125))
+        XCTAssertEqual(solvedImage.bestTime, 25)
+        XCTAssertEqual(solvedImage.bestTimes[3], 30)
+        XCTAssertEqual(solvedImage.imageBestTimes[3], 25)
+    }
+
+    func testOlderNumericSaveDefaultsToNumberMode() throws {
+        let original = PuzzleEngine(size: 3, bestTimes: [3: 18])
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(original)) as? [String: Any])
+        legacy.removeValue(forKey: "mode")
+        legacy.removeValue(forKey: "imageBestTimes")
+        let data = try JSONSerialization.data(withJSONObject: legacy)
+
+        let restored = try JSONDecoder().decode(PuzzleEngine.self, from: data)
+        XCTAssertEqual(restored.mode, .numbers)
+        XCTAssertEqual(restored.bestTimes[3], 18)
+        XCTAssertTrue(restored.imageBestTimes.isEmpty)
     }
 }

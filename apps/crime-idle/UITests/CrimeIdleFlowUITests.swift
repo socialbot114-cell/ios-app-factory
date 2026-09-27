@@ -10,7 +10,15 @@ final class CrimeIdleFlowUITests: XCTestCase {
         XCTAssertTrue(tap.waitForExistence(timeout: 5))
         tap.tap()
         XCTAssertTrue(app.staticTexts["101"].waitForExistence(timeout: 5))
+        app.buttons["Negócios"].tap()
+        let quantity = app.segmentedControls["business-buy-quantity"]
+        XCTAssertTrue(quantity.waitForExistence(timeout: 5))
+        quantity.buttons["×10"].tap()
+        let districtLockedBusiness = app.buttons["buy-business-2"]
+        XCTAssertTrue(districtLockedBusiness.waitForExistence(timeout: 5))
+        XCTAssertFalse(districtLockedBusiness.isEnabled)
         app.buttons["Mapa"].tap()
         XCTAssertTrue(app.staticTexts["Distritos"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Multiplicador da cidade:")).firstMatch.exists)
     }
 }

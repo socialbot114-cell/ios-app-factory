@@ -5,23 +5,164 @@ struct CrimeIdleApp: App {
     var body: some Scene { WindowGroup { CrimeIdleHome() } }
 }
 
+struct CrimeBusiness: Identifiable, Equatable {
+    let id: Int
+    let name: String
+    let systemImage: String
+    let districtID: Int
+    let baseCost: Double
+
+    var baseIncomePerSecond: Double { Double(id + 1) * 0.35 }
+
+    static let catalog: [CrimeBusiness] = [
+        .init(id: 0, name: "Café Aurora", systemImage: "cup.and.saucer.fill", districtID: 0, baseCost: 25),
+        .init(id: 1, name: "Estúdio Nocturno", systemImage: "film.fill", districtID: 0, baseCost: 80),
+        .init(id: 2, name: "Táxi Estelar", systemImage: "car.fill", districtID: 1, baseCost: 220),
+        .init(id: 3, name: "Clube Neblina", systemImage: "music.note.house.fill", districtID: 1, baseCost: 600),
+        .init(id: 4, name: "Teatro Eclipse", systemImage: "theatermasks.fill", districtID: 2, baseCost: 1_500),
+        .init(id: 5, name: "Hotel Horizonte", systemImage: "building.fill", districtID: 2, baseCost: 4_000)
+    ]
+}
+
+enum CrimeMissionGoal: Equatable {
+    case influence(Double)
+    case totalBusinesses(Int)
+    case businessOwned(index: Int, count: Int)
+    case districts(Int)
+    case incomePerSecond(Double)
+}
+
+struct CrimeMission: Identifiable, Equatable {
+    let id: Int
+    let title: String
+    let goal: CrimeMissionGoal
+    var reward: Double = 25
+
+    static let catalog: [CrimeMission] = [
+        .init(id: 0, title: "Alcance 150 de influência", goal: .influence(150)),
+        .init(id: 1, title: "Abra dois empreendimentos", goal: .totalBusinesses(2)),
+        .init(id: 2, title: "Expanda o Café Aurora", goal: .businessOwned(index: 0, count: 3)),
+        .init(id: 3, title: "Alcance 500 de influência", goal: .influence(500)),
+        .init(id: 4, title: "Abra cinco negócios", goal: .totalBusinesses(5)),
+        .init(id: 5, title: "Compre o Hotel Horizonte", goal: .businessOwned(index: 5, count: 1)),
+        .init(id: 6, title: "Abra um novo distrito", goal: .districts(2)),
+        .init(id: 7, title: "Produza 5 de influência/s", goal: .incomePerSecond(5)),
+        .init(id: 8, title: "Tenha 12 negócios", goal: .totalBusinesses(12)),
+        .init(id: 9, title: "Alcance 2.000 de influência", goal: .influence(2_000)),
+        .init(id: 10, title: "Abra todos os distritos", goal: .districts(3)),
+        .init(id: 11, title: "Construa 20 negócios", goal: .totalBusinesses(20))
+    ]
+
+    func progress(in economy: CrimeEconomy) -> Double {
+        switch goal {
+        case let .influence(target):
+            return min(economy.influence / target, 1)
+        case let .totalBusinesses(target):
+            return min(Double(economy.owned.reduce(0, +)) / Double(target), 1)
+        case let .businessOwned(index, count):
+            guard economy.owned.indices.contains(index) else { return 0 }
+            return min(Double(economy.owned[index]) / Double(count), 1)
+        case let .districts(target):
+            guard target > 1 else { return economy.unlockedDistricts >= target ? 1 : 0 }
+            return min(Double(max(economy.unlockedDistricts - 1, 0)) / Double(target - 1), 1)
+        case let .incomePerSecond(target):
+            return min(economy.incomePerSecond / target, 1)
+        }
+    }
+
+    func isComplete(in economy: CrimeEconomy) -> Bool { progress(in: economy) >= 1 }
+}
+
 struct CrimeEconomy: Codable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case influence
+        case owned
+        case claimedMissions
+        case unlockedDistricts
+        case lastSavedAt
+    }
+
     static let cap: TimeInterval = 8 * 60 * 60
-    static let baseCosts: [Double] = [25, 80, 220, 600, 1_500, 4_000]
+    static let businesses = CrimeBusiness.catalog
+    static let districtNames = ["Centro das Lanternas", "Rua da Neblina", "Colinas do Norte"]
+    static let districtSymbols = ["sun.max.fill", "cloud.fog.fill", "mountain.2.fill"]
+    static let districtUnlockCosts: [Double] = [0, 500, 2_000]
+    static var baseCosts: [Double] { businesses.map(\.baseCost) }
+
     private(set) var influence: Double = 100
-    private(set) var owned = Array(repeating: 0, count: 6)
+    private(set) var owned = Array(repeating: 0, count: CrimeBusiness.catalog.count)
     private(set) var claimedMissions: Set<Int> = []
     private(set) var unlockedDistricts = 1
     private(set) var lastSavedAt: Date = .now
 
-    var incomePerSecond: Double { owned.enumerated().reduce(0) { $0 + Double($1.element) * Double($1.offset + 1) * 0.35 } }
+    init() { }
 
-    mutating func buy(_ index: Int, at date: Date = .now) -> Bool {
-        guard owned.indices.contains(index) else { return false }
-        let cost = Self.baseCosts[index] * pow(1.16, Double(owned[index]))
-        guard influence >= cost else { return false }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedInfluence = try container.decodeIfPresent(Double.self, forKey: .influence) ?? 100
+        let decodedOwned = try container.decodeIfPresent([Int].self, forKey: .owned) ?? []
+        var normalizedOwned = Array(repeating: 0, count: Self.businesses.count)
+        for index in 0..<min(decodedOwned.count, normalizedOwned.count) {
+            normalizedOwned[index] = max(decodedOwned[index], 0)
+        }
+        let highestOwnedDistrict = Self.businesses.indices
+            .filter { normalizedOwned[$0] > 0 }
+            .map { Self.businesses[$0].districtID + 1 }
+            .max() ?? 1
+        let decodedDistricts = try container.decodeIfPresent(Int.self, forKey: .unlockedDistricts) ?? 1
+
+        influence = decodedInfluence.isFinite ? max(decodedInfluence, 0) : 100
+        owned = normalizedOwned
+        claimedMissions = try container.decodeIfPresent(Set<Int>.self, forKey: .claimedMissions) ?? []
+        unlockedDistricts = min(Self.districtNames.count, max(1, max(decodedDistricts, highestOwnedDistrict)))
+        lastSavedAt = try container.decodeIfPresent(Date.self, forKey: .lastSavedAt) ?? .now
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(influence, forKey: .influence)
+        try container.encode(owned, forKey: .owned)
+        try container.encode(claimedMissions, forKey: .claimedMissions)
+        try container.encode(unlockedDistricts, forKey: .unlockedDistricts)
+        try container.encode(lastSavedAt, forKey: .lastSavedAt)
+    }
+
+    var districtMultiplier: Double { 1 + Double(max(unlockedDistricts - 1, 0)) * 0.25 }
+
+    var incomePerSecond: Double {
+        Self.businesses.reduce(0) { $0 + incomeFromBusinessPerSecond($1.id) }
+    }
+
+    func incomeFromBusinessPerSecond(_ index: Int) -> Double {
+        guard owned.indices.contains(index) else { return 0 }
+        return Double(owned[index]) * Self.businesses[index].baseIncomePerSecond * districtMultiplier
+    }
+
+    static func requiredDistrict(forBusiness index: Int) -> Int? {
+        guard businesses.indices.contains(index) else { return nil }
+        return businesses[index].districtID + 1
+    }
+
+    func purchaseCost(forBusiness index: Int, quantity: Int = 1) -> Double? {
+        guard owned.indices.contains(index), (1...10).contains(quantity) else { return nil }
+        let baseCost = Self.businesses[index].baseCost
+        return (0..<quantity).reduce(0) { total, offset in
+            total + baseCost * pow(1.16, Double(owned[index] + offset))
+        }
+    }
+
+    func canBuy(_ index: Int, quantity: Int = 1) -> Bool {
+        guard let requiredDistrict = Self.requiredDistrict(forBusiness: index),
+              requiredDistrict <= unlockedDistricts,
+              let cost = purchaseCost(forBusiness: index, quantity: quantity) else { return false }
+        return influence >= cost
+    }
+
+    mutating func buy(_ index: Int, quantity: Int = 1, at date: Date = .now) -> Bool {
+        guard canBuy(index, quantity: quantity),
+              let cost = purchaseCost(forBusiness: index, quantity: quantity) else { return false }
         influence -= cost
-        owned[index] += 1
+        owned[index] += quantity
         lastSavedAt = date
         return true
     }
@@ -37,35 +178,27 @@ struct CrimeEconomy: Codable, Equatable {
         accrue(seconds: date.timeIntervalSince(lastSavedAt), at: date)
     }
 
-    mutating func claimMission(_ id: Int) -> Bool {
-        guard !claimedMissions.contains(id) else { return false }
-        let complete: Bool
-        switch id {
-        case 0: complete = influence >= 150
-        case 1: complete = owned.reduce(0, +) >= 2
-        case 2: complete = owned[0] >= 3
-        case 3: complete = influence >= 500
-        case 4: complete = owned.reduce(0, +) >= 5
-        case 5: complete = owned[5] >= 1
-        case 6: complete = unlockedDistricts >= 2
-        case 7: complete = incomePerSecond >= 5
-        case 8: complete = owned.reduce(0, +) >= 12
-        case 9: complete = influence >= 2_000
-        case 10: complete = unlockedDistricts >= 3
-        case 11: complete = owned.reduce(0, +) >= 20
-        default: complete = false
-        }
-        guard complete else { return false }
+    func missionProgress(_ id: Int) -> Double {
+        CrimeMission.catalog.first(where: { $0.id == id })?.progress(in: self) ?? 0
+    }
+
+    func canClaimMission(_ id: Int) -> Bool {
+        guard !claimedMissions.contains(id), let mission = CrimeMission.catalog.first(where: { $0.id == id }) else { return false }
+        return mission.isComplete(in: self)
+    }
+
+    mutating func claimMission(_ id: Int, at date: Date = .now) -> Bool {
+        guard canClaimMission(id), let mission = CrimeMission.catalog.first(where: { $0.id == id }) else { return false }
         claimedMissions.insert(id)
-        influence += 25
-        lastSavedAt = .now
+        influence += mission.reward
+        lastSavedAt = date
         return true
     }
 
     mutating func unlockDistrict(_ index: Int, at date: Date = .now) -> Bool {
-        let costs: [Double] = [0, 500, 2_000]
-        guard (0..<costs.count).contains(index), index == unlockedDistricts, influence >= costs[index] else { return false }
-        influence -= costs[index]
+        guard districtUnlockCosts.indices.contains(index), index == unlockedDistricts,
+              influence >= districtUnlockCosts[index] else { return false }
+        influence -= districtUnlockCosts[index]
         unlockedDistricts += 1
         lastSavedAt = date
         return true
@@ -85,9 +218,9 @@ struct CrimeEconomy: Codable, Equatable {
 struct CrimeIdleHome: View {
     @State private var game = CrimeEconomy.load()
     @State private var activeTab = 0
+    @State private var buyQuantity = 1
     @Environment(\.scenePhase) private var scenePhase
     private let accent = Color(red: 0.82, green: 0.64, blue: 0.31)
-    private let businesses = ["Café Aurora", "Estúdio Nocturno", "Táxi Estelar", "Clube Neblina", "Teatro Eclipse", "Hotel Horizonte"]
     private var capture: String? { FactoryCapture.screen }
 
     var body: some View {
@@ -112,6 +245,9 @@ struct CrimeIdleHome: View {
             if FactoryCapture.isUITesting {
                 FactoryCapture.resetAppDefaults()
                 game = CrimeEconomy()
+            } else if let capture, ["businesses", "missions", "districts"].contains(capture) {
+                game = capturePreview(for: capture)
+                buyQuantity = capture == "businesses" ? 10 : 1
             }
             game.resume()
             game.persist()
@@ -150,36 +286,96 @@ struct CrimeIdleHome: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 FactoryMetric(label: "Empreendimentos", value: "\(game.owned.reduce(0, +))/6", symbol: "building.2.fill", tint: accent)
                 FactoryMetric(label: "Bairros", value: "\(game.unlockedDistricts)/3", symbol: "map.fill", tint: .red)
+                FactoryMetric(label: "Multiplicador", value: "×\(game.districtMultiplier, specifier: "%.2f")", symbol: "arrow.up.right", tint: .green)
             }
             FactoryPanel(title: "Próximo objetivo", systemImage: "target") {
-                Text("Alcance 150 de influência para abrir o próximo distrito.").foregroundStyle(.secondary)
-                ProgressView(value: min(game.influence / 150, 1)).tint(accent)
+                if game.unlockedDistricts < CrimeEconomy.districtNames.count {
+                    let nextDistrict = game.unlockedDistricts
+                    let cost = CrimeEconomy.districtUnlockCosts[nextDistrict]
+                    Text("Abra \(CrimeEconomy.districtNames[nextDistrict]) com \(cost.formatted(.number.precision(.fractionLength(0)))) de influência.")
+                        .foregroundStyle(.secondary)
+                    ProgressView(value: min(game.influence / cost, 1)).tint(accent)
+                } else {
+                    Text("Todos os bairros estão abertos. Alcance 12 negócios para a próxima missão.")
+                        .foregroundStyle(.secondary)
+                    ProgressView(value: min(Double(game.owned.reduce(0, +)) / 12, 1)).tint(accent)
+                }
             }
         }
         .factoryPage().navigationTitle("Quartel-general").navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func capturePreview(for screen: String) -> CrimeEconomy {
+        var preview = CrimeEconomy()
+        let captureDate = Date.now
+        for _ in 0..<10_000 { preview.tap(at: captureDate) }
+        _ = preview.unlockDistrict(1, at: captureDate)
+
+        if screen == "districts" {
+            _ = preview.unlockDistrict(2, at: captureDate)
+            _ = preview.buy(0, quantity: 3, at: captureDate)
+            _ = preview.buy(1, quantity: 2, at: captureDate)
+            _ = preview.buy(2, quantity: 1, at: captureDate)
+            _ = preview.buy(3, quantity: 1, at: captureDate)
+        } else {
+            _ = preview.buy(0, quantity: 3, at: captureDate)
+            _ = preview.buy(1, quantity: 2, at: captureDate)
+            if screen == "businesses" { _ = preview.buy(2, quantity: 1, at: captureDate) }
+            if screen == "missions" {
+                _ = preview.claimMission(0, at: captureDate)
+                _ = preview.buy(2, quantity: 1, at: captureDate)
+            }
+        }
+        preview.accrue(seconds: 0, at: .now)
+        return preview
     }
 
     private var businessView: some View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(eyebrow: "Expansão", title: "Negócios da cidade", subtitle: "Empreendimentos totalmente fictícios. Compras usam apenas o saldo local.", accent: accent)
             FactoryDemoNotice()
-            ForEach(businesses.indices, id: \.self) { index in
+            FactoryPanel(title: "Compra rápida", systemImage: "cart.fill") {
+                Picker("Quantidade", selection: $buyQuantity) {
+                    Text("×1").tag(1)
+                    Text("×10").tag(10)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("business-buy-quantity")
+                Text("A compra em lote é atômica: o saldo precisa cobrir todas as unidades selecionadas.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(CrimeEconomy.businesses) { business in
+                let requiredDistrict = business.districtID + 1
+                let districtIsOpen = requiredDistrict <= game.unlockedDistricts
+                let purchaseCost = game.purchaseCost(forBusiness: business.id, quantity: buyQuantity)
                 FactoryPanel {
                     HStack(alignment: .top, spacing: 14) {
-                        Image(systemName: ["cup.and.saucer.fill", "film.fill", "car.fill", "music.note.house.fill", "theatermasks.fill", "building.fill"][index])
+                        Image(systemName: business.systemImage)
                             .font(.title2).foregroundStyle(accent).frame(width: 34)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(businesses[index]).font(.headline)
-                            Text("Nível \(game.owned[index]) · renda demonstrativa")
+                            Text(business.name).font(.headline)
+                            Text("Nível \(game.owned[business.id]) · \(CrimeEconomy.districtNames[business.districtID])")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Text("\(game.incomeFromBusinessPerSecond(business.id), specifier: "%.2f") influência/s · cidade ×\(game.districtMultiplier, specifier: "%.2f")")
+                                .font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button("\(CrimeEconomy.baseCosts[index] * pow(1.16, Double(game.owned[index])), specifier: "%.0f")") {
-                            _ = game.buy(index)
+                        Button {
+                            _ = game.buy(business.id, quantity: buyQuantity)
+                        } label: {
+                            VStack(spacing: 2) {
+                                Text(purchaseCost?.formatted(.number.precision(.fractionLength(0))) ?? "—")
+                                Text("Comprar ×\(buyQuantity)").font(.caption2)
+                            }
                         }
                         .buttonStyle(.borderedProminent).tint(accent)
-                        .disabled(game.influence < CrimeEconomy.baseCosts[index] * pow(1.16, Double(game.owned[index])))
-                        .accessibilityLabel("Comprar \(businesses[index])")
+                        .disabled(!game.canBuy(business.id, quantity: buyQuantity))
+                        .accessibilityLabel("Comprar \(business.name), quantidade \(buyQuantity)")
+                        .accessibilityIdentifier("buy-business-\(business.id)")
+                    }
+                    if !districtIsOpen {
+                        Label("Desbloqueie \(CrimeEconomy.districtNames[business.districtID]) no mapa", systemImage: "lock.fill")
+                            .font(.caption).foregroundStyle(.orange)
                     }
                 }
             }
@@ -191,14 +387,17 @@ struct CrimeIdleHome: View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(eyebrow: "Pequenas vitórias", title: "Missões", subtitle: "Objetivos simples para orientar a sua carreira fictícia.", accent: accent)
             FactoryDemoNotice()
-            ForEach(Array(missionNames.enumerated()), id: \.offset) { index, title in
+            ForEach(CrimeMission.catalog) { mission in
+                let progress = game.missionProgress(mission.id)
                 FactoryPanel {
-                    Label(title, systemImage: game.claimedMissions.contains(index) ? "checkmark.seal.fill" : "target").font(.headline)
-                    ProgressView(value: missionProgress(index)).tint(accent)
-                    Button(game.claimedMissions.contains(index) ? "Recompensa resgatada" : "Resgatar 25 de influência") {
-                        _ = game.claimMission(index)
+                    Label(mission.title, systemImage: game.claimedMissions.contains(mission.id) ? "checkmark.seal.fill" : "target").font(.headline)
+                    ProgressView(value: progress).tint(accent)
+                    Button(game.claimedMissions.contains(mission.id) ? "Recompensa resgatada" : "Resgatar \(mission.reward.formatted(.number.precision(.fractionLength(0)))) de influência") {
+                        _ = game.claimMission(mission.id)
                     }
-                    .buttonStyle(.bordered).disabled(game.claimedMissions.contains(index) || missionProgress(index) < 1)
+                    .buttonStyle(.bordered)
+                    .disabled(!game.canClaimMission(mission.id))
+                    .accessibilityIdentifier("claim-mission-\(mission.id)")
                 }
             }
         }
@@ -209,21 +408,31 @@ struct CrimeIdleHome: View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(eyebrow: "Mapa fictício", title: "Distritos", subtitle: "Expanda a cidade ao atingir os requisitos de influência.", accent: accent)
             FactoryDemoNotice(message: "Cidade inventada · progresso salvo localmente")
-            ForEach(Array([("Centro das Lanternas", "sun.max.fill", 0.0), ("Rua da Neblina", "cloud.fog.fill", 500.0), ("Colinas do Norte", "mountain.2.fill", 2_000.0)].enumerated()), id: \.offset) { index, district in
+            FactoryPanel(title: "Efeito da expansão", systemImage: "arrow.up.right") {
+                Text("Bairros abertos: \(game.unlockedDistricts)/\(CrimeEconomy.districtNames.count)")
+                Text("Multiplicador da cidade: ×\(game.districtMultiplier, specifier: "%.2f")")
+                    .font(.title3.bold()).foregroundStyle(accent)
+                Text("Cada novo bairro aumenta a renda de todos os negócios.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(CrimeEconomy.districtNames.indices, id: \.self) { index in
+                let districtName = CrimeEconomy.districtNames[index]
+                let cost = CrimeEconomy.districtUnlockCosts[index]
+                let isOpen = index < game.unlockedDistricts
                 FactoryPanel {
                     HStack(spacing: 14) {
-                        Image(systemName: district.1).font(.title2).foregroundStyle(accent).frame(width: 42)
+                        Image(systemName: CrimeEconomy.districtSymbols[index]).font(.title2).foregroundStyle(accent).frame(width: 42)
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(district.0).font(.headline)
-                            Text(index < game.unlockedDistricts ? "Distrito aberto · produção local" : "Requisito: \(district.2.formatted(.number.precision(.fractionLength(0)))) de influência")
+                            Text(districtName).font(.headline)
+                            Text(isOpen ? "Aberto · produção da cidade ×\(game.districtMultiplier, specifier: "%.2f")" : "Requisito: \(cost.formatted(.number.precision(.fractionLength(0)))) de influência")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
-                        if index < game.unlockedDistricts { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                        if isOpen { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
                         else {
                             Button("Abrir") { _ = game.unlockDistrict(index) }
                                 .buttonStyle(.borderedProminent).tint(accent)
-                                .disabled(index != game.unlockedDistricts || game.influence < district.2)
+                                .disabled(index != game.unlockedDistricts || game.influence < cost)
                         }
                     }
                 }
@@ -256,24 +465,4 @@ struct CrimeIdleHome: View {
         .buttonStyle(.plain)
     }
 
-    private func missionProgress(_ index: Int) -> Double {
-        switch index {
-        case 0: min(game.influence / 150, 1)
-        case 1: min(Double(game.owned.reduce(0, +)) / 2, 1)
-        case 2: min(Double(game.owned[0]) / 3, 1)
-        case 3: min(game.influence / 500, 1)
-        case 4: min(Double(game.owned.reduce(0, +)) / 5, 1)
-        case 5: min(Double(game.owned[5]), 1)
-        case 6: min(Double(game.unlockedDistricts - 1), 1)
-        case 7: min(game.incomePerSecond / 5, 1)
-        case 8: min(Double(game.owned.reduce(0, +)) / 12, 1)
-        case 9: min(game.influence / 2_000, 1)
-        case 10: min(Double(game.unlockedDistricts - 1) / 2, 1)
-        default: min(Double(game.owned.reduce(0, +)) / 20, 1)
-        }
-    }
-
-    private var missionNames: [String] {
-        ["Alcance 150 de influência", "Abra dois empreendimentos", "Expanda o Café Aurora", "Alcance 500 de influência", "Abra cinco negócios", "Compre o Hotel Horizonte", "Abra um novo distrito", "Produza 5 de influência/s", "Tenha 12 negócios", "Alcance 2.000 de influência", "Abra todos os distritos", "Construa 20 negócios"]
-    }
 }
