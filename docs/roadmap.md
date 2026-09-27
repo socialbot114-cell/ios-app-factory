@@ -343,3 +343,11 @@ Detalhamento por número:
 - **Pendente Fase 1:** escolha de clube na UI, expansão 8→20 clubes / 14→38 rodadas,
   calendário navegável por rodada, prévia do adversário e 2 ritmos (rápido vs lances em texto).
   Expansão da liga quebrará contagens de fixtures/saves: planejar migração versionada (save v3).
+
+### 27/09/2026 — Capturas de revisão da Fase 1
+- Adicionados os estados `report` (simula uma rodada e abre o relatório) e `scorers`
+  (simula a temporada completa e mostra artilharia + pódio) ao fluxo de captura.
+- O pacote de screenshots agora cobre `home`, `table`, `squad`, `market`, `report` e `scorers`
+  em iPhone e iPad. `table` continua sendo uma amostra parcial da temporada; `scorers` mostra o fechamento.
+- O teste UI do fluxo de partida também verifica que a área identificada como
+  `match-report-stats` está presente no relatório.

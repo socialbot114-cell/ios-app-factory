@@ -22,6 +22,7 @@ final class FootballFlowUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Resumo da rodada"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Todos os resultados"].exists)
+        XCTAssertTrue(app.staticTexts.matching(identifier: "match-report-stats").firstMatch.exists)
         app.buttons["close-match-report"].tap()
 
         app.buttons["Tabela"].tap()

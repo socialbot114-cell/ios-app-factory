@@ -27,7 +27,9 @@ struct FootballHome: View {
     var body: some View {
         NavigationStack {
             Group {
-                if capture == "table" || selectedTab == 1 {
+                if capture == "scorers" {
+                    scorersView
+                } else if capture == "table" || selectedTab == 1 {
                     tableView
                 } else if capture == "squad" || selectedTab == 2 {
                     squadView
@@ -47,9 +49,16 @@ struct FootballHome: View {
                 if capture == "table" {
                     for _ in 0..<4 { _ = FootballGame.simulateNextRound(career: &career) }
                 }
+                if capture == "report" {
+                    report = FootballGame.simulateNextRound(career: &career)
+                }
+                if capture == "scorers" {
+                    for _ in 0..<FootballGame.numberOfRounds { _ = FootballGame.simulateNextRound(career: &career) }
+                }
                 if capture == "table" { selectedTab = 1 }
                 else if capture == "squad" { selectedTab = 2 }
                 else if capture == "market" { selectedTab = 3 }
+                else if capture == "scorers" { selectedTab = 1 }
                 else { selectedTab = 0 }
                 didApplyTestReset = true
             }
@@ -60,7 +69,7 @@ struct FootballHome: View {
         }
         .sheet(item: $report) { matchReport in
             FootballReportView(report: matchReport, teamsByID: teamsByID)
-                .presentationDetents([.medium, .large])
+                .presentationDetents(capture == "report" ? [.large] : [.medium, .large])
                 .presentationDragIndicator(.visible)
         }
     }
@@ -263,6 +272,58 @@ struct FootballHome: View {
         }
         .factoryPage()
         .navigationTitle("Classificação")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// Capture state dedicated to the lower table content, where the scoring leaderboard appears.
+    private var scorersView: some View {
+        let scorers = FootballGame.topScorers(in: career, limit: 8)
+        let standings = FootballGame.standings(for: career)
+
+        return VStack(alignment: .leading, spacing: 18) {
+            FactoryHeader(
+                eyebrow: "Temporada \(career.seasonNumber) · tabela final",
+                title: "Artilharia",
+                subtitle: "Gols contabilizados a partir dos eventos registrados em cada partida.",
+                accent: accent
+            )
+            FactoryDemoNotice(message: "Estatísticas da carreira local · dados fictícios")
+
+            FactoryPanel(title: "Goleadores da temporada", systemImage: "soccerball") {
+                if scorers.isEmpty {
+                    Text("Nenhum gol registrado nesta temporada.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } else {
+                    ForEach(Array(scorers.enumerated()), id: \.element.player.id) { index, entry in
+                        HStack(spacing: 10) {
+                            Text(String(format: "%02d", index + 1))
+                                .font(.caption.monospacedDigit().bold()).foregroundStyle(.secondary).frame(width: 26, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.player.name).font(.subheadline.weight(.semibold))
+                                Text("\(entry.teamName) · \(entry.player.position.rawValue)").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text("\(entry.goals)").font(.title3.monospacedDigit().bold()).foregroundStyle(accent)
+                        }
+                        if index < scorers.count - 1 { Divider() }
+                    }
+                }
+            }
+
+            FactoryPanel(title: "Pódio da liga", systemImage: "trophy.fill") {
+                ForEach(Array(standings.prefix(3).enumerated()), id: \.element.teamID) { index, row in
+                    HStack {
+                        Text("\(index + 1)º").font(.caption.monospacedDigit().bold()).foregroundStyle(accent).frame(width: 28, alignment: .leading)
+                        Text(row.teamName).font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text("\(row.points) pts · SG \(signed(row.goalDifference))")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Artilharia")
         .navigationBarTitleDisplayMode(.inline)
     }
 
