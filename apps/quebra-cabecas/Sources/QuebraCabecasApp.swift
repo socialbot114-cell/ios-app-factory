@@ -120,7 +120,7 @@ struct PuzzleHome: View {
                     engine = PuzzleEngine(size: 3)
                 }
                 selectedSize = engine.size
-                if engine.isSolved { newGame(seed: capture == "board" ? 44 : 26) }
+                if engine.isSolved { newGame(seed: capture == "board" ? 44 : 17) }
             }
         }
         .tint(accent)

@@ -36,7 +36,7 @@ struct PoliticsLibrary: View {
     @State private var selectedCategory = "Todas"
     @State private var showSaved = false
     @State private var favorites: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "politics.favorites") ?? [])
-    private let accent = Color(red: 0.11, green: 0.23, blue: 0.37)
+    private let accent = Color(red: 0.42, green: 0.65, blue: 0.94)
     private let categories = ["Todas", "Instituições", "Orçamento", "Eleições", "GDF"]
     private var capture: String? { FactoryCapture.screen }
     private var articles: [DemoArticle] {
