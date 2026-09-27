@@ -39,7 +39,7 @@ struct FootballHome: View {
                     dashboard
                 }
             }
-            .safeAreaInset(edge: .bottom) { navigationBar }
+            .safeAreaInset(edge: .bottom, spacing: 0) { navigationBar }
         }
         .tint(accent)
         .onAppear {
@@ -471,9 +471,22 @@ struct FootballHome: View {
             tab("Mercado", symbol: "arrow.left.arrow.right", index: 3)
         }
         .padding(8)
-        .background(.regularMaterial, in: Capsule())
+        .background(FactoryColor.card, in: Capsule())
+        .overlay {
+            Capsule().strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.08), radius: 8, y: 2)
         .padding(.horizontal, 14)
+        .padding(.top, 8)
         .padding(.bottom, 8)
+        .frame(maxWidth: .infinity)
+        .background {
+            FactoryColor.canvas
+                .overlay(alignment: .top) {
+                    Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1)
+                }
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private var latestReport: FootballRoundReport? {
