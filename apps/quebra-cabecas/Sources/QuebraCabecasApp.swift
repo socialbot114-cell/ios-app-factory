@@ -967,14 +967,20 @@ struct ConfettiOverlay: View {
 
     private static let palette: [Color] = [.red, .orange, .yellow, .green, .blue, .purple, .pink]
 
-    private let pieces: [Piece] = (0..<48).map { i in
-        Piece(
-            x: Double(i) / 48.0,
-            phase: Double((i * 37) % 100) / 100.0,
-            speed: 0.12 + Double(i % 5) * 0.03,
-            size: 5 + Double(i % 3) * 2,
-            color: Self.palette[i % 7]
-        )
+    private let pieces: [Piece] = makePieces()
+
+    private static func makePieces() -> [Piece] {
+        var out: [Piece] = []
+        out.reserveCapacity(48)
+        for i in 0..<48 {
+            let x: Double = Double(i) / 48.0
+            let phase: Double = Double((i * 37) % 100) / 100.0
+            let speed: Double = 0.12 + Double(i % 5) * 0.03
+            let size: Double = 5.0 + Double(i % 3) * 2.0
+            let color: Color = palette[i % 7]
+            out.append(Piece(x: x, phase: phase, speed: speed, size: size, color: color))
+        }
+        return out
     }
 
     var body: some View {
