@@ -196,9 +196,9 @@ struct CrimeEconomy: Codable, Equatable {
     }
 
     mutating func unlockDistrict(_ index: Int, at date: Date = .now) -> Bool {
-        guard districtUnlockCosts.indices.contains(index), index == unlockedDistricts,
-              influence >= districtUnlockCosts[index] else { return false }
-        influence -= districtUnlockCosts[index]
+        guard Self.districtUnlockCosts.indices.contains(index), index == unlockedDistricts,
+              influence >= Self.districtUnlockCosts[index] else { return false }
+        influence -= Self.districtUnlockCosts[index]
         unlockedDistricts += 1
         lastSavedAt = date
         return true
@@ -286,7 +286,7 @@ struct CrimeIdleHome: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 FactoryMetric(label: "Empreendimentos", value: "\(game.owned.reduce(0, +))/6", symbol: "building.2.fill", tint: accent)
                 FactoryMetric(label: "Bairros", value: "\(game.unlockedDistricts)/3", symbol: "map.fill", tint: .red)
-                FactoryMetric(label: "Multiplicador", value: "×\(game.districtMultiplier, specifier: "%.2f")", symbol: "arrow.up.right", tint: .green)
+                FactoryMetric(label: "Multiplicador", value: "×\(String(format: "%.2f", game.districtMultiplier))", symbol: "arrow.up.right", tint: .green)
             }
             FactoryPanel(title: "Próximo objetivo", systemImage: "target") {
                 if game.unlockedDistricts < CrimeEconomy.districtNames.count {

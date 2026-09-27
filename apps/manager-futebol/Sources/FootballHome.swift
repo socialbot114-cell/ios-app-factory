@@ -193,7 +193,7 @@ struct FootballHome: View {
                     let clubStanding = FootballSeason.standings(results: career.fixtures).first { $0.team.id == club.id }
                     if let clubStanding {
                         FactoryPanel(title: "Campanha na liga", systemImage: "chart.bar.fill") {
-                            Text("\(clubStanding.points) pontos · \(clubStanding.wins)V \(clubStanding.draws)E \(clubStanding.losses)D · saldo \(signed(clubStanding.goalDifference)")
+                            Text("\(clubStanding.points) pontos · \(clubStanding.wins)V \(clubStanding.draws)E \(clubStanding.losses)D · saldo \(signed(clubStanding.goalDifference))")
                                 .font(.subheadline.weight(.semibold))
                             Text("Vitórias, saldo de gols e gols marcados definem os desempates após os pontos.")
                                 .font(.caption).foregroundStyle(.secondary)
