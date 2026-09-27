@@ -122,7 +122,8 @@ def capture_device(udid: str, device_name: str, family: str, app: dict, app_path
         run("xcrun", "simctl", "terminate", udid, app["bundle"], check=False)
         run("xcrun", "simctl", "uninstall", udid, app["bundle"], check=False)
         run("xcrun", "simctl", "install", udid, str(app_path))
-        run("xcrun", "simctl", "launch", udid, app["bundle"], f"--capture={screen}")
+        launch_arguments = ("--uitesting", f"--capture={screen}")
+        run("xcrun", "simctl", "launch", udid, app["bundle"], *launch_arguments)
         destination = output / family / f"{screen}.png"
         destination.parent.mkdir(parents=True, exist_ok=True)
         diversity = 0
@@ -132,6 +133,10 @@ def capture_device(udid: str, device_name: str, family: str, app: dict, app_path
             diversity = png_color_diversity(destination)
             if diversity >= 80:
                 break
+            if attempt < 4:
+                run("xcrun", "simctl", "terminate", udid, app["bundle"], check=False)
+                time.sleep(1)
+                run("xcrun", "simctl", "launch", udid, app["bundle"], *launch_arguments)
         width, height = png_dimensions(destination)
         if min(width, height) < 800:
             raise RuntimeError(f"Screenshot resolution too small ({width}x{height}): {destination}")
