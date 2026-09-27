@@ -13,4 +13,15 @@ final class CrimeIdleFlowUITests: XCTestCase {
         app.buttons["Mapa"].tap()
         XCTAssertTrue(app.staticTexts["Distritos"].waitForExistence(timeout: 5))
     }
+
+    func testActivitiesAndAchievementsAreReachable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["A noite é sua."].waitForExistence(timeout: 10))
+        app.buttons["Ações"].tap()
+        XCTAssertTrue(app.staticTexts["Preparar a Noite das Lanternas"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Conquistas"].exists)
+        XCTAssertTrue(app.buttons["Iniciar"].firstMatch.exists)
+    }
 }
