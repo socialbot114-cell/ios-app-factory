@@ -27,8 +27,8 @@ struct FootballHome: View {
     var body: some View {
         NavigationStack {
             Group {
-                if capture == "report", let report {
-                    FootballReportView(report: report, teamsByID: teamsByID)
+                if capture == "report", let latestReport {
+                    FootballReportView(report: latestReport, teamsByID: teamsByID)
                 } else if capture == "scorers" {
                     scorersView
                 } else if capture == "table" || selectedTab == 1 {
@@ -52,7 +52,7 @@ struct FootballHome: View {
                     for _ in 0..<4 { _ = FootballGame.simulateNextRound(career: &career) }
                 }
                 if capture == "report" {
-                    report = FootballGame.simulateNextRound(career: &career)
+                    _ = FootballGame.simulateNextRound(career: &career)
                 }
                 if capture == "scorers" {
                     for _ in 0..<FootballGame.numberOfRounds { _ = FootballGame.simulateNextRound(career: &career) }
