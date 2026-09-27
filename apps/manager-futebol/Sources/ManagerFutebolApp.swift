@@ -27,7 +27,9 @@ struct FootballHome: View {
     var body: some View {
         NavigationStack {
             Group {
-                if capture == "scorers" {
+                if capture == "report", let report {
+                    FootballReportView(report: report, teamsByID: teamsByID)
+                } else if capture == "scorers" {
                     scorersView
                 } else if capture == "table" || selectedTab == 1 {
                     tableView
@@ -67,9 +69,11 @@ struct FootballHome: View {
         .onChange(of: career) { _, updatedCareer in
             if shouldPersistCareer { FootballCareerStore.save(updatedCareer) }
         }
-        .sheet(item: $report) { matchReport in
-            FootballReportView(report: matchReport, teamsByID: teamsByID)
-                .presentationDetents(capture == "report" ? [.large] : [.medium, .large])
+        .sheet(item: reportSheetBinding) { matchReport in
+            NavigationStack {
+                FootballReportView(report: matchReport, teamsByID: teamsByID)
+            }
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
     }
@@ -514,6 +518,14 @@ struct FootballHome: View {
 
     private var transferWindowOpen: Bool { career.completedRounds == 0 }
     private var shouldPersistCareer: Bool { !FactoryCapture.isUITesting && capture == nil }
+    private var reportSheetBinding: Binding<FootballRoundReport?> {
+        Binding(
+            get: { capture == "report" ? nil : report },
+            set: { updatedReport in
+                if capture == nil { report = updatedReport }
+            }
+        )
+    }
 
     private var canRunPrimaryAction: Bool {
         career.completedRounds == FootballGame.numberOfRounds || isLineupValid
@@ -684,65 +696,63 @@ private struct FootballReportView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    FactoryHeader(
-                        eyebrow: "Temporada \(report.seasonNumber) · rodada \(report.round)",
-                        title: "Resumo da rodada",
-                        subtitle: "O resultado da sua equipe considera a escalação, a formação e a abordagem escolhidas.",
-                        accent: Color(red: 0.08, green: 0.37, blue: 0.25)
-                    )
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                FactoryHeader(
+                    eyebrow: "Temporada \(report.seasonNumber) · rodada \(report.round)",
+                    title: "Resumo da rodada",
+                    subtitle: "O resultado da sua equipe considera a escalação, a formação e a abordagem escolhidas.",
+                    accent: Color(red: 0.08, green: 0.37, blue: 0.25)
+                )
 
-                    if let result = userResult {
-                        FactoryPanel(title: "Sua partida", systemImage: userWon ? "trophy.fill" : "sportscourt.fill") {
-                            Text(scoreline(report.userFixture, result: result))
-                                .font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
-                            Text(resultCaption(result))
+                if let result = userResult {
+                    FactoryPanel(title: "Sua partida", systemImage: userWon ? "trophy.fill" : "sportscourt.fill") {
+                        Text(scoreline(report.userFixture, result: result))
+                            .font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
+                        Text(resultCaption(result))
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        // Fase 1: estatísticas da partida (ver docs/roadmap.md).
+                        Text("Finalizações \(result.homeShots) — \(result.awayShots) · Posse \(result.homePossession)% — \(100 - result.homePossession)%")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .accessibilityIdentifier("match-report-stats")
+                        if result.goalEvents.isEmpty {
+                            Label("Defesas seguras dos dois lados. Ninguém balançou a rede.", systemImage: "hand.raised.fill")
                                 .font(.subheadline).foregroundStyle(.secondary)
-                            // Fase 1: estatísticas da partida (ver docs/roadmap.md).
-                            Text("Finalizações \(result.homeShots) — \(result.awayShots) · Posse \(result.homePossession)% — \(100 - result.homePossession)%")
-                                .font(.caption).foregroundStyle(.secondary)
-                                .accessibilityIdentifier("match-report-stats")
-                            if result.goalEvents.isEmpty {
-                                Label("Defesas seguras dos dois lados. Ninguém balançou a rede.", systemImage: "hand.raised.fill")
-                                    .font(.subheadline).foregroundStyle(.secondary)
-                            } else {
-                                ForEach(result.goalEvents) { event in
-                                    Label("\(event.minute)'  \(playerName(event.playerID)) · \(teamsByID[event.teamID]?.name ?? "Equipe")", systemImage: "soccerball")
-                                        .font(.subheadline)
-                                }
+                        } else {
+                            ForEach(result.goalEvents) { event in
+                                Label("\(event.minute)'  \(playerName(event.playerID)) · \(teamsByID[event.teamID]?.name ?? "Equipe")", systemImage: "soccerball")
+                                    .font(.subheadline)
                             }
                         }
                     }
+                }
 
-                    FactoryPanel(title: "Todos os resultados", systemImage: "list.bullet.rectangle") {
-                        ForEach(report.fixtures) { fixture in
-                            if let result = fixture.result {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(scoreline(fixture, result: result))
-                                        .font(.subheadline.weight(fixture.id == report.userFixture.id ? .bold : .regular))
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Text("FIN \(result.homeShots)—\(result.awayShots) · POS \(result.homePossession)%—\(100 - result.homePossession)%")
-                                        .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                                }
+                FactoryPanel(title: "Todos os resultados", systemImage: "list.bullet.rectangle") {
+                    ForEach(report.fixtures) { fixture in
+                        if let result = fixture.result {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(scoreline(fixture, result: result))
+                                    .font(.subheadline.weight(fixture.id == report.userFixture.id ? .bold : .regular))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text("FIN \(result.homeShots)—\(result.awayShots) · POS \(result.homePossession)%—\(100 - result.homePossession)%")
+                                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
                             }
                         }
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 20)
-                .frame(maxWidth: 780, alignment: .leading)
-                .frame(maxWidth: .infinity)
             }
-            .background(FactoryColor.canvas.ignoresSafeArea())
-            .navigationTitle("Relatório da partida")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Continuar") { dismiss() }
-                        .accessibilityIdentifier("close-match-report")
-                }
+            .padding(20)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 780, alignment: .leading)
+            .frame(maxWidth: .infinity)
+        }
+        .background(FactoryColor.canvas.ignoresSafeArea())
+        .navigationTitle("Relatório da partida")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Continuar") { dismiss() }
+                    .accessibilityIdentifier("close-match-report")
             }
         }
     }

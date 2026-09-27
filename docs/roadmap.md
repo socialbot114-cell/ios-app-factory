@@ -349,5 +349,8 @@ Detalhamento por número:
   (simula a temporada completa e mostra artilharia + pódio) ao fluxo de captura.
 - O pacote de screenshots agora cobre `home`, `table`, `squad`, `market`, `report` e `scorers`
   em iPhone e iPad. `table` continua sendo uma amostra parcial da temporada; `scorers` mostra o fechamento.
+- A barra inferior ganhou fundo opaco e divisor de safe area para não deixar o conteúdo rolado aparecer
+  por trás dos botões. O estado `report` abre como tela direta só no modo de captura para evitar sheet branco no iPad;
+  durante o jogo, o relatório continua sendo apresentado como sheet.
 - O teste UI do fluxo de partida também verifica que a área identificada como
   `match-report-stats` está presente no relatório.
