@@ -625,20 +625,37 @@ struct PuzzleHome: View {
     }
 
     private var actionRow: some View {
-        HStack(spacing: 8) {
-            Button { undoMove() } label: { Label("Desfazer", systemImage: "arrow.uturn.backward").lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity) }
-                .buttonStyle(.bordered)
-                .disabled(!engine.canUndo || engine.isSolved)
-                .accessibilityIdentifier("undo-button")
-            Button { showHint() } label: { Label("Dica", systemImage: "lightbulb").lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity) }
-                .buttonStyle(.bordered)
-                .disabled(engine.isSolved)
-                .accessibilityIdentifier("hint-button")
-            Button { showGoal = true } label: { Label("Objetivo", systemImage: "eye").lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity) }
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("goal-button")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                rowButton("Desfazer", systemImage: "arrow.uturn.backward", id: "undo-button", disabled: !engine.canUndo || engine.isSolved, iconOnly: false, action: undoMove)
+                rowButton("Dica", systemImage: "lightbulb", id: "hint-button", disabled: engine.isSolved, iconOnly: false, action: showHint)
+                rowButton("Objetivo", systemImage: "eye", id: "goal-button", disabled: false, iconOnly: false, action: { showGoal = true })
+            }
+            HStack(spacing: 8) {
+                rowButton("Desfazer", systemImage: "arrow.uturn.backward", id: "undo-button", disabled: !engine.canUndo || engine.isSolved, iconOnly: true, action: undoMove)
+                rowButton("Dica", systemImage: "lightbulb", id: "hint-button", disabled: engine.isSolved, iconOnly: true, action: showHint)
+                rowButton("Objetivo", systemImage: "eye", id: "goal-button", disabled: false, iconOnly: true, action: { showGoal = true })
+            }
         }
+        .font(.subheadline)
         .tint(accent)
+    }
+
+    private func rowButton(_ title: String, systemImage: String, id: String, disabled: Bool, iconOnly: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            if iconOnly {
+                Image(systemName: systemImage)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel(title)
+            } else {
+                Label(title, systemImage: systemImage)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .buttonStyle(.bordered)
+        .disabled(disabled)
+        .accessibilityIdentifier(id)
     }
 
     private var solvedBox: some View {
