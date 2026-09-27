@@ -247,10 +247,11 @@ final class FootballSeasonTests: XCTestCase {
         XCTAssertTrue(form.allSatisfy { ["V", "E", "D"].contains($0) })
 
         // Artilharia soma exatamente os gols registrados nos eventos.
-        let scorers = FootballGame.topScorers(in: career, limit: 5)
+        let scorers = FootballGame.topScorers(in: career, limit: 128)
         let totalGoals = career.fixtures.compactMap(\.result).reduce(0) { $0 + $1.homeGoals + $1.awayGoals }
         XCTAssertEqual(scorers.reduce(0) { $0 + $1.goals }, totalGoals)
         XCTAssertTrue(scorers.allSatisfy { $0.goals > 0 })
+        XCTAssertLessThanOrEqual(FootballGame.topScorers(in: career, limit: 5).count, 5)
     }
 
     func testCareerSaveRestoresAndMigratesLegacyRoundAndSeed() throws {

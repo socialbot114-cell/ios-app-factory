@@ -49,7 +49,8 @@ struct FootballHome: View {
                 if FactoryCapture.isUITesting { FactoryCapture.resetAppDefaults() }
                 career = FootballGame.newCareer()
                 if capture == "table" {
-                    for _ in 0..<4 { _ = FootballGame.simulateNextRound(career: &career) }
+                    // A single completed round is enough for a useful table capture and keeps simulator startup light.
+                    _ = FootballGame.simulateNextRound(career: &career)
                 }
                 if capture == "report" {
                     _ = FootballGame.simulateNextRound(career: &career)
