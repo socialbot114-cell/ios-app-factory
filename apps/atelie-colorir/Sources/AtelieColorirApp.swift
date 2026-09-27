@@ -1,10 +1,14 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Entrada
+
 @main
 struct AtelieColorirApp: App {
-    var body: some Scene { WindowGroup { ColoringHome() } }
+    var body: some Scene { WindowGroup { AtelierRoot() } }
 }
+
+// MARK: - Motor legado (mantido p/ testes + migração v1 -> v2)
 
 struct ColoringEngine: Codable, Equatable {
     private(set) var fills: [Int: Int] = [:]
@@ -23,7 +27,9 @@ struct ColoringEngine: Codable, Equatable {
     }
 
     static func load(defaults: UserDefaults = .standard) -> ColoringEngine {
-        guard let data = defaults.data(forKey: "atelier.engine"), let value = try? JSONDecoder().decode(ColoringEngine.self, from: data) else { return ColoringEngine() }
+        guard let data = defaults.data(forKey: "atelier.engine"),
+              let value = try? JSONDecoder().decode(ColoringEngine.self, from: data)
+        else { return ColoringEngine() }
         return value
     }
 
@@ -33,37 +39,46 @@ struct ColoringEngine: Codable, Equatable {
     }
 }
 
-private enum ColoringPalette {
-    static let colors: [Color] = [
-        Color(red: 0.99, green: 0.42, blue: 0.33), Color(red: 0.10, green: 0.43, blue: 0.48),
-        Color(red: 0.98, green: 0.75, blue: 0.28), Color(red: 0.56, green: 0.40, blue: 0.72),
-        Color(red: 0.38, green: 0.67, blue: 0.48), Color(red: 0.98, green: 0.57, blue: 0.32)
-    ]
+// MARK: - Rotas
+
+private enum AtelierRoute: Hashable {
+    case library
+    case gallery
+    case settings
+    case editor(UUID)
 }
 
-struct ColoringHome: View {
+// MARK: - Raiz com captura p/ screenshots (home/editor/saved)
+
+struct AtelierRoot: View {
+    @StateObject private var store = AtelierStore()
     @AppStorage("atelier.savedArtCount") private var savedArtCount = 0
-    @State private var showEditor = false
-    @State private var showSaved = false
+    @AppStorage("atelier.hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var path = NavigationPath()
     private let accent = Color(red: 0.86, green: 0.30, blue: 0.25)
     private var capture: String? { FactoryCapture.screen }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
-                if capture == "saved" || showSaved {
-                    savedArts
-                } else if capture == "editor" || showEditor {
-                    ColoringEditor(onSave: { _ in savedArtCount += 1 })
+                if capture == "editor" {
+                    editorCapture
+                } else if capture == "saved" {
+                    AtelierGalleryView(store: store, onOpen: { _ in })
                 } else {
-                    home
+                    ColoringHome(store: store, path: $path)
                 }
             }
-            .toolbar {
-                if capture == "editor" || showEditor || capture == "saved" || showSaved {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Início", systemImage: "chevron.left") { showEditor = false; showSaved = false }
-                    }
+            .navigationDestination(for: AtelierRoute.self) { route in
+                switch route {
+                case .library:
+                    AtelierLibraryView(store: store, onOpen: { openEditor($0) })
+                case .gallery:
+                    AtelierGalleryView(store: store, onOpen: { openEditor($0) })
+                case .settings:
+                    AtelierSettingsView(store: store)
+                case .editor(let id):
+                    AtelierEditorView(store: store, instanceId: id)
                 }
             }
         }
@@ -74,208 +89,237 @@ struct ColoringHome: View {
                 savedArtCount = 0
             }
         }
+        .sheet(isPresented: Binding(
+            get: { !hasSeenOnboarding && !FactoryCapture.isUITesting && capture == nil },
+            set: { if !$0 { hasSeenOnboarding = true } }
+        )) {
+            AtelierOnboarding(done: { hasSeenOnboarding = true })
+        }
     }
 
-    private var home: some View {
+    private var editorCapture: some View {
+        // Screenshot determinística: mandala parcialmente colorida
+        let art = AtelierLibrary.artwork(id: "mandala-cerrado")
+        return VStack(alignment: .leading, spacing: 18) {
+            FactoryHeader(
+                eyebrow: "Editor demonstrativo",
+                title: art.title,
+                subtitle: "Toque nas regiões para colorir. Use desfazer para experimentar sem medo.",
+                accent: accent
+            )
+            AtelierCanvas(
+                artwork: art,
+                fills: [0: 2, 1: 0, 2: 3, 3: 4, 5: 1, 8: 5, 13: 6, 21: 7],
+                onTap: nil
+            )
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+            .padding(12)
+            .background(Color(red: 1, green: 0.97, blue: 0.91), in: RoundedRectangle(cornerRadius: 24))
+            FactoryPanel(title: "Sua paleta", systemImage: "paintpalette.fill") {
+                Text("12 cores + personalizada").font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: 780)
+        .frame(maxWidth: .infinity)
+        .background(Color(red: 1.0, green: 0.976, blue: 0.94).ignoresSafeArea())
+        .navigationTitle("Colorir")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func openEditor(_ instance: AtelierArtInstance) {
+        path.append(AtelierRoute.editor(instance.id))
+    }
+}
+
+// MARK: - Início (mantém textos/IDs dos UI tests)
+
+struct ColoringHome: View {
+    @ObservedObject var store: AtelierStore
+    @Binding var path: NavigationPath
+    @AppStorage("atelier.savedArtCount") private var savedArtCount = 0
+    private let accent = Color(red: 0.86, green: 0.30, blue: 0.25)
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            FactoryHeader(eyebrow: "Seu espaço criativo", title: "Um momento só seu.", subtitle: "Escolha uma ilustração, encontre suas cores e deixe a imaginação guiar.", accent: accent)
-            FactoryDemoNotice()
+            FactoryHeader(
+                eyebrow: "Seu espaço criativo",
+                title: "Um momento só seu.",
+                subtitle: "12 artes originais em 6 categorias. Escolha, encontre suas cores e deixe a imaginação guiar.",
+                accent: accent
+            )
+
             FactoryPanel {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18).fill(Color(red: 1, green: 0.97, blue: 0.91))
-                    ColoringArtwork(fills: [:]).padding(18)
+                    AtelierCanvas(
+                        artwork: AtelierLibrary.artwork(id: "jardim-tracos"),
+                        fills: store.latestInstance(for: "jardim-tracos")?.fills ?? [:]
+                    )
+                    .padding(18)
                 }
                 .frame(height: 220)
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Jardim em traços").font(.title3.bold())
-                    Text("Ilustração demonstrativa · 9 regiões") .font(.subheadline).foregroundStyle(.secondary)
+                    Text("Ilustração autoral · 9 regiões").font(.subheadline).foregroundStyle(.secondary)
                 }
-                Button { showEditor = true } label: {
+                Button { startQuick() } label: {
                     Label("Começar a colorir", systemImage: "paintpalette.fill")
                 }
                 .buttonStyle(FactoryPrimaryButtonStyle())
             }
+
             HStack(spacing: 12) {
-                FactoryMetric(label: "Minhas artes", value: "\(savedArtCount)", symbol: "square.stack.3d.up.fill", tint: accent)
-                FactoryMetric(label: "Paleta", value: "6 cores", symbol: "circle.lefthalf.filled", tint: .orange)
+                FactoryMetric(
+                    label: "Minhas artes",
+                    value: "\(store.instances.count)",
+                    symbol: "square.stack.3d.up.fill",
+                    tint: accent
+                )
+                FactoryMetric(
+                    label: "Paleta",
+                    value: "12 cores",
+                    symbol: "circle.lefthalf.filled",
+                    tint: .orange
+                )
+                FactoryMetric(
+                    label: "Minutos",
+                    value: "\(store.totalMinutes)",
+                    symbol: "clock.fill",
+                    tint: .green
+                )
             }
-            FactoryPanel(title: "Continue explorando", systemImage: "sparkles") {
-                Text("Natureza · Mandalas · Brasília")
+
+            FactoryPanel(title: "Biblioteca", systemImage: "books.vertical.fill") {
+                Text("6 infantis · 6 para relaxar — Natureza, Mandalas, Brasília, Animais, Aventura e Vitral.")
                     .font(.subheadline).foregroundStyle(.secondary)
-                Text("Coleção visual de demonstração. As ilustrações finais serão adicionadas após a etapa de arte e licenciamento.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
-            Button { showSaved = true } label: { Label("Abrir minhas artes", systemImage: "square.stack.3d.up.fill") }
+                Button { path.append(AtelierRoute.library) } label: {
+                    Label("Explorar as 12 artes", systemImage: "sparkles")
+                }
                 .buttonStyle(.bordered)
+            }
+
+            HStack(spacing: 12) {
+                Button { path.append(AtelierRoute.gallery) } label: {
+                    Label("Abrir minhas artes", systemImage: "square.stack.3d.up.fill")
+                }
+                .buttonStyle(.bordered)
+                Button { path.append(AtelierRoute.settings) } label: {
+                    Label("Ajustes", systemImage: "gearshape.fill")
+                }
+                .buttonStyle(.bordered)
+            }
+
+            FactoryPanel(title: "Obra do dia", systemImage: "calendar.badge.clock") {
+                let art = AtelierLibrary.artworkOfTheDay()
+                HStack(spacing: 14) {
+                    AtelierCanvas(artwork: art, fills: store.latestInstance(for: art.id)?.fills ?? [:])
+                        .frame(width: 84, height: 84)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(art.title).font(.headline)
+                        Text("\(art.regionCount) regiões · \(art.category.title)")
+                            .font(.caption).foregroundStyle(.secondary)
+                        if AtelierStreak.current() > 1 {
+                            Label("\(AtelierStreak.current()) dias criando", systemImage: "flame.fill")
+                                .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                        }
+                    }
+                    Spacer()
+                }
+                Button {
+                    let inst = store.openOrCreate(artworkId: art.id)
+                    AtelierExporter.impact()
+                    path.append(AtelierRoute.editor(inst.id))
+                } label: {
+                    Label("Pintar obra do dia", systemImage: "paintbrush.pointed.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+            }
+
+            FactoryPanel(title: "Selos", systemImage: "medal.fill") {
+                let badges = AtelierBadges.earned(store: store)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 12) {
+                    ForEach(badges) { badge in
+                        VStack(spacing: 5) {
+                            Image(systemName: badge.systemImage)
+                                .font(.title3)
+                                .foregroundStyle(badge.earned ? accent : .secondary.opacity(0.4))
+                            Text(badge.title)
+                                .font(.caption2)
+                                .foregroundStyle(badge.earned ? .primary : .secondary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                        }
+                        .opacity(badge.earned ? 1 : 0.6)
+                        .accessibilityLabel("\(badge.title): \(badge.earned ? "conquistado" : "bloqueado")")
+                    }
+                }
+            }
         }
         .factoryPage(backgroundColor: Color(red: 1.0, green: 0.976, blue: 0.94))
         .navigationTitle("Ateliê")
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var savedArts: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            FactoryHeader(eyebrow: "Sua coleção", title: "Minhas artes", subtitle: "PNG exportados ficam guardados neste aparelho.", accent: accent)
-            FactoryDemoNotice()
-            let files = Self.exportedArtURLs
-            if files.isEmpty {
-                if capture == "saved" {
-                    FactoryPanel {
-                        HStack(spacing: 16) {
-                            ColoringArtwork(fills: [0: 0, 2: 2, 4: 4, 6: 1])
-                                .frame(width: 112)
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Jardim em traços").font(.headline)
-                                Label("Prévia demonstrativa", systemImage: "info.circle")
-                                    .font(.caption).foregroundStyle(.secondary)
-                                Text("As suas exportações PNG aparecerão aqui.")
-                                    .font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                } else {
-                    ContentUnavailableView("Nenhuma arte salva", systemImage: "paintpalette", description: Text("Abra o editor e salve sua primeira ilustração."))
-                    Button { showSaved = false; showEditor = true } label: { Label("Começar a colorir", systemImage: "paintbrush.pointed.fill") }
-                        .buttonStyle(FactoryPrimaryButtonStyle())
-                }
-            } else {
-                ForEach(files, id: \.absoluteString) { url in
-                    FactoryPanel {
-                        HStack {
-                            Image(systemName: "photo.artframe").font(.title2).foregroundStyle(accent)
-                            Text(url.deletingPathExtension().lastPathComponent).font(.headline)
-                            Spacer()
-                            ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
-                                .accessibilityLabel("Compartilhar arte")
-                        }
-                    }
-                }
-            }
-        }
-        .factoryPage().navigationTitle("Minhas artes").navigationBarTitleDisplayMode(.inline)
-    }
-
-    static var exportedArtURLs: [URL] {
-        let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("ColoringExports", isDirectory: true)
-        return ((try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []).filter { $0.pathExtension == "png" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
+    private func startQuick() {
+        let inst = store.openOrCreate(artworkId: "jardim-tracos")
+        AtelierExporter.impact()
+        path.append(AtelierRoute.editor(inst.id))
     }
 }
 
-struct ColoringEditor: View {
-    var onSave: (UIImage) -> Void = { _ in }
-    @State private var engine = ColoringEngine.load()
-    @State private var selectedColor = 0
-    @State private var showShare = false
-    @State private var shareImage: UIImage?
-    private let accent = Color(red: 0.86, green: 0.30, blue: 0.25)
+// MARK: - Onboarding (3 passos, só na primeira abertura)
+
+private struct AtelierOnboarding: View {
+    var done: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            FactoryHeader(eyebrow: "Editor demonstrativo", title: "Jardim em traços", subtitle: "Toque nas regiões para colorir. Use desfazer para experimentar sem medo.", accent: accent)
-            ColoringArtwork(fills: engine.fills) { region in engine.fill(region: region, color: selectedColor) }
-                .frame(maxWidth: 520)
-                .frame(maxWidth: .infinity)
-                .padding(12)
-                .background(Color(red: 1, green: 0.97, blue: 0.91), in: RoundedRectangle(cornerRadius: 24))
-            FactoryPanel(title: "Sua paleta", systemImage: "paintpalette.fill") {
-                HStack(spacing: 12) {
-                    ForEach(ColoringPalette.colors.indices, id: \.self) { index in
-                        Button {
-                            selectedColor = index
-                        } label: {
-                            Circle().fill(ColoringPalette.colors[index])
-                                .frame(width: 38, height: 38)
-                                .overlay(Circle().stroke(selectedColor == index ? Color.primary : .clear, lineWidth: 3).padding(-3))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(["Coral", "Azul petróleo", "Amarelo", "Violeta", "Verde", "Laranja"][index])
-                        .accessibilityValue(selectedColor == index ? "Selecionada" : "")
-                        .accessibilityIdentifier("palette-color-\(index)")
-                    }
-                    Spacer(minLength: 0)
-                    Button("Desfazer", systemImage: "arrow.uturn.backward") { engine.undo() }
-                        .labelStyle(.iconOnly)
-                        .accessibilityLabel("Desfazer")
+        NavigationStack {
+            TabView {
+                OnboardingPage(
+                    systemImage: "books.vertical.fill",
+                    title: "12 artes para todos",
+                    text: "Traços simples para crianças e mandalas detalhadas para desacelerar. Tudo criado no app, sem downloads."
+                )
+                OnboardingPage(
+                    systemImage: "paintpalette.fill",
+                    title: "Toque para colorir",
+                    text: "12 cores, uma cor personalizada, desfazer e refazer ilimitados, zoom para os detalhes."
+                )
+                OnboardingPage(
+                    systemImage: "square.stack.3d.up.fill",
+                    title: "Sua coleção, seu aparelho",
+                    text: "Tudo salvo offline. Exporte PNG em alta resolução para compartilhar ou imprimir quando quiser."
+                )
+            }
+            .tabViewStyle(.page(indexDisplayMode: .always))
+            .navigationTitle("Bem-vindo ao Ateliê")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Começar") { done() }.font(.headline)
                 }
             }
-            Button {
-                let renderer = ImageRenderer(content: ColoringArtwork(fills: engine.fills).frame(width: 900, height: 900))
-                shareImage = renderer.uiImage
-                if let image = shareImage, let data = image.pngData() {
-                    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("ColoringExports", isDirectory: true)
-                    do {
-                        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                        try data.write(to: folder.appendingPathComponent("arte-\(UUID().uuidString).png"), options: .atomic)
-                        engine.persist()
-                        onSave(image)
-                        showShare = true
-                    } catch { showShare = false }
-                }
-            } label: { Label("Salvar e compartilhar PNG", systemImage: "square.and.arrow.up") }
-                .buttonStyle(FactoryPrimaryButtonStyle())
-            Text("O rascunho é mantido nesta sessão demonstrativa. A exportação cria uma imagem local; nenhuma conexão é necessária.")
-                .font(.footnote).foregroundStyle(.secondary)
         }
-        .padding(20)
-        .frame(maxWidth: 780)
-        .frame(maxWidth: .infinity)
-        .background(Color(red: 1.0, green: 0.976, blue: 0.94).ignoresSafeArea())
-        .sheet(isPresented: $showShare) {
-            if let shareImage { FactoryShareSheet(items: [shareImage]) }
-        }
-        .onChange(of: engine) { _, _ in engine.persist() }
-        .navigationTitle("Colorir")
-        .navigationBarTitleDisplayMode(.inline)
+        .presentationDetents([.medium, .large])
     }
 }
 
-struct ColoringArtwork: View {
-    var fills: [Int: Int]
-    var onTap: ((Int) -> Void)? = nil
+private struct OnboardingPage: View {
+    var systemImage: String
+    var title: String
+    var text: String
 
     var body: some View {
-        GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
-            ZStack {
-                Circle().fill(Color(red: 0.87, green: 0.78, blue: 0.60).opacity(0.32)).frame(width: side * 0.57)
-                ForEach(0..<9, id: \.self) { index in
-                    let angle = Double(index) * 40 - 140
-                    Button { onTap?(index) } label: {
-                        PetalShape()
-                            .fill(fills[index].map { ColoringPalette.colors[$0] } ?? .white)
-                            .overlay(PetalShape().stroke(Color.black.opacity(0.82), lineWidth: 2.4))
-                            .frame(width: side * 0.28, height: side * 0.46)
-                            .offset(y: -side * 0.16)
-                            .rotationEffect(.degrees(angle))
-                            .contentShape(PetalShape())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Região \(index + 1)")
-                    .accessibilityIdentifier("color-region-\(index)")
-                }
-                Circle().fill(Color(red: 0.98, green: 0.78, blue: 0.35))
-                    .overlay(Circle().stroke(Color.black, lineWidth: 2.4))
-                    .frame(width: side * 0.22)
-            }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+        VStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.system(size: 52))
+                .foregroundStyle(Color(red: 0.86, green: 0.30, blue: 0.25))
+            Text(title).font(.title2.bold()).multilineTextAlignment(.center)
+            Text(text).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
-        .aspectRatio(1, contentMode: .fit)
+        .padding(32)
     }
-}
-
-struct PetalShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
-        path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.minY), control: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.18))
-        path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.18))
-        path.closeSubpath()
-        return path
-    }
-}
-
-struct FactoryShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    func makeUIViewController(context: Context) -> UIActivityViewController { UIActivityViewController(activityItems: items, applicationActivities: nil) }
-    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
