@@ -625,16 +625,16 @@ struct PuzzleHome: View {
     }
 
     private var actionRow: some View {
-        HStack(spacing: 10) {
-            Button { undoMove() } label: { Label("Desfazer", systemImage: "arrow.uturn.backward") }
+        HStack(spacing: 8) {
+            Button { undoMove() } label: { Label("Desfazer", systemImage: "arrow.uturn.backward").lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity) }
                 .buttonStyle(.bordered)
                 .disabled(!engine.canUndo || engine.isSolved)
                 .accessibilityIdentifier("undo-button")
-            Button { showHint() } label: { Label("Dica", systemImage: "lightbulb") }
+            Button { showHint() } label: { Label("Dica", systemImage: "lightbulb").lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity) }
                 .buttonStyle(.bordered)
                 .disabled(engine.isSolved)
                 .accessibilityIdentifier("hint-button")
-            Button { showGoal = true } label: { Label("Objetivo", systemImage: "eye") }
+            Button { showGoal = true } label: { Label("Objetivo", systemImage: "eye").lineLimit(1).minimumScaleFactor(0.7).frame(maxWidth: .infinity) }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("goal-button")
         }
