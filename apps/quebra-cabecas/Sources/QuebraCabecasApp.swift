@@ -965,13 +965,15 @@ struct ConfettiOverlay: View {
         var color: Color
     }
 
+    private static let palette: [Color] = [.red, .orange, .yellow, .green, .blue, .purple, .pink]
+
     private let pieces: [Piece] = (0..<48).map { i in
         Piece(
             x: Double(i) / 48.0,
             phase: Double((i * 37) % 100) / 100.0,
             speed: 0.12 + Double(i % 5) * 0.03,
             size: 5 + Double(i % 3) * 2,
-            color: [.red, .orange, .yellow, .green, .blue, .purple, .pink][i % 7]
+            color: Self.palette[i % 7]
         )
     }
 
