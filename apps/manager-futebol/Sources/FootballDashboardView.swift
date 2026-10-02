@@ -1,0 +1,461 @@
+import SwiftUI
+
+struct FootballDashboardView: View {
+    @Binding var career: FootballCareer
+    let onPlayLive: () -> Void
+    let onAlert: (String) -> Void
+    let onSeasonEnded: (SeasonRecord) -> Void
+    let onNavigate: (FootballTab) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            if let club = career.selectedClub {
+                ClubHeroCard(club: club, career: career)
+                if career.isFired {
+                    jobOffersPanel
+                } else if career.liveMatch != nil {
+                    resumePanel
+                } else if let fixture = career.nextUserFixture {
+                    nextMatchPanel(fixture: fixture, club: club)
+                } else if career.isSeasonComplete {
+                    seasonEndPanel
+                }
+                if !career.offers.isEmpty && !career.isFired {
+                    FootballOffersPanel(career: $career, onAlert: onAlert)
+                }
+                if let lastResult = career.latestUserFixture {
+                    FactoryPanel(title: "Último resultado · rodada \(lastResult.round)", systemImage: "sportscourt.fill") {
+                        FootballMatchReport(fixture: lastResult, career: career, showAllEvents: false)
+                    }
+                } else {
+                    firstStepsPanel
+                }
+                boardPanel
+                if let trainingReport = career.lastTrainingReport {
+                    FactoryPanel(title: "Treino da semana", systemImage: "figure.run") {
+                        Label("\(trainingReport.focus.rawValue) · intensidade \(trainingReport.intensity.rawValue)", systemImage: "chart.line.uptrend.xyaxis")
+                            .font(.subheadline.weight(.semibold))
+                        Text(trainingReport.summary)
+                            .font(.caption).foregroundStyle(.secondary)
+                            .accessibilityIdentifier("football-training-report")
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Painel do treinador")
+    }
+
+    // MARK: - Próxima partida
+
+    private func nextMatchPanel(fixture: LeagueFixture, club: LeagueTeam) -> some View {
+        let opponentID = fixture.opponent(of: club.id)
+        let opponent = FootballSeason.team(opponentID)
+        let opponentStyle = career.predictedOpponentStyle ?? .balanced
+        let suggestion = FootballPlayStyle.bestAnswer(to: opponentStyle)
+        let ownRating = career.teamRating(club.id)
+        let rivalRating = career.teamRating(opponentID)
+
+        return FactoryPanel(title: "Próxima partida · rodada \(fixture.round)", systemImage: "calendar") {
+            MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away), homeScore: nil, awayScore: nil)
+            Text(fixture.home == club.id ? "Em casa · bilheteria para o clube" : "Fora de casa")
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("RELATÓRIO DO OLHEIRO").font(.caption2.weight(.heavy)).tracking(1.2).foregroundStyle(.secondary)
+                StatComparisonRow(
+                    title: "Força da escalação",
+                    home: ownRating,
+                    away: rivalRating,
+                    homeText: "\(Int(ownRating.rounded()))",
+                    awayText: "\(Int(rivalRating.rounded()))",
+                    awayColor: opponent?.primaryColor ?? .gray
+                )
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Sua forma").font(.caption2).foregroundStyle(.secondary)
+                        FormBadges(results: career.form(teamID: club.id))
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Forma do rival").font(.caption2).foregroundStyle(.secondary)
+                        FormBadges(results: career.form(teamID: opponentID))
+                    }
+                }
+                Label("Estilo provável do rival: \(opponentStyle.rawValue)", systemImage: "binoculars.fill")
+                    .font(.subheadline.weight(.medium))
+                    .accessibilityIdentifier("scout-opponent-style")
+                HStack(alignment: .center, spacing: 10) {
+                    Label("Auxiliar sugere: \(suggestion.rawValue)", systemImage: "lightbulb.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(FootballTheme.accent)
+                    Spacer(minLength: 4)
+                    if career.playStyle != suggestion {
+                        Button("Aplicar") { career.setPlayStyle(suggestion) }
+                            .font(.caption.weight(.bold))
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("apply-suggestion")
+                    } else {
+                        PillLabel(text: "EM USO", systemImage: "checkmark")
+                    }
+                }
+                Text("Seu plano atual: \(career.formation.rawValue) · \(career.playStyle.rawValue)")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(14)
+            .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            ForEach(career.lineupWarnings, id: \.self) { warning in
+                Label(warning, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.orange)
+            }
+
+            Button(action: onPlayLive) {
+                Label("Jogar partida ao vivo", systemImage: "play.fill")
+            }
+            .buttonStyle(FactoryPrimaryButtonStyle())
+            .accessibilityIdentifier("play-match")
+
+            HStack(spacing: 10) {
+                Button {
+                    if !career.simulateNextRound() {
+                        onAlert("Não foi possível simular a rodada. Confira a escalação e tente novamente.")
+                    }
+                } label: {
+                    Label("Simulação rápida", systemImage: "forward.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("simulate-round")
+                Button { onNavigate(.squad) } label: {
+                    Label("Escalação", systemImage: "person.3.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .font(.subheadline.weight(.semibold))
+        }
+    }
+
+    private var resumePanel: some View {
+        FactoryPanel(title: "Partida em andamento", systemImage: "pause.circle.fill") {
+            if let live = career.liveMatch, let fixture = career.fixtures.first(where: { $0.id == live.fixtureID }) {
+                MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away),
+                              homeScore: live.homeGoals, awayScore: live.awayGoals)
+            }
+            Text("O jogo está no intervalo. Volte ao vestiário para ajustar a tática e disputar o segundo tempo.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Button(action: onPlayLive) {
+                Label("Voltar ao intervalo", systemImage: "play.fill")
+            }
+            .buttonStyle(FactoryPrimaryButtonStyle())
+            .accessibilityIdentifier("resume-match")
+        }
+    }
+
+    private var seasonEndPanel: some View {
+        FactoryPanel(title: "Temporada encerrada", systemImage: "flag.checkered") {
+            if let championID = career.championID, let champion = FootballSeason.team(championID) {
+                HStack(spacing: 12) {
+                    ClubCrest(team: champion, size: 44)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Campeão").font(.caption.weight(.bold)).foregroundStyle(FootballTheme.gold)
+                        Text(champion.name).font(.title3.bold())
+                    }
+                    Spacer()
+                    Image(systemName: "trophy.fill").font(.largeTitle).foregroundStyle(FootballTheme.gold)
+                }
+            }
+            if let position = career.userPosition {
+                Text("Seu clube terminou em \(position)º. Meta da diretoria: \(career.objectiveText.lowercased()).")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            Button {
+                if let record = career.startNextSeason() {
+                    onSeasonEnded(record)
+                }
+            } label: {
+                Label("Encerrar temporada", systemImage: "arrow.right.circle.fill")
+            }
+            .buttonStyle(FactoryPrimaryButtonStyle())
+            .accessibilityIdentifier("end-season")
+        }
+    }
+
+    private var jobOffersPanel: some View {
+        FactoryPanel(title: "Você foi demitido", systemImage: "person.fill.xmark") {
+            Text("A diretoria perdeu a confiança no seu trabalho. Três clubes querem conversar com você.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            ForEach(career.jobOffers) { team in
+                HStack(spacing: 12) {
+                    ClubCrest(team: team, size: 34)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(team.name).font(.subheadline.weight(.semibold))
+                        Text("\(team.city) · orçamento \(FootballFormat.money(team.startingBudget / 2))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Aceitar") { career.acceptJob(team.id) }
+                        .buttonStyle(.borderedProminent)
+                        .font(.caption.weight(.bold))
+                        .accessibilityIdentifier("accept-job-\(team.id)")
+                }
+            }
+        }
+    }
+
+    private var firstStepsPanel: some View {
+        FactoryPanel(title: "Primeiros passos", systemImage: "flag.fill") {
+            Text("Ajuste formação, estilo e treino no Elenco. Antes de cada jogo, leia o relatório do olheiro: cada estilo tem vantagens e fraquezas contra o plano do rival.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Button { onNavigate(.squad) } label: { Label("Gerir elenco e tática", systemImage: "person.3.fill") }
+                .buttonStyle(.bordered)
+        }
+    }
+
+    private var boardPanel: some View {
+        FactoryPanel(title: "Diretoria", systemImage: "building.columns.fill") {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Meta da temporada").font(.caption).foregroundStyle(.secondary)
+                    Text(career.objectiveText).font(.subheadline.weight(.semibold))
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text("Confiança").font(.caption).foregroundStyle(.secondary)
+                    Text("\(career.boardConfidence)%").font(.subheadline.weight(.bold).monospacedDigit())
+                        .foregroundStyle(ConditionBar.color(for: career.boardConfidence + 15))
+                }
+            }
+            ConditionBar(value: career.boardConfidence)
+                .accessibilityLabel("Confiança da diretoria \(career.boardConfidence)%")
+            if career.lastRoundRevenue > 0 {
+                Label("Bilheteria da última rodada: \(FootballFormat.money(career.lastRoundRevenue))", systemImage: "ticket.fill")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Componentes do painel
+
+struct ClubHeroCard: View {
+    let club: LeagueTeam
+    let career: FootballCareer
+
+    var body: some View {
+        let standing = career.standings.first { $0.team.id == club.id }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 14) {
+                ClubCrest(team: club, size: 56)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("TEMPORADA \(career.season) · RODADA \(career.currentRound)/\(FootballSeason.roundsPerSeason)")
+                        .font(.caption2.weight(.heavy)).tracking(1.1)
+                        .foregroundStyle(club.secondaryColor)
+                    Text(club.name).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Text(club.city).font(.subheadline).foregroundStyle(.white.opacity(0.8))
+                }
+            }
+            HStack(spacing: 10) {
+                heroMetric(title: "Posição", value: career.userPosition.map { "\($0)º" } ?? "—")
+                heroMetric(title: "Pontos", value: "\(standing?.points ?? 0)")
+                heroMetric(title: "Caixa", value: FootballFormat.money(career.transferBudget))
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [club.primaryColor, club.primaryColor.opacity(0.7), Color.black.opacity(0.85)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private func heroMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(.headline.monospacedDigit()).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+            Text(title).font(.caption2).foregroundStyle(.white.opacity(0.75))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+struct MatchupHeader: View {
+    let home: LeagueTeam?
+    let away: LeagueTeam?
+    let homeScore: Int?
+    let awayScore: Int?
+    var crestSize: CGFloat = 48
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            teamColumn(home)
+            Group {
+                if let homeScore, let awayScore {
+                    Text("\(homeScore) – \(awayScore)")
+                        .font(.system(size: 34, weight: .heavy, design: .rounded).monospacedDigit())
+                } else {
+                    Text("×").font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(.secondary)
+                }
+            }
+            .frame(minWidth: 90)
+            teamColumn(away)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func teamColumn(_ team: LeagueTeam?) -> some View {
+        VStack(spacing: 6) {
+            if let team { ClubCrest(team: team, size: crestSize) }
+            Text(team?.name ?? "—")
+                .font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct FootballMatchReport: View {
+    let fixture: LeagueFixture
+    let career: FootballCareer
+    let showAllEvents: Bool
+
+    private var keyEvents: [MatchEvent] {
+        if showAllEvents { return fixture.events }
+        return fixture.events.filter { $0.kind == .goal || $0.kind == .injury }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away),
+                          homeScore: fixture.homeGoals, awayScore: fixture.awayGoals, crestSize: 40)
+            let homeColor = FootballSeason.team(fixture.home)?.primaryColor ?? FootballTheme.accent
+            let awayColor = FootballSeason.team(fixture.away)?.primaryColor ?? .gray
+            if let homePossession = fixture.homePossession, let awayPossession = fixture.awayPossession {
+                StatComparisonRow(title: "Posse de bola", home: Double(homePossession), away: Double(awayPossession),
+                                  homeText: "\(homePossession)%", awayText: "\(awayPossession)%",
+                                  homeColor: homeColor, awayColor: awayColor)
+                    .accessibilityIdentifier("match-report-possession")
+            }
+            if let homeShots = fixture.homeShots, let awayShots = fixture.awayShots {
+                StatComparisonRow(title: "Finalizações", home: Double(homeShots), away: Double(awayShots),
+                                  homeText: "\(homeShots)", awayText: "\(awayShots)",
+                                  homeColor: homeColor, awayColor: awayColor)
+                    .accessibilityIdentifier("match-report-shots")
+            }
+            if let homeOnTarget = fixture.homeOnTarget, let awayOnTarget = fixture.awayOnTarget {
+                StatComparisonRow(title: "No alvo", home: Double(homeOnTarget), away: Double(awayOnTarget),
+                                  homeText: "\(homeOnTarget)", awayText: "\(awayOnTarget)",
+                                  homeColor: homeColor, awayColor: awayColor)
+            }
+            if let homeXG = fixture.homeExpectedGoals, let awayXG = fixture.awayExpectedGoals {
+                StatComparisonRow(title: "Gols esperados (xG)", home: homeXG, away: awayXG,
+                                  homeText: FootballFormat.expectedGoals(homeXG), awayText: FootballFormat.expectedGoals(awayXG),
+                                  homeColor: homeColor, awayColor: awayColor)
+            }
+            if !keyEvents.isEmpty {
+                Divider()
+                ForEach(Array(keyEvents.enumerated()), id: \.offset) { _, event in
+                    MatchEventRow(event: event)
+                }
+            } else if !fixture.commentary.isEmpty {
+                Divider()
+                ForEach(Array(fixture.commentary.enumerated()), id: \.offset) { _, line in
+                    Text(line).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+}
+
+struct MatchEventRow: View {
+    let event: MatchEvent
+
+    private var symbol: String {
+        switch event.kind {
+        case .goal: return "soccerball"
+        case .save: return "hand.raised.fill"
+        case .chance: return "scope"
+        case .halfTime: return "pause.circle.fill"
+        case .fullTime: return "flag.checkered"
+        case .kickoff: return "whistle.fill"
+        case .tactic: return "slider.horizontal.3"
+        case .substitution: return "arrow.left.arrow.right"
+        case .injury: return "cross.case.fill"
+        }
+    }
+
+    private var tint: Color {
+        switch event.kind {
+        case .goal: return event.teamID.flatMap { FootballSeason.team($0)?.primaryColor } ?? FootballTheme.accent
+        case .injury: return .red
+        case .halfTime, .fullTime, .kickoff: return .secondary
+        default: return .secondary
+        }
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(event.kind == .kickoff ? "0′" : "\(event.minute)′")
+                .font(.caption.weight(.bold).monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 30, alignment: .trailing)
+            Image(systemName: symbol)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 18)
+            Text(event.text)
+                .font(event.kind == .goal ? Font.subheadline.weight(.semibold) : Font.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct FootballOffersPanel: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+
+    var body: some View {
+        FactoryPanel(title: "Propostas recebidas", systemImage: "envelope.badge.fill") {
+            ForEach(career.offers) { offer in
+                if let player = career.player(offer.playerID), let buyer = FootballSeason.team(offer.clubID) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 12) {
+                            ClubCrest(team: buyer, size: 32)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(buyer.name) quer \(player.name)").font(.subheadline.weight(.semibold))
+                                Text("\(player.position.rawValue) · GER \(player.overall) · valor \(FootballFormat.money(player.marketValue))")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        HStack {
+                            Text(FootballFormat.money(offer.amount))
+                                .font(.headline.monospacedDigit()).foregroundStyle(FootballTheme.accent)
+                            Text("expira após a rodada \(offer.expiresAfterRound)").font(.caption2).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Recusar") { career.rejectOffer(offer.id) }
+                                .buttonStyle(.bordered)
+                            Button("Aceitar") {
+                                if !career.acceptOffer(offer.id) {
+                                    onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação com pelo menos \(FootballCareer.minimumRoster) atletas.")
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("accept-offer-\(offer.id)")
+                        }
+                        .font(.caption.weight(.bold))
+                    }
+                    if offer.id != career.offers.last?.id { Divider() }
+                }
+            }
+        }
+    }
+}

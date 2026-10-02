@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import AtelieColorir
 
@@ -26,5 +27,19 @@ final class ColoringEngineTests: XCTestCase {
         XCTAssertEqual(engine.fills[1], 2)
         let restored = try JSONDecoder().decode(ColoringEngine.self, from: JSONEncoder().encode(engine))
         XCTAssertEqual(restored, engine)
+    }
+
+    func testDraftCanBeLoadedFromLocalDefaults() {
+        let suiteName = "ColoringEngineTests-\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("Could not create isolated defaults suite")
+            return
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        var engine = ColoringEngine()
+        engine.fill(region: 4, color: 3)
+        engine.persist(defaults: defaults)
+        XCTAssertEqual(ColoringEngine.load(defaults: defaults), engine)
     }
 }

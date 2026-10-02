@@ -11,8 +11,12 @@ final class PDFReaderFlowUITests: XCTestCase {
         sample.tap()
         XCTAssertTrue(app.buttons["Buscar"].waitForExistence(timeout: 5))
         app.textFields["Buscar no documento"].tap()
-        app.textFields["Buscar no documento"].typeText("localmente")
+        app.textFields["Buscar no documento"].typeText("biblioteca")
         app.buttons["Buscar"].tap()
-        XCTAssertTrue(app.staticTexts["1 resultado(s) · ocorrência selecionada"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["2 resultados · 1 de 2"].waitForExistence(timeout: 5))
+        app.buttons["pdf-search-next"].tap()
+        XCTAssertTrue(app.staticTexts["2 resultados · 2 de 2"].waitForExistence(timeout: 5))
+        app.buttons["pdf-search-previous"].tap()
+        XCTAssertTrue(app.staticTexts["2 resultados · 1 de 2"].waitForExistence(timeout: 5))
     }
 }

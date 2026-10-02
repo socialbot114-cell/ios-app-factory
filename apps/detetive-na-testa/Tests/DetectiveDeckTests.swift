@@ -13,6 +13,23 @@ final class DetectiveDeckTests: XCTestCase {
         XCTAssertNil(deck.draw(excluding: used, seed: 4))
     }
 
+    func testEachCategoryHasItsOwnNonRepeatingDeck() {
+        let deck = DetectiveDeck()
+        XCTAssertEqual(DetectiveCategory.allCases.count, 4)
+
+        for category in DetectiveCategory.allCases {
+            let categoryCards = deck.cards(in: category)
+            XCTAssertGreaterThanOrEqual(categoryCards.count, 10)
+            var used = Set<String>()
+            for seed in 0..<categoryCards.count {
+                let next = deck.drawCard(excluding: used, category: category, seed: seed)
+                XCTAssertEqual(next?.category, category)
+                if let next { XCTAssertTrue(used.insert(next.id).inserted) }
+            }
+            XCTAssertNil(deck.drawCard(excluding: used, category: category, seed: 0))
+        }
+    }
+
     func testTiltRequiresNeutralStateBetweenEvents() {
         var gate = TiltGate()
         let now = Date(timeIntervalSince1970: 100)

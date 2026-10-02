@@ -43,6 +43,7 @@ private enum ColoringPalette {
 
 struct ColoringHome: View {
     @AppStorage("atelier.savedArtCount") private var savedArtCount = 0
+    @State private var engine = ColoringEngine.load()
     @State private var showEditor = false
     @State private var showSaved = false
     private let accent = Color(red: 0.86, green: 0.30, blue: 0.25)
@@ -54,7 +55,7 @@ struct ColoringHome: View {
                 if capture == "saved" || showSaved {
                     savedArts
                 } else if capture == "editor" || showEditor {
-                    ColoringEditor(onSave: { _ in savedArtCount += 1 })
+                    ColoringEditor(engine: $engine, onSave: { _ in savedArtCount += 1 })
                 } else {
                     home
                 }
@@ -72,6 +73,13 @@ struct ColoringHome: View {
             if FactoryCapture.isUITesting {
                 FactoryCapture.resetAppDefaults()
                 savedArtCount = 0
+                engine = ColoringEngine()
+            } else if capture == "editor" {
+                var preview = ColoringEngine()
+                preview.fill(region: 0, color: 0)
+                preview.fill(region: 2, color: 2)
+                preview.fill(region: 4, color: 4)
+                engine = preview
             }
         }
     }
@@ -83,15 +91,22 @@ struct ColoringHome: View {
             FactoryPanel {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18).fill(Color(red: 1, green: 0.97, blue: 0.91))
-                    ColoringArtwork(fills: [:]).padding(18)
+                    ColoringArtwork(fills: engine.fills).padding(18)
                 }
                 .frame(height: 220)
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Jardim em traços").font(.title3.bold())
                     Text("Ilustração demonstrativa · 9 regiões") .font(.subheadline).foregroundStyle(.secondary)
                 }
+                if engine.fills.isEmpty {
+                    Text("Sua arte está pronta para começar.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Label("Rascunho salvo · \(engine.fills.count)/9 regiões coloridas", systemImage: "checkmark.circle.fill")
+                        .font(.caption.weight(.medium)).foregroundStyle(accent)
+                }
                 Button { showEditor = true } label: {
-                    Label("Começar a colorir", systemImage: "paintpalette.fill")
+                    Label(engine.fills.isEmpty ? "Começar a colorir" : "Continuar colorindo", systemImage: engine.fills.isEmpty ? "paintpalette.fill" : "arrow.uturn.forward")
                 }
                 .buttonStyle(FactoryPrimaryButtonStyle())
             }
@@ -162,8 +177,8 @@ struct ColoringHome: View {
 }
 
 struct ColoringEditor: View {
+    @Binding var engine: ColoringEngine
     var onSave: (UIImage) -> Void = { _ in }
-    @State private var engine = ColoringEngine.load()
     @State private var selectedColor = 0
     @State private var showShare = false
     @State private var shareImage: UIImage?
@@ -171,7 +186,17 @@ struct ColoringEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            FactoryHeader(eyebrow: "Editor demonstrativo", title: "Jardim em traços", subtitle: "Toque nas regiões para colorir. Use desfazer para experimentar sem medo.", accent: accent)
+            FactoryHeader(
+                eyebrow: "Editor demonstrativo",
+                title: "Jardim em traços",
+                subtitle: engine.fills.isEmpty
+                    ? "Toque nas regiões para colorir. Use desfazer para experimentar sem medo."
+                    : "Rascunho retomado · \(engine.fills.count) de 9 regiões coloridas.",
+                accent: accent
+            )
+            Text("\(engine.fills.count)/9 regiões coloridas")
+                .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                .accessibilityIdentifier("coloring-progress")
             ColoringArtwork(fills: engine.fills) { region in engine.fill(region: region, color: selectedColor) }
                 .frame(maxWidth: 520)
                 .frame(maxWidth: .infinity)
@@ -213,7 +238,7 @@ struct ColoringEditor: View {
                 }
             } label: { Label("Salvar e compartilhar PNG", systemImage: "square.and.arrow.up") }
                 .buttonStyle(FactoryPrimaryButtonStyle())
-            Text("O rascunho é mantido nesta sessão demonstrativa. A exportação cria uma imagem local; nenhuma conexão é necessária.")
+            Text("O rascunho é salvo automaticamente neste aparelho. A exportação cria um PNG local; nenhuma conexão é necessária.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
         .padding(20)
