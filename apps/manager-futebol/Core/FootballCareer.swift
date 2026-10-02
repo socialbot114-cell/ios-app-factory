@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 7
+    static let schemaVersion = 8
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
@@ -76,6 +76,13 @@ struct FootballCareer: Codable, Equatable {
         case redMatchDays
         case secondaryTrainingFocus
         case opponentPrep
+        case headToHead
+        case records
+        case legends
+        case reputation
+        case invitations
+        case leaderID
+        case lastProtestMatchDay
     }
 
     var seed: Int
@@ -149,6 +156,13 @@ struct FootballCareer: Codable, Equatable {
     var redMatchDays = 0
     var secondaryTrainingFocus: FootballTrainingFocus? = nil
     var opponentPrep = false
+    var headToHead: [String: HeadToHead] = [:]
+    var records = ClubRecords()
+    var legends: [LegendEntry] = []
+    var reputation = 35
+    var invitations: [JobInvitation] = []
+    var leaderID: Int? = nil
+    var lastProtestMatchDay = -10
     /// Titulares do jogo em andamento (usado para as promessas aos atletas).
     var startingXIAtKickoff: Set<Int> = []
     /// Atletas que entraram em campo no dia de jogo em andamento (condição física e presença).
@@ -273,6 +287,13 @@ struct FootballCareer: Codable, Equatable {
         redMatchDays = try container.decodeIfPresent(Int.self, forKey: .redMatchDays) ?? 0
         secondaryTrainingFocus = try container.decodeIfPresent(FootballTrainingFocus.self, forKey: .secondaryTrainingFocus)
         opponentPrep = try container.decodeIfPresent(Bool.self, forKey: .opponentPrep) ?? false
+        headToHead = try container.decodeIfPresent([String: HeadToHead].self, forKey: .headToHead) ?? [:]
+        records = try container.decodeIfPresent(ClubRecords.self, forKey: .records) ?? ClubRecords()
+        legends = try container.decodeIfPresent([LegendEntry].self, forKey: .legends) ?? []
+        reputation = try container.decodeIfPresent(Int.self, forKey: .reputation) ?? 35
+        invitations = try container.decodeIfPresent([JobInvitation].self, forKey: .invitations) ?? []
+        leaderID = try container.decodeIfPresent(Int.self, forKey: .leaderID)
+        lastProtestMatchDay = try container.decodeIfPresent(Int.self, forKey: .lastProtestMatchDay) ?? -10
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
     }
@@ -345,6 +366,13 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(redMatchDays, forKey: .redMatchDays)
         try container.encodeIfPresent(secondaryTrainingFocus, forKey: .secondaryTrainingFocus)
         try container.encode(opponentPrep, forKey: .opponentPrep)
+        try container.encode(headToHead, forKey: .headToHead)
+        try container.encode(records, forKey: .records)
+        try container.encode(legends, forKey: .legends)
+        try container.encode(reputation, forKey: .reputation)
+        try container.encode(invitations, forKey: .invitations)
+        try container.encodeIfPresent(leaderID, forKey: .leaderID)
+        try container.encode(lastProtestMatchDay, forKey: .lastProtestMatchDay)
     }
 
     /// Save v3: atletas ganham contratos coerentes e o teto salarial é definido a partir da folha atual.
@@ -558,13 +586,17 @@ struct FootballCareer: Codable, Equatable {
         }
     }
 
+    /// Clubes que querem contratar o treinador depois de uma demissão ou pedido de demissão.
     var jobOffers: [LeagueTeam] {
         guard isFired else { return [] }
-        return FootballSeason.teams
-            .filter { $0.id != selectedClubID }
-            .sorted { $0.strength < $1.strength }
-            .prefix(3)
-            .map { $0 }
+        let others = FootballSeason.teams.filter { $0.id != selectedClubID }
+        let reachable = others.filter { clubPrestige($0.id) <= maxPrestige }.sorted { clubPrestige($0.id) > clubPrestige($1.id) }
+        var offers = Array(reachable.prefix(3))
+        if offers.count < 3 {
+            let extra = others.filter { club in !offers.contains(where: { $0.id == club.id }) }.sorted { $0.strength < $1.strength }
+            offers += extra.prefix(3 - offers.count)
+        }
+        return offers
     }
 
     func player(_ id: Int) -> FootballPlayer? {
@@ -694,26 +726,15 @@ struct FootballCareer: Codable, Equatable {
         boardTarget = computeBoardTarget()
         wageCap = Int(Double(wageBill) * 1.25)
         setupClubInfrastructure()
+        reputation = initialReputation(for: club)
         return startingXI.count == 11
     }
 
     @discardableResult
     mutating func acceptJob(_ clubID: Int) -> Bool {
         guard isFired, liveMatch == nil, clubID != selectedClubID,
-              jobOffers.contains(where: { $0.id == clubID }),
-              let club = FootballSeason.team(clubID) else { return false }
-        selectedClubID = club.id
-        transferBudget = club.startingBudget / 2
-        boardConfidence = 55
-        isFired = false
-        offers = []
-        promises = []
-        inbox = []
-        wageCap = Int(Double(wageBill) * 1.25)
-        if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
-        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
-        boardTarget = computeBoardTarget()
-        setupClubInfrastructure()
+              jobOffers.contains(where: { $0.id == clubID }) else { return false }
+        takeOverClub(clubID, budgetFraction: 0.5, confidence: 55)
         return true
     }
 

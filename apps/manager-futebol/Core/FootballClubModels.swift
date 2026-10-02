@@ -477,3 +477,64 @@ struct MonthReport: Equatable, Identifiable {
     var id: Int { month }
     var result: Int { income - expenses }
 }
+
+// MARK: - Narrativa e carreira
+
+struct HeadToHead: Codable, Equatable {
+    /// Vitórias do clube de menor id, empates e vitórias do clube de maior id.
+    var lowWins = 0
+    var draws = 0
+    var highWins = 0
+    var lowGoals = 0
+    var highGoals = 0
+    var lastResult = "—"
+
+    var matches: Int { lowWins + draws + highWins }
+}
+
+struct ClubRecords: Codable, Equatable {
+    var topScorerName = "—"
+    var topScorerGoals = 0
+    var mostAppearancesName = "—"
+    var mostAppearances = 0
+    var biggestWin = "—"
+    var biggestWinMargin = 0
+    var biggestLoss = "—"
+    var biggestLossMargin = 0
+    var longestUnbeaten = 0
+    var currentUnbeaten = 0
+    var highestAttendance = 0
+    var mostPointsInSeason = 0
+}
+
+struct LegendEntry: Codable, Equatable, Identifiable {
+    let id: Int
+    let name: String
+    let position: FootballPosition
+    let goals: Int
+    let appearances: Int
+    let lastSeason: Int
+}
+
+struct JobInvitation: Codable, Equatable, Identifiable {
+    let clubID: Int
+    let season: Int
+
+    var id: Int { clubID }
+}
+
+struct AwardEntry: Codable, Equatable {
+    let playerID: Int
+    let name: String
+    let position: FootballPosition
+    let teamID: Int?
+}
+
+struct SeasonAwards: Codable, Equatable {
+    var bestPlayer: AwardEntry?
+    var youngPlayer: AwardEntry?
+    var topScorer: AwardEntry?
+    var topScorerGoals = 0
+    var teamOfTheSeason: [AwardEntry] = []
+    var coachOfTheYearClubID: Int?
+}

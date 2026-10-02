@@ -464,13 +464,14 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
     /// Posição que o atleta está aprendendo no treino individual e o progresso (6 sessões para aprender).
     var learningPosition: FootballPosition? = nil
     var learningProgress = 0
+    var careerAppearances = 0
 
     private enum CodingKeys: String, CodingKey {
         case id, name, position, detail, age, overall, potential, condition, marketValue, teamID
         case attributes, traits, morale, contract, form, discipline, region
         case goals, assists, appearances, injuryRounds, careerGoals, benchStreak, isYouth
         case parentTeamID, purchaseOption, isListed, isLoanListed, nationalDutyMatchDay, learnedPositions, individualFocus
-        case learningPosition, learningProgress
+        case learningPosition, learningProgress, careerAppearances
     }
 
     init(id: Int, name: String, position: FootballPosition, age: Int, overall: Int, potential: Int,
@@ -548,6 +549,7 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
         individualFocus = try container.decodeIfPresent(AttributeKind.self, forKey: .individualFocus)
         learningPosition = try container.decodeIfPresent(FootballPosition.self, forKey: .learningPosition)
         learningProgress = try container.decodeIfPresent(Int.self, forKey: .learningProgress) ?? 0
+        careerAppearances = try container.decodeIfPresent(Int.self, forKey: .careerAppearances) ?? appearances
     }
 
     var isInjured: Bool { injuryRounds > 0 }
@@ -844,12 +846,15 @@ struct SeasonRecord: Codable, Equatable, Identifiable {
     var cupWinnerID: Int? = nil
     var promoted = false
     var relegated = false
+    var awards: SeasonAwards? = nil
+    var reputationChange = 0
 
     var id: Int { season }
 
     private enum CodingKeys: String, CodingKey {
         case season, clubID, championID, position, points, target, objectiveMet, prizeMoney, topScorerName, topScorerTeamID
         case topScorerGoals, retiredPlayers, youthPromoted, wasFired, division, cupResult, cupWinnerID, promoted, relegated
+        case awards, reputationChange
     }
 
     init(season: Int, clubID: Int, championID: Int, position: Int, points: Int, target: Int, objectiveMet: Bool,
@@ -892,6 +897,8 @@ struct SeasonRecord: Codable, Equatable, Identifiable {
         cupWinnerID = try container.decodeIfPresent(Int.self, forKey: .cupWinnerID)
         promoted = try container.decodeIfPresent(Bool.self, forKey: .promoted) ?? false
         relegated = try container.decodeIfPresent(Bool.self, forKey: .relegated) ?? false
+        awards = try container.decodeIfPresent(SeasonAwards.self, forKey: .awards)
+        reputationChange = try container.decodeIfPresent(Int.self, forKey: .reputationChange) ?? 0
     }
 }
 

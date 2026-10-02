@@ -53,8 +53,17 @@ extension FootballCareer {
         if wasRelegated { confidenceChange -= 15 }
         if cupWinner == selectedClubID { confidenceChange += 8 }
         boardConfidence = min(100, max(0, boardConfidence + confidenceChange))
-        let fired = !objectiveMet && boardConfidence <= 20
+        let fired = !objectiveMet && boardConfidence <= boardPatienceThreshold(for: selectedClubID)
         let topScorer = topScorers(limit: 1, division: clubDivision).first
+        let awards = computeAwards()
+        let isChampion = champion == selectedClubID || (clubDivision == .serieB && position == 1)
+        var reputationDelta = objectiveMet ? (clubDivision == .serieA ? 4 : 3) : -5
+        if isChampion { reputationDelta += 8 }
+        if cupWinnerThisSeason == selectedClubID { reputationDelta += 4 }
+        if wasPromoted { reputationDelta += 5 }
+        if wasRelegated { reputationDelta -= 6 }
+        if fired { reputationDelta -= 8 }
+        changeReputation(reputationDelta)
 
         for id in relegatedIDs where divisionOfTeam.indices.contains(id) { divisionOfTeam[id] = .serieB }
         for id in promotedIDs where divisionOfTeam.indices.contains(id) { divisionOfTeam[id] = .serieA }
@@ -90,7 +99,12 @@ extension FootballCareer {
         record.cupWinnerID = cupWinner
         record.promoted = wasPromoted
         record.relegated = wasRelegated
+        record.awards = awards
+        record.reputationChange = reputationDelta
         history.append(record)
+        if let best = awards.bestPlayer {
+            addInbox(.news, title: "Prêmios da temporada \(season)", body: "Craque do campeonato: \(best.name). Artilheiro: \(awards.topScorer?.name ?? "—") (\(awards.topScorerGoals) gols). Técnico do ano: \(awards.coachOfTheYearClubID.map { FootballSeason.teamName($0) } ?? "—").")
+        }
 
         season += 1
         matchDayIndex = 0
@@ -98,6 +112,7 @@ extension FootballCareer {
         lastRoundRevenue = 0
         offers = []
         for index in players.indices {
+            players[index].nationalDutyMatchDay = nil
             players[index].goals = 0
             players[index].assists = 0
             players[index].appearances = 0
@@ -127,7 +142,10 @@ extension FootballCareer {
         if fired {
             isFired = true
             boardConfidence = 0
+        } else {
+            generateInvitations(using: &random)
         }
+        leaderID = nil
         return record
     }
 
@@ -153,7 +171,7 @@ extension FootballCareer {
 
             let retires = player.age >= 36 || (player.age >= 33 && random.chance(0.3))
             if retires {
-                if player.teamID == selectedClubID { retired += 1 }
+                if player.teamID == selectedClubID { retired += 1; recordLegendIfDeserved(player) }
                 if let teamID = player.teamID {
                     let baseStrength = (FootballSeason.team(teamID)?.strength ?? 65) + (division(of: teamID) == .serieA ? 2 : -2)
                     replacements.append(FootballSeason.makeYouth(id: nextPlayerID, position: player.position,

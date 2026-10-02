@@ -294,6 +294,7 @@ extension FootballCareer {
         for id in Set(outcome.appeared) {
             guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
             players[index].appearances += 1
+            players[index].careerAppearances += 1
             playedThisMatchDay.insert(id)
         }
         for (id, condition) in outcome.finalCondition where outcome.appeared.contains(id) {
@@ -344,6 +345,7 @@ extension FootballCareer {
             for id in Set(outcome.appeared) where player(id)?.teamID != selectedClubID { observe(id, gain: 25) }
         }
         fixtures[fixtureIndex] = fixture
+        recordHeadToHead(fixture)
     }
 
     mutating func recordGoals(_ scorerIDs: [Int]) {
@@ -383,6 +385,9 @@ extension FootballCareer {
                 rivalMotivation[fixture.opponent(of: selectedClubID)] = nil
                 opponentPrep = false
                 pendingPress = makePressConference(fixture: fixture)
+                updateRecords(after: fixtures[userFixtureIndex])
+                checkFanReactions()
+                checkMidSeasonSacking()
             }
             startingXIAtKickoff = []
         } else {
@@ -402,6 +407,8 @@ extension FootballCareer {
         offers.removeAll { $0.expiresAfterRound <= matchDayIndex }
         generateOffers(using: &postRandom)
         for index in players.indices { refreshValue(at: index) }
+        generateLeagueNews(forMatchDay: matchDayIndex - 1)
+        manageNationalDuty()
         repairLineup()
     }
 
