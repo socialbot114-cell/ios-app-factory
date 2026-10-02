@@ -33,12 +33,13 @@ final class FootballFlowUITests: XCTestCase {
         tapWhenReady(app.buttons["play-match"], in: app)
 
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "live-scoreboard").firstMatch.waitForExistence(timeout: 10))
-        let secondHalf = app.buttons["live-second-half"]
-        XCTAssertTrue(secondHalf.waitForExistence(timeout: 20))
-        tapWhenReady(secondHalf, in: app)
+        let skip = app.buttons["live-skip"]
+        tapWhenReady(skip, in: app)
         let finish = app.buttons["live-finish"]
         XCTAssertTrue(finish.waitForExistence(timeout: 20))
         tapWhenReady(finish, in: app)
+        let skipPress = app.buttons["press-skip"]
+        if skipPress.waitForExistence(timeout: 5) { skipPress.tap() }
 
         let training = app.descendants(matching: .any).matching(identifier: "football-training-report").firstMatch
         XCTAssertTrue(training.waitForExistence(timeout: 10))
@@ -49,6 +50,12 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Classificação"].waitForExistence(timeout: 5))
         let auroraRow = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Aurora FC")).firstMatch
         XCTAssertTrue(auroraRow.waitForExistence(timeout: 5))
+
+        app.buttons["tab-5"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "world-betting").firstMatch.waitForExistence(timeout: 6))
+        tapWhenReady(app.buttons["world-betting"], in: app)
+        XCTAssertTrue(app.staticTexts["Palpite+"].waitForExistence(timeout: 6))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
 
         app.buttons["tab-4"].tap()
         let newCareer = app.descendants(matching: .any).matching(identifier: "new-career").firstMatch

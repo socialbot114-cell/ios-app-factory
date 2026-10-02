@@ -51,6 +51,8 @@ struct FootballSquadView: View {
                             .font(.caption.weight(.medium)).foregroundStyle(.orange)
                     }
                 }
+                instructionsPanel
+                rolesPanel
                 trainingPanel
                 ForEach(FootballPosition.allCases, id: \.self) { position in
                     let group = career.clubRoster.filter { $0.position == position }
@@ -71,6 +73,7 @@ struct FootballSquadView: View {
         }
         .factoryPage()
         .navigationTitle("Elenco e tática")
+        .onAppear { career.markTutorialSeen("squad") }
         .sheet(item: $substitutionTarget) { target in
             FootballSubstitutionSheet(career: $career, outgoingID: target.id >= 0 ? target.id : nil)
         }
@@ -116,6 +119,54 @@ struct FootballSquadView: View {
         }
     }
 
+    private var instructionsPanel: some View {
+        FactoryPanel(title: "Instruções de equipe", systemImage: "slider.horizontal.3") {
+            instructionPicker("Altura da linha", TeamInstructions.lineHeightTitles, $career.teamInstructions.lineHeight)
+            instructionPicker("Ritmo", TeamInstructions.tempoTitles, $career.teamInstructions.tempo)
+            instructionPicker("Largura", TeamInstructions.widthTitles, $career.teamInstructions.width)
+            instructionPicker("Pressão", TeamInstructions.pressingTitles, $career.teamInstructions.pressing)
+            Toggle("Fazer cera quando estiver ganhando", isOn: $career.teamInstructions.timeWasting).font(.subheadline)
+            HStack {
+                Text("Batedor de pênaltis").font(.subheadline.weight(.semibold))
+                Spacer()
+                Picker("Batedor", selection: $career.penaltyTakerID) {
+                    Text("Automático").tag(Int?.none)
+                    ForEach(career.starters) { Text($0.name).tag(Int?.some($0.id)) }
+                }
+                .pickerStyle(.menu)
+            }
+            Text("Valem do início da partida; você ajusta tudo de novo ao vivo.").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func instructionPicker(_ title: String, _ names: [String], _ binding: Binding<Level3>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Picker(title, selection: binding) {
+                ForEach(Level3.allCases) { Text(names[$0.rawValue]).tag($0) }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    private var rolesPanel: some View {
+        FactoryPanel(title: "Funções dos titulares", systemImage: "person.crop.rectangle.stack.fill") {
+            ForEach(career.starters.filter { $0.position != .goalkeeper }) { player in
+                HStack {
+                    Text(player.name).font(.subheadline).lineLimit(1)
+                    Spacer()
+                    Picker("Função", selection: Binding(
+                        get: { career.playerRoles[player.id] ?? .balanced },
+                        set: { career.playerRoles[player.id] = $0 == .balanced ? nil : $0 }
+                    )) {
+                        ForEach(PlayerRole.options(for: player.detail)) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                }
+            }
+        }
+    }
+
     private var trainingPanel: some View {
         FactoryPanel(title: "Treino semanal", systemImage: "figure.run") {
             HStack {
@@ -143,6 +194,20 @@ struct FootballSquadView: View {
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier("training-intensity-picker")
+            HStack {
+                Text("Foco secundário").font(.subheadline.weight(.semibold))
+                Spacer()
+                Picker("Foco secundário", selection: Binding(
+                    get: { career.secondaryTrainingFocus },
+                    set: { career.setSecondaryTrainingFocus($0) }
+                )) {
+                    Text("Nenhum").tag(FootballTrainingFocus?.none)
+                    ForEach(FootballTrainingFocus.allCases) { Text($0.rawValue).tag(FootballTrainingFocus?.some($0)) }
+                }
+                .pickerStyle(.menu)
+            }
+            Toggle("Preparar para o próximo rival", isOn: Binding(get: { career.opponentPrep }, set: { career.setOpponentPrep($0) }))
+                .font(.subheadline)
             Text("Aplicado antes de cada partida. Intensidade maior desenvolve mais atletas, mas recupera menos energia.")
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -154,108 +219,6 @@ struct FootballSquadView: View {
         case .defender: return "shield.lefthalf.filled"
         case .midfielder: return "arrow.triangle.branch"
         case .forward: return "scope"
-        }
-    }
-}
-
-// MARK: - Ficha do atleta
-
-struct FootballPlayerDetailView: View {
-    @Binding var career: FootballCareer
-    let playerID: Int
-    let onAlert: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var confirmSale = false
-    @State private var showSubstitution = false
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                if let player = career.player(playerID) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        HStack(spacing: 16) {
-                            RatingBadge(value: player.overall, size: 64)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(player.name).font(.title2.bold())
-                                Text("\(player.position.singularTitle) · \(player.age) anos").font(.subheadline).foregroundStyle(.secondary)
-                                if player.isInjured {
-                                    PillLabel(text: "Lesionado · \(player.injuryRounds) rodada(s)", systemImage: "cross.case.fill", tint: .red)
-                                }
-                            }
-                        }
-                        FactoryPanel(title: "Perfil", systemImage: "person.text.rectangle") {
-                            detailRow("Geral", "\(player.overall)")
-                            detailRow("Potencial", "\(player.potential)")
-                            VStack(alignment: .leading, spacing: 6) {
-                                detailRow("Energia", "\(player.condition)%")
-                                ConditionBar(value: player.condition)
-                            }
-                            detailRow("Valor de mercado", FootballFormat.money(player.marketValue))
-                        }
-                        FactoryPanel(title: "Temporada", systemImage: "chart.bar.fill") {
-                            detailRow("Jogos", "\(player.appearances)")
-                            detailRow("Gols", "\(player.goals)")
-                            detailRow("Assistências", "\(player.assists)")
-                            detailRow("Gols na carreira", "\(player.careerGoals)")
-                        }
-                        actions(for: player)
-                    }
-                    .padding(20)
-                } else {
-                    Text("Este atleta não está mais no elenco.").padding(20)
-                }
-            }
-            .background(FactoryColor.canvas.ignoresSafeArea())
-            .navigationTitle("Ficha do atleta")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } }
-            }
-        }
-        .tint(FootballTheme.accent)
-        .sheet(isPresented: $showSubstitution) {
-            FootballSubstitutionSheet(career: $career, outgoingID: career.startingXI.contains(playerID) ? playerID : nil)
-        }
-    }
-
-    @ViewBuilder
-    private func actions(for player: FootballPlayer) -> some View {
-        let price = career.quickSalePrice(playerID: player.id)
-        FactoryPanel(title: "Ações", systemImage: "hand.tap.fill") {
-            if career.startingXI.contains(player.id) {
-                Button { showSubstitution = true } label: {
-                    Label("Substituir este titular", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-            Button(role: .destructive) { confirmSale = true } label: {
-                Label("Vender agora por \(FootballFormat.money(price))", systemImage: "banknote").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(!career.canSell(playerID: player.id))
-            .accessibilityIdentifier("sell-player-\(player.id)")
-            Text("Venda imediata paga \(Int(FootballCareer.quickSaleRate * 100))% do valor de mercado. Propostas de outros clubes costumam pagar mais. O elenco precisa manter pelo menos \(FootballCareer.minimumRoster) atletas.")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-        .confirmationDialog("Vender \(player.name)?", isPresented: $confirmSale, titleVisibility: .visible) {
-            Button("Vender por \(FootballFormat.money(price))", role: .destructive) {
-                if career.sellPlayer(playerID: player.id) {
-                    dismiss()
-                } else {
-                    onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação.")
-                }
-            }
-            Button("Cancelar", role: .cancel) { }
-        } message: {
-            Text("O atleta vai para o mercado de agentes livres.")
-        }
-    }
-
-    private func detailRow(_ title: String, _ value: String) -> some View {
-        HStack {
-            Text(title).font(.subheadline).foregroundStyle(.secondary)
-            Spacer()
-            Text(value).font(.subheadline.weight(.semibold).monospacedDigit())
         }
     }
 }

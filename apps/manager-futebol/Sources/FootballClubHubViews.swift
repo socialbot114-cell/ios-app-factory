@@ -1,0 +1,440 @@
+import SwiftUI
+
+// MARK: - Caixa de entrada
+
+struct FootballInboxView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+    @State private var selected: Selection?
+
+    struct Selection: Identifiable { let id: Int }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if career.inbox.isEmpty {
+                FactoryPanel(title: "Tudo em dia", systemImage: "tray.fill") {
+                    Text("Atletas, diretoria, olheiros e mercado vão escrever para você aqui.").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            ForEach(career.inbox.reversed().prefix(60)) { message in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        Image(systemName: message.kind.symbol).foregroundStyle(message.isRead ? Color.secondary : FootballTheme.accent)
+                        Text(message.title).font(.subheadline.weight(.bold))
+                        Spacer()
+                        if message.isResolved { PillLabel(text: "RESOLVIDO", tint: .gray) }
+                        Text("T\(message.season) · J\(message.matchDay + 1)").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Text(message.body).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    if let playerID = message.playerID, career.player(playerID) != nil, !message.isResolved {
+                        Button("Abrir ficha do atleta") { selected = Selection(id: playerID) }
+                            .buttonStyle(.bordered).font(.caption.weight(.bold))
+                    }
+                }
+                .padding(14)
+                .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Caixa de entrada")
+        .onAppear {
+            career.markTutorialSeen("inbox")
+            career.markInboxRead()
+        }
+        .sheet(item: $selected) { selection in
+            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
+        }
+    }
+}
+
+// MARK: - Coletiva de imprensa
+
+struct FootballPressView: View {
+    @Binding var career: FootballCareer
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if let press = career.pendingPress {
+                        Text("Os jornalistas esperam suas respostas. O tom que você escolhe mexe com o vestiário, a torcida e o rival.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        ForEach(press.questions) { question in
+                            FactoryPanel(title: question.prompt, systemImage: "mic.fill") {
+                                if let answered = question.answered {
+                                    Label("Você respondeu: \(answered.title)", systemImage: "checkmark.circle.fill").foregroundStyle(.green).font(.subheadline)
+                                } else {
+                                    ForEach(PressTone.allCases) { tone in
+                                        Button { career.answerPress(questionID: question.id, tone: tone) } label: {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(tone.title).font(.subheadline.weight(.bold))
+                                                Text(tone.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(12)
+                                            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+                                        .accessibilityIdentifier("press-\(question.id)-\(tone.rawValue)")
+                                    }
+                                }
+                            }
+                        }
+                        Button("Pular coletiva") { career.skipPress(); dismiss() }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("press-skip")
+                    }
+                }
+                .padding(20)
+            }
+            .background(FactoryColor.canvas.ignoresSafeArea())
+            .navigationTitle("Coletiva")
+            .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: career.pendingPress == nil) { _, isGone in if isGone { dismiss() } }
+        }
+        .tint(FootballTheme.accent)
+    }
+}
+
+// MARK: - Finanças
+
+struct FootballFinanceView: View {
+    let career: FootballCareer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                FactoryMetric(label: "Caixa", value: FootballFormat.money(career.transferBudget), symbol: "banknote.fill", tint: career.isInDebt ? .red : FootballTheme.accent)
+                FactoryMetric(label: "Projeção fim de temporada", value: FootballFormat.money(career.projectedSeasonEndCash), symbol: "chart.line.uptrend.xyaxis", tint: .indigo)
+            }
+            HStack(spacing: 12) {
+                FactoryMetric(label: "Folha salarial", value: FootballFormat.money(career.wageBill), symbol: "person.3.fill", tint: .orange)
+                FactoryMetric(label: "Teto da folha", value: FootballFormat.money(career.wageCap), symbol: "lock.fill", tint: .gray)
+            }
+            if career.isInDebt {
+                Label("Clube no vermelho: juros, risco de transfer ban e diretoria preocupada.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.red)
+            }
+            FactoryPanel(title: "Temporada \(career.season) por categoria", systemImage: "chart.pie.fill") {
+                let cats = FinanceCategory.allCases.map { ($0, career.finance.total(season: career.season, category: $0)) }.filter { $0.1 != 0 }
+                if cats.isEmpty { Text("Os números aparecem depois dos primeiros jogos.").font(.subheadline).foregroundStyle(.secondary) }
+                ForEach(cats, id: \.0) { category, amount in
+                    HStack {
+                        Image(systemName: category.symbol).frame(width: 24).foregroundStyle(amount >= 0 ? .green : .red)
+                        Text(category.title).font(.subheadline)
+                        Spacer()
+                        Text(FootballFormat.money(amount)).font(.subheadline.weight(.semibold).monospacedDigit()).foregroundStyle(amount >= 0 ? .green : .red)
+                    }
+                }
+            }
+            FactoryPanel(title: "Mês a mês", systemImage: "calendar") {
+                let months = career.monthReports(season: career.season)
+                if months.isEmpty { Text("Sem fechamento mensal ainda.").font(.subheadline).foregroundStyle(.secondary) }
+                ForEach(months) { month in
+                    HStack {
+                        Text("Mês \(month.month)").font(.subheadline.weight(.semibold))
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(FootballFormat.money(month.result)).font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(month.result >= 0 ? .green : .red)
+                            Text("caixa \(FootballFormat.money(month.closingCash))").font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            if !career.finance.summaries.isEmpty {
+                FactoryPanel(title: "Temporadas anteriores", systemImage: "clock.arrow.circlepath") {
+                    ForEach(career.finance.summaries.reversed()) { summary in
+                        HStack {
+                            Text("T\(summary.season)").font(.caption.weight(.heavy))
+                            Spacer()
+                            Text("Receita \(FootballFormat.money(summary.income)) · Despesa \(FootballFormat.money(summary.expenses))")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Finanças")
+    }
+}
+
+// MARK: - Estrutura e ingressos
+
+struct FootballFacilitiesView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            if let project = career.upgradeProject {
+                FactoryPanel(title: "Obra em andamento", systemImage: "hammer.fill") {
+                    Text("\(project.kind.title) → nível \(project.targetLevel)").font(.subheadline.weight(.bold))
+                    Text("Entrega na temporada \(project.dueSeason), jogo \(project.dueMatchDay + 1).").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            ForEach(FacilityKind.allCases) { kind in
+                FactoryPanel(title: "\(kind.title) · nível \(career.facilityLevel(kind))/\(FootballCareer.maxFacilityLevel)", systemImage: kind.symbol) {
+                    Text(kind.effect).font(.caption).foregroundStyle(.secondary)
+                    if let cost = career.upgradeCost(for: kind) {
+                        Button {
+                            if !career.startUpgrade(kind) { onAlert(career.canStartUpgrade(kind) ?? "Não foi possível iniciar a obra.") }
+                        } label: {
+                            Label("Melhorar · \(FootballFormat.money(cost)) · \(career.upgradeDuration(for: kind)) jogos", systemImage: "arrow.up.circle.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("upgrade-\(kind.rawValue)")
+                    } else {
+                        Label("Nível máximo", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
+                    }
+                }
+            }
+            FactoryPanel(title: "Estádio e bilheteria", systemImage: "ticket.fill") {
+                Text("\(career.stadiumDisplayName) · capacidade \(career.stadiumCapacity.formatted(.number.locale(Locale(identifier: "pt_BR"))))")
+                    .font(.subheadline.weight(.semibold))
+                Picker("Preço dos ingressos", selection: $career.ticketPrice) {
+                    ForEach(TicketPrice.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                Text("Ingresso caro rende mais por torcedor e enche menos o estádio. Sócios: \(career.members.formatted(.number.locale(Locale(identifier: "pt_BR")))).")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Estrutura")
+    }
+}
+
+// MARK: - Comissão técnica
+
+struct FootballStaffView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            ForEach(StaffRole.allCases) { role in
+                FactoryPanel(title: role.title, systemImage: role.symbol) {
+                    Text(role.effect).font(.caption).foregroundStyle(.secondary)
+                    if let member = career.staffMember(role) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(member.name).font(.subheadline.weight(.bold))
+                                Text("Habilidade \(member.ability)/20 · \(FootballFormat.money(member.wage))/temporada").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Demitir", role: .destructive) { career.fireStaff(id: member.id) }.buttonStyle(.bordered).font(.caption.weight(.bold))
+                        }
+                    } else {
+                        Text("Vaga aberta").font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                    }
+                    ForEach(career.staffCandidates(for: role)) { candidate in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(candidate.name).font(.subheadline)
+                                Text("Habilidade \(candidate.ability) · \(FootballFormat.money(candidate.wage))/temp.").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Contratar") {
+                                if !career.hireStaff(candidateID: candidate.id) { onAlert("Sem caixa para contratar.") }
+                            }
+                            .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
+                        }
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Comissão técnica")
+    }
+}
+
+// MARK: - Patrocínio
+
+struct FootballSponsorView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryPanel(title: "Patrocinador master", systemImage: "megaphone.fill") {
+                if let deal = career.sponsorDeal {
+                    Text(deal.sponsor).font(.title3.bold())
+                    Text("\(FootballFormat.money(deal.fixedPerSeason)) fixos · \(FootballFormat.money(deal.bonusPerWin)) por vitória · \(FootballFormat.money(deal.titleBonus)) pelo título · até a T\(deal.endSeason)")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("Sem contrato. Escolha uma proposta abaixo.").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            FactoryPanel(title: "Propostas", systemImage: "envelope.fill") {
+                if career.sponsorOffers.isEmpty { Text("Novas propostas chegam no fim da temporada.").font(.subheadline).foregroundStyle(.secondary) }
+                ForEach(career.sponsorOffers) { offer in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(offer.sponsor).font(.subheadline.weight(.bold))
+                            Spacer()
+                            PillLabel(text: offer.profile, tint: .indigo)
+                        }
+                        Text("\(FootballFormat.money(offer.fixedPerSeason)) fixos · \(FootballFormat.money(offer.bonusPerWin))/vitória · \(FootballFormat.money(offer.titleBonus)) pelo título · \(offer.seasons) temp.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Button("Assinar") {
+                            if !career.acceptSponsorOffer(offer.id) { onAlert("Não foi possível assinar esta proposta agora.") }
+                        }
+                        .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
+                    }
+                    if offer.id != career.sponsorOffers.last?.id { Divider() }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Patrocínio")
+    }
+}
+
+// MARK: - História, recordes e lendas
+
+struct FootballStoryView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+    @State private var confirmResign = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                FactoryMetric(label: "Reputação", value: "\(career.reputation)", symbol: "star.circle.fill", tint: FootballTheme.gold)
+                FactoryMetric(label: "Máx. prestígio de clube", value: "\(career.maxPrestige)", symbol: "building.columns.fill", tint: .indigo)
+            }
+            if !career.invitations.isEmpty {
+                FactoryPanel(title: "Convites", systemImage: "envelope.open.fill") {
+                    ForEach(career.invitations) { invitation in
+                        HStack {
+                            if let team = FootballSeason.team(invitation.clubID) { ClubCrest(team: team, size: 30) }
+                            Text(FootballSeason.teamName(invitation.clubID)).font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Button("Aceitar") {
+                                if !career.acceptInvitation(invitation.clubID) { onAlert("Não é possível mudar de clube agora.") }
+                            }
+                            .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
+                        }
+                    }
+                    Text("Aceitar troca o seu clube, mantendo reputação e patrimônio.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            recordsPanel
+            legendsPanel
+            FactoryPanel(title: "Carreira", systemImage: "figure.walk.departure") {
+                Button(role: .destructive) { confirmResign = true } label: {
+                    Label("Pedir demissão", systemImage: "door.left.hand.open").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                Text("Você deixa o clube e escolhe entre propostas. Custa reputação.").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .factoryPage()
+        .navigationTitle("História")
+        .confirmationDialog("Pedir demissão?", isPresented: $confirmResign, titleVisibility: .visible) {
+            Button("Pedir demissão", role: .destructive) { career.resign() }
+            Button("Cancelar", role: .cancel) { }
+        }
+    }
+
+    private var recordsPanel: some View {
+        let records = career.records
+        return FactoryPanel(title: "Recordes do clube", systemImage: "list.star") {
+            row("Maior artilheiro", "\(records.topScorerName) · \(records.topScorerGoals)")
+            row("Mais jogos", "\(records.mostAppearancesName) · \(records.mostAppearances)")
+            row("Maior vitória", records.biggestWin)
+            row("Maior derrota", records.biggestLoss)
+            row("Maior invencibilidade", "\(records.longestUnbeaten) jogos")
+            row("Maior sequência de vitórias", "\(records.longestWinStreak)")
+            row("Maior público", records.highestAttendance.formatted(.number.locale(Locale(identifier: "pt_BR"))))
+            row("Mais pontos numa temporada", "\(records.mostPointsInSeason)")
+        }
+    }
+
+    private var legendsPanel: some View {
+        FactoryPanel(title: "Galeria de lendas", systemImage: "laurel.leading") {
+            if career.legends.isEmpty { Text("Atletas históricos entram aqui ao se aposentar.").font(.subheadline).foregroundStyle(.secondary) }
+            ForEach(career.legends) { legend in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(legend.name).font(.subheadline.weight(.semibold))
+                        Text("\(legend.position.title) · \(legend.appearances) jogos · \(legend.goals) gols").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text("T\(legend.lastSeason)").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func row(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).font(.subheadline).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).font(.subheadline.weight(.semibold)).multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+// MARK: - Modos: dificuldade, desafios e tutorial
+
+struct FootballModesView: View {
+    @Binding var career: FootballCareer
+    let onStartChallenge: (ChallengeScenario) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryPanel(title: "Dificuldade", systemImage: "dial.medium.fill") {
+                Picker("Dificuldade", selection: $career.difficulty) {
+                    ForEach(Difficulty.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("difficulty-picker")
+                Text(career.difficulty.summary).font(.caption).foregroundStyle(.secondary)
+            }
+            if let challenge = career.challenge, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) {
+                FactoryPanel(title: "Desafio ativo", systemImage: "flag.checkered") {
+                    Text(scenario.title).font(.subheadline.weight(.bold))
+                    Text(scenario.summary).font(.caption).foregroundStyle(.secondary)
+                    switch challenge.status {
+                    case .active: Label("Em andamento · \(scenario.seasonsAllowed) temporada(s)", systemImage: "hourglass").font(.caption)
+                    case .won: Label("Vencido!", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
+                    case .failed: Label(challenge.failureReason ?? "Falhou", systemImage: "xmark.seal.fill").font(.caption).foregroundStyle(.red)
+                    }
+                }
+            }
+            FactoryPanel(title: "Cenários de desafio", systemImage: "target") {
+                Text("Começam uma carreira nova (a carreira atual continua salva no espaço).").font(.caption).foregroundStyle(.secondary)
+                ForEach(ChallengeScenario.all) { scenario in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(scenario.title).font(.subheadline.weight(.bold))
+                        Text(scenario.summary).font(.caption).foregroundStyle(.secondary)
+                        Button("Aceitar desafio") { onStartChallenge(scenario) }
+                            .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
+                            .accessibilityIdentifier("challenge-\(scenario.id)")
+                    }
+                    if scenario.id != ChallengeScenario.all.last?.id { Divider() }
+                }
+            }
+            FactoryPanel(title: "Primeiros passos · \(career.tutorialProgress.done)/\(career.tutorialProgress.total)", systemImage: "graduationcap.fill") {
+                ForEach(career.tutorialSteps) { step in
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: step.done ? "checkmark.circle.fill" : "circle").foregroundStyle(step.done ? .green : .secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(step.title).font(.subheadline.weight(.semibold))
+                            Text(step.detail).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Toggle("Mostrar dicas no painel", isOn: Binding(get: { !career.tutorialDismissed }, set: { career.tutorialDismissed = !$0 }))
+                    .font(.subheadline)
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Modos de jogo")
+    }
+}

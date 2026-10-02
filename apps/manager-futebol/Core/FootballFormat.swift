@@ -36,6 +36,17 @@ enum FootballFormat {
         currencyFormatter.string(from: NSNumber(value: value)) ?? "R$ \(value)"
     }
 
+    /// Contagem curta: "12,5 mil", "1,2 mi".
+    static func compact(_ value: Int) -> String {
+        if value >= 1_000_000 {
+            return (decimalFormatter.string(from: NSNumber(value: Double(value) / 1_000_000)) ?? "\(value / 1_000_000)") + " mi"
+        }
+        if value >= 10_000 {
+            return (decimalFormatter.string(from: NSNumber(value: Double(value) / 1_000)) ?? "\(value / 1_000)") + " mil"
+        }
+        return "\(value)"
+    }
+
     static func signed(_ value: Int) -> String { value > 0 ? "+\(value)" : "\(value)" }
 
     static func expectedGoals(_ value: Double?) -> String {

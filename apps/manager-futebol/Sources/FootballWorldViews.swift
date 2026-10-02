@@ -1,0 +1,391 @@
+import SwiftUI
+
+// MARK: - Hub "Mundo"
+
+/// Porta de entrada para tudo o que existe fora das quatro linhas: vida pessoal, redes, apostas, fantasy, crises, negócios e missões.
+struct FootballWorldView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+
+    private var openBets: Int { career.world.betting.bets.filter { $0.status == .open }.count }
+    private var activeQuests: Int { career.world.quests.active.filter { !$0.completed }.count }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryHeader(
+                eyebrow: "Mundo aberto",
+                title: "Fora de campo",
+                subtitle: "Cuide da sua vida, das redes, dos negócios do clube e do que o mundo do futebol joga no seu colo.",
+                accent: FootballTheme.accent
+            )
+            HStack(spacing: 12) {
+                FactoryMetric(label: "Patrimônio", value: FootballFormat.money(career.coachNetWorth), symbol: "banknote.fill", tint: FootballTheme.gold)
+                FactoryMetric(label: "Seguidores", value: FootballFormat.compact(career.world.social.coachFollowers), symbol: "person.2.fill", tint: .pink)
+            }
+            if !career.pendingEvents.isEmpty {
+                NavigationLink {
+                    FootballEventsView(career: $career)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.bubble.fill").font(.title2).foregroundStyle(.white)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(career.pendingEvents.count) acontecimento(s) esperando decisão").font(.subheadline.weight(.bold))
+                            Text("Responder a tempo evita o pior.").font(.caption)
+                        }
+                        .foregroundStyle(.white)
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(.white.opacity(0.8))
+                    }
+                    .padding(16)
+                    .background(Color.orange.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("world-events-banner")
+            }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                tile("Vida do treinador", "figure.walk", .teal, badge: nil, id: "world-life") { FootballCoachLifeView(career: $career, onAlert: onAlert) }
+                tile("Chuteira", "bubble.left.and.bubble.right.fill", .pink,
+                     badge: career.world.social.crisis != nil ? "!" : nil, id: "world-social") { FootballSocialView(career: $career, onAlert: onAlert) }
+                tile("Palpite+", "ticket.fill", .purple,
+                     badge: openBets > 0 ? "\(openBets)" : nil, id: "world-betting") { FootballBettingView(career: $career, onAlert: onAlert) }
+                tile("Rodada Mágica", "sportscourt.fill", .green, badge: nil, id: "world-fantasy") { FootballFantasyView(career: $career, onAlert: onAlert) }
+                tile("Acontecimentos", "exclamationmark.bubble.fill", .orange,
+                     badge: career.pendingEvents.isEmpty ? nil : "\(career.pendingEvents.count)", id: "world-events") { FootballEventsView(career: $career) }
+                tile("Negócios do clube", "building.2.crop.circle.fill", .indigo, badge: nil, id: "world-business") { FootballBusinessView(career: $career, onAlert: onAlert) }
+                tile("Missões", "checklist", .blue,
+                     badge: activeQuests > 0 ? "\(activeQuests)" : nil, id: "world-quests") { FootballQuestsView(career: $career) }
+                tile("Conquistas", "medal.fill", FootballTheme.gold,
+                     badge: nil, id: "world-achievements") { FootballAchievementsView(career: career) }
+            }
+            FactoryDemoNotice(message: "Fichas, marcas e perfis são fictícios · sem dinheiro real")
+        }
+        .factoryPage()
+        .navigationTitle("Mundo")
+    }
+
+    private func tile<Destination: View>(_ title: String, _ symbol: String, _ tint: Color, badge: String?, id: String,
+                                         @ViewBuilder destination: @escaping () -> Destination) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: symbol).font(.title2).foregroundStyle(tint)
+                    Spacer()
+                    if let badge {
+                        Text(badge).font(.caption2.weight(.heavy)).foregroundStyle(.white)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(Color.red, in: Capsule())
+                    }
+                }
+                Text(title).font(.subheadline.weight(.bold)).foregroundStyle(.primary).multilineTextAlignment(.leading)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+            .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+    }
+}
+
+// MARK: - Vida do treinador
+
+struct FootballCoachLifeView: View {
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+    @State private var lastResult: String?
+    @State private var investAmount = 50_000
+
+    private var coach: CoachProfile { career.world.coach }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                FactoryMetric(label: "Caixa pessoal", value: FootballFormat.money(coach.personalCash), symbol: "wallet.bifold.fill", tint: FootballTheme.gold)
+                FactoryMetric(label: "Salário/temporada", value: FootballFormat.money(career.coachSalaryPerSeason), symbol: "briefcase.fill", tint: .teal)
+            }
+            FactoryPanel(title: "Condição", systemImage: "heart.text.square.fill") {
+                gauge("Energia", coach.energy, good: true)
+                gauge("Estresse", coach.stress, good: false)
+                Text("\(coach.licenseName) · reputação \(career.reputation)").font(.caption).foregroundStyle(.secondary)
+                if coach.stress >= 85 {
+                    Label("Estresse no limite: a diretoria percebe e o rendimento cai.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.weight(.semibold)).foregroundStyle(.red)
+                }
+            }
+            if let lastResult {
+                Label(lastResult, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
+            }
+            FactoryPanel(title: "Agenda do dia", systemImage: "calendar.badge.clock") {
+                Text("Uma atividade por dia de jogo. Descansar recupera energia; as outras rendem dinheiro, fama ou licenças.")
+                    .font(.caption).foregroundStyle(.secondary)
+                ForEach(CoachActivity.allCases) { activity in
+                    let block = career.canDo(activity)
+                    Button {
+                        if let result = career.doActivity(activity) { lastResult = result.text } else { onAlert(block ?? "Indisponível.") }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: activity.symbol).frame(width: 28).foregroundStyle(FootballTheme.accent)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(activity.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                                Text(activity.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                            }
+                            Spacer()
+                            Text(activity.energyCost < 0 ? "+\(-activity.energyCost)" : "-\(activity.energyCost)")
+                                .font(.caption.weight(.bold).monospacedDigit())
+                                .foregroundStyle(activity.energyCost < 0 ? .green : .orange)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(block == nil ? 1 : 0.4)
+                    .accessibilityIdentifier("activity-\(activity.rawValue)")
+                    if activity != CoachActivity.allCases.last { Divider() }
+                }
+            }
+            licensePanel
+            assetsPanel
+            investmentsPanel
+        }
+        .factoryPage()
+        .navigationTitle("Vida do treinador")
+    }
+
+    private func gauge(_ title: String, _ value: Int, good: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title).font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("\(value)").font(.subheadline.weight(.bold).monospacedDigit())
+            }
+            ConditionBar(value: good ? value : 100 - value)
+        }
+    }
+
+    private var licensePanel: some View {
+        FactoryPanel(title: "Licenças de treinador", systemImage: "graduationcap.fill") {
+            Text("Licença atual: \(coach.licenseName)").font(.subheadline.weight(.semibold))
+            if let course = coach.course {
+                ProgressView(value: Double(course.sessionsDone), total: Double(course.sessionsNeeded))
+                Text("Curso para \(CoachProfile.licenseNames[course.targetLicense - 1]): \(course.sessionsDone)/\(course.sessionsNeeded) aulas. Use a atividade \"Estudar\".")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else if coach.licenseLevel < 4 {
+                let next = coach.licenseLevel + 1
+                Text("Próxima: \(CoachProfile.licenseNames[next - 1]) · \(FootballFormat.money(CoachProfile.courseCosts[next - 1])) · reputação \(CoachProfile.courseMinimumReputation[next - 1])+")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button {
+                    if !career.startCourse() { onAlert(career.canStartCourse() ?? "Não foi possível iniciar o curso.") }
+                } label: {
+                    Label("Matricular-se", systemImage: "book.closed.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("start-course")
+            } else {
+                Label("Licença máxima conquistada", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.subheadline)
+            }
+            if coach.booksPublished > 0 {
+                Label("\(coach.booksPublished) livro(s) publicado(s): royalties a cada temporada", systemImage: "book.fill")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var assetsPanel: some View {
+        FactoryPanel(title: "Bens e conforto", systemImage: "house.fill") {
+            ForEach(AssetKind.allCases) { kind in
+                let owned = coach.assets.first { $0.kind == kind }
+                HStack(spacing: 12) {
+                    Image(systemName: kind.symbol).frame(width: 28).foregroundStyle(owned == nil ? Color.secondary : FootballTheme.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(kind.title).font(.subheadline.weight(.semibold))
+                        Text(kind.summary).font(.caption).foregroundStyle(.secondary)
+                        Text("\(FootballFormat.money(kind.price)) · manutenção \(FootballFormat.money(kind.upkeep))/temp.")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if let owned {
+                        Button("Vender") { career.sellAsset(id: owned.id) }.buttonStyle(.bordered).font(.caption.weight(.bold))
+                    } else {
+                        Button("Comprar") {
+                            if !career.buyAsset(kind) { onAlert(career.canBuyAsset(kind) ?? "Compra indisponível.") }
+                        }
+                        .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
+                        .accessibilityIdentifier("buy-\(kind.rawValue)")
+                    }
+                }
+                if kind != AssetKind.allCases.last { Divider() }
+            }
+        }
+    }
+
+    private var investmentsPanel: some View {
+        FactoryPanel(title: "Investimentos", systemImage: "chart.line.uptrend.xyaxis") {
+            Text("Valor aplicado: \(FootballFormat.money(career.investmentsValue))").font(.subheadline.weight(.semibold))
+            Stepper("Aporte: \(FootballFormat.money(investAmount))", value: $investAmount, in: 10_000...500_000, step: 10_000)
+                .font(.subheadline)
+            ForEach(InvestmentKind.allCases) { kind in
+                Button {
+                    if !career.invest(kind, amount: investAmount) { onAlert("Caixa pessoal insuficiente para este aporte.") }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: kind.symbol).frame(width: 28).foregroundStyle(FootballTheme.accent)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(kind.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                            Text(kind.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                        }
+                        Spacer()
+                        Image(systemName: "plus.circle.fill").foregroundStyle(FootballTheme.accent)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            ForEach(coach.investments) { investment in
+                Divider()
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(investment.kind.title).font(.subheadline.weight(.semibold))
+                        let delta = investment.value - investment.principal
+                        Text("\(FootballFormat.money(investment.value)) · \(delta >= 0 ? "+" : "-")\(FootballFormat.money(abs(delta)))")
+                            .font(.caption).foregroundStyle(delta >= 0 ? .green : .red)
+                    }
+                    Spacer()
+                    Button("Resgatar") { career.withdrawInvestment(id: investment.id) }.buttonStyle(.bordered).font(.caption.weight(.bold))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Acontecimentos
+
+struct FootballEventsView: View {
+    @Binding var career: FootballCareer
+    @State private var resultText: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            if let resultText {
+                Label(resultText, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
+            }
+            if career.pendingEvents.isEmpty {
+                FactoryPanel(title: "Tudo calmo", systemImage: "leaf.fill") {
+                    Text("Nenhum acontecimento esperando decisão. Eles surgem conforme o clube vive bons e maus momentos.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            ForEach(career.pendingEvents) { event in
+                FactoryPanel(title: event.title, systemImage: "exclamationmark.bubble.fill") {
+                    Text(event.body).font(.subheadline)
+                    ForEach(Array(event.choices.enumerated()), id: \.offset) { index, choice in
+                        Button {
+                            resultText = career.resolveEvent(id: event.id, choice: index)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(choice.label).font(.subheadline.weight(.bold))
+                                Text(choice.hint).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("event-\(event.id)-choice-\(index)")
+                    }
+                    Text("Se você não decidir até o dia \(event.expiresWorldDay), vale a opção padrão.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            if !career.world.events.history.isEmpty {
+                FactoryPanel(title: "Histórico", systemImage: "clock.arrow.circlepath") {
+                    ForEach(career.world.events.history.prefix(10)) { event in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(event.title).font(.subheadline.weight(.semibold))
+                            if let text = event.resultText { Text(text).font(.caption).foregroundStyle(.secondary) }
+                        }
+                        if event.id != career.world.events.history.prefix(10).last?.id { Divider() }
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Acontecimentos")
+    }
+}
+
+// MARK: - Missões
+
+struct FootballQuestsView: View {
+    @Binding var career: FootballCareer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryMetric(label: "Missões concluídas", value: "\(career.world.quests.completedCount)", symbol: "checkmark.seal.fill", tint: .blue)
+            let weekly = career.world.quests.active.filter { !$0.seasonal && !$0.completed }
+            let seasonal = career.world.quests.active.filter { $0.seasonal && !$0.completed }
+            questPanel("Missões rápidas", "bolt.fill", weekly)
+            questPanel("Missões de temporada", "calendar", seasonal)
+            Text("As recompensas caem sozinhas quando a meta é batida.").font(.caption).foregroundStyle(.secondary)
+        }
+        .factoryPage()
+        .navigationTitle("Missões")
+    }
+
+    @ViewBuilder
+    private func questPanel(_ title: String, _ symbol: String, _ quests: [Quest]) -> some View {
+        FactoryPanel(title: title, systemImage: symbol) {
+            if quests.isEmpty { Text("Nenhuma missão ativa agora.").font(.subheadline).foregroundStyle(.secondary) }
+            ForEach(quests) { quest in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(quest.title).font(.subheadline.weight(.bold))
+                        Spacer()
+                        Text("\(career.progress(of: quest))/\(quest.target)").font(.caption.weight(.bold).monospacedDigit())
+                    }
+                    Text(quest.detail).font(.caption).foregroundStyle(.secondary)
+                    ProgressView(value: Double(career.progress(of: quest)), total: Double(max(1, quest.target))).tint(.blue)
+                    Label(quest.reward.text, systemImage: "gift.fill").font(.caption).foregroundStyle(FootballTheme.gold)
+                }
+                if quest.id != quests.last?.id { Divider() }
+            }
+        }
+    }
+}
+
+// MARK: - Conquistas
+
+struct FootballAchievementsView: View {
+    let career: FootballCareer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryMetric(label: "Conquistas", value: "\(career.unlockedAchievementCount)/\(Achievement.allCases.count)", symbol: "medal.fill", tint: FootballTheme.gold)
+            FactoryPanel(title: "Galeria", systemImage: "medal.fill") {
+                ForEach(Achievement.allCases) { achievement in
+                    let unlocked = career.isUnlocked(achievement)
+                    HStack(spacing: 12) {
+                        Image(systemName: achievement.symbol)
+                            .font(.title3)
+                            .frame(width: 34, height: 34)
+                            .foregroundStyle(unlocked ? FootballTheme.gold : Color.secondary)
+                            .background((unlocked ? FootballTheme.gold : Color.secondary).opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(achievement.title).font(.subheadline.weight(.semibold))
+                            Text(achievement.detail).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if unlocked { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                    }
+                    .opacity(unlocked ? 1 : 0.6)
+                    .accessibilityElement(children: .combine)
+                    if achievement != Achievement.allCases.last { Divider() }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Conquistas")
+    }
+}

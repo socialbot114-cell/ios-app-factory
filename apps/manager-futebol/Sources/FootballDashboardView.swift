@@ -6,11 +6,13 @@ struct FootballDashboardView: View {
     let onAlert: (String) -> Void
     let onSeasonEnded: (SeasonRecord) -> Void
     let onNavigate: (FootballTab) -> Void
+    let onShowPress: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             if let club = career.selectedClub {
                 ClubHeroCard(club: club, career: career)
+                attentionPanel
                 if career.isFired {
                     jobOffersPanel
                 } else if career.liveMatch != nil {
@@ -47,6 +49,62 @@ struct FootballDashboardView: View {
         }
         .factoryPage()
         .navigationTitle("Painel do treinador")
+        .onAppear { career.markTutorialSeen("dashboard") }
+    }
+
+    // MARK: - Atenção do treinador
+
+    @ViewBuilder
+    private var attentionPanel: some View {
+        let events = career.pendingEvents.count
+        let unread = career.unreadCount
+        let hasPress = career.pendingPress != nil
+        let crisis = career.world.social.crisis != nil
+        let invites = career.invitations.count
+        if hasPress || events > 0 || unread > 0 || crisis || invites > 0 || career.shouldShowTutorial {
+            FactoryPanel(title: "Precisa da sua atenção", systemImage: "bell.badge.fill") {
+                if hasPress {
+                    attentionRow("Coletiva de imprensa aguardando", "mic.fill", .orange, id: "attention-press", action: onShowPress)
+                }
+                if crisis {
+                    attentionRow("Crise de imagem nas redes", "exclamationmark.triangle.fill", .red, id: "attention-crisis") { onNavigate(.world) }
+                }
+                if events > 0 {
+                    attentionRow("\(events) acontecimento(s) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.world) }
+                }
+                if unread > 0 {
+                    attentionRow("\(unread) mensagem(ns) não lida(s)", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.club) }
+                }
+                if invites > 0 {
+                    attentionRow("\(invites) convite(s) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
+                }
+                if career.shouldShowTutorial {
+                    let progress = career.tutorialProgress
+                    if let step = career.tutorialSteps.first(where: { !$0.done }) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Primeiros passos · \(progress.done)/\(progress.total)").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
+                            Text(step.title).font(.subheadline.weight(.bold))
+                            Text(step.detail).font(.caption).foregroundStyle(.secondary)
+                            Button("Dispensar dicas") { career.tutorialDismissed = true }.font(.caption.weight(.bold))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func attentionRow(_ text: String, _ symbol: String, _ tint: Color, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).foregroundStyle(tint).frame(width: 24)
+                Text(text).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
     }
 
     // MARK: - Próxima partida
@@ -147,6 +205,15 @@ struct FootballDashboardView: View {
                 .buttonStyle(.bordered)
             }
             .font(.subheadline.weight(.semibold))
+            Button {
+                let result = career.simulateUntilDecision()
+                onAlert("\(result.days) dia(s) simulado(s). \(result.reason)")
+            } label: {
+                Label("Simular até a próxima decisão", systemImage: "forward.end.alt.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .font(.subheadline.weight(.semibold))
+            .accessibilityIdentifier("simulate-until-decision")
         }
     }
 
@@ -199,10 +266,10 @@ struct FootballDashboardView: View {
                 MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away),
                               homeScore: live.homeGoals, awayScore: live.awayGoals)
             }
-            Text("O jogo está no intervalo. Volte ao vestiário para ajustar a tática e disputar o segundo tempo.")
+            Text("A partida está parada no minuto \(career.liveMatch?.minute ?? 0). Volte para continuar de onde parou.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button(action: onPlayLive) {
-                Label("Voltar ao intervalo", systemImage: "play.fill")
+                Label("Voltar à partida", systemImage: "play.fill")
             }
             .buttonStyle(FactoryPrimaryButtonStyle())
             .accessibilityIdentifier("resume-match")
@@ -392,7 +459,7 @@ struct FootballMatchReport: View {
 
     private var keyEvents: [MatchEvent] {
         if showAllEvents { return fixture.events }
-        return fixture.events.filter { $0.kind == .goal || $0.kind == .injury }
+        return fixture.events.filter { $0.kind == .goal || $0.kind == .injury || $0.kind == .redCard || $0.kind == .penaltyAwarded }
     }
 
     var body: some View {
@@ -454,13 +521,18 @@ struct MatchEventRow: View {
         case .injury: return "cross.case.fill"
         case .extraTime: return "clock.badge.exclamationmark"
         case .penalties: return "figure.soccer"
+        case .yellowCard: return "rectangle.portrait.fill"
+        case .redCard: return "rectangle.portrait.fill"
+        case .penaltyAwarded: return "exclamationmark.circle.fill"
         }
     }
 
     private var tint: Color {
         switch event.kind {
         case .goal: return event.teamID.flatMap { FootballSeason.team($0)?.primaryColor } ?? FootballTheme.accent
-        case .injury: return .red
+        case .injury, .redCard: return .red
+        case .yellowCard: return .yellow
+        case .penaltyAwarded: return .orange
         case .halfTime, .fullTime, .kickoff: return .secondary
         default: return .secondary
         }

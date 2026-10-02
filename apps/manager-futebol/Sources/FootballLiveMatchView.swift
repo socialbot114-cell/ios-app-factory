@@ -1,109 +1,82 @@
 import SwiftUI
 
-/// Partida ao vivo: relógio animado, narração lance a lance e vestiário no intervalo.
+/// Partida ao vivo, minuto a minuto: relógio com velocidades, narração, tática, números e mapa do jogo.
 struct FootballLiveMatchView: View {
-    enum Phase {
-        case firstHalf, halfTime, secondHalf, fullTime
+    enum LiveSection: String, CaseIterable, Identifiable {
+        case feed = "Lances", tactics = "Tática", stats = "Números", pitch = "Campo"
+
+        var id: String { rawValue }
     }
 
     @Binding var career: FootballCareer
     let staticPreview: Bool
     let onClose: () -> Void
 
-    @State private var phase: Phase = .firstHalf
-    @State private var minute = 0
-    @State private var fixtureID: Int?
+    @State private var running = false
+    @State private var speed = 1
+    @State private var section: LiveSection = .feed
     @State private var tickTask: Task<Void, Never>?
     @State private var showSubstitutions = false
     @State private var didStart = false
+    @State private var finishing = false
+
+    private var live: LiveMatchState? { career.liveMatch }
 
     private var tickNanoseconds: UInt64 {
-        FactoryCapture.isUITesting ? 20_000_000 : 120_000_000
-    }
-
-    private var fixture: LeagueFixture? {
-        guard let fixtureID else { return nil }
-        return career.fixtures.first { $0.id == fixtureID }
-    }
-
-    private var sourceEvents: [MatchEvent] {
-        switch phase {
-        case .firstHalf, .halfTime: return career.liveMatch?.events ?? []
-        case .secondHalf, .fullTime: return fixture?.events ?? []
+        if FactoryCapture.isUITesting { return 10_000_000 }
+        switch speed {
+        case 4: return 45_000_000
+        case 2: return 120_000_000
+        default: return 280_000_000
         }
     }
 
-    private var visibleEvents: [MatchEvent] {
-        sourceEvents.filter { event in
-            switch phase {
-            case .firstHalf:
-                return event.kind != .halfTime && event.kind != .substitution && event.minute <= minute
-            case .halfTime:
-                return true
-            case .secondHalf:
-                return event.kind != .fullTime && event.kind != .injury && event.kind != .penalties && event.minute <= minute
-            case .fullTime:
-                return true
-            }
-        }
-    }
-
-    private func goals(for teamID: Int?) -> Int {
-        visibleEvents.filter { $0.kind == .goal && $0.teamID == teamID }.count
-    }
-
-    /// Minuto final: 120 quando o mata-mata foi para a prorrogação.
-    private var finalMinute: Int {
-        phase == .firstHalf || phase == .halfTime ? 90 : (fixture?.wentToExtraTime == true ? 120 : 90)
-    }
-
-    private var goalCount: Int {
-        visibleEvents.filter { $0.kind == .goal }.count
-    }
+    private var userTeamID: Int? { career.selectedClubID }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    scoreboard
-                    switch phase {
-                    case .firstHalf, .secondHalf:
-                        runningControls
-                    case .halfTime:
-                        halfTimePanel
-                    case .fullTime:
-                        fullTimePanel
-                    }
-                    FactoryPanel(title: "Lance a lance", systemImage: "text.bubble.fill") {
-                        if visibleEvents.isEmpty {
-                            Text("A bola vai rolar…").font(.subheadline).foregroundStyle(.secondary)
+                if let live {
+                    VStack(alignment: .leading, spacing: 16) {
+                        scoreboard(live)
+                        controls(live)
+                        if live.sim.finished { fullTimePanel(live) }
+                        Picker("Seção", selection: $section) {
+                            ForEach(LiveSection.allCases) { item in Text(item.rawValue).tag(item) }
                         }
-                        ForEach(Array(visibleEvents.enumerated().reversed()), id: \.offset) { _, event in
-                            MatchEventRow(event: event)
-                                .transition(.move(edge: .top).combined(with: .opacity))
+                        .pickerStyle(.segmented)
+                        .accessibilityIdentifier("live-section")
+                        switch section {
+                        case .feed: feedPanel(live)
+                        case .tactics: FootballLiveTacticsPanel(career: $career, locked: staticPreview) { showSubstitutions = true }
+                        case .stats: statsPanel(live)
+                        case .pitch: pitchPanel(live)
                         }
+                        othersPanel(live)
                     }
-                    .accessibilityIdentifier("live-feed")
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: 780)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .frame(maxWidth: 780)
-                .frame(maxWidth: .infinity)
-                .animation(.easeOut(duration: 0.25), value: visibleEvents.count)
             }
             .background(FactoryColor.canvas.ignoresSafeArea())
-            .navigationTitle(fixture?.title ?? "Partida")
+            .navigationTitle(live.flatMap { title(for: $0) } ?? "Partida")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if phase == .halfTime && !staticPreview {
+                if !staticPreview, let live, !live.sim.finished {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Sair") { onClose() }
-                            .accessibilityHint("A partida fica salva no intervalo")
+                        Button("Sair") {
+                            stopClock()
+                            onClose()
+                        }
+                        .accessibilityHint("A partida fica salva neste minuto")
                     }
                 }
             }
         }
-        .sensoryFeedback(.impact(weight: .heavy), trigger: goalCount)
+        .sensoryFeedback(.impact(weight: .heavy), trigger: live?.homeGoals ?? 0)
+        .sensoryFeedback(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
         .sheet(isPresented: $showSubstitutions) {
             FootballSubstitutionSheet(career: $career, outgoingID: nil)
         }
@@ -111,21 +84,21 @@ struct FootballLiveMatchView: View {
         .onDisappear { tickTask?.cancel() }
     }
 
+    private func title(for live: LiveMatchState) -> String? {
+        career.fixtures.first { $0.id == live.fixtureID }?.title
+    }
+
     // MARK: - Placar
 
-    private var scoreboard: some View {
-        VStack(spacing: 14) {
-            if let fixture {
-                MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away),
-                              homeScore: goals(for: fixture.home), awayScore: goals(for: fixture.away), crestSize: 54)
-                    .accessibilityIdentifier("live-scoreboard")
-                if phase == .fullTime, let penalties = fixture.penaltySummary {
-                    Text(penalties).font(.subheadline.weight(.bold)).foregroundStyle(FootballTheme.gold)
-                }
-            }
+    private func scoreboard(_ live: LiveMatchState) -> some View {
+        let sim = live.sim
+        return VStack(spacing: 12) {
+            MatchupHeader(home: FootballSeason.team(sim.home.teamID), away: FootballSeason.team(sim.away.teamID),
+                          homeScore: sim.home.goals, awayScore: sim.away.goals, crestSize: 54)
+                .accessibilityIdentifier("live-scoreboard")
             HStack(spacing: 8) {
-                Circle().fill(isRunning ? Color.red : Color.secondary).frame(width: 8, height: 8)
-                Text(clockText)
+                Circle().fill(running ? Color.red : Color.secondary).frame(width: 8, height: 8)
+                Text(clockText(sim))
                     .font(.headline.monospacedDigit())
                     .contentTransition(.numericText())
             }
@@ -133,119 +106,115 @@ struct FootballLiveMatchView: View {
             .padding(.vertical, 6)
             .background(Color.primary.opacity(0.06), in: Capsule())
             .accessibilityIdentifier("live-clock")
-            ProgressView(value: Double(min(minute, finalMinute)), total: Double(finalMinute))
+            ProgressView(value: Double(min(sim.minute, sim.inExtraTime || sim.wentToExtraTime ? 120 : 90)),
+                         total: sim.inExtraTime || sim.wentToExtraTime ? 120 : 90)
                 .tint(FootballTheme.accent)
+            momentumBar(sim)
         }
         .padding(18)
         .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
-    private var isRunning: Bool { phase == .firstHalf || phase == .secondHalf }
+    private func clockText(_ sim: MatchSimulation) -> String {
+        if sim.finished { return "Fim de jogo" }
+        if sim.minute == 45 && !running { return "Intervalo · 45′" }
+        if sim.minute > 90 { return "Prorrogação · \(sim.minute)′" }
+        return "\(sim.minute)′"
+    }
 
-    private var clockText: String {
-        switch phase {
-        case .firstHalf: return "\(minute)′"
-        case .secondHalf: return minute > 90 ? "Prorrogação · \(minute)′" : "\(minute)′"
-        case .halfTime: return "Intervalo"
-        case .fullTime: return "Fim de jogo"
+    private func momentumBar(_ sim: MatchSimulation) -> some View {
+        let recent = sim.momentum.suffix(10)
+        let value = recent.isEmpty ? 0 : Double(recent.reduce(0, +)) / Double(recent.count)
+        let share = min(1, max(0, 0.5 + value / 200))
+        let homeColor = FootballSeason.team(sim.home.teamID)?.primaryColor ?? FootballTheme.accent
+        let awayColor = FootballSeason.team(sim.away.teamID)?.primaryColor ?? .gray
+        return VStack(spacing: 4) {
+            GeometryReader { proxy in
+                HStack(spacing: 2) {
+                    Capsule().fill(homeColor).frame(width: max(6, (proxy.size.width - 2) * share))
+                    Capsule().fill(awayColor)
+                }
+            }
+            .frame(height: 6)
+            Text("Pressão nos últimos minutos").font(.caption2).foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pressão recente: \(Int(share * 100))% para o mandante")
     }
 
     // MARK: - Controles
 
-    private var runningControls: some View {
-        Button(action: skip) {
-            Label(phase == .firstHalf ? "Pular para o intervalo" : "Pular para o apito final", systemImage: "forward.end.fill")
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-        .font(.subheadline.weight(.semibold))
-        .accessibilityIdentifier("live-skip")
-    }
-
-    private var halfTimePanel: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if let live = career.liveMatch, let fixture {
-                FactoryPanel(title: "Estatísticas do 1º tempo", systemImage: "chart.bar.fill") {
-                    liveStats(live: live, fixture: fixture)
-                }
-            }
-            FactoryPanel(title: "Vestiário", systemImage: "person.2.wave.2.fill") {
-                if let opponentStyle = career.predictedOpponentStyle {
-                    Label("O rival deve voltar: \(opponentStyle.rawValue)", systemImage: "binoculars.fill")
-                        .font(.subheadline.weight(.medium))
-                    Label("Auxiliar sugere: \(FootballPlayStyle.bestAnswer(to: opponentStyle).rawValue)", systemImage: "lightbulb.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(FootballTheme.accent)
-                }
-                Picker("Estilo para o 2º tempo", selection: Binding(
-                    get: { career.playStyle },
-                    set: { career.setPlayStyle($0) }
-                )) {
-                    ForEach(FootballPlayStyle.allCases) { style in
-                        Text(style.rawValue).tag(style)
+    private func controls(_ live: LiveMatchState) -> some View {
+        VStack(spacing: 10) {
+            if !live.sim.finished {
+                HStack(spacing: 10) {
+                    Button(action: toggleClock) {
+                        Label(running ? "Pausar" : (live.sim.minute == 0 ? "Começar" : "Continuar"),
+                              systemImage: running ? "pause.fill" : "play.fill")
+                            .frame(maxWidth: .infinity)
                     }
-                }
-                .pickerStyle(.menu)
-                .disabled(staticPreview)
-                .accessibilityIdentifier("live-style-picker")
-                Text(career.playStyle.summary).font(.caption).foregroundStyle(.secondary)
-                Button { showSubstitutions = true } label: {
-                    Label("Substituições (\(career.liveMatch?.substitutionsUsed ?? 0)/\(LiveMatchState.maxSubstitutions))",
-                          systemImage: "arrow.left.arrow.right")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(staticPreview || (career.liveMatch?.substitutionsUsed ?? 0) >= LiveMatchState.maxSubstitutions)
-                .accessibilityIdentifier("live-substitutions")
-                tiredStarters
-            }
-            Button(action: startSecondHalf) {
-                Label("Começar o 2º tempo", systemImage: "play.fill")
-            }
-            .buttonStyle(FactoryPrimaryButtonStyle())
-            .accessibilityIdentifier("live-second-half")
-        }
-    }
-
-    @ViewBuilder
-    private var tiredStarters: some View {
-        let tired = career.starters.filter { $0.condition < 70 }
-        if !tired.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Titulares cansados").font(.caption.weight(.bold)).foregroundStyle(.orange)
-                ForEach(tired) { player in
-                    HStack {
-                        Text(player.name).font(.caption)
-                        Spacer()
-                        Text("\(player.condition)%").font(.caption.weight(.bold).monospacedDigit())
-                            .foregroundStyle(ConditionBar.color(for: player.condition))
+                    .buttonStyle(.borderedProminent)
+                    .disabled(staticPreview)
+                    .accessibilityIdentifier("live-toggle")
+                    Picker("Velocidade", selection: $speed) {
+                        Text("1×").tag(1)
+                        Text("2×").tag(2)
+                        Text("4×").tag(4)
                     }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 150)
+                    .accessibilityIdentifier("live-speed")
+                }
+                HStack(spacing: 10) {
+                    Button { advance(minutes: 5) } label: {
+                        Label("+5 min", systemImage: "goforward.5").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(staticPreview)
+                    Button { showSubstitutions = true } label: {
+                        Label("Trocar (\(live.substitutionsUsed)/\(LiveMatchState.maxSubstitutions))", systemImage: "arrow.left.arrow.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(staticPreview || live.substitutionsUsed >= LiveMatchState.maxSubstitutions)
+                    .accessibilityIdentifier("live-substitutions")
+                    Button(action: skipToEnd) {
+                        Label("Ao final", systemImage: "forward.end.fill").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(staticPreview)
+                    .accessibilityIdentifier("live-skip")
+                }
+                .font(.subheadline.weight(.semibold))
+                if live.sim.minute == 45 && !running {
+                    Label("Intervalo: troque jogadores à vontade e ajuste a tática antes do 2º tempo.", systemImage: "person.2.wave.2.fill")
+                        .font(.caption.weight(.medium)).foregroundStyle(FootballTheme.accent)
                 }
             }
         }
     }
 
-    private var fullTimePanel: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if let fixture, let club = career.selectedClubID, let result = fixture.result(for: club) {
-                resultBanner(result)
-                FactoryPanel(title: "Estatísticas finais", systemImage: "chart.bar.fill") {
-                    FootballMatchReport(fixture: fixture, career: career, showAllEvents: false)
-                }
-            }
+    private func fullTimePanel(_ live: LiveMatchState) -> some View {
+        let userGoals = live.userIsHome ? live.homeGoals : live.awayGoals
+        let rivalGoals = live.userIsHome ? live.awayGoals : live.homeGoals
+        let result: FootballResult = userGoals > rivalGoals ? .win : (userGoals == rivalGoals ? .draw : .loss)
+        return VStack(alignment: .leading, spacing: 12) {
+            resultBanner(result, penalties: live.sim.needsShootout)
             Button {
-                tickTask?.cancel()
+                finishing = true
+                stopClock()
+                _ = career.finishMatchDay()
                 onClose()
             } label: {
                 Label("Concluir rodada", systemImage: "checkmark.circle.fill")
             }
             .buttonStyle(FactoryPrimaryButtonStyle())
+            .disabled(staticPreview || finishing)
             .accessibilityIdentifier("live-finish")
         }
     }
 
-    private func resultBanner(_ result: FootballResult) -> some View {
+    private func resultBanner(_ result: FootballResult, penalties: Bool) -> some View {
         let text: String
         let tint: Color
         switch result {
@@ -253,7 +222,7 @@ struct FootballLiveMatchView: View {
             text = "Vitória! Três pontos para a conta."
             tint = .green
         case .draw:
-            text = "Empate. Um ponto na tabela."
+            text = penalties ? "Empate no tempo regulamentar: a decisão vai aos pênaltis." : "Empate. Um ponto na tabela."
             tint = .gray
         case .loss:
             text = "Derrota. Hora de rever o plano."
@@ -267,20 +236,105 @@ struct FootballLiveMatchView: View {
             .background(tint.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private func liveStats(live: LiveMatchState, fixture: LeagueFixture) -> some View {
-        let homeColor = FootballSeason.team(fixture.home)?.primaryColor ?? FootballTheme.accent
-        let awayColor = FootballSeason.team(fixture.away)?.primaryColor ?? .gray
-        return VStack(spacing: 12) {
-            StatComparisonRow(title: "Posse de bola", home: Double(live.homePossession), away: Double(100 - live.homePossession),
-                              homeText: "\(live.homePossession)%", awayText: "\(100 - live.homePossession)%",
-                              homeColor: homeColor, awayColor: awayColor)
-            StatComparisonRow(title: "Finalizações", home: Double(live.homeShots), away: Double(live.awayShots),
-                              homeText: "\(live.homeShots)", awayText: "\(live.awayShots)",
-                              homeColor: homeColor, awayColor: awayColor)
-            StatComparisonRow(title: "Gols esperados (xG)", home: live.homeExpectedGoals, away: live.awayExpectedGoals,
-                              homeText: FootballFormat.expectedGoals(live.homeExpectedGoals),
-                              awayText: FootballFormat.expectedGoals(live.awayExpectedGoals),
-                              homeColor: homeColor, awayColor: awayColor)
+    // MARK: - Lance a lance
+
+    private func feedPanel(_ live: LiveMatchState) -> some View {
+        let events = live.sim.events
+        return FactoryPanel(title: "Lance a lance", systemImage: "text.bubble.fill") {
+            if events.isEmpty {
+                Text("A bola vai rolar…").font(.subheadline).foregroundStyle(.secondary)
+            }
+            ForEach(Array(events.suffix(60).enumerated().reversed()), id: \.offset) { _, event in
+                MatchEventRow(event: event)
+            }
+        }
+        .accessibilityIdentifier("live-feed")
+    }
+
+    // MARK: - Números
+
+    private func statsPanel(_ live: LiveMatchState) -> some View {
+        let sim = live.sim
+        let homeColor = FootballSeason.team(sim.home.teamID)?.primaryColor ?? FootballTheme.accent
+        let awayColor = FootballSeason.team(sim.away.teamID)?.primaryColor ?? .gray
+        let possession = sim.minute > 0 ? Int((sim.home.possessionAccumulator / Double(sim.minute) * 100).rounded()) : 50
+        return FactoryPanel(title: "Estatísticas ao vivo", systemImage: "chart.bar.fill") {
+            StatComparisonRow(title: "Posse de bola", home: Double(possession), away: Double(100 - possession),
+                              homeText: "\(possession)%", awayText: "\(100 - possession)%", homeColor: homeColor, awayColor: awayColor)
+            statRow("Finalizações", sim.home.shots, sim.away.shots, homeColor, awayColor)
+            statRow("No alvo", sim.home.shotsOnTarget, sim.away.shotsOnTarget, homeColor, awayColor)
+            StatComparisonRow(title: "Gols esperados (xG)", home: sim.home.expectedGoals, away: sim.away.expectedGoals,
+                              homeText: FootballFormat.expectedGoals(sim.home.expectedGoals),
+                              awayText: FootballFormat.expectedGoals(sim.away.expectedGoals), homeColor: homeColor, awayColor: awayColor)
+            statRow("Escanteios", sim.home.corners, sim.away.corners, homeColor, awayColor)
+            statRow("Faltas", sim.home.fouls, sim.away.fouls, homeColor, awayColor)
+            statRow("Cartões amarelos", sim.home.yellowCards, sim.away.yellowCards, homeColor, awayColor)
+            if sim.home.redCards + sim.away.redCards > 0 {
+                statRow("Cartões vermelhos", sim.home.redCards, sim.away.redCards, homeColor, awayColor)
+            }
+            Divider()
+            Text("Seus atletas em campo").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
+            ForEach(live.userSide.onPitch, id: \.self) { id in
+                if let player = career.player(id) {
+                    HStack(spacing: 10) {
+                        Text(player.position.rawValue).font(.caption2.weight(.bold)).frame(width: 26)
+                        Text(player.name).font(.subheadline).lineLimit(1)
+                        Spacer()
+                        let condition = Int(live.userSide.matchCondition[id] ?? Double(player.condition))
+                        Text("\(condition)%").font(.caption.weight(.bold).monospacedDigit())
+                            .foregroundStyle(ConditionBar.color(for: condition))
+                    }
+                }
+            }
+        }
+    }
+
+    private func statRow(_ title: String, _ home: Int, _ away: Int, _ homeColor: Color, _ awayColor: Color) -> some View {
+        StatComparisonRow(title: title, home: Double(home), away: Double(away), homeText: "\(home)", awayText: "\(away)",
+                          homeColor: homeColor, awayColor: awayColor)
+    }
+
+    // MARK: - Campo
+
+    private func pitchPanel(_ live: LiveMatchState) -> some View {
+        FactoryPanel(title: "Mapa de finalizações", systemImage: "scope") {
+            FootballShotMap(sim: live.sim)
+            Text("Cada bolinha é uma finalização; as maiores têm mais chance de gol. O anel marca os gols.")
+                .font(.caption).foregroundStyle(.secondary)
+            Divider()
+            Text("Mapa de calor do seu time").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
+            FootballHeatMap(heat: teamHeat(live.userSide), color: career.selectedClub?.primaryColor ?? FootballTheme.accent)
+        }
+    }
+
+    private func teamHeat(_ side: MatchSideState) -> [Int] {
+        var total = [Int](repeating: 0, count: MatchSideState.heatColumns * MatchSideState.heatRows)
+        for (_, cells) in side.heat {
+            for (index, value) in cells.enumerated() where index < total.count { total[index] += value }
+        }
+        return total
+    }
+
+    // MARK: - Outros jogos
+
+    @ViewBuilder
+    private func othersPanel(_ live: LiveMatchState) -> some View {
+        if !live.others.isEmpty {
+            FactoryPanel(title: "Outros jogos da rodada", systemImage: "list.bullet.rectangle") {
+                ForEach(Array(live.others.enumerated()), id: \.offset) { _, outcome in
+                    if let fixture = career.fixtures.first(where: { $0.id == outcome.fixtureID }) {
+                        let score = live.score(of: outcome, at: live.sim.minute)
+                        HStack(spacing: 8) {
+                            Text(FootballSeason.team(fixture.home)?.shortName ?? "—").font(.caption.weight(.bold)).frame(width: 40, alignment: .trailing)
+                            Text("\(score.home) – \(score.away)").font(.subheadline.weight(.heavy).monospacedDigit()).frame(width: 60)
+                            Text(FootballSeason.team(fixture.away)?.shortName ?? "—").font(.caption.weight(.bold)).frame(width: 40, alignment: .leading)
+                            Spacer()
+                            Text(fixture.competition.isCup ? "Copa" : (fixture.competition.division?.name ?? "")).font(.caption2).foregroundStyle(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
         }
     }
 
@@ -289,62 +343,256 @@ struct FootballLiveMatchView: View {
     private func start() {
         guard !didStart else { return }
         didStart = true
-        fixtureID = career.liveMatch?.fixtureID
         guard career.liveMatch != nil else {
             onClose()
             return
         }
         if staticPreview {
-            minute = 45
-            phase = .halfTime
+            career.liveAdvance(to: 38)
             return
         }
-        // Uma partida retomada (app reaberto no intervalo) volta direto ao vestiário.
-        let resumed = (career.liveMatch?.substitutionsUsed ?? 0) > 0 || career.liveMatch?.styleAtKickoff != career.playStyle
-        if resumed {
-            minute = 45
-            phase = .halfTime
-            return
-        }
-        runClock(to: 45) { phase = .halfTime }
+        // Partida retomada fica pausada; partida nova começa sozinha.
+        if (career.liveMatch?.sim.minute ?? 0) == 0 { startClock() }
     }
 
-    private func runClock(to end: Int, completion: @escaping () -> Void) {
+    private func toggleClock() {
+        if running { stopClock() } else { startClock() }
+    }
+
+    private func stopClock() {
+        running = false
         tickTask?.cancel()
-        let delay = tickNanoseconds
+    }
+
+    private func startClock() {
+        tickTask?.cancel()
+        guard !staticPreview, career.liveMatch?.sim.finished == false else { return }
+        running = true
         tickTask = Task { @MainActor in
-            while minute < end {
-                try? await Task.sleep(nanoseconds: delay)
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: tickNanoseconds)
                 if Task.isCancelled { return }
-                withAnimation(.easeOut(duration: 0.1)) { minute += 1 }
+                guard career.liveMatch?.sim.finished == false else {
+                    running = false
+                    return
+                }
+                let reds = career.liveMatch?.sim.events.filter { $0.kind == .redCard }.count ?? 0
+                career.liveAdvance(minutes: 1)
+                let after = career.liveMatch
+                if after?.sim.finished == true {
+                    running = false
+                    return
+                }
+                // Pausa automática no intervalo e a cada expulsão para o treinador reagir.
+                if after?.sim.minute == 45 || (after?.sim.events.filter { $0.kind == .redCard }.count ?? 0) > reds {
+                    running = false
+                    return
+                }
             }
-            completion()
         }
     }
 
-    private func skip() {
-        tickTask?.cancel()
-        switch phase {
-        case .firstHalf:
-            minute = 45
-            phase = .halfTime
-        case .secondHalf:
-            minute = finalMinute
-            phase = .fullTime
-        default:
-            break
+    private func advance(minutes: Int) {
+        stopClock()
+        career.liveAdvance(minutes: minutes)
+    }
+
+    private func skipToEnd() {
+        stopClock()
+        career.liveAdvance(minutes: 200)
+    }
+}
+
+// MARK: - Tática ao vivo
+
+struct FootballLiveTacticsPanel: View {
+    @Binding var career: FootballCareer
+    let locked: Bool
+    let onSubstitutions: () -> Void
+
+    private var userSide: MatchSideState? { career.liveMatch?.userSide }
+
+    var body: some View {
+        if let side = userSide {
+            VStack(alignment: .leading, spacing: 16) {
+                FactoryPanel(title: "Plano de jogo", systemImage: "point.topleft.down.to.point.bottomright.curvepath") {
+                    if let opponentStyle = career.predictedOpponentStyle {
+                        Label("Auxiliar sugere: \(FootballPlayStyle.bestAnswer(to: opponentStyle).rawValue)", systemImage: "lightbulb.fill")
+                            .font(.caption.weight(.semibold)).foregroundStyle(FootballTheme.accent)
+                    }
+                    Picker("Formação", selection: Binding(get: { side.formation }, set: { career.liveSetFormation($0) })) {
+                        ForEach(FootballFormation.allCases) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(locked)
+                    HStack {
+                        Text("Estilo").font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Picker("Estilo", selection: Binding(get: { side.style }, set: { career.liveSetStyle($0) })) {
+                            ForEach(FootballPlayStyle.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.menu)
+                        .disabled(locked)
+                        .accessibilityIdentifier("live-style-picker")
+                    }
+                    Text(side.style.summary).font(.caption).foregroundStyle(.secondary)
+                }
+                FactoryPanel(title: "Instruções", systemImage: "slider.horizontal.3") {
+                    levelPicker("Altura da linha", TeamInstructions.lineHeightTitles, side.instructions.lineHeight) { $0.lineHeight = $1 }
+                    levelPicker("Ritmo", TeamInstructions.tempoTitles, side.instructions.tempo) { $0.tempo = $1 }
+                    levelPicker("Largura", TeamInstructions.widthTitles, side.instructions.width) { $0.width = $1 }
+                    levelPicker("Pressão", TeamInstructions.pressingTitles, side.instructions.pressing) { $0.pressing = $1 }
+                    Toggle("Fazer cera", isOn: Binding(
+                        get: { side.instructions.timeWasting },
+                        set: { value in
+                            var instructions = side.instructions
+                            instructions.timeWasting = value
+                            career.liveSetInstructions(instructions)
+                        }
+                    ))
+                    .font(.subheadline)
+                    .disabled(locked)
+                    Text("Linha alta e pressão forte cansam mais e geram mais faltas. Cera protege o placar, mas entrega a bola.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                FactoryPanel(title: "Funções e marcação", systemImage: "person.crop.rectangle.stack.fill") {
+                    ForEach(side.onPitch, id: \.self) { id in
+                        if let player = career.player(id), player.position != .goalkeeper {
+                            HStack {
+                                Text(player.name).font(.subheadline).lineLimit(1)
+                                Spacer()
+                                Picker("Função", selection: Binding(
+                                    get: { side.roles[id] ?? .balanced },
+                                    set: { career.liveSetRole(playerID: id, role: $0) }
+                                )) {
+                                    ForEach(PlayerRole.options(for: player.detail)) { Text($0.title).tag($0) }
+                                }
+                                .pickerStyle(.menu)
+                                .disabled(locked)
+                            }
+                        }
+                    }
+                    HStack {
+                        Text("Marcação individual").font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Picker("Marcar", selection: Binding(
+                            get: { side.markTargetID },
+                            set: { career.liveSetMarking(targetID: $0) }
+                        )) {
+                            Text("Ninguém").tag(Int?.none)
+                            ForEach(career.liveRivalOnPitch.filter { $0.position != .goalkeeper }) { rival in
+                                Text(rival.name).tag(Int?.some(rival.id))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .disabled(locked)
+                    }
+                }
+                Button(action: onSubstitutions) {
+                    Label("Substituições (\(side.substitutionsUsed)/\(LiveMatchState.maxSubstitutions))", systemImage: "arrow.left.arrow.right")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(locked || side.substitutionsUsed >= LiveMatchState.maxSubstitutions)
+            }
         }
     }
 
-    private func startSecondHalf() {
-        guard !staticPreview else { return }
-        guard career.finishMatchDay() else {
-            onClose()
-            return
+    private func levelPicker(_ title: String, _ names: [String], _ current: Level3,
+                             _ update: @escaping (inout TeamInstructions, Level3) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Picker(title, selection: Binding(
+                get: { current },
+                set: { value in
+                    var instructions = career.liveMatch?.userSide.instructions ?? TeamInstructions()
+                    update(&instructions, value)
+                    career.liveSetInstructions(instructions)
+                }
+            )) {
+                ForEach(Level3.allCases) { level in Text(names[level.rawValue]).tag(level) }
+            }
+            .pickerStyle(.segmented)
+            .disabled(locked)
         }
-        minute = 45
-        phase = .secondHalf
-        runClock(to: finalMinute) { phase = .fullTime }
+    }
+}
+
+// MARK: - Mapas
+
+struct FootballShotMap: View {
+    let sim: MatchSimulation
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(LinearGradient(colors: [FootballTheme.pitchTop, FootballTheme.pitchBottom], startPoint: .top, endPoint: .bottom))
+                ShotMapMarkings().stroke(Color.white.opacity(0.35), lineWidth: 1.2).padding(8)
+                ForEach(Array(sim.events.enumerated()), id: \.offset) { _, event in
+                    if let x = event.x, let y = event.y, event.kind == .goal || event.kind == .chance || event.kind == .save {
+                        let isHome = event.teamID == sim.home.teamID
+                        let color = FootballSeason.team(event.teamID ?? -1)?.primaryColor ?? .white
+                        let radius = 5 + CGFloat(min(0.6, event.xg ?? 0.1)) * 18
+                        let px = 8 + (size.width - 16) * CGFloat(y)
+                        // Mandante ataca para cima, visitante para baixo.
+                        let distance = CGFloat(x) * (size.height - 16) / 2
+                        let py = isHome ? 8 + distance : size.height - 8 - distance
+                        Circle()
+                            .fill(color.opacity(event.kind == .goal ? 1 : 0.7))
+                            .overlay(Circle().stroke(event.kind == .goal ? Color.white : Color.clear, lineWidth: 2.5))
+                            .frame(width: radius * 2, height: radius * 2)
+                            .position(x: px, y: py)
+                    }
+                }
+            }
+        }
+        .frame(height: 300)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Mapa de finalizações da partida")
+    }
+}
+
+private struct ShotMapMarkings: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(rect)
+        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        let radius = min(rect.width, rect.height) * 0.1
+        path.addEllipse(in: CGRect(x: rect.midX - radius, y: rect.midY - radius, width: radius * 2, height: radius * 2))
+        let boxWidth = rect.width * 0.55
+        let boxHeight = rect.height * 0.16
+        path.addRect(CGRect(x: rect.midX - boxWidth / 2, y: rect.minY, width: boxWidth, height: boxHeight))
+        path.addRect(CGRect(x: rect.midX - boxWidth / 2, y: rect.maxY - boxHeight, width: boxWidth, height: boxHeight))
+        return path
+    }
+}
+
+struct FootballHeatMap: View {
+    let heat: [Int]
+    let color: Color
+
+    var body: some View {
+        let columns = MatchSideState.heatColumns
+        let rows = MatchSideState.heatRows
+        let peak = Double(max(1, heat.max() ?? 1))
+        VStack(spacing: 2) {
+            ForEach(0..<rows, id: \.self) { row in
+                HStack(spacing: 2) {
+                    ForEach(0..<columns, id: \.self) { column in
+                        let index = row * columns + column
+                        let value = index < heat.count ? Double(heat[index]) / peak : 0
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(color.opacity(0.12 + 0.88 * value))
+                            .frame(height: 44)
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Mapa de calor do time")
     }
 }
 
@@ -360,26 +608,32 @@ struct FootballSubstitutionSheet: View {
         _outgoingID = State(initialValue: outgoingID)
     }
 
-    private var bench: [FootballPlayer] {
-        career.clubRoster.filter { !career.startingXI.contains($0.id) }
+    private var pitchIDs: [Int] { career.liveMatch?.userSide.onPitch ?? career.startingXI }
+
+    private var benchPlayers: [FootballPlayer] {
+        if let side = career.liveMatch?.userSide { return side.bench.compactMap { career.player($0) } }
+        return career.clubRoster.filter { !career.startingXI.contains($0.id) && !$0.isYouth }
     }
 
     var body: some View {
         NavigationStack {
             List {
+                if let live = career.liveMatch {
+                    Section {
+                        Text("Trocas: \(live.substitutionsUsed)/\(LiveMatchState.maxSubstitutions) · paradas: \(live.substitutionStops)/\(LiveMatchState.maxSubstitutionStops). O intervalo não conta como parada.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
                 if let outgoingID, let outgoing = career.player(outgoingID) {
                     Section("Sai") {
                         PlayerRow(player: outgoing, isStarter: true)
-                        Button("Escolher outro titular") { self.outgoingID = nil }
-                            .font(.subheadline)
+                        Button("Escolher outro titular") { self.outgoingID = nil }.font(.subheadline)
                     }
-                    let samePosition = bench.filter { $0.position == outgoing.position }
-                    let others = bench.filter { $0.position != outgoing.position }
+                    let same = benchPlayers.filter { $0.position == outgoing.position }
+                    let others = benchPlayers.filter { $0.position != outgoing.position }
                     Section("Entra · \(outgoing.position.title.lowercased())") {
-                        if samePosition.isEmpty {
-                            Text("Nenhum reserva desta posição.").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        ForEach(samePosition) { player in incomingButton(player, replacing: outgoing) }
+                        if same.isEmpty { Text("Nenhum reserva desta posição.").font(.subheadline).foregroundStyle(.secondary) }
+                        ForEach(same) { player in incomingButton(player, replacing: outgoing) }
                     }
                     if !others.isEmpty {
                         Section("Improvisar outra posição") {
@@ -388,36 +642,31 @@ struct FootballSubstitutionSheet: View {
                     }
                 } else {
                     Section("Quem sai?") {
-                        ForEach(career.starters) { player in
-                            Button { outgoingID = player.id } label: {
-                                PlayerRow(player: player, isStarter: true)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("sub-out-\(player.id)")
+                        ForEach(pitchIDs.compactMap { career.player($0) }) { player in
+                            Button { outgoingID = player.id } label: { PlayerRow(player: player, isStarter: true) }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("sub-out-\(player.id)")
                         }
                     }
                 }
             }
             .navigationTitle(career.liveMatch == nil ? "Trocar titular" : "Substituição")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fechar") { dismiss() }
-                }
-            }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
         }
         .tint(FootballTheme.accent)
     }
 
     private func incomingButton(_ player: FootballPlayer, replacing outgoing: FootballPlayer) -> some View {
-        Button {
+        let allowed = career.canSubstitute(outgoingID: outgoing.id, incomingID: player.id)
+        return Button {
             if career.substitute(outgoingID: outgoing.id, incomingID: player.id) { dismiss() }
         } label: {
             PlayerRow(player: player)
         }
         .buttonStyle(.plain)
-        .disabled(!career.canSubstitute(outgoingID: outgoing.id, incomingID: player.id))
-        .opacity(career.canSubstitute(outgoingID: outgoing.id, incomingID: player.id) ? 1 : 0.45)
+        .disabled(!allowed)
+        .opacity(allowed ? 1 : 0.45)
         .accessibilityIdentifier("sub-in-\(player.id)")
     }
 }
@@ -459,6 +708,9 @@ struct FootballSeasonSummaryView: View {
                         } else if record.relegated {
                             Label("Rebaixado para a Série B.", systemImage: "arrow.down.circle.fill")
                                 .font(.subheadline.weight(.bold)).foregroundStyle(.red)
+                        }
+                        if record.reputationChange != 0 {
+                            summaryRow("Reputação", (record.reputationChange > 0 ? "+" : "") + "\(record.reputationChange)")
                         }
                     }
                     FactoryPanel(title: "Destaques", systemImage: "star.fill") {

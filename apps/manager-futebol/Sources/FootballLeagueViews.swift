@@ -274,94 +274,12 @@ struct FootballTableView: View {
     }
 }
 
-// MARK: - Mercado
-
-struct FootballMarketView: View {
-    @Binding var career: FootballCareer
-    let onAlert: (String) -> Void
-    @State private var filter: FootballPosition?
-    @State private var pendingSigning: FootballPlayer?
-
-    private var visiblePlayers: [FootballPlayer] {
-        career.marketPlayers.filter { filter == nil || $0.position == filter }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if let club = career.selectedClub {
-                FactoryHeader(
-                    eyebrow: "Mercado de agentes livres",
-                    title: "Reforce o \(club.name)",
-                    subtitle: "O mercado é renovado a cada temporada. Propostas dos rivais pelos seus atletas aparecem aqui e no painel.",
-                    accent: FootballTheme.accent
-                )
-                HStack(spacing: 12) {
-                    FactoryMetric(label: "Disponível", value: FootballFormat.money(career.transferBudget), symbol: "wallet.bifold.fill", tint: FootballTheme.accent)
-                    FactoryMetric(label: "Vagas ocupadas", value: "\(career.clubRoster.count)/\(FootballCareer.rosterLimit)", symbol: "person.3.fill", tint: .orange)
-                }
-                if !career.offers.isEmpty {
-                    FootballOffersPanel(career: $career, onAlert: onAlert)
-                }
-                Picker("Posição", selection: $filter) {
-                    Text("Todos").tag(FootballPosition?.none)
-                    ForEach(FootballPosition.allCases, id: \.self) { position in
-                        Text(position.rawValue).tag(FootballPosition?.some(position))
-                    }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("market-filter")
-                FactoryPanel(title: "Agentes livres · \(visiblePlayers.count)", systemImage: "person.crop.circle.badge.plus") {
-                    if visiblePlayers.isEmpty {
-                        Text("Nenhum atleta disponível com este filtro.").font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    ForEach(visiblePlayers) { player in
-                        HStack(spacing: 10) {
-                            PlayerRow(player: player, showValue: true)
-                            Button {
-                                pendingSigning = player
-                            } label: {
-                                Image(systemName: "plus").font(.headline)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(!career.canSign(playerID: player.id))
-                            .accessibilityLabel("Contratar \(player.name)")
-                            .accessibilityIdentifier("contract-player-\(player.id)")
-                        }
-                        if player.id != visiblePlayers.last?.id { Divider() }
-                    }
-                    Text(career.clubRoster.count >= FootballCareer.rosterLimit
-                         ? "Elenco completo. Venda um atleta para abrir vaga."
-                         : "Contratações exigem vaga no elenco e saldo suficiente.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-        }
-        .factoryPage()
-        .navigationTitle("Mercado")
-        .confirmationDialog(
-            "Contratar \(pendingSigning?.name ?? "atleta")?",
-            isPresented: Binding(get: { pendingSigning != nil }, set: { if !$0 { pendingSigning = nil } }),
-            titleVisibility: .visible
-        ) {
-            if let player = pendingSigning {
-                Button("Contratar por \(FootballFormat.money(player.marketValue))") {
-                    if !career.signPlayer(playerID: player.id) {
-                        onAlert("Não foi possível contratar: confira o orçamento e as vagas no elenco.")
-                    }
-                    pendingSigning = nil
-                }
-            }
-            Button("Cancelar", role: .cancel) { pendingSigning = nil }
-        } message: {
-            Text("O valor sai do caixa de transferências.")
-        }
-    }
-}
-
 // MARK: - Clube
 
 struct FootballClubView: View {
     @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
+    let onStartChallenge: (ChallengeScenario) -> Void
     let activeSlot: Int
     let slotSummaries: [SaveSlotSummary?]
     let onLoadSlot: (Int) -> Void
@@ -408,6 +326,7 @@ struct FootballClubView: View {
                     FactoryMetric(label: "Copas", value: "\(cupTitles)", symbol: "trophy", tint: FootballTheme.gold)
                     FactoryMetric(label: "Temporadas", value: "\(career.history.count)", symbol: "calendar", tint: FootballTheme.accent)
                 }
+                managementPanel
                 FactoryPanel(title: "Diretoria", systemImage: "building.columns.fill") {
                     HStack {
                         Text("Meta").font(.subheadline).foregroundStyle(.secondary)
@@ -466,6 +385,45 @@ struct FootballClubView: View {
             Button("Cancelar", role: .cancel) { pendingAction = nil }
         } message: {
             Text("Essa ação não pode ser desfeita.")
+        }
+    }
+
+    private func link<Destination: View>(_ title: String, _ symbol: String, badge: Int = 0, id: String,
+                                          @ViewBuilder destination: @escaping () -> Destination) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).frame(width: 28).foregroundStyle(FootballTheme.accent)
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Spacer()
+                if badge > 0 {
+                    Text("\(badge)").font(.caption2.weight(.heavy)).foregroundStyle(.white)
+                        .padding(.horizontal, 7).padding(.vertical, 3).background(Color.red, in: Capsule())
+                }
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+    }
+
+    private var managementPanel: some View {
+        FactoryPanel(title: "Gestão do clube", systemImage: "briefcase.fill") {
+            link("Caixa de entrada", "tray.full.fill", badge: career.unreadCount, id: "club-inbox") { FootballInboxView(career: $career, onAlert: onAlert) }
+            Divider()
+            link("Finanças", "banknote.fill", id: "club-finance") { FootballFinanceView(career: career) }
+            Divider()
+            link("Estrutura e ingressos", "building.2.fill", id: "club-facilities") { FootballFacilitiesView(career: $career, onAlert: onAlert) }
+            Divider()
+            link("Comissão técnica", "person.2.fill", id: "club-staff") { FootballStaffView(career: $career, onAlert: onAlert) }
+            Divider()
+            link("Patrocínio", "megaphone.fill", id: "club-sponsor") { FootballSponsorView(career: $career, onAlert: onAlert) }
+            Divider()
+            link("História, recordes e convites", "list.star", badge: career.invitations.count, id: "club-story") { FootballStoryView(career: $career, onAlert: onAlert) }
+            Divider()
+            link("Modos de jogo e tutorial", "dial.medium.fill", id: "club-modes") { FootballModesView(career: $career, onStartChallenge: onStartChallenge) }
         }
     }
 

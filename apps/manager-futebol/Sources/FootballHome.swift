@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum FootballTab: Int, CaseIterable, Identifiable {
-    case dashboard, squad, table, market, club
+    case dashboard, squad, table, market, club, world
 
     var id: Int { rawValue }
 
@@ -12,6 +12,7 @@ enum FootballTab: Int, CaseIterable, Identifiable {
         case .table: return "Liga"
         case .market: return "Mercado"
         case .club: return "Clube"
+        case .world: return "Mundo"
         }
     }
 
@@ -22,6 +23,7 @@ enum FootballTab: Int, CaseIterable, Identifiable {
         case .table: return "list.number"
         case .market: return "arrow.left.arrow.right"
         case .club: return "trophy.fill"
+        case .world: return "globe.americas.fill"
         }
     }
 }
@@ -36,6 +38,8 @@ struct FootballHome: View {
     @State private var showLiveMatch = false
     @State private var seasonSummary: SeasonRecord?
     @State private var didPrepare = false
+    @State private var showPress = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var capture: String? { FactoryCapture.screen }
 
@@ -43,6 +47,8 @@ struct FootballHome: View {
         Group {
             if capture == "match", career.liveMatch != nil {
                 FootballLiveMatchView(career: $career, staticPreview: true) { }
+            } else if let capture, Self.deepCaptures.contains(capture) {
+                NavigationStack { deepCapture(capture).tint(FootballTheme.accent) }
             } else {
                 navigationContent
             }
@@ -54,6 +60,9 @@ struct FootballHome: View {
         .sheet(item: $seasonSummary) { record in
             FootballSeasonSummaryView(record: record, career: career)
         }
+        .sheet(isPresented: $showPress) {
+            FootballPressView(career: $career)
+        }
         .alert("Manager de Futebol", isPresented: Binding(
             get: { alertMessage != nil },
             set: { if !$0 { alertMessage = nil } }
@@ -64,9 +73,46 @@ struct FootballHome: View {
         }
         .onAppear(perform: prepareInitialState)
         .onChange(of: career) { _, updatedCareer in
-            guard capture == nil else { return }
+            // Durante a partida ao vivo o save acontece só ao pausar, sair ou fechar o app.
+            guard capture == nil, !showLiveMatch else { return }
             FootballSaveStore().save(updatedCareer, slot: activeSlot)
             refreshSlots()
+        }
+        .onChange(of: showLiveMatch) { _, isShowing in
+            guard !isShowing, capture == nil else { return }
+            FootballSaveStore().save(career, slot: activeSlot)
+            refreshSlots()
+            if career.pendingPress != nil {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 700_000_000)
+                    showPress = true
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active, capture == nil else { return }
+            FootballSaveStore().save(career, slot: activeSlot)
+        }
+    }
+
+    static let deepCaptures: Set<String> = ["betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "finance", "player", "inbox", "achievements", "staff"]
+
+    @ViewBuilder
+    private func deepCapture(_ name: String) -> some View {
+        switch name {
+        case "betting": FootballBettingView(career: $career, onAlert: showAlert)
+        case "social": FootballSocialView(career: $career, onAlert: showAlert)
+        case "fantasy": FootballFantasyView(career: $career, onAlert: showAlert)
+        case "lifestyle": FootballCoachLifeView(career: $career, onAlert: showAlert)
+        case "business": FootballBusinessView(career: $career, onAlert: showAlert)
+        case "quests": FootballQuestsView(career: $career)
+        case "events": FootballEventsView(career: $career)
+        case "finance": FootballFinanceView(career: career)
+        case "inbox": FootballInboxView(career: $career, onAlert: showAlert)
+        case "achievements": FootballAchievementsView(career: career)
+        case "staff": FootballStaffView(career: $career, onAlert: showAlert)
+        default:
+            FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0, onAlert: showAlert)
         }
     }
 
@@ -97,23 +143,31 @@ struct FootballHome: View {
                     onPlayLive: startLiveMatch,
                     onAlert: showAlert,
                     onSeasonEnded: { seasonSummary = $0 },
-                    onNavigate: { selectedTab = $0 }
+                    onNavigate: { selectedTab = $0 },
+                    onShowPress: { showPress = true }
                 )
             case .squad:
                 FootballSquadView(career: $career, onAlert: showAlert)
             case .table:
                 FootballTableView(career: career, initialSection: tableSection)
+                    .onAppear { career.markTutorialSeen("table") }
             case .market:
                 FootballMarketView(career: $career, onAlert: showAlert)
+                    .onAppear { career.markTutorialSeen("market") }
+            case .world:
+                FootballWorldView(career: $career, onAlert: showAlert)
             case .club:
                 FootballClubView(
                     career: $career,
+                    onAlert: showAlert,
+                    onStartChallenge: startChallenge,
                     activeSlot: activeSlot,
                     slotSummaries: slotSummaries,
                     onLoadSlot: loadSlot,
                     onNewCareer: startNewCareer,
                     onDeleteSlot: deleteSlot
                 )
+                .onAppear { career.markTutorialSeen("club") }
             }
         }
     }
@@ -173,6 +227,17 @@ struct FootballHome: View {
         activeSlot = slot
         FootballSaveStore().activeSlot = slot
         career = FootballCareer(seed: FactoryCapture.isUITesting ? 26 : FootballCareer.randomSeed())
+        selectedTab = .dashboard
+        refreshSlots()
+    }
+
+    private func startChallenge(_ scenario: ChallengeScenario) {
+        if capture == nil { FootballSaveStore().save(career, slot: activeSlot) }
+        let store = FootballSaveStore()
+        let target = (0..<FootballSaveStore.slotCount).first { $0 != activeSlot && store.summary(slot: $0) == nil } ?? activeSlot
+        activeSlot = target
+        store.activeSlot = target
+        career = FootballCareer.challenge(scenario)
         selectedTab = .dashboard
         refreshSlots()
     }
@@ -242,6 +307,7 @@ struct FootballHome: View {
         case "squad": selectedTab = .squad
         case "market": selectedTab = .market
         case "club": selectedTab = .club
+        case "world": selectedTab = .world
         default: selectedTab = .dashboard
         }
     }
@@ -254,6 +320,21 @@ struct FootballHome: View {
         preview.startNextSeason()
         if preview.isFired, let job = preview.jobOffers.first { preview.acceptJob(job.id) }
         for _ in 0..<8 { preview.simulateNextMatchDay() }
+        var eventRandom = FootballRandom(seed: 77)
+        var attempts = 0
+        while preview.pendingEvents.isEmpty && attempts < 30 {
+            preview.generateWorldEvent(using: &eventRandom)
+            attempts += 1
+        }
+        preview.claimDailyBonus()
+        preview.doActivity(.tvPunditry)
+        preview.publishPost(tone: .humor)
+        let suggestion = preview.suggestedFantasyLineup()
+        preview.setFantasyLineup(ids: suggestion.ids, captainID: suggestion.captainID)
+        if let fixture = preview.bettingFixtures.first,
+           let option = preview.options(for: fixture).first(where: { $0.leg.market == .over25 }) {
+            preview.placeBet(stake: 50, legs: [option.leg])
+        }
         if liveMatch {
             while !preview.canPlay && preview.canAdvanceWithoutPlaying { preview.simulateNextMatchDay() }
             preview.beginMatchDay()
