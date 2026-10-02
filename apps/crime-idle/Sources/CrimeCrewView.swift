@@ -32,15 +32,15 @@ struct CrimeCrewCard: View {
     var body: some View {
         NoirCard(tint: tint, highlighted: level == 0 && state.canUpgradeCrew(member.id)) {
             HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [tint.opacity(level > 0 ? 0.55 : 0.12), Noir.ink], startPoint: .top, endPoint: .bottom))
-                    Image(systemName: level > 0 ? member.symbol : "person.fill.questionmark")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(level > 0 ? .white : Noir.muted)
-                }
-                .frame(width: 64, height: 64)
-                .overlay(Circle().strokeBorder(tint.opacity(level > 0 ? 0.9 : 0.25), lineWidth: 2))
+                CrimePortrait(memberID: member.id, tint: tint, revealed: level > 0)
+                    .frame(width: 76, height: 76)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: member.symbol)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Noir.ink)
+                            .frame(width: 24, height: 24)
+                            .background(tint, in: Circle())
+                    }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(member.role.uppercased()).font(.caption2.weight(.heavy)).tracking(1.4).foregroundStyle(tint)
                     Text(member.name).font(.title3.weight(.heavy))

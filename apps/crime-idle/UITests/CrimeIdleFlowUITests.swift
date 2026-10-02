@@ -1,14 +1,16 @@
 import XCTest
 
 final class CrimeIdleFlowUITests: XCTestCase {
-    func testStreetHustleRacketHeistCrewAndMap() {
+    func testTutorialStreetHustleRacketHeistCrewAndMap() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]
         app.launch()
 
         let tap = app.buttons["tap-street"]
         XCTAssertTrue(tap.waitForExistence(timeout: 10))
-        for _ in 0..<3 { tap.tap() }
+        XCTAssertTrue(app.staticTexts["Comece pequeno"].waitForExistence(timeout: 5), "O Padrinho guia o começo")
+        for _ in 0..<5 { tap.tap() }
+        XCTAssertTrue(app.staticTexts["Seu primeiro negócio"].waitForExistence(timeout: 5))
 
         app.buttons["tab-Negócios"].tap()
         let buy = app.buttons["buy-racket-0"]

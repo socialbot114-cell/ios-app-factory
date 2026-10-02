@@ -174,9 +174,18 @@ struct CrimeHeistOutcomeView: View {
                 }
                 .padding(14)
                 .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                Button("Continuar", action: dismiss)
-                    .buttonStyle(NoirButtonStyle(tint: tint))
-                    .accessibilityIdentifier("dismiss-outcome")
+                HStack(spacing: 10) {
+                    if outcome.success {
+                        CrimeShareButton(card: CrimeShareCard(eyebrow: outcome.perfect ? "Golpe perfeito" : "Golpe concluído",
+                                                              headline: CrimeHeist.catalog[outcome.heistID].name,
+                                                              value: "+" + CrimeFormat.cash(outcome.loot),
+                                                              detail: "Plano \(outcome.plan.title.lowercased()). Ninguém viu nada.",
+                                                              tint: tint), tint: tint)
+                    }
+                    Button("Continuar", action: dismiss)
+                        .buttonStyle(NoirButtonStyle(tint: outcome.success ? Color.white.opacity(0.8) : tint, compact: true))
+                        .accessibilityIdentifier("dismiss-outcome")
+                }
             }
             .padding(24)
             .frame(maxWidth: 420)

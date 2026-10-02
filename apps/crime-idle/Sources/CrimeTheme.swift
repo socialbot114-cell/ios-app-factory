@@ -223,6 +223,7 @@ struct CitySkyline: View {
     let lit: Double
     let heat: Double
     let districts: Int
+    var animated = true
 
     private static let buildings: [(x: CGFloat, width: CGFloat, height: CGFloat)] = {
         var rng = CrimeRNG(seed: 1931)
@@ -238,9 +239,15 @@ struct CitySkyline: View {
     }()
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
-            Canvas { context, size in
-                draw(context: &context, size: size, time: timeline.date.timeIntervalSinceReferenceDate)
+        Group {
+            if animated {
+                TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
+                    Canvas { context, size in
+                        draw(context: &context, size: size, time: timeline.date.timeIntervalSinceReferenceDate)
+                    }
+                }
+            } else {
+                Canvas { context, size in draw(context: &context, size: size, time: 1_000) }
             }
         }
         .accessibilityHidden(true)

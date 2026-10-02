@@ -31,15 +31,22 @@ final class CrimeGameStore {
     var offlineReport: CrimeOfflineReport?
     var heistOutcome: CrimeHeistOutcome?
     var toast: String?
+    var rankUp: Int?
+    var showDaily = false
+    var dailyClaim: CrimeDailyClaim?
+    var soundOn = CrimeSound.isEnabled
     var eventsEnabled = true
+    var dailyEnabled = true
     var persists = true
 
+    @ObservationIgnored private var knownRank: Int
     @ObservationIgnored private var lastTick = Date()
     @ObservationIgnored private var lastSave = Date()
     @ObservationIgnored private var toastTask: Task<Void, Never>?
 
     init(state: CrimeState) {
         self.state = state
+        knownRank = state.rankIndex
     }
 
     static func loadSaved(defaults: UserDefaults = .standard) -> CrimeState {
@@ -59,7 +66,67 @@ final class CrimeGameStore {
     func resume(now: Date = Date()) {
         if let report = state.resume(at: now), persists { offlineReport = report }
         lastTick = now
+        CrimeNotifications.clear()
+        offerDailyIfReady(now: now)
         save()
+    }
+
+    func enterBackground() {
+        save()
+        CrimeNotifications.schedule(for: state)
+    }
+
+    /// Tutorial, patente e envelope reagem ao estado; checado a cada tick.
+    private func checkProgress() {
+        if state.tutorial != .done {
+            let before = state.tutorial
+            if state.advanceTutorial() {
+                CrimeSound.levelup.play()
+                CrimeHaptics.success()
+                show("Tutorial concluído! +\(Int(CrimeState.tutorialRewardRespect)) de respeito para recrutar a família")
+                offerDailyIfReady()
+            } else if state.tutorial != before {
+                CrimeSound.buy.play()
+            }
+        }
+        let rank = state.rankIndex
+        if rank > knownRank {
+            knownRank = rank
+            CrimeSound.levelup.play()
+            CrimeHaptics.success()
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { rankUp = rank }
+        }
+    }
+
+    private func offerDailyIfReady(now: Date = Date()) {
+        guard dailyEnabled, state.tutorial == .done, state.isDailyAvailable(today: CrimeState.dayNumber(now)) else { return }
+        dailyClaim = nil
+        showDaily = true
+    }
+
+    func openDaily() {
+        dailyClaim = nil
+        showDaily = true
+    }
+
+    func claimDaily() {
+        guard let claim = state.claimDaily(today: CrimeState.dayNumber(Date())) else { return }
+        CrimeSound.crit.play()
+        CrimeHaptics.success()
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { dailyClaim = claim }
+        save()
+    }
+
+    func skipTutorial() {
+        state.skipTutorial()
+        CrimeSound.click.play()
+        offerDailyIfReady()
+    }
+
+    func toggleSound() {
+        soundOn.toggle()
+        CrimeSound.isEnabled = soundOn
+        CrimeSound.click.play()
     }
 
     func tick(now: Date = Date()) {
@@ -67,6 +134,7 @@ final class CrimeGameStore {
         lastTick = now
         state.tick(elapsed, online: eventsEnabled)
         state.lastSeen = now
+        checkProgress()
         if now.timeIntervalSince(lastSave) > 5 { save() }
     }
 
@@ -86,7 +154,7 @@ final class CrimeGameStore {
                                    critical: result.critical, drift: Double.random(in: -70...70))
         floaters.append(floater)
         if floaters.count > 14 { floaters.removeFirst(floaters.count - 14) }
-        if result.critical { CrimeHaptics.thud() } else { CrimeHaptics.tap() }
+        if result.critical { CrimeHaptics.thud(); CrimeSound.crit.play() } else { CrimeHaptics.tap(); CrimeSound.tap.play() }
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(1_100))
             self?.floaters.removeAll { $0.id == floater.id }
@@ -98,6 +166,7 @@ final class CrimeGameStore {
         let before = state.owned[index]
         guard state.buy(racket: index, quantity: quantity) else { return CrimeHaptics.failure() }
         CrimeHaptics.tap()
+        CrimeSound.buy.play()
         if let milestone = CrimeRacket.nextMilestone(after: before), state.owned[index] >= milestone.count {
             show("\(CrimeRacket.catalog[index].name): \(milestone.label)!")
             CrimeHaptics.success()
@@ -105,24 +174,27 @@ final class CrimeGameStore {
     }
 
     func run(_ index: Int) {
-        if state.run(racket: index) { CrimeHaptics.tap() }
+        if state.run(racket: index) { CrimeHaptics.tap(); CrimeSound.click.play() }
     }
 
     func hire(_ index: Int) {
         guard state.hireManager(index) else { return CrimeHaptics.failure() }
         CrimeHaptics.success()
+        CrimeSound.success.play()
         show("\(CrimeRacket.catalog[index].managerName) agora toca o \(CrimeRacket.catalog[index].name)")
     }
 
     func buyUpgrade(_ id: Int) {
         guard state.buyUpgrade(id), let upgrade = CrimeUpgrade.catalog.first(where: { $0.id == id }) else { return CrimeHaptics.failure() }
         CrimeHaptics.success()
+        CrimeSound.buy.play()
         show("\(upgrade.name): \(upgrade.detail)")
     }
 
     func bribe() {
         guard state.bribe() else { return CrimeHaptics.failure() }
         CrimeHaptics.success()
+        CrimeSound.crit.play()
         show("O delegado olhou para o outro lado")
     }
 
@@ -130,6 +202,7 @@ final class CrimeGameStore {
         let wasRecruited = state.crewLevels[id] > 0
         guard state.upgradeCrew(id) else { return CrimeHaptics.failure() }
         CrimeHaptics.success()
+        CrimeSound.success.play()
         let member = CrimeCrewMember.catalog[id]
         show(wasRecruited ? "\(member.name) subiu para o nível \(state.crewLevels[id])" : "\(member.name) entrou para a família")
     }
@@ -137,17 +210,20 @@ final class CrimeGameStore {
     func conquer(_ id: Int) {
         guard state.conquer(id) else { return CrimeHaptics.failure() }
         CrimeHaptics.success()
+        CrimeSound.levelup.play()
         show("\(CrimeDistrict.catalog[id].name) agora é seu")
     }
 
     func startHeist(_ id: Int, plan: CrimeHeistPlan) {
         guard state.startHeist(id, plan: plan) else { return CrimeHaptics.failure() }
         CrimeHaptics.thud()
+        CrimeSound.click.play()
+        if state.heistsStarted == 1 { CrimeNotifications.requestPermission() }
     }
 
     func revealHeist() {
         guard let outcome = state.resolveHeist() else { return }
-        if outcome.success { CrimeHaptics.success() } else { CrimeHaptics.failure() }
+        if outcome.success { CrimeHaptics.success(); CrimeSound.success.play() } else { CrimeHaptics.failure(); CrimeSound.fail.play() }
         withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { heistOutcome = outcome }
         save()
     }
@@ -155,11 +231,13 @@ final class CrimeGameStore {
     func choose(_ choice: Int) {
         guard state.choose(choice) else { return CrimeHaptics.failure() }
         CrimeHaptics.tap()
+        CrimeSound.click.play()
     }
 
     func claimContract(_ id: Int) {
         guard state.claimContract(id) else { return }
         CrimeHaptics.success()
+        CrimeSound.crit.play()
         show("Contrato cumprido")
     }
 
@@ -167,6 +245,8 @@ final class CrimeGameStore {
         let gained = state.claimableLegacy
         guard state.prestige() else { return CrimeHaptics.failure() }
         CrimeHaptics.success()
+        CrimeSound.levelup.play()
+        knownRank = state.rankIndex
         save()
         show("Nova identidade: +\(CrimeFormat.short(gained)) de lenda")
     }
@@ -174,6 +254,7 @@ final class CrimeGameStore {
     func resetEverything() {
         state = CrimeState(seed: UInt64.random(in: 1...UInt64.max))
         floaters = []
+        knownRank = state.rankIndex
         save()
         show("Uma nova história começa")
     }
@@ -236,10 +317,14 @@ struct CrimeIdleRoot: View {
             FactoryCapture.resetAppDefaults()
             store = CrimeGameStore(state: CrimeState(seed: 7))
             store.eventsEnabled = false
+            store.dailyEnabled = false
         } else if let screen = FactoryCapture.screen {
             store = CrimeGameStore(state: .capturePreview(screen: screen))
             store.eventsEnabled = false
+            store.dailyEnabled = false
             store.persists = false
+            if screen == "daily" { store.showDaily = true }
+            if screen == "rankup" { store.rankUp = store.state.rankIndex }
         } else {
             store = CrimeGameStore(state: CrimeGameStore.loadSaved())
         }
@@ -258,7 +343,18 @@ struct CrimeIdleRoot: View {
             case .map: CrimeMapView(store: store)
             }
         }
-        .safeAreaInset(edge: .bottom) { tabBar }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 8) {
+                if store.state.tutorial != .done {
+                    CrimeCoachCard(step: store.state.tutorial, isOnTargetTab: tab == tutorialTab,
+                                   go: { withAnimation(.snappy) { tab = tutorialTab } },
+                                   skip: { store.skipTutorial() })
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                tabBar
+            }
+            .animation(.spring(response: 0.4), value: store.state.tutorial)
+        }
         .overlay(alignment: .top) { toastView }
         .overlay {
             if let outcome = store.heistOutcome {
@@ -266,6 +362,16 @@ struct CrimeIdleRoot: View {
                     withAnimation(.easeOut(duration: 0.25)) { store.heistOutcome = nil }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            } else if let rank = store.rankUp {
+                CrimeRankUpView(rankIndex: rank) {
+                    withAnimation(.easeOut(duration: 0.25)) { store.rankUp = nil }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            } else if store.showDaily && store.offlineReport == nil {
+                CrimeDailyView(store: store) {
+                    withAnimation(.easeOut(duration: 0.25)) { store.showDaily = false }
+                }
+                .transition(.opacity)
             }
         }
         .sheet(isPresented: Binding(get: { store.offlineReport != nil }, set: { if !$0 { store.offlineReport = nil } })) {
@@ -284,7 +390,8 @@ struct CrimeIdleRoot: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active: store.resume()
-            case .background, .inactive: store.save()
+            case .background: store.enterBackground()
+            case .inactive: store.save()
             @unknown default: break
             }
         }
@@ -322,13 +429,23 @@ struct CrimeIdleRoot: View {
         }
         .padding(6)
         .background(.ultraThinMaterial, in: Capsule())
+        .simultaneousGesture(TapGesture().onEnded { CrimeSound.click.play() })
         .overlay(Capsule().strokeBorder(Color.white.opacity(0.08)))
         .padding(.horizontal, 12)
         .padding(.bottom, 6)
         .frame(maxWidth: 620)
     }
 
+    private var tutorialTab: CrimeTab {
+        switch store.state.tutorial {
+        case .tapStreet, .done: return .home
+        case .buyRacket, .runRacket, .growRacket, .hireManager: return .rackets
+        case .firstHeist: return .heists
+        }
+    }
+
     private func hasBadge(_ item: CrimeTab) -> Bool {
+        if store.state.tutorial != .done { return item == tutorialTab && tab != item }
         let state = store.state
         switch item {
         case .home: return state.pendingEvent != nil || state.openContracts.contains { state.canClaimContract($0.id) }
@@ -408,6 +525,9 @@ extension CrimeState {
         state.heistsCompleted = 9
         state.claimedContracts = [0, 1, 2, 3, 4, 5]
         state.progress = [0.4, 1.6, 2.2, 7.1, 9.5, 41, 0, 0, 0, 0]
+        state.tutorial = .done
+        state.dailyStreak = 4
+        state.lastDailyDay = CrimeState.dayNumber(Date()) - (screen == "daily" ? 1 : 0)
         if screen == "home" { state.pendingEvent = 1 }
         if screen == "heists" || screen == "home" {
             state.startHeist(3, plan: .standard)

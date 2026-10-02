@@ -129,6 +129,7 @@ final class CrimeEconomyTests: XCTestCase {
 
     func testOfflineDoesNotSpawnEvents() {
         var state = rich()
+        state.skipTutorial()
         state.resume(at: Date(timeIntervalSince1970: 3_600))
         XCTAssertNil(state.pendingEvent)
         state.tick(60, online: true)
@@ -262,6 +263,66 @@ final class CrimeEconomyTests: XCTestCase {
         XCTAssertEqual(repaired.owned.count, CrimeRacket.catalog.count)
         XCTAssertEqual(repaired.districts, CrimeDistrict.catalog.count, "Bairro com negócio é reaberto")
         XCTAssertEqual(repaired.heat, 100)
+    }
+
+    func testTutorialWalksThroughFirstSessionAndPaysRespect() {
+        var state = CrimeState(seed: 5)
+        XCTAssertEqual(state.tutorial, .tapStreet)
+        state.tick(120, online: true)
+        XCTAssertNil(state.pendingEvent, "Nada de eventos durante o tutorial")
+        for _ in 0..<5 { state.tapStreet() }
+        state.advanceTutorial()
+        XCTAssertEqual(state.tutorial, .buyRacket)
+        state.buy(racket: 0, quantity: 1)
+        state.advanceTutorial()
+        XCTAssertEqual(state.tutorial, .runRacket)
+        state.run(racket: 0)
+        state.cash = 1e6
+        state.buy(racket: 0, quantity: 4)
+        state.advanceTutorial()
+        XCTAssertEqual(state.tutorial, .firstHeist, "Pula passos já cumpridos")
+        state.startHeist(0, plan: .stealth)
+        state.advanceTutorial()
+        XCTAssertEqual(state.tutorial, .hireManager)
+        let respect = state.respect
+        state.hireManager(0)
+        XCTAssertTrue(state.advanceTutorial())
+        XCTAssertEqual(state.tutorial, .done)
+        XCTAssertEqual(state.respect, respect + CrimeState.tutorialRewardRespect)
+        XCTAssertFalse(state.advanceTutorial(), "Recompensa só uma vez")
+    }
+
+    func testDailyEnvelopeStreakGrowsAndBreaks() {
+        var state = CrimeState(seed: 8)
+        XCTAssertTrue(state.isDailyAvailable(today: 100))
+        XCTAssertEqual(state.claimDaily(today: 100)?.reward.day, 1)
+        XCTAssertNil(state.claimDaily(today: 100), "Uma vez por dia")
+        XCTAssertEqual(state.claimDaily(today: 101)?.reward.day, 2)
+        XCTAssertEqual(state.claimDaily(today: 102)?.reward.day, 3)
+        XCTAssertEqual(state.nextDailyReward(today: 104).day, 1, "Pular um dia zera a sequência")
+        for day in 103...105 { state.claimDaily(today: day) }
+        let seventh = state.claimDaily(today: 106)
+        XCTAssertEqual(seventh?.reward.day, 7)
+        XCTAssertGreaterThan(state.boostRemaining, 0)
+        XCTAssertEqual(state.claimDaily(today: 107)?.reward.day, 1, "Depois do sétimo dia o ciclo recomeça")
+    }
+
+    func testDailyCashScalesWithIncome() {
+        var poor = CrimeState(seed: 1)
+        let small = poor.claimDaily(today: 1)!.cash
+        var rich = rich()
+        rich.buy(racket: 0, quantity: 100)
+        rich.hireManager(0)
+        let big = rich.claimDaily(today: 1)!.cash
+        XCTAssertEqual(small, 600)
+        XCTAssertGreaterThan(big, small * 100)
+    }
+
+    func testSavesFromBeforeTheTutorialSkipIt() throws {
+        let veteran = Data(#"{"cash": 50, "owned": [10], "managed": [true]}"#.utf8)
+        XCTAssertEqual(try JSONDecoder().decode(CrimeState.self, from: veteran).tutorial, .done)
+        let rookie = Data(#"{"cash": 5}"#.utf8)
+        XCTAssertEqual(try JSONDecoder().decode(CrimeState.self, from: rookie).tutorial, .tapStreet)
     }
 
     func testFormatting() {

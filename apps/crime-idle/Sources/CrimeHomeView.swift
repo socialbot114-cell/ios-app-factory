@@ -12,6 +12,7 @@ struct CrimeHomeView: View {
             topBar
             hero
             if state.boostRemaining > 0 { boostBanner }
+            if state.tutorial == .done && state.isDailyAvailable(today: CrimeState.dayNumber(Date())) { dailyBanner }
             if let event = state.pendingEvent { CrimeEventCard(store: store, event: CrimeEvent.catalog[event]) }
             CrimeTapButton(store: store)
             HStack(alignment: .top, spacing: 12) {
@@ -41,6 +42,12 @@ struct CrimeHomeView: View {
             }
             Spacer()
             Menu {
+                Button { store.toggleSound() } label: {
+                    Label(store.soundOn ? "Silenciar sons" : "Ativar sons", systemImage: store.soundOn ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                }
+                if state.tutorial != .done {
+                    Button { store.skipTutorial() } label: { Label("Pular tutorial", systemImage: "forward.fill") }
+                }
                 Button(role: .destructive) { confirmReset = true } label: {
                     Label("Recomeçar do zero", systemImage: "arrow.counterclockwise")
                 }
@@ -82,6 +89,30 @@ struct CrimeHomeView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).strokeBorder(Color.white.opacity(0.08)))
+    }
+
+    private var dailyBanner: some View {
+        Button { store.openDaily() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "envelope.fill")
+                    .font(.title3).foregroundStyle(Noir.ink)
+                    .frame(width: 40, height: 40)
+                    .background(Noir.gold, in: Circle())
+                    .symbolEffect(.pulse)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("O Padrinho deixou um envelope").font(.subheadline.weight(.bold)).foregroundStyle(.white)
+                    Text("Dia \(state.nextDailyReward(today: CrimeState.dayNumber(Date())).day) da sequência · toque para abrir")
+                        .font(.caption).foregroundStyle(Noir.muted)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Noir.gold)
+            }
+            .padding(12)
+            .background(Noir.gold.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Noir.gold.opacity(0.6)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("daily-banner")
     }
 
     private var boostBanner: some View {

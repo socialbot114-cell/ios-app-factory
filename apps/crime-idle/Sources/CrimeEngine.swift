@@ -63,6 +63,68 @@ struct CrimeOfflineReport: Equatable {
     let cash: Double
 }
 
+/// Passos do tutorial do Padrinho, na ordem em que aparecem.
+enum CrimeTutorialStep: Int, Codable, CaseIterable {
+    case tapStreet, buyRacket, runRacket, growRacket, firstHeist, hireManager, done
+
+    var title: String {
+        switch self {
+        case .tapStreet: return "Comece pequeno"
+        case .buyRacket: return "Seu primeiro negócio"
+        case .runRacket: return "Faça girar"
+        case .growRacket: return "Cresça na rua"
+        case .firstHeist: return "Seu primeiro golpe"
+        case .hireManager: return "Quem manda, delega"
+        case .done: return "Bem-vindo à família"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .tapStreet: return "Toque 5 vezes em Golpe de rua para juntar uns trocados."
+        case .buyRacket: return "Em Negócios, abra um Camelô de Relógios."
+        case .runRacket: return "Toque no ícone do relógio para rodar um ciclo e faturar."
+        case .growRacket: return "Tenha 5 camelôs. Cada um multiplica o lucro do ciclo."
+        case .firstHeist: return "Em Golpes, execute o Bonde das Carteiras. Furtivo é mais seguro."
+        case .hireManager: return "Junte $1.000 e contrate o Zé Pulseira: o camelô roda sozinho, até offline."
+        case .done: return ""
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .tapStreet: return "hat.widebrim.fill"
+        case .buyRacket, .runRacket, .growRacket: return "clock.fill"
+        case .firstHeist: return "tram.fill"
+        case .hireManager: return "person.badge.clock.fill"
+        case .done: return "checkmark.seal.fill"
+        }
+    }
+}
+
+struct CrimeDailyReward: Equatable {
+    let day: Int
+    let cashSeconds: Double
+    let respect: Double
+    let boostMinutes: Double
+
+    static let cycle: [CrimeDailyReward] = [
+        .init(day: 1, cashSeconds: 300, respect: 1, boostMinutes: 0),
+        .init(day: 2, cashSeconds: 600, respect: 2, boostMinutes: 0),
+        .init(day: 3, cashSeconds: 900, respect: 3, boostMinutes: 0),
+        .init(day: 4, cashSeconds: 1_200, respect: 4, boostMinutes: 0),
+        .init(day: 5, cashSeconds: 1_800, respect: 5, boostMinutes: 0),
+        .init(day: 6, cashSeconds: 2_400, respect: 6, boostMinutes: 0),
+        .init(day: 7, cashSeconds: 3_600, respect: 12, boostMinutes: 15)
+    ]
+}
+
+struct CrimeDailyClaim: Equatable {
+    let reward: CrimeDailyReward
+    let cash: Double
+    let respect: Double
+}
+
 enum CrimeBuyMode: Int, CaseIterable, Identifiable {
     case one = 1, ten = 10, hundred = 100, max = 0
 
@@ -98,6 +160,11 @@ struct CrimeState: Codable, Equatable {
     var pendingEvent: Int?
     var nextEventIn: Double = 45
     var taps = 0
+    var tutorial: CrimeTutorialStep = .tapStreet
+    var manualRuns = 0
+    var heistsStarted = 0
+    var dailyStreak = 0
+    var lastDailyDay: Int?
     var rng = CrimeRNG(seed: 0xC0FF_EE15_DEAD_BEEF)
     var lastSeen = Date()
 
@@ -110,6 +177,7 @@ struct CrimeState: Codable, Equatable {
         case cash, respect, legacy, heat, owned, managed, progress, running, upgrades, districts, crewLevels
         case activeHeist, heistsCompleted, claimedContracts, lifetimeRun, lifetimeTotal, prestigeCount
         case boostMultiplier, boostRemaining, pendingEvent, nextEventIn, taps, rng, lastSeen
+        case tutorial, manualRuns, heistsStarted, dailyStreak, lastDailyDay
     }
 
     init(from decoder: Decoder) throws {
@@ -148,6 +216,13 @@ struct CrimeState: Codable, Equatable {
         taps = (try? c.decodeIfPresent(Int.self, forKey: .taps)) ?? 0
         rng = (try? c.decodeIfPresent(CrimeRNG.self, forKey: .rng)) ?? CrimeRNG(seed: 0xC0FF_EE15_DEAD_BEEF)
         lastSeen = (try? c.decodeIfPresent(Date.self, forKey: .lastSeen)) ?? Date()
+        manualRuns = (try? c.decodeIfPresent(Int.self, forKey: .manualRuns)) ?? 0
+        heistsStarted = (try? c.decodeIfPresent(Int.self, forKey: .heistsStarted)) ?? heistsCompleted
+        dailyStreak = min(max((try? c.decodeIfPresent(Int.self, forKey: .dailyStreak)) ?? 0, 0), CrimeDailyReward.cycle.count)
+        lastDailyDay = (try? c.decodeIfPresent(Int.self, forKey: .lastDailyDay)).flatMap { $0 }
+        // Saves anteriores ao tutorial: quem já tem gerente não precisa de aula.
+        let savedTutorial = (try? c.decodeIfPresent(CrimeTutorialStep.self, forKey: .tutorial)).flatMap { $0 }
+        tutorial = savedTutorial ?? (managed.contains(true) || prestigeCount > 0 ? .done : .tapStreet)
         // Negócios de bairros ainda fechados nunca deveriam existir; reabre o bairro em vez de apagar progresso.
         if let highest = CrimeRacket.catalog.filter({ owned[$0.id] > 0 }).map(\.district).max() {
             districts = max(districts, highest + 1)
@@ -180,6 +255,11 @@ struct CrimeState: Codable, Equatable {
         try c.encode(taps, forKey: .taps)
         try c.encode(rng, forKey: .rng)
         try c.encode(lastSeen, forKey: .lastSeen)
+        try c.encode(tutorial, forKey: .tutorial)
+        try c.encode(manualRuns, forKey: .manualRuns)
+        try c.encode(heistsStarted, forKey: .heistsStarted)
+        try c.encode(dailyStreak, forKey: .dailyStreak)
+        try c.encodeIfPresent(lastDailyDay, forKey: .lastDailyDay)
     }
 
     // MARK: - Modificadores
@@ -318,7 +398,7 @@ struct CrimeState: Codable, Equatable {
         }
         if activeHeist != nil { activeHeist!.remaining = max(activeHeist!.remaining - seconds, 0) }
 
-        if online && pendingEvent == nil {
+        if online && pendingEvent == nil && tutorial == .done {
             nextEventIn -= seconds
             if nextEventIn <= 0 {
                 pendingEvent = rng.int(below: CrimeEvent.catalog.count)
@@ -398,6 +478,7 @@ struct CrimeState: Codable, Equatable {
         guard owned.indices.contains(index), owned[index] > 0, !managed[index], !running[index] else { return false }
         running[index] = true
         progress[index] = 0
+        manualRuns += 1
         return true
     }
 
@@ -502,6 +583,7 @@ struct CrimeState: Codable, Equatable {
         activeHeist = CrimeActiveHeist(heistID: id, plan: plan, remaining: heist.duration,
                                        loot: heistLoot(id, plan: plan), respect: heist.respect * plan.lootMultiplier,
                                        heat: heist.heat * plan.heatMultiplier, odds: heistOdds(id, plan: plan))
+        heistsStarted += 1
         return true
     }
 
@@ -590,6 +672,72 @@ struct CrimeState: Codable, Equatable {
             }
     }
 
+    // MARK: - Tutorial
+
+    static let tutorialRewardRespect = 3.0
+
+    func isTutorialStepComplete(_ step: CrimeTutorialStep) -> Bool {
+        switch step {
+        case .tapStreet: return taps >= 5
+        case .buyRacket: return owned[0] >= 1
+        case .runRacket: return manualRuns >= 1 || managed[0]
+        case .growRacket: return owned[0] >= 5
+        case .firstHeist: return heistsStarted >= 1
+        case .hireManager: return managerCount >= 1
+        case .done: return true
+        }
+    }
+
+    /// Avança quantos passos já estiverem cumpridos. Devolve true quando o tutorial termina agora.
+    @discardableResult
+    mutating func advanceTutorial() -> Bool {
+        guard tutorial != .done else { return false }
+        while tutorial != .done && isTutorialStepComplete(tutorial) {
+            tutorial = CrimeTutorialStep(rawValue: tutorial.rawValue + 1) ?? .done
+        }
+        guard tutorial == .done else { return false }
+        gainRespect(Self.tutorialRewardRespect)
+        nextEventIn = min(nextEventIn, 45)
+        return true
+    }
+
+    mutating func skipTutorial() {
+        tutorial = .done
+    }
+
+    // MARK: - Envelope diário
+
+    static func dayNumber(_ date: Date, calendar: Calendar = .current) -> Int {
+        let start = calendar.startOfDay(for: date)
+        return Int((start.timeIntervalSince1970 + Double(calendar.timeZone.secondsFromGMT(for: start))) / 86_400)
+    }
+
+    func isDailyAvailable(today: Int) -> Bool { lastDailyDay != today }
+
+    /// Recompensa que seria entregue hoje (a sequência quebra se pular um dia).
+    func nextDailyReward(today: Int) -> CrimeDailyReward {
+        let continues = lastDailyDay == today - 1
+        let streak = continues ? dailyStreak % CrimeDailyReward.cycle.count + 1 : 1
+        return CrimeDailyReward.cycle[streak - 1]
+    }
+
+    @discardableResult
+    mutating func claimDaily(today: Int) -> CrimeDailyClaim? {
+        guard isDailyAvailable(today: today) else { return nil }
+        let reward = nextDailyReward(today: today)
+        let cash = reward.cashSeconds * max(incomePerSecond, 2)
+        let respectBefore = respect
+        earn(cash)
+        gainRespect(reward.respect)
+        if reward.boostMinutes > 0 {
+            boostMultiplier = max(boostMultiplier, 2)
+            boostRemaining = max(boostRemaining, reward.boostMinutes * 60)
+        }
+        dailyStreak = reward.day
+        lastDailyDay = today
+        return CrimeDailyClaim(reward: reward, cash: cash, respect: respect - respectBefore)
+    }
+
     // MARK: - Nova identidade (prestígio)
 
     static func legacyEarned(lifetime: Double) -> Double {
@@ -614,6 +762,11 @@ struct CrimeState: Codable, Equatable {
         fresh.heistsCompleted = heistsCompleted
         fresh.prestigeCount = prestigeCount + 1
         fresh.taps = taps
+        fresh.tutorial = .done
+        fresh.manualRuns = manualRuns
+        fresh.heistsStarted = heistsStarted
+        fresh.dailyStreak = dailyStreak
+        fresh.lastDailyDay = lastDailyDay
         fresh.cash = 5 + 100 * fresh.legacy
         self = fresh
         return true

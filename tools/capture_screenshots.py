@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURES = {
     "atelie-colorir": ["home", "editor", "saved"],
-    "crime-idle": ["home", "operations", "heists", "crew", "territory"],
+    "crime-idle": ["home", "operations", "heists", "crew", "territory", "daily", "rankup"],
     "detetive-na-testa": ["home", "game", "result"],
     "manager-futebol": ["home", "table", "squad"],
     "meu-qr-pix": ["form", "qr", "history"],
