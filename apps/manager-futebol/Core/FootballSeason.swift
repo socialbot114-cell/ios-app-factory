@@ -8,15 +8,15 @@ enum FootballSeason {
     static let teams: [LeagueTeam] = [
         // Série A
         .init(id: 0, name: "Aurora FC", shortName: "AUR", city: "Brasília", stadium: "Arena Alvorada", capacity: 52_000,
-              strength: 78, startingBudget: 8_000_000, preferredStyle: .possession, preferredFormation: .fourThreeThree, initialDivision: .serieA),
+              strength: 77, startingBudget: 8_000_000, preferredStyle: .possession, preferredFormation: .fourThreeThree, initialDivision: .serieA),
         .init(id: 1, name: "Atlético Cerrado", shortName: "ACE", city: "Goiânia", stadium: "Estádio do Ipê", capacity: 38_000,
               strength: 73, startingBudget: 6_200_000, preferredStyle: .highPress, preferredFormation: .fourFourTwo, initialDivision: .serieA),
         .init(id: 2, name: "Maré Alta", shortName: "MAR", city: "Salvador", stadium: "Arena Maré", capacity: 45_000,
-              strength: 75, startingBudget: 6_800_000, preferredStyle: .attacking, preferredFormation: .fourThreeThree, initialDivision: .serieA),
+              strength: 76, startingBudget: 6_800_000, preferredStyle: .attacking, preferredFormation: .fourThreeThree, initialDivision: .serieA),
         .init(id: 3, name: "União da Serra", shortName: "UNI", city: "Belo Horizonte", stadium: "Estádio das Gerais", capacity: 48_000,
               strength: 77, startingBudget: 7_500_000, preferredStyle: .balanced, preferredFormation: .fourTwoThreeOne, initialDivision: .serieA),
         .init(id: 4, name: "Estrela do Sul", shortName: "EST", city: "Porto Alegre", stadium: "Estádio Cruzeiro do Sul", capacity: 44_000,
-              strength: 74, startingBudget: 6_500_000, preferredStyle: .defensive, preferredFormation: .fourFourTwo, initialDivision: .serieA),
+              strength: 75, startingBudget: 6_500_000, preferredStyle: .defensive, preferredFormation: .fourFourTwo, initialDivision: .serieA),
         .init(id: 5, name: "Portuários", shortName: "POR", city: "Santos", stadium: "Estádio do Cais", capacity: 27_000,
               strength: 71, startingBudget: 5_800_000, preferredStyle: .counter, preferredFormation: .fourFourTwo, initialDivision: .serieA),
         .init(id: 6, name: "Capital Norte", shortName: "CAP", city: "Manaus", stadium: "Arena da Floresta", capacity: 40_000,

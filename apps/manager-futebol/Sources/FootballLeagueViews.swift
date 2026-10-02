@@ -432,7 +432,6 @@ struct FootballClubView: View {
                         if record.id != career.history.first?.id { Divider() }
                     }
                 }
-                .accessibilityIdentifier("club-history")
                 FactoryPanel(title: "Galeria de campeões", systemImage: "trophy") {
                     if career.history.isEmpty {
                         Text("Os primeiros campeões serão conhecidos ao fim da temporada.").font(.subheadline).foregroundStyle(.secondary)
@@ -487,7 +486,6 @@ struct FootballClubView: View {
                 if slot < FootballSaveStore.slotCount - 1 { Divider() }
             }
         }
-        .accessibilityIdentifier("save-slots")
     }
 
     private func slotRow(_ slot: Int) -> some View {

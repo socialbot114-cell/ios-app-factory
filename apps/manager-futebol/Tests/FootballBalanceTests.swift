@@ -50,7 +50,7 @@ final class FootballBalanceTests: XCTestCase {
         XCTAssertTrue((0.18...0.32).contains(drawRate), "Empates fora da faixa: \(drawRate)")
         XCTAssertTrue((32...46).contains(championAverage), "Pontos do campeão fora da faixa: \(championAverage)")
         XCTAssertTrue((14...28).contains(safetyAverage), "Pontos do 8º colocado fora da faixa: \(safetyAverage)")
-        XCTAssertLessThanOrEqual(strongestTitles, seasons * 3 / 4, "O clube mais forte não pode dominar quase todas as temporadas")
+        XCTAssertLessThanOrEqual(strongestTitles, seasons / 2, "O clube mais forte não pode vencer mais da metade das temporadas")
         XCTAssertGreaterThan(cupUpsets, 0, "A copa precisa ter zebras")
     }
 }

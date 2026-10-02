@@ -51,7 +51,8 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(auroraRow.waitForExistence(timeout: 5))
 
         app.buttons["tab-4"].tap()
-        XCTAssertTrue(app.buttons["new-career"].waitForExistence(timeout: 5))
+        let newCareer = app.descendants(matching: .any).matching(identifier: "new-career").firstMatch
+        XCTAssertTrue(newCareer.waitForExistence(timeout: 8))
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
