@@ -46,7 +46,7 @@ extension FootballCareer {
         let prize = FootballSeason.prizeMoney(division: clubDivision, position: position)
             + (objectiveMet ? FootballSeason.objectiveBonus : 0)
             + (cupWinner == selectedClubID ? 1_500_000 : 0)
-        transferBudget += prize
+        book(.prize, prize, "Premiações da temporada \(season)")
         var confidenceChange = objectiveMet ? 15 : -20
         if champion == selectedClubID || (clubDivision == .serieB && position == 1) { confidenceChange += 10 }
         if wasPromoted { confidenceChange += 10 }
@@ -59,7 +59,11 @@ extension FootballCareer {
         for id in relegatedIDs where divisionOfTeam.indices.contains(id) { divisionOfTeam[id] = .serieB }
         for id in promotedIDs where divisionOfTeam.indices.contains(id) { divisionOfTeam[id] = .serieA }
 
+        finance.summaries.append(finance.summary(season: season, closingCash: transferBudget))
+        wageCap = Int(Double(wageCap) * (objectiveMet ? 1.05 : 0.97) * (wasPromoted ? 1.2 : 1) * (wasRelegated ? 0.8 : 1))
+
         var random = FootballRandom(seed: matchSeed(stream: .offseason, id: 0))
+        _ = expireContracts(using: &random)
         let changes = runOffseason(using: &random)
 
         var record = SeasonRecord(
@@ -96,8 +100,16 @@ extension FootballCareer {
             players[index].appearances = 0
             players[index].injuryRounds = 0
             players[index].condition = min(100, players[index].condition + 30)
+            players[index].form = PlayerForm()
+            players[index].discipline = PlayerDiscipline()
+            players[index].benchStreak = 0
+            players[index].morale = players[index].teamID == selectedClubID ? (players[index].morale + 60) / 2 : players[index].morale
             refreshValue(at: index)
         }
+        promises = []
+        ensureMinimumRoster()
+        var marketRandom = FootballRandom(seed: matchSeed(stream: .transfers, id: 1))
+        refillFreeAgents(using: &marketRandom)
         if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
         startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
         scheduleSeason()
@@ -119,13 +131,13 @@ extension FootballCareer {
         for var player in players {
             player.age += 1
             if player.age <= 23, player.overall < player.potential {
-                player.overall = min(player.potential, player.overall + random.int(in: 0...2))
+                player.setOverall(min(player.potential, player.overall + random.int(in: 0...2) + (player.has(.prodigy) ? 1 : 0)))
             } else if player.age <= 28, player.overall < player.potential, random.chance(0.4) {
-                player.overall += 1
+                player.setOverall(player.overall + 1)
             } else if player.age >= 33 {
-                player.overall = max(48, player.overall - random.int(in: 1...3))
+                player.decline(by: random.int(in: 1...3), random: &random)
             } else if player.age >= 31 {
-                player.overall = max(48, player.overall - random.int(in: 0...2))
+                player.decline(by: random.int(in: 0...2), random: &random)
             }
             player.potential = max(player.overall, player.age >= 30 ? player.overall : player.potential)
 
@@ -145,14 +157,18 @@ extension FootballCareer {
         }
         players = survivors + replacements
 
-        let marketCount = players.filter { $0.teamID == nil }.count
-        if marketCount < Self.freeAgentPoolSize {
-            for offset in 0..<(Self.freeAgentPoolSize - marketCount) {
-                let position = FootballSeason.freeAgentTemplate[offset % FootballSeason.freeAgentTemplate.count]
-                players.append(FootballSeason.makeFreeAgent(id: nextPlayerID, position: position, using: &random))
-                nextPlayerID += 1
-            }
-        }
+        refillFreeAgents(using: &random)
         return (retired, youth)
+    }
+
+    /// Mantém o mercado de agentes livres com um mínimo de atletas.
+    mutating func refillFreeAgents(using random: inout FootballRandom) {
+        let marketCount = players.filter { $0.teamID == nil }.count
+        guard marketCount < Self.freeAgentPoolSize else { return }
+        for offset in 0..<(Self.freeAgentPoolSize - marketCount) {
+            let position = FootballSeason.freeAgentTemplate[offset % FootballSeason.freeAgentTemplate.count]
+            players.append(FootballSeason.makeFreeAgent(id: nextPlayerID, position: position, season: season, using: &random))
+            nextPlayerID += 1
+        }
     }
 }

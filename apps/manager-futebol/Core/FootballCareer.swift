@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 3
+    static let schemaVersion = 4
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
@@ -36,6 +36,12 @@ struct FootballCareer: Codable, Equatable {
         case nextPlayerID
         case liveMatch
         case lastRoundRevenue
+        case finance
+        case inbox
+        case nextInboxID
+        case promises
+        case nextPromiseID
+        case wageCap
     }
 
     var seed: Int
@@ -66,6 +72,14 @@ struct FootballCareer: Codable, Equatable {
     var nextPlayerID: Int
     var liveMatch: LiveMatchState?
     var lastRoundRevenue: Int
+    var finance: FinanceBook
+    var inbox: [InboxMessage]
+    var nextInboxID: Int
+    var promises: [PlayerPromise]
+    var nextPromiseID: Int
+    var wageCap: Int
+    /// Titulares do jogo em andamento (usado para as promessas aos atletas).
+    var startingXIAtKickoff: Set<Int> = []
 
     init(seed: Int) {
         self.seed = seed
@@ -94,6 +108,15 @@ struct FootballCareer: Codable, Equatable {
         self.nextPlayerID = (generatedPlayers.map(\.id).max() ?? 0) + 1
         self.liveMatch = nil
         self.lastRoundRevenue = 0
+        self.finance = FinanceBook()
+        self.inbox = []
+        self.nextInboxID = 1
+        self.promises = []
+        self.nextPromiseID = 1
+        self.wageCap = 0
+        for index in players.indices where players[index].contract.endSeason == 0 && players[index].teamID != nil {
+            players[index].contract.endSeason = 1 + (players[index].id % 4)
+        }
         scheduleSeason()
     }
 
@@ -136,7 +159,14 @@ struct FootballCareer: Codable, Equatable {
             ?? (decodedPlayers.map(\.id).max() ?? 0) + 1
         liveMatch = version >= 3 ? try container.decodeIfPresent(LiveMatchState.self, forKey: .liveMatch) : nil
         lastRoundRevenue = try container.decodeIfPresent(Int.self, forKey: .lastRoundRevenue) ?? 0
+        finance = try container.decodeIfPresent(FinanceBook.self, forKey: .finance) ?? FinanceBook()
+        inbox = try container.decodeIfPresent([InboxMessage].self, forKey: .inbox) ?? []
+        nextInboxID = try container.decodeIfPresent(Int.self, forKey: .nextInboxID) ?? 1
+        promises = try container.decodeIfPresent([PlayerPromise].self, forKey: .promises) ?? []
+        nextPromiseID = try container.decodeIfPresent(Int.self, forKey: .nextPromiseID) ?? 1
+        wageCap = try container.decodeIfPresent(Int.self, forKey: .wageCap) ?? 0
         if version < 3 { migrateToWorldV3() }
+        if version < 4 { migrateToPlayersV4() }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -167,6 +197,20 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(nextPlayerID, forKey: .nextPlayerID)
         try container.encodeIfPresent(liveMatch, forKey: .liveMatch)
         try container.encode(lastRoundRevenue, forKey: .lastRoundRevenue)
+        try container.encode(finance, forKey: .finance)
+        try container.encode(inbox, forKey: .inbox)
+        try container.encode(nextInboxID, forKey: .nextInboxID)
+        try container.encode(promises, forKey: .promises)
+        try container.encode(nextPromiseID, forKey: .nextPromiseID)
+        try container.encode(wageCap, forKey: .wageCap)
+    }
+
+    /// Save v3: atletas ganham contratos coerentes e o teto salarial é definido a partir da folha atual.
+    private mutating func migrateToPlayersV4() {
+        for index in players.indices where players[index].contract.endSeason == 0 && players[index].teamID != nil {
+            players[index].contract.endSeason = season + (players[index].id % 4)
+        }
+        if selectedClubID != nil && wageCap == 0 { wageCap = Int(Double(wageBill) * 1.25) }
     }
 
     /// Save v1/v2 (liga única de 8 clubes): mantém clube, elenco, caixa, histórico e títulos,
@@ -227,6 +271,12 @@ struct FootballCareer: Codable, Equatable {
     var selectedClub: LeagueTeam? {
         guard let selectedClubID else { return nil }
         return FootballSeason.team(selectedClubID)
+    }
+
+    /// Categoria de base do clube do usuário.
+    var youthRoster: [FootballPlayer] {
+        guard let selectedClubID else { return [] }
+        return players.filter { $0.teamID == selectedClubID && $0.isYouth }.sorted { $0.potential > $1.potential }
     }
 
     var clubRoster: [FootballPlayer] {
@@ -380,7 +430,7 @@ struct FootballCareer: Codable, Equatable {
     }
 
     func players(forTeam teamID: Int) -> [FootballPlayer] {
-        players.filter { $0.teamID == teamID }.sorted {
+        players.filter { $0.teamID == teamID && !$0.isYouth }.sorted {
             if $0.position.sortOrder != $1.position.sortOrder { return $0.position.sortOrder < $1.position.sortOrder }
             if $0.overall != $1.overall { return $0.overall > $1.overall }
             return $0.name < $1.name
@@ -420,7 +470,7 @@ struct FootballCareer: Codable, Equatable {
 
     func lineup(for teamID: Int) -> [Int] {
         if teamID == selectedClubID, startingXI.count == 11 { return startingXI }
-        return FootballSeason.bestLineup(roster: players.filter { $0.teamID == teamID }, formation: formation(for: teamID))
+        return FootballSeason.bestLineup(roster: players.filter { $0.teamID == teamID }, formation: formation(for: teamID), matchDay: matchDayIndex)
     }
 
     func teamRating(_ teamID: Int) -> Double {
@@ -470,9 +520,9 @@ struct FootballCareer: Codable, Equatable {
     var lineupWarnings: [String] {
         var warnings: [String] = []
         let starters = self.starters
-        let injured = starters.filter(\.isInjured)
+        let injured = starters.filter { !$0.isAvailable(matchDay: matchDayIndex) }
         if !injured.isEmpty {
-            warnings.append("\(injured.count) titular(es) lesionado(s) serão substituídos automaticamente.")
+            warnings.append("\(injured.count) titular(es) indisponível(is) (lesão, suspensão ou seleção) serão substituídos automaticamente.")
         }
         let tired = starters.filter { !$0.isInjured && $0.condition < 65 }
         if !tired.isEmpty {
@@ -495,8 +545,9 @@ struct FootballCareer: Codable, Equatable {
         selectedClubID = club.id
         transferBudget = club.startingBudget
         boardConfidence = 60
-        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
+        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation, matchDay: matchDayIndex)
         boardTarget = computeBoardTarget()
+        wageCap = Int(Double(wageBill) * 1.25)
         return startingXI.count == 11
     }
 
@@ -510,6 +561,9 @@ struct FootballCareer: Codable, Equatable {
         boardConfidence = 55
         isFired = false
         offers = []
+        promises = []
+        inbox = []
+        wageCap = Int(Double(wageBill) * 1.25)
         if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
         startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
         boardTarget = computeBoardTarget()
@@ -570,19 +624,19 @@ struct FootballCareer: Codable, Equatable {
 
     /// Mantém os titulares escolhidos que ainda servem à formação e completa as vagas com os melhores disponíveis.
     func rebuiltLineup(keeping current: [Int], formation: FootballFormation) -> [Int] {
-        let roster = clubRoster.filter { !$0.isInjured }
+        let roster = clubRoster.filter { $0.isAvailable(matchDay: matchDayIndex) }
         var chosen: [Int] = []
         for position in FootballPosition.allCases {
             let required = formation.requiredPlayers[position, default: 0]
             let kept = roster
-                .filter { $0.position == position && current.contains($0.id) }
+                .filter { $0.canPlay(as: position) && current.contains($0.id) && !chosen.contains($0.id) }
                 .sorted(by: FootballSeason.strongerFirst)
                 .prefix(required)
                 .map(\.id)
             chosen.append(contentsOf: kept)
             if kept.count < required {
                 let fill = roster
-                    .filter { $0.position == position && !chosen.contains($0.id) }
+                    .filter { $0.canPlay(as: position) && !chosen.contains($0.id) }
                     .sorted(by: FootballSeason.strongerFirst)
                     .prefix(required - kept.count)
                     .map(\.id)
@@ -605,7 +659,7 @@ struct FootballCareer: Codable, Equatable {
         guard let selectedClubID else { return }
         var lineup: [Int] = []
         for id in startingXI where !lineup.contains(id) {
-            if let candidate = player(id), candidate.teamID == selectedClubID, !candidate.isInjured {
+            if let candidate = player(id), candidate.teamID == selectedClubID, candidate.isAvailable(matchDay: matchDayIndex), !candidate.isYouth {
                 lineup.append(id)
             }
         }
@@ -619,7 +673,8 @@ struct FootballCareer: Codable, Equatable {
     func canSubstitute(outgoingID: Int, incomingID: Int) -> Bool {
         guard let selectedClubID,
               startingXI.contains(outgoingID), !startingXI.contains(incomingID),
-              let incoming = player(incomingID), incoming.teamID == selectedClubID, !incoming.isInjured else { return false }
+              let incoming = player(incomingID), incoming.teamID == selectedClubID,
+              incoming.isAvailable(matchDay: matchDayIndex), !incoming.isYouth else { return false }
         if let liveMatch { return liveMatch.substitutionsUsed < LiveMatchState.maxSubstitutions }
         return true
     }
@@ -652,7 +707,7 @@ struct FootballCareer: Codable, Equatable {
               let player = player(playerID), player.teamID == selectedClubID,
               clubRoster.count > Self.minimumRoster else { return false }
         let remaining = clubRoster.filter { $0.id != playerID }
-        let healthyCount = remaining.filter { !$0.isInjured }.count
+        let healthyCount = remaining.filter { !$0.isInjured && !$0.isYouth }.count
         return healthyCount >= 11 && FootballSeason.canFill(roster: remaining.map { member in
             var healthy = member
             healthy.injuryRounds = 0
@@ -663,8 +718,10 @@ struct FootballCareer: Codable, Equatable {
     @discardableResult
     mutating func sellPlayer(playerID: Int) -> Bool {
         guard canSell(playerID: playerID), let index = players.firstIndex(where: { $0.id == playerID }) else { return false }
-        transferBudget += quickSalePrice(playerID: playerID)
+        book(.playerSales, quickSalePrice(playerID: playerID), "Venda de \(players[index].name)")
         players[index].teamID = nil
+        players[index].isListed = false
+        players[index].isLoanListed = false
         offers.removeAll { $0.playerID == playerID }
         repairLineup()
         return true
@@ -674,17 +731,33 @@ struct FootballCareer: Codable, Equatable {
         guard selectedClubID != nil, liveMatch == nil, !isFired,
               let player = player(playerID), player.teamID == nil else { return false }
         return clubRoster.count < Self.rosterLimit && transferBudget >= player.marketValue
+            && wageCapAllows(extra: player.contract.wage)
+    }
+
+    /// Por que o atleta não pode ser contratado agora (nil quando pode).
+    func signBlockReason(playerID: Int) -> String? {
+        guard let player = player(playerID), player.teamID == nil else { return "Atleta indisponível." }
+        if liveMatch != nil { return "Termine a partida antes de contratar." }
+        if clubRoster.count >= Self.rosterLimit { return "Elenco completo: venda um atleta antes." }
+        if transferBudget < player.marketValue { return "Caixa insuficiente." }
+        if !wageCapAllows(extra: player.contract.wage) { return "A folha salarial passaria do teto definido pela diretoria." }
+        return nil
     }
 
     @discardableResult
-    mutating func signPlayer(playerID: Int) -> Bool {
+    mutating func signPlayer(playerID: Int, years: Int = 2) -> Bool {
         guard canSign(playerID: playerID), let selectedClubID,
               let index = players.firstIndex(where: { $0.id == playerID }) else { return false }
-        transferBudget -= players[index].marketValue
+        book(.playerPurchases, -players[index].marketValue, "Contratação de \(players[index].name)")
         players[index].teamID = selectedClubID
         players[index].goals = 0
         players[index].assists = 0
         players[index].appearances = 0
+        players[index].benchStreak = 0
+        players[index].morale = 70
+        players[index].form = PlayerForm()
+        let status = expectedStatus(of: players[index])
+        players[index].contract = PlayerContract(wage: players[index].contract.wage, endSeason: season + max(1, years) - 1, status: status)
         return true
     }
 
@@ -699,8 +772,11 @@ struct FootballCareer: Codable, Equatable {
               let offer = offers.first(where: { $0.id == offerID }),
               let index = players.firstIndex(where: { $0.id == offer.playerID }) else { return false }
         let position = players[index].position
-        transferBudget += offer.amount
+        book(.playerSales, offer.amount, "Venda de \(players[index].name) para \(FootballSeason.teamName(offer.clubID))")
         players[index].teamID = offer.clubID
+        players[index].isListed = false
+        players[index].isLoanListed = false
+        players[index].morale = 60
         offers.removeAll { $0.playerID == offer.playerID }
         // O comprador libera o atleta mais fraco da mesma posição para manter o elenco equilibrado.
         if let released = players.indices
@@ -740,12 +816,27 @@ struct FootballCareer: Codable, Equatable {
             players[index].condition = min(100, conditionBefore + (midweek ? recovery / 2 : recovery))
             totalConditionGain += players[index].condition - conditionBefore
 
-            guard !midweek, !player.isInjured,
-                  trainingFocus.developmentPositions.contains(player.position),
-                  player.overall < player.potential else { continue }
-            let developmentChance = min(75, Int(Double(trainingIntensity.developmentChance) * ageMultiplier(player.age)))
-            guard random.int(in: 0...99) < developmentChance else { continue }
-            players[index].overall += 1
+            guard !midweek, !player.isInjured, player.overall < player.potential else { continue }
+            let individual = player.individualFocus
+            let groupFocused = trainingFocus.developmentPositions.contains(player.position)
+            guard groupFocused || individual != nil else { continue }
+            var chance = groupFocused ? Double(trainingIntensity.developmentChance) * ageMultiplier(player.age) : 0
+            if player.has(.prodigy) && player.age <= 22 { chance *= 1.25 }
+            if individual != nil { chance += 12 }
+            guard random.int(in: 0...99) < min(80, Int(chance)) else { continue }
+
+            var pool = FootballPlayer.trainableAttributes(focus: trainingFocus, position: player.position).filter { player.attributes[$0] < 20 }
+            if let individual, player.attributes[individual] < 20 { pool = [individual] + pool }
+            guard !pool.isEmpty else { continue }
+            var candidate = player.attributes
+            var gained = 0
+            for slot in 0..<2 {
+                let choice = slot == 0 ? pool[0] : pool[random.int(in: 0...(pool.count - 1))]
+                if candidate[choice] < 20 { candidate[choice] += 1; gained += 1 }
+            }
+            guard gained > 0, candidate.overall(for: player.position) <= player.potential else { continue }
+            players[index].attributes = candidate
+            players[index].recomputeOverall()
             refreshValue(at: index)
             developedPlayers += 1
         }

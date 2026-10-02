@@ -16,18 +16,64 @@ struct MatchSide {
     let opponentStyle: FootballPlayStyle
     let isHome: Bool
 
+    /// Deslocamentos médios dos compostos de setor em relação ao geral (medidos em simulação), para calibrar o motor.
+    static let attackOffset = -2.2
+    static let defenseOffset = -1.4
+    static let controlOffset = -1.8
+
     var rating: Double { FootballSeason.rating(of: lineup, formation: formation) }
 
+    private func composite(weights: [FootballPosition: Double], value: (FootballPlayer) -> Double) -> Double {
+        let assignments = FootballSeason.assignSlots(lineup: lineup, formation: formation)
+        var numerator = 0.0
+        var denominator = 0.0
+        for assignment in assignments {
+            let weight = weights[assignment.slot, default: 0]
+            guard weight > 0 else { continue }
+            numerator += weight * (value(assignment.player) * assignment.player.effectiveOverall / Double(max(1, assignment.player.overall)) - assignment.fit.penalty)
+            denominator += weight
+        }
+        return denominator > 0 ? numerator / denominator : rating
+    }
+
+    private func delta(_ composite: Double, offset: Double) -> Double {
+        min(6, max(-6, (composite - rating - offset) * 0.6))
+    }
+
+    /// Diferença bruta (composto menos geral) de cada setor, usada para calibrar os deslocamentos.
+    var rawSectorDifferences: (attack: Double, defense: Double, control: Double) {
+        let a = composite(weights: [.forward: 3, .midfielder: 1.5, .defender: 0.3]) { $0.attributes.attackComposite } - rating
+        let d = composite(weights: [.goalkeeper: 2.5, .defender: 2, .midfielder: 0.8, .forward: 0.2]) { player in
+            player.position == .goalkeeper ? player.attributes.goalkeeperComposite : player.attributes.defenseComposite
+        } - rating
+        let c = composite(weights: [.midfielder: 2, .defender: 0.6, .forward: 0.6, .goalkeeper: 0.3]) { $0.attributes.controlComposite } - rating
+        return (a, d, c)
+    }
+
+    var attackSector: Double {
+        delta(composite(weights: [.forward: 3, .midfielder: 1.5, .defender: 0.3]) { $0.attributes.attackComposite }, offset: Self.attackOffset)
+    }
+
+    var defenseSector: Double {
+        delta(composite(weights: [.goalkeeper: 2.5, .defender: 2, .midfielder: 0.8, .forward: 0.2]) { player in
+            player.position == .goalkeeper ? player.attributes.goalkeeperComposite : player.attributes.defenseComposite
+        }, offset: Self.defenseOffset)
+    }
+
+    var controlSector: Double {
+        delta(composite(weights: [.midfielder: 2, .defender: 0.6, .forward: 0.6, .goalkeeper: 0.3]) { $0.attributes.controlComposite }, offset: Self.controlOffset)
+    }
+
     var attack: Double {
-        rating + Double(formation.attackBonus + style.attackAdjustment + style.attackBonus(against: opponentStyle)) + (isHome ? 1.5 : 0)
+        rating + attackSector + Double(formation.attackBonus + style.attackAdjustment + style.attackBonus(against: opponentStyle)) + (isHome ? 1.5 : 0)
     }
 
     var defense: Double {
-        rating + Double(formation.defenseBonus + style.defenseAdjustment) + (isHome ? 1 : 0)
+        rating + defenseSector + Double(formation.defenseBonus + style.defenseAdjustment) + (isHome ? 1 : 0)
     }
 
     var control: Double {
-        rating + Double(formation.midfieldBonus + style.controlAdjustment) + (isHome ? 1 : 0)
+        rating + controlSector + Double(formation.midfieldBonus + style.controlAdjustment) + (isHome ? 1 : 0)
     }
 }
 
@@ -95,7 +141,7 @@ enum FootballMatchEngine {
     }
 
     private static func goal(for lineup: [FootballPlayer], minutes: ClosedRange<Int>, using random: inout FootballRandom) -> GoalRecord {
-        let scoringWeights = lineup.map { $0.position.scoringWeight * max(1, $0.overall - 40) }
+        let scoringWeights = lineup.map { Int(Double($0.position.scoringWeight * max(1, $0.attributes[.finishing] * 3 + $0.overall - 60)) * ($0.has(.naturalFinisher) ? 1.35 : 1.0)) }
         let scorer: FootballPlayer? = random.weightedIndex(scoringWeights).map { lineup[$0] }
             ?? lineup.first(where: { $0.position != .goalkeeper })
             ?? lineup.first
@@ -103,7 +149,7 @@ enum FootballMatchEngine {
         var assistID: Int?
         if random.chance(0.72) {
             let mates = lineup.filter { $0.id != scorerID }
-            let assistWeights = mates.map { $0.position.assistWeight * max(1, $0.overall - 40) }
+            let assistWeights = mates.map { $0.position.assistWeight * max(1, $0.attributes[.passing] * 3 + $0.attributes[.vision] * 2 + $0.overall / 2 - 40) }
             if let index = random.weightedIndex(assistWeights) { assistID = mates[index].id }
         }
         return GoalRecord(minute: random.int(in: minutes), scorerID: scorerID, assistID: assistID)

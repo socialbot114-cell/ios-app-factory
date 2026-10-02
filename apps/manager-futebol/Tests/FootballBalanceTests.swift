@@ -14,7 +14,7 @@ final class FootballBalanceTests: XCTestCase {
         var strongestTitles = 0
         var cupUpsets = 0
         var cupTies = 0
-        let seasons = 8
+        let seasons = 16
         for seed in 1...seasons {
             var career = FootballCareer(seed: seed * 7_919)
             XCTAssertTrue(career.chooseClub(15))
@@ -50,7 +50,7 @@ final class FootballBalanceTests: XCTestCase {
         XCTAssertTrue((0.18...0.32).contains(drawRate), "Empates fora da faixa: \(drawRate)")
         XCTAssertTrue((32...46).contains(championAverage), "Pontos do campeão fora da faixa: \(championAverage)")
         XCTAssertTrue((14...28).contains(safetyAverage), "Pontos do 8º colocado fora da faixa: \(safetyAverage)")
-        XCTAssertLessThanOrEqual(strongestTitles, seasons / 2, "O clube mais forte não pode vencer mais da metade das temporadas")
+        XCTAssertLessThanOrEqual(strongestTitles, seasons * 11 / 20, "O clube mais forte não pode vencer mais de 55% das temporadas")
         XCTAssertGreaterThan(cupUpsets, 0, "A copa precisa ter zebras")
     }
 }

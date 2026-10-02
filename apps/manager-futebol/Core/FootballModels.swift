@@ -12,6 +12,19 @@ struct LeagueTeam: Identifiable, Codable, Hashable {
     let preferredStyle: FootballPlayStyle
     let preferredFormation: FootballFormation
     let initialDivision: Division
+
+    /// Região do país: 0 Norte, 1 Nordeste, 2 Centro-Oeste, 3 Sudeste, 4 Sul.
+    var region: Int {
+        switch id {
+        case 6, 17: return 0
+        case 2, 9, 14, 15, 16: return 1
+        case 0, 1, 10: return 2
+        case 3, 5, 11, 12, 19: return 3
+        default: return 4
+        }
+    }
+
+    static let regionNames = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"]
 }
 
 enum Division: Int, Codable, CaseIterable, Identifiable, Comparable {
@@ -413,63 +426,189 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
     let id: Int
     var name: String
     var position: FootballPosition
+    var detail: PositionDetail
     var age: Int
     var overall: Int
     var potential: Int
     var condition: Int
     var marketValue: Int
     var teamID: Int?
+    var attributes: PlayerAttributes
+    var traits: [PlayerTrait]
+    var morale: Int
+    var contract: PlayerContract
+    var form: PlayerForm
+    var discipline: PlayerDiscipline
+    var region: Int
     var goals = 0
     var assists = 0
     var appearances = 0
     var injuryRounds = 0
     var careerGoals = 0
+    /// Jogos seguidos sem entrar em campo (alimenta o moral e os pedidos).
+    var benchStreak = 0
+    var isYouth = false
+    /// Clube dono do atleta quando ele está emprestado a outro clube.
+    var parentTeamID: Int? = nil
+    /// Preço fixado para comprar o atleta durante um empréstimo.
+    var purchaseOption: Int? = nil
+    var isListed = false
+    var isLoanListed = false
+    /// Dia de jogo em que o atleta está servindo a seleção e não pode ser escalado.
+    var nationalDutyMatchDay: Int? = nil
+    var learnedPositions: [FootballPosition] = []
+    var individualFocus: AttributeKind? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, position, age, overall, potential, condition, marketValue, teamID
-        case goals, assists, appearances, injuryRounds, careerGoals
+        case id, name, position, detail, age, overall, potential, condition, marketValue, teamID
+        case attributes, traits, morale, contract, form, discipline, region
+        case goals, assists, appearances, injuryRounds, careerGoals, benchStreak, isYouth
+        case parentTeamID, purchaseOption, isListed, isLoanListed, nationalDutyMatchDay, learnedPositions, individualFocus
     }
 
     init(id: Int, name: String, position: FootballPosition, age: Int, overall: Int, potential: Int,
-         condition: Int, marketValue: Int, teamID: Int?) {
+         condition: Int, marketValue: Int, teamID: Int?, detail: PositionDetail? = nil,
+         attributes: PlayerAttributes? = nil, traits: [PlayerTrait] = [], region: Int? = nil) {
         self.id = id
         self.name = name
         self.position = position
+        let resolvedDetail = detail ?? PositionDetail.defaults(for: position)[id % PositionDetail.defaults(for: position).count]
+        self.detail = resolvedDetail
         self.age = age
         self.overall = overall
-        self.potential = potential
+        self.potential = max(potential, overall)
         self.condition = condition
         self.marketValue = marketValue
         self.teamID = teamID
+        if let attributes {
+            self.attributes = attributes
+        } else {
+            var random = FootballRandom(seed: UInt64(bitPattern: Int64(id)) &* 0x9E3779B97F4A7C15 ^ 0xA77121B07E5)
+            self.attributes = PlayerAttributes.derive(overall: overall, position: position, detail: resolvedDetail, random: &random)
+        }
+        self.traits = traits
+        self.morale = 60
+        self.contract = PlayerContract(wage: PlayerContract.wage(forValue: marketValue), endSeason: 0, status: .rotation)
+        self.form = PlayerForm()
+        self.discipline = PlayerDiscipline()
+        self.region = region ?? (id % 5)
     }
 
-    /// Decodificação tolerante: campos novos ganham valor padrão em saves antigos.
+    /// Decodificação tolerante: campos novos ganham valores coerentes em saves antigos.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(Int.self, forKey: .id)
         name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Atleta"
-        position = try container.decodeIfPresent(FootballPosition.self, forKey: .position) ?? .midfielder
+        let decodedPosition = try container.decodeIfPresent(FootballPosition.self, forKey: .position) ?? .midfielder
+        position = decodedPosition
+        let defaults = PositionDetail.defaults(for: decodedPosition)
+        let decodedDetail = try container.decodeIfPresent(PositionDetail.self, forKey: .detail) ?? defaults[id % defaults.count]
+        detail = decodedDetail
         age = try container.decodeIfPresent(Int.self, forKey: .age) ?? 25
-        overall = try container.decodeIfPresent(Int.self, forKey: .overall) ?? 65
-        potential = try container.decodeIfPresent(Int.self, forKey: .potential) ?? overall
+        let decodedOverall = try container.decodeIfPresent(Int.self, forKey: .overall) ?? 65
+        overall = decodedOverall
+        potential = max(decodedOverall, try container.decodeIfPresent(Int.self, forKey: .potential) ?? decodedOverall)
         condition = try container.decodeIfPresent(Int.self, forKey: .condition) ?? 90
-        marketValue = try container.decodeIfPresent(Int.self, forKey: .marketValue) ?? 0
+        let decodedValue = try container.decodeIfPresent(Int.self, forKey: .marketValue) ?? 0
+        marketValue = decodedValue
         teamID = try container.decodeIfPresent(Int.self, forKey: .teamID)
+        if let decodedAttributes = try container.decodeIfPresent(PlayerAttributes.self, forKey: .attributes) {
+            attributes = decodedAttributes
+        } else {
+            var random = FootballRandom(seed: UInt64(bitPattern: Int64(id)) &* 0x9E3779B97F4A7C15 ^ 0xA77121B07E5)
+            attributes = PlayerAttributes.derive(overall: decodedOverall, position: decodedPosition, detail: decodedDetail, random: &random)
+        }
+        traits = try container.decodeIfPresent([PlayerTrait].self, forKey: .traits) ?? []
+        morale = try container.decodeIfPresent(Int.self, forKey: .morale) ?? 60
+        contract = try container.decodeIfPresent(PlayerContract.self, forKey: .contract)
+            ?? PlayerContract(wage: PlayerContract.wage(forValue: decodedValue), endSeason: 0, status: .rotation)
+        form = try container.decodeIfPresent(PlayerForm.self, forKey: .form) ?? PlayerForm()
+        discipline = try container.decodeIfPresent(PlayerDiscipline.self, forKey: .discipline) ?? PlayerDiscipline()
+        region = try container.decodeIfPresent(Int.self, forKey: .region) ?? (id % 5)
         goals = try container.decodeIfPresent(Int.self, forKey: .goals) ?? 0
         assists = try container.decodeIfPresent(Int.self, forKey: .assists) ?? 0
         appearances = try container.decodeIfPresent(Int.self, forKey: .appearances) ?? 0
         injuryRounds = try container.decodeIfPresent(Int.self, forKey: .injuryRounds) ?? 0
         careerGoals = try container.decodeIfPresent(Int.self, forKey: .careerGoals) ?? goals
+        benchStreak = try container.decodeIfPresent(Int.self, forKey: .benchStreak) ?? 0
+        isYouth = try container.decodeIfPresent(Bool.self, forKey: .isYouth) ?? false
+        parentTeamID = try container.decodeIfPresent(Int.self, forKey: .parentTeamID)
+        purchaseOption = try container.decodeIfPresent(Int.self, forKey: .purchaseOption)
+        isListed = try container.decodeIfPresent(Bool.self, forKey: .isListed) ?? false
+        isLoanListed = try container.decodeIfPresent(Bool.self, forKey: .isLoanListed) ?? false
+        nationalDutyMatchDay = try container.decodeIfPresent(Int.self, forKey: .nationalDutyMatchDay)
+        learnedPositions = try container.decodeIfPresent([FootballPosition].self, forKey: .learnedPositions) ?? []
+        individualFocus = try container.decodeIfPresent(AttributeKind.self, forKey: .individualFocus)
     }
 
     var isInjured: Bool { injuryRounds > 0 }
 
-    var effectiveOverall: Double {
-        Double(overall) * (0.72 + 0.28 * Double(condition) / 100)
+    var isSuspended: Bool { discipline.suspensionGames > 0 }
+
+    var moraleLevel: MoraleLevel { MoraleLevel(value: morale) }
+
+    var onLoan: Bool { parentTeamID != nil }
+
+    /// Pode ser escalado na partida do dia informado.
+    func isAvailable(matchDay: Int) -> Bool {
+        !isInjured && !isSuspended && nationalDutyMatchDay != matchDay
     }
+
+    /// Força em campo: condição física e moral influenciam o geral.
+    var effectiveOverall: Double {
+        Double(overall) * (0.72 + 0.28 * Double(condition) / 100) * (0.96 + 0.08 * Double(morale) / 100)
+    }
+
+    func has(_ trait: PlayerTrait) -> Bool { traits.contains(trait) }
 
     var lastName: String {
         name.split(separator: " ").last.map(String.init) ?? name
+    }
+
+    /// Recalcula o geral a partir dos atributos e da posição natural.
+    mutating func recomputeOverall() {
+        overall = attributes.overall(for: position)
+        if overall > potential { potential = overall }
+    }
+
+    /// Leva o geral ao valor desejado ajustando os atributos mais importantes da posição.
+    mutating func setOverall(_ target: Int) {
+        let clamped = min(96, max(40, target))
+        attributes.calibrate(to: clamped, position: position)
+        overall = attributes.overall(for: position)
+        if overall > potential { potential = overall }
+    }
+
+    /// Atributos que cada foco de treino pode melhorar para a posição do atleta.
+    static func trainableAttributes(focus: FootballTrainingFocus, position: FootballPosition) -> [AttributeKind] {
+        switch (focus, position) {
+        case (.recovery, _): return []
+        case (.physical, _): return [.pace, .stamina, .strength]
+        case (.technical, .goalkeeper): return [.distribution, .handling]
+        case (.technical, _): return [.passing, .dribbling, .finishing, .vision]
+        case (.tactical, .goalkeeper): return [.positioning, .decisions]
+        case (.tactical, _): return [.positioning, .decisions, .marking, .vision]
+        case (.defending, .goalkeeper): return [.reflexes, .handling, .positioning]
+        case (.defending, _): return [.marking, .tackling, .positioning, .heading]
+        case (.attacking, .goalkeeper): return [.distribution]
+        case (.attacking, _): return [.finishing, .dribbling, .pace, .heading]
+        }
+    }
+
+    /// Declínio com a idade: os atributos físicos caem primeiro.
+    mutating func decline(by points: Int, random: inout FootballRandom) {
+        guard points > 0 else { return }
+        for _ in 0..<points {
+            let kind = [AttributeKind.pace, .stamina, .strength, .pace, .dribbling][random.int(in: 0...4)]
+            attributes[kind] -= 1
+        }
+        let target = max(48, overall - points)
+        attributes.calibrate(to: target, position: position)
+        overall = max(48, attributes.overall(for: position))
+    }
+
+    func canPlay(as target: FootballPosition) -> Bool {
+        position == target || learnedPositions.contains(target)
     }
 }
 
@@ -508,11 +647,13 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     var wentToExtraTime = false
     var homePenalties: Int? = nil
     var awayPenalties: Int? = nil
+    /// Notas e números individuais do clube do usuário nesta partida.
+    var userStats: [PlayerMatchStats] = []
 
     private enum CodingKeys: String, CodingKey {
         case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
-        case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties
+        case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties, userStats
     }
 
     init(id: Int, matchDay: Int, round: Int, competition: Competition, home: Int, away: Int) {
@@ -549,6 +690,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         wentToExtraTime = try container.decodeIfPresent(Bool.self, forKey: .wentToExtraTime) ?? false
         homePenalties = try container.decodeIfPresent(Int.self, forKey: .homePenalties)
         awayPenalties = try container.decodeIfPresent(Int.self, forKey: .awayPenalties)
+        userStats = try container.decodeIfPresent([PlayerMatchStats].self, forKey: .userStats) ?? []
     }
 
     var isPlayed: Bool { homeGoals != nil && awayGoals != nil }

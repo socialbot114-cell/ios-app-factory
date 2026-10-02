@@ -188,6 +188,20 @@ extension FootballCareer {
 
         recordGoals(homeScorers + awayScorers)
         recordAssists(assists)
+        let userSide = userIsHome ? home : away
+        let userGoals = userIsHome ? homeScorers : awayScorers
+        let userAssists = userIsHome ? (live.homeAssistIDs + second.homeGoals.compactMap(\.assistID))
+                                     : (live.awayAssistIDs + second.awayGoals.compactMap(\.assistID))
+        let conceded = userIsHome ? awayScorers.count : homeScorers.count
+        let opponentOnTarget = (userIsHome ? played.awayOnTarget : played.homeOnTarget) ?? 0
+        let matchLength = played.wentToExtraTime ? 120 : 90
+        let startIDs = userIsHome ? live.firstHalfHomeLineup : live.firstHalfAwayLineup
+        fixtures[userIndex].userStats = buildUserStats(
+            startIDs: startIDs, endIDs: userSide.lineup.map(\.id), goals: userGoals, assists: userAssists,
+            goalsFor: userGoals.count, goalsAgainst: conceded, opponentOnTarget: opponentOnTarget,
+            matchLength: matchLength, fixtureID: fixture.id
+        )
+        startingXIAtKickoff = Set(startIDs)
         var participation = [
             MatchParticipation(lineupStart: live.firstHalfHomeLineup, lineupEnd: home.lineup.map(\.id), style: homeStyle),
             MatchParticipation(lineupStart: live.firstHalfAwayLineup, lineupEnd: away.lineup.map(\.id), style: awayStyle)
@@ -280,15 +294,48 @@ extension FootballCareer {
         }
     }
 
+    // MARK: - Notas da partida
+
+    /// Minutos, gols, assistências e nota de cada atleta do clube do usuário.
+    func buildUserStats(startIDs: [Int], endIDs: [Int], goals: [Int], assists: [Int], goalsFor: Int, goalsAgainst: Int,
+                        opponentOnTarget: Int, matchLength: Int, fixtureID: Int) -> [PlayerMatchStats] {
+        let everyone = Array(Set(startIDs + endIDs)).sorted()
+        let lineupPlayers = endIDs.compactMap { player($0) }
+        let average = lineupPlayers.isEmpty ? 65 : lineupPlayers.map(\.effectiveOverall).reduce(0, +) / Double(lineupPlayers.count)
+        var output: [PlayerMatchStats] = []
+        for id in everyone {
+            guard let athlete = player(id) else { continue }
+            let started = startIDs.contains(id)
+            let finished = endIDs.contains(id)
+            var stats = PlayerMatchStats(playerID: id)
+            switch (started, finished) {
+            case (true, true): stats.minutes = matchLength
+            case (true, false): stats.minutes = 45
+            case (false, true): stats.minutes = matchLength - 45
+            default: stats.minutes = 0
+            }
+            stats.goals = goals.filter { $0 == id }.count
+            stats.assists = assists.filter { $0 == id }.count
+            if athlete.position == .goalkeeper { stats.saves = max(0, opponentOnTarget - goalsAgainst) }
+            stats.rating = FootballRatings.rating(
+                for: athlete, stats: stats, goalsFor: goalsFor, goalsAgainst: goalsAgainst, teamAverage: average,
+                noiseSeed: matchSeed(stream: .postMatch, id: 70_000 + fixtureID)
+            )
+            output.append(stats)
+        }
+        return output
+    }
+
     // MARK: - Pós-jogo
 
     /// Desgaste, lesões, evolução da IA, finanças, copa e propostas após todas as partidas do dia.
     mutating func completeMatchDay(participation: [MatchParticipation], userFixtureIndex: Int?) {
         let slot = currentSlot
 
-        // Lesões anteriores avançam um dia de jogo antes de novas lesões serem sorteadas.
-        for index in players.indices where players[index].injuryRounds > 0 {
-            players[index].injuryRounds -= 1
+        // Lesões e suspensões anteriores avançam um dia de jogo antes de novas serem sorteadas.
+        for index in players.indices {
+            if players[index].injuryRounds > 0 { players[index].injuryRounds -= 1 }
+            if players[index].discipline.suspensionGames > 0 { players[index].discipline.suspensionGames -= 1 }
         }
 
         var postRandom = FootballRandom(seed: matchSeed(stream: .postMatch, id: matchDayIndex))
@@ -331,9 +378,19 @@ extension FootballCareer {
         matchDayIndex += 1
         if let userFixtureIndex {
             settleUserMatch(fixture: fixtures[userFixtureIndex])
+            if let selectedClubID {
+                let fixture = fixtures[userFixtureIndex]
+                processUserPlayers(stats: fixture.userStats, result: fixture.result(for: selectedClubID),
+                                   derby: FootballSeason.isDerby(fixture.home, fixture.away), started: startingXIAtKickoff)
+                startingXIAtKickoff = []
+            }
         } else {
             lastRoundRevenue = 0
+            if selectedClubID != nil { processUserPlayers(stats: [], result: nil, derby: false, started: [], teamPlayed: false) }
         }
+        collectMatchDayIncome()
+        chargeMatchDayWages()
+        generatePlayerRequests()
         if let cupRound = slot?.cupRound { progressCup(after: cupRound) }
         offers.removeAll { $0.expiresAfterRound <= matchDayIndex }
         generateOffers(using: &postRandom)
@@ -341,11 +398,18 @@ extension FootballCareer {
         repairLineup()
     }
 
+    /// Receitas de todo dia de jogo (a bilheteria é lançada junto com a partida em casa).
+    mutating func collectMatchDayIncome() {
+        guard let selectedClubID, let club = selectedClub else { return }
+        let tv = Int(Double(club.startingBudget) * (division(of: selectedClubID) == .serieA ? 0.012 : 0.006) / 10_000) * 10_000
+        book(.tv, tv, "Cotas de TV")
+    }
+
     mutating func developAIPlayers(using random: inout FootballRandom) {
         for index in players.indices {
             guard let teamID = players[index].teamID, teamID != selectedClubID,
                   players[index].overall < players[index].potential else { continue }
-            if random.chance(0.025 * ageMultiplier(players[index].age)) { players[index].overall += 1 }
+            if random.chance(0.025 * ageMultiplier(players[index].age)) { players[index].setOverall(players[index].overall + 1) }
         }
     }
 
@@ -357,12 +421,12 @@ extension FootballCareer {
             let formBonus = form(teamID: selectedClubID).filter { $0 == .win }.count * 8_000
             let derbyBonus = FootballSeason.isDerby(fixture.home, fixture.away) ? 1.3 : 1.0
             lastRoundRevenue = Int(Double(club.startingBudget) * 0.018 * derbyBonus) + formBonus
-            transferBudget += lastRoundRevenue
+            book(.gate, lastRoundRevenue, "Bilheteria contra \(FootballSeason.teamName(fixture.away))")
         } else {
             lastRoundRevenue = 0
         }
         if let round = fixture.competition.cupRound, fixture.winner == selectedClubID {
-            transferBudget += round.advanceBonus
+            book(.prize, round.advanceBonus, "Classificação na \(round.name)")
         }
 
         let expectation = teamRating(selectedClubID) - teamRating(fixture.opponent(of: selectedClubID)) + (isHome ? 1.5 : -1.5)
