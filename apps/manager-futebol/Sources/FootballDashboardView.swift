@@ -452,6 +452,8 @@ struct MatchEventRow: View {
         case .tactic: return "slider.horizontal.3"
         case .substitution: return "arrow.left.arrow.right"
         case .injury: return "cross.case.fill"
+        case .extraTime: return "clock.badge.exclamationmark"
+        case .penalties: return "figure.soccer"
         }
     }
 
