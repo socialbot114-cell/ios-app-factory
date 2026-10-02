@@ -319,8 +319,11 @@ enum FootballSeason {
 
     /// Força média da escalação, com penalidade para improvisos e para ausência de goleiro.
     static func rating(of lineup: [FootballPlayer], formation: FootballFormation) -> Double {
+        rating(of: lineup, formation: formation, assignments: assignSlots(lineup: lineup, formation: formation))
+    }
+
+    static func rating(of lineup: [FootballPlayer], formation: FootballFormation, assignments: [SlotAssignment]) -> Double {
         guard !lineup.isEmpty else { return 55 }
-        let assignments = assignSlots(lineup: lineup, formation: formation)
         let total = assignments.reduce(0.0) { $0 + $1.player.effectiveOverall - $1.fit.penalty }
         var rating = total / Double(max(1, assignments.count))
         if !lineup.contains(where: { $0.position == .goalkeeper || $0.learnedPositions.contains(.goalkeeper) }) { rating -= 6 }

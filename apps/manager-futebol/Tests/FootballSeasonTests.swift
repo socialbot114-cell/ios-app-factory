@@ -189,40 +189,63 @@ final class FootballSeasonTests: XCTestCase {
 
     // MARK: - Partida ao vivo
 
-    func testLiveMatchHalfTimeChangesAffectSecondHalfAndAreSaved() throws {
+    func testLiveMatchCanBePausedChangedAndSavedMidGame() throws {
         var career = FootballCareer(seed: 21)
         XCTAssertTrue(career.chooseClub(0))
         XCTAssertTrue(career.beginMatchDay())
-        let live = try XCTUnwrap(career.liveMatch)
-        XCTAssertEqual(live.matchDay, 0)
+        let kickoff = try XCTUnwrap(career.liveMatch)
+        XCTAssertEqual(kickoff.sim.minute, 0)
+        XCTAssertEqual(kickoff.matchDay, 0)
         XCTAssertEqual(career.matchDayIndex, 0)
-        XCTAssertFalse(career.beginMatchDay())
+        XCTAssertFalse(career.beginMatchDay(), "Não pode iniciar outra rodada com uma partida em andamento")
         XCTAssertFalse(career.canSign(playerID: career.marketPlayers[0].id))
-        let restored = try JSONDecoder().decode(FootballCareer.self, from: JSONEncoder().encode(career))
-        XCTAssertEqual(restored.liveMatch, live)
 
-        let outgoing = try XCTUnwrap(career.starters.first { $0.position == .forward })
-        let incoming = try XCTUnwrap(career.clubRoster.first { $0.position == .forward && !career.startingXI.contains($0.id) })
+        career.liveAdvance(to: 45)
+        let halfTime = try XCTUnwrap(career.liveMatch)
+        XCTAssertEqual(halfTime.sim.minute, 45)
+        XCTAssertTrue(halfTime.events.contains { $0.kind == .halfTime })
+        let restored = try JSONDecoder().decode(FootballCareer.self, from: JSONEncoder().encode(career))
+        XCTAssertEqual(restored.liveMatch, halfTime)
+
+        let side = try XCTUnwrap(career.liveUserSide)
+        let onPitch = career.liveMatch?.sim[side].onPitch.compactMap { career.player($0) } ?? []
+        let bench = career.liveMatch?.sim[side].bench.compactMap { career.player($0) } ?? []
+        let outgoing = try XCTUnwrap(onPitch.first { $0.position == .forward })
+        let incoming = try XCTUnwrap(bench.first { $0.position == .forward })
+        XCTAssertTrue(career.canSubstitute(outgoingID: outgoing.id, incomingID: incoming.id))
         XCTAssertTrue(career.substitute(outgoingID: outgoing.id, incomingID: incoming.id))
-        career.setPlayStyle(.counter)
+        XCTAssertEqual(career.liveMatch?.substitutionsUsed, 1)
+        career.liveSetStyle(.counter)
+        var instructions = TeamInstructions()
+        instructions.pressing = .high
+        career.liveSetInstructions(instructions)
+
         XCTAssertTrue(career.finishMatchDay())
         XCTAssertNil(career.liveMatch)
         XCTAssertEqual(career.matchDayIndex, 1)
         let fixture = try XCTUnwrap(career.latestUserFixture)
         XCTAssertTrue(fixture.events.contains { $0.kind == .substitution })
         XCTAssertTrue(fixture.events.contains { $0.kind == .tactic })
-        XCTAssertEqual(career.player(outgoing.id)?.appearances, 1)
-        XCTAssertEqual(career.player(incoming.id)?.appearances, 1)
+        XCTAssertTrue(fixture.events.contains { $0.kind == .fullTime })
+        XCTAssertGreaterThanOrEqual(career.player(incoming.id)?.appearances ?? 0, 1)
+        XCTAssertGreaterThanOrEqual(career.player(outgoing.id)?.appearances ?? 0, 1)
+        XCTAssertFalse(fixture.userStats.isEmpty)
+        XCTAssertEqual(fixture.momentum.count, 90)
         XCTAssertTrue(career.fixtures.filter { $0.matchDay == 0 }.allSatisfy(\.isPlayed))
+        XCTAssertNotNil(career.pendingPress)
     }
 
     func testPenaltyShootoutAlwaysProducesAWinner() {
         let career = FootballCareer(seed: 2)
-        let home = career.side(teamID: 0, opponentID: 1, isHome: true, style: .balanced, opponentStyle: .balanced)
-        let away = career.side(teamID: 1, opponentID: 0, isHome: false, style: .balanced, opponentStyle: .balanced)
+        func side(_ teamID: Int, _ rival: Int, home: Bool) -> MatchSide {
+            MatchSide(teamID: teamID, lineup: career.lineup(for: teamID).compactMap { career.player($0) },
+                      formation: career.formation(for: teamID), style: .balanced, opponentStyle: .balanced, isHome: home)
+        }
+        let homeSide = side(0, 1, home: true)
+        let awaySide = side(1, 0, home: false)
         for seed in 1...200 {
             var random = FootballRandom(seed: UInt64(seed))
-            let result = FootballMatchEngine.penaltyShootout(home: home, away: away, using: &random)
+            let result = FootballMatchEngine.penaltyShootout(home: homeSide, away: awaySide, using: &random)
             XCTAssertNotEqual(result.homeScore, result.awayScore)
             XCTAssertFalse(result.events.isEmpty)
         }

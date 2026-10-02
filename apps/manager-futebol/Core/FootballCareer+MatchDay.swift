@@ -1,12 +1,5 @@
 import Foundation
 
-/// Participação de uma equipe numa partida: quem começou, quem terminou e o estilo usado.
-struct MatchParticipation {
-    let lineupStart: [Int]
-    let lineupEnd: [Int]
-    let style: FootballPlayStyle
-}
-
 extension FootballCareer {
     // MARK: - Avançar no calendário
 
@@ -40,243 +33,303 @@ extension FootballCareer {
     mutating func advanceMatchDay() -> Bool {
         guard canAdvanceWithoutPlaying else { return false }
         prepareMatchDay()
-        var participation: [MatchParticipation] = []
+        let allPlayers = playersByID()
+        var outcomes: [(Int, MatchOutcome)] = []
         for index in fixtures.indices where fixtures[index].matchDay == matchDayIndex && !fixtures[index].isPlayed {
-            participation.append(contentsOf: playFullFixture(at: index))
+            outcomes.append((index, simulateFixture(at: index, players: allPlayers)))
         }
-        completeMatchDay(participation: participation, userFixtureIndex: nil)
+        tickRecovery()
+        for (index, outcome) in outcomes { applyOutcome(outcome, fixtureIndex: index, isUser: false) }
+        completeMatchDay(userFixtureIndex: nil)
         return true
+    }
+
+    // MARK: - Montagem das partidas
+
+    func playersByID() -> [Int: FootballPlayer] {
+        Dictionary(uniqueKeysWithValues: players.map { ($0.id, $0) })
+    }
+
+    /// Instruções que a IA usa conforme o estilo escolhido.
+    func aiInstructions(for style: FootballPlayStyle) -> TeamInstructions {
+        var instructions = TeamInstructions()
+        switch style {
+        case .highPress: instructions.pressing = .high; instructions.lineHeight = .high
+        case .defensive: instructions.lineHeight = .low; instructions.pressing = .low
+        case .counter: instructions.lineHeight = .low; instructions.tempo = .high
+        case .possession: instructions.tempo = .low
+        case .attacking: instructions.lineHeight = .high; instructions.width = .high
+        case .balanced: break
+        }
+        return instructions
+    }
+
+    func makeSideState(teamID: Int, rivalID: Int, isUser: Bool, styleOverride: FootballPlayStyle? = nil) -> MatchSideState {
+        let lineupIDs = lineup(for: teamID)
+        let available = players.filter { $0.teamID == teamID && !$0.isYouth && $0.isAvailable(matchDay: matchDayIndex) }
+        let bench = available.filter { !lineupIDs.contains($0.id) }.sorted(by: FootballSeason.strongerFirst).prefix(7).map(\.id)
+        let style = styleOverride ?? (isUser ? playStyle : aiStyle(teamID: teamID, opponentID: rivalID))
+        var conditions: [Int: Double] = [:]
+        for id in lineupIDs + bench { conditions[id] = Double(player(id)?.condition ?? 80) }
+        var state = MatchSideState(teamID: teamID, formation: formation(for: teamID), style: style,
+                                   onPitch: lineupIDs, bench: bench, matchCondition: conditions)
+        state.instructions = isUser ? teamInstructions : aiInstructions(for: style)
+        state.isUserControlled = isUser
+        if isUser {
+            state.roles = playerRoles.filter { lineupIDs.contains($0.key) }
+            state.penaltyTakerID = penaltyTakerID
+        } else if rivalID == selectedClubID {
+            state.attackBoost = rivalMotivation[teamID] ?? 0
+        }
+        return state
+    }
+
+    func makeSimulation(fixture: LeagueFixture, detailed: Bool) -> MatchSimulation {
+        let userID = selectedClubID
+        let home = makeSideState(teamID: fixture.home, rivalID: fixture.away, isUser: detailed && fixture.home == userID)
+        let away = makeSideState(teamID: fixture.away, rivalID: fixture.home, isUser: detailed && fixture.away == userID)
+        return MatchSimulation.make(fixtureID: fixture.id, seed: matchSeed(stream: .match, id: fixture.id),
+                                    isCup: fixture.competition.isCup, isDerby: FootballSeason.isDerby(fixture.home, fixture.away),
+                                    detailed: detailed, home: home, away: away)
+    }
+
+    func simulateFixture(at index: Int, players allPlayers: [Int: FootballPlayer]) -> MatchOutcome {
+        var sim = makeSimulation(fixture: fixtures[index], detailed: false)
+        let startHome = sim.home.onPitch
+        let startAway = sim.away.onPitch
+        sim.runToEnd(players: allPlayers)
+        return sim.makeOutcome(players: allPlayers, startHome: startHome, startAway: startAway)
     }
 
     // MARK: - Partida do usuário
 
-    /// Aplica o treino e joga o primeiro tempo da partida do usuário. A carreira fica no intervalo.
+    /// Aplica o treino e cria a partida do usuário no minuto zero. Os demais jogos do dia já são decididos.
     @discardableResult
     mutating func beginMatchDay() -> Bool {
-        guard liveMatch == nil, canPlay, let fixture = nextUserFixture else { return false }
+        guard liveMatch == nil, canPlay, let selectedClubID, let fixture = nextUserFixture,
+              let fixtureIndex = fixtures.firstIndex(where: { $0.id == fixture.id }) else { return false }
         prepareMatchDay()
+        let allPlayers = playersByID()
+        var sim = makeSimulation(fixture: fixtures[fixtureIndex], detailed: true)
 
-        let home = side(teamID: fixture.home, opponentID: fixture.away, isHome: true, style: nil)
-        let away = side(teamID: fixture.away, opponentID: fixture.home, isHome: false, style: nil)
-        var random = FootballRandom(seed: matchSeed(stream: .match, id: fixture.id))
-        let half = FootballMatchEngine.simulateHalf(home: home, away: away, half: 1, narrate: true, using: &random)
-
-        let homeName = FootballSeason.teamName(fixture.home)
-        let awayName = FootballSeason.teamName(fixture.away)
+        var others: [MatchOutcome] = []
+        for index in fixtures.indices where fixtures[index].matchDay == matchDayIndex && !fixtures[index].isPlayed && fixtures[index].id != fixture.id {
+            others.append(simulateFixture(at: index, players: allPlayers))
+        }
         let stadium = FootballSeason.team(fixture.home)?.stadium ?? "estádio"
-        var kickoff = "Bola rolando no \(stadium): \(homeName) × \(awayName) pela \(fixture.competition.name)"
+        var kickoff = "Bola rolando no \(stadium): \(FootballSeason.teamName(fixture.home)) × \(FootballSeason.teamName(fixture.away)) pela \(fixture.competition.name)"
         if let round = fixture.competition.cupRound { kickoff += " (\(round.name.lowercased()))" }
-        if FootballSeason.isDerby(fixture.home, fixture.away) { kickoff += ". É clássico!" } else { kickoff += "." }
-        var events = [MatchEvent(minute: 0, kind: .kickoff, teamID: nil, text: kickoff)]
-        events.append(contentsOf: half.events)
-        events.append(MatchEvent(minute: 45, kind: .halfTime, teamID: nil,
-                                 text: "Intervalo: \(homeName) \(half.homeGoals.count) × \(half.awayGoals.count) \(awayName)."))
+        kickoff += FootballSeason.isDerby(fixture.home, fixture.away) ? ". É clássico!" : "."
+        sim.events.append(MatchEvent(minute: 0, kind: .kickoff, teamID: nil, text: kickoff))
 
-        liveMatch = LiveMatchState(
-            fixtureID: fixture.id,
-            matchDay: matchDayIndex,
-            homeGoals: half.homeGoals.count,
-            awayGoals: half.awayGoals.count,
-            homeScorerIDs: half.homeGoals.map(\.scorerID),
-            awayScorerIDs: half.awayGoals.map(\.scorerID),
-            homeAssistIDs: half.homeGoals.compactMap(\.assistID),
-            awayAssistIDs: half.awayGoals.compactMap(\.assistID),
-            homeShots: half.homeShots,
-            awayShots: half.awayShots,
-            homeOnTarget: half.homeOnTarget,
-            awayOnTarget: half.awayOnTarget,
-            homeExpectedGoals: half.homeExpectedGoals,
-            awayExpectedGoals: half.awayExpectedGoals,
-            homePossession: half.homePossession,
-            events: events,
-            firstHalfHomeLineup: home.lineup.map(\.id),
-            firstHalfAwayLineup: away.lineup.map(\.id),
-            substitutionsUsed: 0,
-            styleAtKickoff: playStyle
-        )
+        liveMatch = LiveMatchState(sim: sim, matchDay: matchDayIndex, userIsHome: fixture.home == selectedClubID,
+                                   homeStart: sim.home.onPitch, awayStart: sim.away.onPitch, others: others,
+                                   styleAtKickoff: playStyle)
         return true
     }
 
-    /// Joga o segundo tempo do usuário (com as mudanças do intervalo), prorrogação e pênaltis se for
-    /// mata-mata empatado, e depois as demais partidas do dia.
+    var liveUserSide: MatchTeamSide? {
+        liveMatch.map { $0.userIsHome ? .home : .away }
+    }
+
+    /// Simula alguns minutos da partida ao vivo.
+    mutating func liveAdvance(minutes: Int = 1) {
+        guard var live = liveMatch, !live.sim.finished else { return }
+        live.sim.advance(to: live.sim.minute + max(1, minutes), players: playersByID())
+        liveMatch = live
+    }
+
+    mutating func liveAdvance(to minute: Int) {
+        guard var live = liveMatch, !live.sim.finished else { return }
+        live.sim.advance(to: minute, players: playersByID())
+        liveMatch = live
+    }
+
+    var liveIsFinished: Bool { liveMatch?.sim.finished ?? false }
+
+    mutating func liveSetStyle(_ style: FootballPlayStyle) {
+        guard var live = liveMatch else { return }
+        live.sim.setStyle(side: live.userIsHome ? .home : .away, style)
+        liveMatch = live
+    }
+
+    mutating func liveSetInstructions(_ instructions: TeamInstructions) {
+        guard var live = liveMatch else { return }
+        live.sim.setInstructions(side: live.userIsHome ? .home : .away, instructions)
+        liveMatch = live
+    }
+
+    @discardableResult
+    mutating func liveSetFormation(_ newFormation: FootballFormation) -> Bool {
+        guard var live = liveMatch else { return false }
+        live.sim.setFormation(side: live.userIsHome ? .home : .away, newFormation)
+        liveMatch = live
+        return true
+    }
+
+    mutating func liveSetRole(playerID: Int, role: PlayerRole) {
+        guard var live = liveMatch else { return }
+        let side: MatchTeamSide = live.userIsHome ? .home : .away
+        live.sim[side].roles[playerID] = role == .balanced ? nil : role
+        live.sim.needsRecompute = true
+        liveMatch = live
+    }
+
+    mutating func liveSetMarking(targetID: Int?) {
+        guard var live = liveMatch else { return }
+        let side: MatchTeamSide = live.userIsHome ? .home : .away
+        live.sim[side].markTargetID = targetID
+        live.sim.needsRecompute = true
+        liveMatch = live
+    }
+
+    /// Atletas do rival em campo, para a marcação individual.
+    var liveRivalOnPitch: [FootballPlayer] {
+        guard let live = liveMatch else { return [] }
+        let side: MatchTeamSide = live.userIsHome ? .away : .home
+        return live.sim[side].onPitch.compactMap { player($0) }
+    }
+
+    // MARK: - Substituições (antes e durante a partida)
+
+    func canSubstitute(outgoingID: Int, incomingID: Int) -> Bool {
+        if let live = liveMatch {
+            return live.sim.canSubstitute(side: live.userIsHome ? .home : .away, out: outgoingID, in: incomingID)
+        }
+        guard let selectedClubID,
+              startingXI.contains(outgoingID), !startingXI.contains(incomingID),
+              let incoming = player(incomingID), incoming.teamID == selectedClubID,
+              incoming.isAvailable(matchDay: matchDayIndex), !incoming.isYouth else { return false }
+        return true
+    }
+
+    @discardableResult
+    mutating func substitute(outgoingID: Int, incomingID: Int) -> Bool {
+        if var live = liveMatch {
+            let side: MatchTeamSide = live.userIsHome ? .home : .away
+            guard live.sim.substitute(side: side, out: outgoingID, in: incomingID, players: playersByID()) else { return false }
+            liveMatch = live
+            return true
+        }
+        guard canSubstitute(outgoingID: outgoingID, incomingID: incomingID),
+              let index = startingXI.firstIndex(of: outgoingID) else { return false }
+        startingXI[index] = incomingID
+        return true
+    }
+
+    /// Termina a partida (simulando o que falta), aplica todos os resultados do dia e fecha o dia de jogo.
     @discardableResult
     mutating func finishMatchDay() -> Bool {
-        guard let live = liveMatch, let selectedClubID,
-              let userIndex = fixtures.firstIndex(where: { $0.id == live.fixtureID }) else { return false }
-        repairLineup()
-        let fixture = fixtures[userIndex]
-
-        let userIsHome = fixture.home == selectedClubID
-        let opponentID = fixture.opponent(of: selectedClubID)
-        let opponentGoals = userIsHome ? live.awayGoals : live.homeGoals
-        let ownGoals = userIsHome ? live.homeGoals : live.awayGoals
-        let opponentStyle = aiSecondHalfStyle(teamID: opponentID, opponentID: selectedClubID,
-                                              goalsFor: opponentGoals, goalsAgainst: ownGoals)
-        let homeStyle = userIsHome ? playStyle : opponentStyle
-        let awayStyle = userIsHome ? opponentStyle : playStyle
-        let home = side(teamID: fixture.home, opponentID: fixture.away, isHome: true, style: homeStyle, opponentStyle: awayStyle)
-        let away = side(teamID: fixture.away, opponentID: fixture.home, isHome: false, style: awayStyle, opponentStyle: homeStyle)
-        var random = FootballRandom(seed: matchSeed(stream: .secondHalf, id: fixture.id))
-        let second = FootballMatchEngine.simulateHalf(home: home, away: away, half: 2, narrate: true, using: &random)
-
-        var events = live.events
-        if playStyle != live.styleAtKickoff {
-            events.append(MatchEvent(minute: 46, kind: .tactic, teamID: selectedClubID,
-                                     text: "Mudança tática do \(FootballSeason.teamName(selectedClubID)): \(playStyle.rawValue)."))
-        }
-        if opponentStyle != aiStyle(teamID: opponentID, opponentID: selectedClubID) {
-            events.append(MatchEvent(minute: 46, kind: .tactic, teamID: opponentID,
-                                     text: "O \(FootballSeason.teamName(opponentID)) volta do intervalo em postura \(opponentStyle.rawValue.lowercased())."))
-        }
-        events.append(contentsOf: second.events)
-
-        var played = fixture
-        var homeScorers = live.homeScorerIDs + second.homeGoals.map(\.scorerID)
-        var awayScorers = live.awayScorerIDs + second.awayGoals.map(\.scorerID)
-        var assists = live.homeAssistIDs + live.awayAssistIDs + (second.homeGoals + second.awayGoals).compactMap(\.assistID)
-        played.homeShots = live.homeShots + second.homeShots
-        played.awayShots = live.awayShots + second.awayShots
-        played.homeOnTarget = live.homeOnTarget + second.homeOnTarget
-        played.awayOnTarget = live.awayOnTarget + second.awayOnTarget
-        var homeXG = live.homeExpectedGoals + second.homeExpectedGoals
-        var awayXG = live.awayExpectedGoals + second.awayExpectedGoals
-        let possession = (live.homePossession + second.homePossession) / 2
-        played.homePossession = possession
-        played.awayPossession = 100 - possession
-
-        let homeName = FootballSeason.teamName(fixture.home)
-        let awayName = FootballSeason.teamName(fixture.away)
-        if fixture.competition.isCup && homeScorers.count == awayScorers.count {
-            events.append(MatchEvent(minute: 90, kind: .extraTime, teamID: nil,
-                                     text: "Empate em \(homeScorers.count) × \(awayScorers.count) no tempo normal. Vamos para a prorrogação!"))
-            var extraRandom = FootballRandom(seed: matchSeed(stream: .extraTime, id: fixture.id))
-            let extra = FootballMatchEngine.simulateHalf(home: home, away: away, half: 3, narrate: true, using: &extraRandom)
-            events.append(contentsOf: extra.events)
-            homeScorers += extra.homeGoals.map(\.scorerID)
-            awayScorers += extra.awayGoals.map(\.scorerID)
-            assists += (extra.homeGoals + extra.awayGoals).compactMap(\.assistID)
-            played.homeShots = (played.homeShots ?? 0) + extra.homeShots
-            played.awayShots = (played.awayShots ?? 0) + extra.awayShots
-            played.homeOnTarget = (played.homeOnTarget ?? 0) + extra.homeOnTarget
-            played.awayOnTarget = (played.awayOnTarget ?? 0) + extra.awayOnTarget
-            homeXG += extra.homeExpectedGoals
-            awayXG += extra.awayExpectedGoals
-            played.wentToExtraTime = true
-            if homeScorers.count == awayScorers.count {
-                var penaltyRandom = FootballRandom(seed: matchSeed(stream: .penalties, id: fixture.id))
-                let shootout = FootballMatchEngine.penaltyShootout(home: home, away: away, using: &penaltyRandom)
-                events.append(MatchEvent(minute: 120, kind: .extraTime, teamID: nil, text: "Fim da prorrogação. A vaga será decidida nos pênaltis."))
-                events.append(contentsOf: shootout.events)
-                played.homePenalties = shootout.homeScore
-                played.awayPenalties = shootout.awayScore
+        guard var live = liveMatch, let userIndex = fixtures.firstIndex(where: { $0.id == live.fixtureID }) else { return false }
+        let allPlayers = playersByID()
+        live.sim.runToEnd(players: allPlayers)
+        let outcome = live.sim.makeOutcome(players: allPlayers, startHome: live.homeStart, startAway: live.awayStart)
+        liveMatch = nil
+        tickRecovery()
+        applyOutcome(outcome, fixtureIndex: userIndex, isUser: true)
+        for other in live.others {
+            if let index = fixtures.firstIndex(where: { $0.id == other.fixtureID }) {
+                applyOutcome(other, fixtureIndex: index, isUser: false)
             }
         }
-        played.homeGoals = homeScorers.count
-        played.awayGoals = awayScorers.count
-        played.homeScorerIDs = homeScorers
-        played.awayScorerIDs = awayScorers
-        played.homeExpectedGoals = FootballMatchEngine.rounded(homeXG)
-        played.awayExpectedGoals = FootballMatchEngine.rounded(awayXG)
-        var finalText = "Apito final: \(homeName) \(homeScorers.count) × \(awayScorers.count) \(awayName)"
-        if let summary = played.penaltySummary, let winner = played.winner {
-            finalText += " (\(summary)). \(FootballSeason.teamName(winner)) avança"
-        }
-        events.append(MatchEvent(minute: played.wentToExtraTime ? 120 : 90, kind: .fullTime, teamID: nil, text: finalText + "."))
-        played.events = events
-        fixtures[userIndex] = played
-        liveMatch = nil
-
-        recordGoals(homeScorers + awayScorers)
-        recordAssists(assists)
-        let userSide = userIsHome ? home : away
-        let userGoals = userIsHome ? homeScorers : awayScorers
-        let userAssists = userIsHome ? (live.homeAssistIDs + second.homeGoals.compactMap(\.assistID))
-                                     : (live.awayAssistIDs + second.awayGoals.compactMap(\.assistID))
-        let conceded = userIsHome ? awayScorers.count : homeScorers.count
-        let opponentOnTarget = (userIsHome ? played.awayOnTarget : played.homeOnTarget) ?? 0
-        let matchLength = played.wentToExtraTime ? 120 : 90
-        let startIDs = userIsHome ? live.firstHalfHomeLineup : live.firstHalfAwayLineup
-        fixtures[userIndex].userStats = buildUserStats(
-            startIDs: startIDs, endIDs: userSide.lineup.map(\.id), goals: userGoals, assists: userAssists,
-            goalsFor: userGoals.count, goalsAgainst: conceded, opponentOnTarget: opponentOnTarget,
-            matchLength: matchLength, fixtureID: fixture.id
-        )
-        startingXIAtKickoff = Set(startIDs)
-        var participation = [
-            MatchParticipation(lineupStart: live.firstHalfHomeLineup, lineupEnd: home.lineup.map(\.id), style: homeStyle),
-            MatchParticipation(lineupStart: live.firstHalfAwayLineup, lineupEnd: away.lineup.map(\.id), style: awayStyle)
-        ]
-        for index in fixtures.indices where fixtures[index].matchDay == matchDayIndex && !fixtures[index].isPlayed {
-            participation.append(contentsOf: playFullFixture(at: index))
-        }
-        completeMatchDay(participation: participation, userFixtureIndex: userIndex)
+        completeMatchDay(userFixtureIndex: userIndex)
         return true
     }
 
-    // MARK: - Partidas da IA
+    // MARK: - Aplicação dos resultados
 
-    /// Simula uma partida inteira entre clubes da IA, com prorrogação e pênaltis no mata-mata.
-    mutating func playFullFixture(at index: Int) -> [MatchParticipation] {
-        let fixture = fixtures[index]
-        let homeStyle = aiStyle(teamID: fixture.home, opponentID: fixture.away)
-        let awayStyle = aiStyle(teamID: fixture.away, opponentID: fixture.home)
-        let home = side(teamID: fixture.home, opponentID: fixture.away, isHome: true, style: homeStyle, opponentStyle: awayStyle)
-        let away = side(teamID: fixture.away, opponentID: fixture.home, isHome: false, style: awayStyle, opponentStyle: homeStyle)
-        var random = FootballRandom(seed: matchSeed(stream: .match, id: fixture.id))
-        var halves = [
-            FootballMatchEngine.simulateHalf(home: home, away: away, half: 1, narrate: false, using: &random),
-            FootballMatchEngine.simulateHalf(home: home, away: away, half: 2, narrate: false, using: &random)
-        ]
-        var played = fixture
-        func goals(_ side: KeyPath<HalfResult, [GoalRecord]>) -> [GoalRecord] { halves.flatMap { $0[keyPath: side] } }
-        if fixture.competition.isCup && goals(\.homeGoals).count == goals(\.awayGoals).count {
-            halves.append(FootballMatchEngine.simulateHalf(home: home, away: away, half: 3, narrate: false, using: &random))
-            played.wentToExtraTime = true
-            if goals(\.homeGoals).count == goals(\.awayGoals).count {
-                let shootout = FootballMatchEngine.penaltyShootout(home: home, away: away, using: &random)
-                played.homePenalties = shootout.homeScore
-                played.awayPenalties = shootout.awayScore
+    /// Lesões e suspensões avançam um dia de jogo, só para quem jogou neste dia.
+    mutating func tickRecovery() {
+        let playing = Set(fixtures.filter { $0.matchDay == matchDayIndex }.flatMap { [$0.home, $0.away] })
+        for index in players.indices {
+            if players[index].injuryRounds > 0 { players[index].injuryRounds -= 1 }
+            if players[index].discipline.suspensionGames > 0, let teamID = players[index].teamID, playing.contains(teamID) {
+                players[index].discipline.suspensionGames -= 1
             }
         }
-        let homeGoals = goals(\.homeGoals)
-        let awayGoals = goals(\.awayGoals)
-        played.homeGoals = homeGoals.count
-        played.awayGoals = awayGoals.count
-        played.homeScorerIDs = homeGoals.map(\.scorerID)
-        played.awayScorerIDs = awayGoals.map(\.scorerID)
-        played.homeShots = halves.reduce(0) { $0 + $1.homeShots }
-        played.awayShots = halves.reduce(0) { $0 + $1.awayShots }
-        played.homeOnTarget = halves.reduce(0) { $0 + $1.homeOnTarget }
-        played.awayOnTarget = halves.reduce(0) { $0 + $1.awayOnTarget }
-        played.homeExpectedGoals = FootballMatchEngine.rounded(halves.reduce(0) { $0 + $1.homeExpectedGoals })
-        played.awayExpectedGoals = FootballMatchEngine.rounded(halves.reduce(0) { $0 + $1.awayExpectedGoals })
-        let possession = halves.reduce(0) { $0 + $1.homePossession } / halves.count
-        played.homePossession = possession
-        played.awayPossession = 100 - possession
-        fixtures[index] = played
-
-        recordGoals(played.homeScorerIDs + played.awayScorerIDs)
-        recordAssists((homeGoals + awayGoals).compactMap(\.assistID))
-        let homeLineup = home.lineup.map(\.id)
-        let awayLineup = away.lineup.map(\.id)
-        return [
-            MatchParticipation(lineupStart: homeLineup, lineupEnd: homeLineup, style: homeStyle),
-            MatchParticipation(lineupStart: awayLineup, lineupEnd: awayLineup, style: awayStyle)
-        ]
     }
 
-    func side(teamID: Int, opponentID: Int, isHome: Bool, style: FootballPlayStyle?,
-              opponentStyle: FootballPlayStyle? = nil) -> MatchSide {
-        let ownStyle = style ?? self.style(for: teamID, against: opponentID)
-        let rivalStyle = opponentStyle ?? self.style(for: opponentID, against: teamID)
-        return MatchSide(
-            teamID: teamID,
-            lineup: lineup(for: teamID).compactMap { player($0) },
-            formation: formation(for: teamID),
-            style: ownStyle,
-            opponentStyle: rivalStyle,
-            isHome: isHome
-        )
+    mutating func applyOutcome(_ outcome: MatchOutcome, fixtureIndex: Int, isUser: Bool) {
+        var fixture = fixtures[fixtureIndex]
+        fixture.homeGoals = outcome.homeGoals
+        fixture.awayGoals = outcome.awayGoals
+        fixture.homeScorerIDs = outcome.homeScorerIDs
+        fixture.awayScorerIDs = outcome.awayScorerIDs
+        fixture.homeShots = outcome.homeShots
+        fixture.awayShots = outcome.awayShots
+        fixture.homeOnTarget = outcome.homeOnTarget
+        fixture.awayOnTarget = outcome.awayOnTarget
+        fixture.homeExpectedGoals = outcome.homeExpectedGoals
+        fixture.awayExpectedGoals = outcome.awayExpectedGoals
+        fixture.homePossession = outcome.homePossession
+        fixture.awayPossession = 100 - outcome.homePossession
+        fixture.homeCorners = outcome.homeCorners
+        fixture.awayCorners = outcome.awayCorners
+        fixture.homeFouls = outcome.homeFouls
+        fixture.awayFouls = outcome.awayFouls
+        fixture.homeYellow = outcome.homeYellow
+        fixture.awayYellow = outcome.awayYellow
+        fixture.homeRed = outcome.homeRed
+        fixture.awayRed = outcome.awayRed
+        fixture.wentToExtraTime = outcome.wentToExtraTime
+        fixture.homePenalties = outcome.homePenalties
+        fixture.awayPenalties = outcome.awayPenalties
+
+        recordGoals(outcome.homeScorerIDs + outcome.awayScorerIDs)
+        recordAssists(outcome.homeAssistIDs + outcome.awayAssistIDs)
+
+        // Presença, condição física, lesões e cartões.
+        for id in Set(outcome.appeared) {
+            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+            players[index].appearances += 1
+            playedThisMatchDay.insert(id)
+        }
+        for (id, condition) in outcome.finalCondition where outcome.appeared.contains(id) {
+            if let index = players.firstIndex(where: { $0.id == id }) { players[index].condition = min(players[index].condition, max(40, condition)) }
+        }
+        for (id, rounds) in outcome.injuries.sorted(by: { $0.key < $1.key }) {
+            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+            players[index].injuryRounds = max(players[index].injuryRounds, rounds)
+            if players[index].teamID == selectedClubID {
+                addInbox(.injury, title: "\(players[index].name) se lesionou",
+                         body: "Fora por \(rounds) jogo(s) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
+                         playerID: id)
+            }
+        }
+        for id in outcome.yellowCardIDs {
+            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+            players[index].discipline.yellowCards += 1
+            if players[index].discipline.yellowCards >= 3 {
+                players[index].discipline.yellowCards = 0
+                players[index].discipline.suspensionGames = max(players[index].discipline.suspensionGames, 1)
+            }
+        }
+        for id in Set(outcome.redCardIDs) {
+            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+            players[index].discipline.redCards += 1
+            let secondYellow = outcome.yellowCardIDs.filter { $0 == id }.count >= 2
+            players[index].discipline.suspensionGames = max(players[index].discipline.suspensionGames, secondYellow ? 1 : 2)
+        }
+
+        if isUser, let selectedClubID {
+            fixture.events = outcome.events
+            fixture.momentum = outcome.momentum
+            let userIsHome = fixture.home == selectedClubID
+            let goalsFor = userIsHome ? outcome.homeGoals : outcome.awayGoals
+            let goalsAgainst = userIsHome ? outcome.awayGoals : outcome.homeGoals
+            let lineupEnd = (userIsHome ? outcome.homeLineupEnd : outcome.awayLineupEnd).compactMap { player($0) }
+            let average = lineupEnd.isEmpty ? 65 : lineupEnd.map(\.effectiveOverall).reduce(0, +) / Double(lineupEnd.count)
+            var stats: [PlayerMatchStats] = []
+            for var entry in outcome.userStats {
+                guard let athlete = player(entry.playerID), athlete.teamID == selectedClubID else { continue }
+                entry.rating = FootballRatings.rating(for: athlete, stats: entry, goalsFor: goalsFor, goalsAgainst: goalsAgainst,
+                                                      teamAverage: average, noiseSeed: matchSeed(stream: .postMatch, id: 70_000 + fixture.id))
+                stats.append(entry)
+            }
+            fixture.userStats = stats.sorted { $0.playerID < $1.playerID }
+            startingXIAtKickoff = Set(userIsHome ? outcome.homeLineupStart : outcome.awayLineupStart)
+        }
+        fixtures[fixtureIndex] = fixture
     }
 
     mutating func recordGoals(_ scorerIDs: [Int]) {
@@ -294,96 +347,29 @@ extension FootballCareer {
         }
     }
 
-    // MARK: - Notas da partida
-
-    /// Minutos, gols, assistências e nota de cada atleta do clube do usuário.
-    func buildUserStats(startIDs: [Int], endIDs: [Int], goals: [Int], assists: [Int], goalsFor: Int, goalsAgainst: Int,
-                        opponentOnTarget: Int, matchLength: Int, fixtureID: Int) -> [PlayerMatchStats] {
-        let everyone = Array(Set(startIDs + endIDs)).sorted()
-        let lineupPlayers = endIDs.compactMap { player($0) }
-        let average = lineupPlayers.isEmpty ? 65 : lineupPlayers.map(\.effectiveOverall).reduce(0, +) / Double(lineupPlayers.count)
-        var output: [PlayerMatchStats] = []
-        for id in everyone {
-            guard let athlete = player(id) else { continue }
-            let started = startIDs.contains(id)
-            let finished = endIDs.contains(id)
-            var stats = PlayerMatchStats(playerID: id)
-            switch (started, finished) {
-            case (true, true): stats.minutes = matchLength
-            case (true, false): stats.minutes = 45
-            case (false, true): stats.minutes = matchLength - 45
-            default: stats.minutes = 0
-            }
-            stats.goals = goals.filter { $0 == id }.count
-            stats.assists = assists.filter { $0 == id }.count
-            if athlete.position == .goalkeeper { stats.saves = max(0, opponentOnTarget - goalsAgainst) }
-            stats.rating = FootballRatings.rating(
-                for: athlete, stats: stats, goalsFor: goalsFor, goalsAgainst: goalsAgainst, teamAverage: average,
-                noiseSeed: matchSeed(stream: .postMatch, id: 70_000 + fixtureID)
-            )
-            output.append(stats)
-        }
-        return output
-    }
-
     // MARK: - Pós-jogo
 
-    /// Desgaste, lesões, evolução da IA, finanças, copa e propostas após todas as partidas do dia.
-    mutating func completeMatchDay(participation: [MatchParticipation], userFixtureIndex: Int?) {
+    /// Evolução da IA, finanças, copa, moral, propostas e coletiva depois de todas as partidas do dia.
+    mutating func completeMatchDay(userFixtureIndex: Int?) {
         let slot = currentSlot
-
-        // Lesões e suspensões anteriores avançam um dia de jogo antes de novas serem sorteadas.
-        for index in players.indices {
-            if players[index].injuryRounds > 0 { players[index].injuryRounds -= 1 }
-            if players[index].discipline.suspensionGames > 0 { players[index].discipline.suspensionGames -= 1 }
-        }
-
         var postRandom = FootballRandom(seed: matchSeed(stream: .postMatch, id: matchDayIndex))
-        var userInjuries: [String] = []
-        var playedIDs = Set<Int>()
-        for entry in participation {
-            let starters = Set(entry.lineupStart)
-            let finishers = Set(entry.lineupEnd)
-            for id in starters.union(finishers).sorted() {
-                guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
-                playedIDs.insert(id)
-                players[index].appearances += 1
-                let fullMatch = starters.contains(id) && finishers.contains(id)
-                let cost = fullMatch ? entry.style.fatigueCost : (entry.style.fatigueCost + 1) / 2
-                players[index].condition = max(40, players[index].condition - cost)
-
-                var injuryChance = 0.012
-                if players[index].condition < 55 { injuryChance += 0.03 } else if players[index].condition < 70 { injuryChance += 0.012 }
-                if entry.style == .highPress { injuryChance += 0.006 }
-                if postRandom.chance(injuryChance) {
-                    let days = postRandom.int(in: 1...4)
-                    players[index].injuryRounds = days
-                    if players[index].teamID == selectedClubID {
-                        userInjuries.append("\(players[index].name) sofreu uma lesão e ficará fora por \(days) jogo(s).")
-                    }
-                }
-            }
-        }
-        for index in players.indices where players[index].teamID != nil && !playedIDs.contains(players[index].id) {
+        for index in players.indices where players[index].teamID != nil && !playedThisMatchDay.contains(players[index].id) {
             players[index].condition = min(100, players[index].condition + 6)
         }
-        if let userFixtureIndex, !userInjuries.isEmpty {
-            fixtures[userFixtureIndex].events.append(contentsOf: userInjuries.map {
-                MatchEvent(minute: fixtures[userFixtureIndex].wentToExtraTime ? 120 : 90, kind: .injury,
-                           teamID: selectedClubID, text: "Departamento médico: \($0)")
-            })
-        }
+        playedThisMatchDay = []
 
         developAIPlayers(using: &postRandom)
         matchDayIndex += 1
         if let userFixtureIndex {
-            settleUserMatch(fixture: fixtures[userFixtureIndex])
+            let fixture = fixtures[userFixtureIndex]
+            settleUserMatch(fixture: fixture)
             if let selectedClubID {
-                let fixture = fixtures[userFixtureIndex]
                 processUserPlayers(stats: fixture.userStats, result: fixture.result(for: selectedClubID),
                                    derby: FootballSeason.isDerby(fixture.home, fixture.away), started: startingXIAtKickoff)
-                startingXIAtKickoff = []
+                rivalMotivation[fixture.opponent(of: selectedClubID)] = nil
+                pendingPress = makePressConference(fixture: fixture)
             }
+            startingXIAtKickoff = []
         } else {
             lastRoundRevenue = 0
             if selectedClubID != nil { processUserPlayers(stats: [], result: nil, derby: false, started: [], teamPlayed: false) }
@@ -413,7 +399,7 @@ extension FootballCareer {
         }
     }
 
-    /// Bilheteria, bônus da copa e confiança da diretoria após a partida do usuário.
+    /// Bilheteria, bônus da copa, torcida e confiança da diretoria após a partida do usuário.
     mutating func settleUserMatch(fixture: LeagueFixture) {
         guard let selectedClubID, let club = selectedClub, let result = fixture.result(for: selectedClubID) else { return }
         let isHome = fixture.home == selectedClubID
@@ -436,17 +422,20 @@ extension FootballCareer {
         case .draw: delta = expectation > 3 ? -2 : 1
         case .loss: delta = expectation > 0 ? -6 : -3
         }
-        if FootballSeason.isDerby(fixture.home, fixture.away) { delta = delta * 3 / 2 }
+        let derby = FootballSeason.isDerby(fixture.home, fixture.away)
+        if derby { delta = delta * 3 / 2 }
         if fixture.competition.isCup, let winner = fixture.winner {
             delta += winner == selectedClubID ? 2 : -2
         }
         boardConfidence = min(100, max(0, boardConfidence + delta))
+        let fanDelta = (result == .win ? 2 : (result == .loss ? -2 : 0)) * (derby ? 2 : 1)
+        fanMood = min(100, max(0, fanMood + fanDelta))
     }
 
     mutating func generateOffers(using random: inout FootballRandom) {
         guard let selectedClubID, offers.count < 2, !isSeasonComplete, random.chance(0.3) else { return }
         let candidates = clubRoster
-            .filter { candidate in !offers.contains { $0.playerID == candidate.id } }
+            .filter { candidate in !offers.contains { $0.playerID == candidate.id } && !candidate.onLoan }
             .sorted { $0.marketValue > $1.marketValue }
             .prefix(8)
         guard let target = random.pick(Array(candidates)) else { return }
@@ -456,6 +445,67 @@ extension FootballCareer {
         offers.append(TransferOffer(id: nextOfferID, playerID: target.id, clubID: buyer.id,
                                     amount: max(amount, 100_000), expiresAfterRound: matchDayIndex + 2))
         nextOfferID += 1
+    }
+
+    // MARK: - Coletiva de imprensa
+
+    func makePressConference(fixture: LeagueFixture) -> PressConference? {
+        guard let selectedClubID else { return nil }
+        let result = fixture.result(for: selectedClubID)
+        let opponent = FootballSeason.teamName(fixture.opponent(of: selectedClubID))
+        let derby = FootballSeason.isDerby(fixture.home, fixture.away)
+        var prompts: [String]
+        switch result {
+        case .win?:
+            prompts = ["A vitória sobre o \(opponent) foi merecida? O que o time mostrou hoje?",
+                       "A torcida já sonha alto. Qual é o objetivo do clube daqui para a frente?"]
+        case .draw?:
+            prompts = ["Ficou a sensação de que o time poderia ter vencido o \(opponent)?",
+                       "Como o senhor avalia o desempenho do time?"]
+        default:
+            prompts = ["O resultado aumenta a pressão sobre o seu trabalho. O que o senhor responde?",
+                       "O que deu errado diante do \(opponent)?"]
+        }
+        if derby { prompts.append("Foi um clássico. Que recado o senhor deixa para o rival?") }
+        let questions = prompts.enumerated().map { PressQuestion(id: $0.offset + 1, prompt: $0.element) }
+        return PressConference(matchDay: matchDayIndex, fixtureID: fixture.id, opponentID: fixture.opponent(of: selectedClubID),
+                               result: result, isDerby: derby, questions: questions)
+    }
+
+    mutating func answerPress(questionID: Int, tone: PressTone) {
+        guard var press = pendingPress, let index = press.questions.firstIndex(where: { $0.id == questionID }),
+              press.questions[index].answered == nil, let selectedClubID else { return }
+        press.questions[index].answered = tone
+        let result = press.result ?? .draw
+        func shiftSquadMorale(_ delta: Int) {
+            for playerIndex in players.indices where players[playerIndex].teamID == selectedClubID && !players[playerIndex].isYouth {
+                players[playerIndex].morale = min(100, max(0, players[playerIndex].morale + delta))
+            }
+        }
+        switch tone {
+        case .calm:
+            boardConfidence += result == .loss ? 2 : 1
+            if result != .loss { fanMood += 1 }
+        case .confident:
+            if result == .loss {
+                shiftSquadMorale(-2)
+                fanMood -= 3
+                boardConfidence -= 1
+            } else {
+                shiftSquadMorale(2)
+                fanMood += 2
+            }
+        case .provocative:
+            rivalMotivation[press.opponentID] = press.isDerby ? 2.5 : 1.5
+            if result == .win { fanMood += 3 } else { fanMood -= 4; boardConfidence -= 2 }
+        }
+        boardConfidence = min(100, max(0, boardConfidence))
+        fanMood = min(100, max(0, fanMood))
+        pendingPress = press.isComplete ? nil : press
+    }
+
+    mutating func skipPress() {
+        pendingPress = nil
     }
 
     // MARK: - Copa

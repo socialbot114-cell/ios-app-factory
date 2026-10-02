@@ -167,3 +167,44 @@ struct ContractAsk: Equatable {
     let years: Int
     let status: SquadStatus
 }
+
+// MARK: - Coletiva de imprensa
+
+enum PressTone: String, Codable, CaseIterable, Identifiable {
+    case calm, confident, provocative
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .calm: return "Calmo"
+        case .confident: return "Confiante"
+        case .provocative: return "Provocador"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .calm: return "Sem riscos: acalma a torcida e a diretoria."
+        case .confident: return "Eleva o moral se o time estiver bem, mas cobra caro se o resultado vier ruim."
+        case .provocative: return "Anima a torcida, mas motiva o rival no próximo confronto."
+        }
+    }
+}
+
+struct PressQuestion: Codable, Equatable, Identifiable {
+    let id: Int
+    let prompt: String
+    var answered: PressTone? = nil
+}
+
+struct PressConference: Codable, Equatable {
+    let matchDay: Int
+    let fixtureID: Int
+    let opponentID: Int
+    let result: FootballResult?
+    let isDerby: Bool
+    var questions: [PressQuestion]
+
+    var isComplete: Bool { questions.allSatisfy { $0.answered != nil } }
+}

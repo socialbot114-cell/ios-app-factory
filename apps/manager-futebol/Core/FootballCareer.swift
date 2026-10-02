@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 4
+    static let schemaVersion = 5
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
@@ -42,6 +42,12 @@ struct FootballCareer: Codable, Equatable {
         case promises
         case nextPromiseID
         case wageCap
+        case teamInstructions
+        case playerRoles
+        case penaltyTakerID
+        case rivalMotivation
+        case fanMood
+        case pendingPress
     }
 
     var seed: Int
@@ -78,8 +84,17 @@ struct FootballCareer: Codable, Equatable {
     var promises: [PlayerPromise]
     var nextPromiseID: Int
     var wageCap: Int
+    var teamInstructions = TeamInstructions()
+    var playerRoles: [Int: PlayerRole] = [:]
+    var penaltyTakerID: Int? = nil
+    /// Bônus de ataque que um rival ganha no próximo confronto por declarações provocadoras.
+    var rivalMotivation: [Int: Double] = [:]
+    var fanMood = 60
+    var pendingPress: PressConference? = nil
     /// Titulares do jogo em andamento (usado para as promessas aos atletas).
     var startingXIAtKickoff: Set<Int> = []
+    /// Atletas que entraram em campo no dia de jogo em andamento (condição física e presença).
+    var playedThisMatchDay: Set<Int> = []
 
     init(seed: Int) {
         self.seed = seed
@@ -157,7 +172,7 @@ struct FootballCareer: Codable, Equatable {
         nextOfferID = try container.decodeIfPresent(Int.self, forKey: .nextOfferID) ?? 1
         nextPlayerID = try container.decodeIfPresent(Int.self, forKey: .nextPlayerID)
             ?? (decodedPlayers.map(\.id).max() ?? 0) + 1
-        liveMatch = version >= 3 ? try container.decodeIfPresent(LiveMatchState.self, forKey: .liveMatch) : nil
+        liveMatch = version >= 5 ? try container.decodeIfPresent(LiveMatchState.self, forKey: .liveMatch) : nil
         lastRoundRevenue = try container.decodeIfPresent(Int.self, forKey: .lastRoundRevenue) ?? 0
         finance = try container.decodeIfPresent(FinanceBook.self, forKey: .finance) ?? FinanceBook()
         inbox = try container.decodeIfPresent([InboxMessage].self, forKey: .inbox) ?? []
@@ -165,6 +180,12 @@ struct FootballCareer: Codable, Equatable {
         promises = try container.decodeIfPresent([PlayerPromise].self, forKey: .promises) ?? []
         nextPromiseID = try container.decodeIfPresent(Int.self, forKey: .nextPromiseID) ?? 1
         wageCap = try container.decodeIfPresent(Int.self, forKey: .wageCap) ?? 0
+        teamInstructions = try container.decodeIfPresent(TeamInstructions.self, forKey: .teamInstructions) ?? TeamInstructions()
+        playerRoles = try container.decodeIfPresent([Int: PlayerRole].self, forKey: .playerRoles) ?? [:]
+        penaltyTakerID = try container.decodeIfPresent(Int.self, forKey: .penaltyTakerID)
+        rivalMotivation = try container.decodeIfPresent([Int: Double].self, forKey: .rivalMotivation) ?? [:]
+        fanMood = try container.decodeIfPresent(Int.self, forKey: .fanMood) ?? 60
+        pendingPress = try container.decodeIfPresent(PressConference.self, forKey: .pendingPress)
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
     }
@@ -203,6 +224,12 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(promises, forKey: .promises)
         try container.encode(nextPromiseID, forKey: .nextPromiseID)
         try container.encode(wageCap, forKey: .wageCap)
+        try container.encode(teamInstructions, forKey: .teamInstructions)
+        try container.encode(playerRoles, forKey: .playerRoles)
+        try container.encodeIfPresent(penaltyTakerID, forKey: .penaltyTakerID)
+        try container.encode(rivalMotivation, forKey: .rivalMotivation)
+        try container.encode(fanMood, forKey: .fanMood)
+        try container.encodeIfPresent(pendingPress, forKey: .pendingPress)
     }
 
     /// Save v3: atletas ganham contratos coerentes e o teto salarial é definido a partir da folha atual.
@@ -668,31 +695,6 @@ struct FootballCareer: Codable, Equatable {
             lineup = rebuiltLineup(keeping: lineup, formation: formation)
         }
         startingXI = lineup
-    }
-
-    func canSubstitute(outgoingID: Int, incomingID: Int) -> Bool {
-        guard let selectedClubID,
-              startingXI.contains(outgoingID), !startingXI.contains(incomingID),
-              let incoming = player(incomingID), incoming.teamID == selectedClubID,
-              incoming.isAvailable(matchDay: matchDayIndex), !incoming.isYouth else { return false }
-        if let liveMatch { return liveMatch.substitutionsUsed < LiveMatchState.maxSubstitutions }
-        return true
-    }
-
-    @discardableResult
-    mutating func substitute(outgoingID: Int, incomingID: Int) -> Bool {
-        guard canSubstitute(outgoingID: outgoingID, incomingID: incomingID),
-              let index = startingXI.firstIndex(of: outgoingID) else { return false }
-        startingXI[index] = incomingID
-        if var live = liveMatch {
-            live.substitutionsUsed += 1
-            let outName = player(outgoingID)?.name ?? "Atleta"
-            let inName = player(incomingID)?.name ?? "Atleta"
-            live.events.append(MatchEvent(minute: 45, kind: .substitution, teamID: selectedClubID,
-                                          text: "Substituição: sai \(outName), entra \(inName)."))
-            liveMatch = live
-        }
-        return true
     }
 
     // MARK: - Mercado

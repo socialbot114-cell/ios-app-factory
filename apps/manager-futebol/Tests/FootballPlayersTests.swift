@@ -67,22 +67,30 @@ final class FootballPlayersTests: XCTestCase {
         XCTAssertGreaterThan(boosted.attackSector, side.attackSector)
     }
 
-    func testFormerStrikerWithBetterFinishingScoresMoreOften() {
-        var random = FootballRandom(seed: 99)
-        var sharp = FootballPlayer(id: 1, name: "A", position: .forward, age: 25, overall: 75, potential: 75, condition: 100, marketValue: 1, teamID: 0)
-        var blunt = sharp
-        sharp.attributes[.finishing] = 20
-        blunt.attributes[.finishing] = 8
-        let lineup = [sharp, blunt] + (2..<11).map { id in
-            FootballPlayer(id: id, name: "M\(id)", position: .midfielder, age: 25, overall: 70, potential: 70, condition: 100, marketValue: 1, teamID: 0)
+    func testStrikerWithBetterFinishingScoresMoreOften() throws {
+        let career = FootballCareer(seed: 99)
+        var players = career.playersByID()
+        let fixture = try XCTUnwrap(career.fixtures.first { $0.involves(0) && $0.competition.division != nil })
+        let template = career.makeSimulation(fixture: fixture, detailed: false)
+        let strikers = template.home.onPitch.compactMap { players[$0] }.filter { $0.position == .forward }
+        let sharp = try XCTUnwrap(strikers.first)
+        let blunt = try XCTUnwrap(strikers.last)
+        XCTAssertNotEqual(sharp.id, blunt.id)
+        for id in [sharp.id, blunt.id] {
+            players[id]?.attributes[.finishing] = id == sharp.id ? 20 : 5
+            players[id]?.traits = []
+            players[id]?.morale = 60
         }
-        let side = MatchSide(teamID: 0, lineup: lineup, formation: .fourFourTwo, style: .balanced, opponentStyle: .balanced, isHome: true)
-        var counts = [Int: Int]()
-        for _ in 0..<600 {
-            let half = FootballMatchEngine.simulateHalf(home: side, away: side, half: 1, narrate: false, using: &random)
-            for goal in half.homeGoals { counts[goal.scorerID, default: 0] += 1 }
+        var sharpGoals = 0
+        var bluntGoals = 0
+        for seed in 1...250 {
+            var sim = MatchSimulation.make(fixtureID: 1, seed: UInt64(seed) &* 7_777, isCup: false, isDerby: false, detailed: false,
+                                           home: template.home, away: template.away)
+            sim.runToEnd(players: players)
+            sharpGoals += sim.home.scorerIDs.filter { $0 == sharp.id }.count
+            bluntGoals += sim.home.scorerIDs.filter { $0 == blunt.id }.count
         }
-        XCTAssertGreaterThan(counts[1, default: 0], counts[2, default: 0], "O finalizador deve marcar mais que o limitado")
+        XCTAssertGreaterThan(sharpGoals, Int(Double(bluntGoals) * 1.3), "Finalização 20 deve marcar bem mais que finalização 5 (\(sharpGoals) × \(bluntGoals))")
     }
 
     // MARK: - Posições

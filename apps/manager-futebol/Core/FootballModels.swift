@@ -615,12 +615,19 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
 struct MatchEvent: Codable, Equatable {
     enum Kind: String, Codable {
         case kickoff, goal, chance, save, halfTime, tactic, substitution, fullTime, injury, extraTime, penalties
+        case yellowCard, redCard, penaltyAwarded
     }
 
     let minute: Int
     let kind: Kind
     let teamID: Int?
     let text: String
+    var playerID: Int? = nil
+    var relatedPlayerID: Int? = nil
+    var xg: Double? = nil
+    /// Posição do lance em coordenadas do campo: x é a distância do gol atacado (0 a 1), y a lateral (0 a 1).
+    var x: Double? = nil
+    var y: Double? = nil
 }
 
 struct LeagueFixture: Identifiable, Codable, Equatable {
@@ -649,11 +656,22 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     var awayPenalties: Int? = nil
     /// Notas e números individuais do clube do usuário nesta partida.
     var userStats: [PlayerMatchStats] = []
+    var homeCorners: Int? = nil
+    var awayCorners: Int? = nil
+    var homeFouls: Int? = nil
+    var awayFouls: Int? = nil
+    var homeYellow: Int? = nil
+    var awayYellow: Int? = nil
+    var homeRed: Int? = nil
+    var awayRed: Int? = nil
+    /// Domínio da partida minuto a minuto (positivo favorece o mandante), só nos jogos do usuário.
+    var momentum: [Int] = []
 
     private enum CodingKeys: String, CodingKey {
         case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
         case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties, userStats
+        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum
     }
 
     init(id: Int, matchDay: Int, round: Int, competition: Competition, home: Int, away: Int) {
@@ -691,6 +709,15 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         homePenalties = try container.decodeIfPresent(Int.self, forKey: .homePenalties)
         awayPenalties = try container.decodeIfPresent(Int.self, forKey: .awayPenalties)
         userStats = try container.decodeIfPresent([PlayerMatchStats].self, forKey: .userStats) ?? []
+        homeCorners = try container.decodeIfPresent(Int.self, forKey: .homeCorners)
+        awayCorners = try container.decodeIfPresent(Int.self, forKey: .awayCorners)
+        homeFouls = try container.decodeIfPresent(Int.self, forKey: .homeFouls)
+        awayFouls = try container.decodeIfPresent(Int.self, forKey: .awayFouls)
+        homeYellow = try container.decodeIfPresent(Int.self, forKey: .homeYellow)
+        awayYellow = try container.decodeIfPresent(Int.self, forKey: .awayYellow)
+        homeRed = try container.decodeIfPresent(Int.self, forKey: .homeRed)
+        awayRed = try container.decodeIfPresent(Int.self, forKey: .awayRed)
+        momentum = try container.decodeIfPresent([Int].self, forKey: .momentum) ?? []
     }
 
     var isPlayed: Bool { homeGoals != nil && awayGoals != nil }
@@ -829,32 +856,6 @@ struct SeasonRecord: Codable, Equatable, Identifiable {
         promoted = try container.decodeIfPresent(Bool.self, forKey: .promoted) ?? false
         relegated = try container.decodeIfPresent(Bool.self, forKey: .relegated) ?? false
     }
-}
-
-/// Estado de uma partida ao vivo interrompida no intervalo; é salvo junto com a carreira.
-struct LiveMatchState: Codable, Equatable {
-    let fixtureID: Int
-    let matchDay: Int
-    var homeGoals: Int
-    var awayGoals: Int
-    var homeScorerIDs: [Int]
-    var awayScorerIDs: [Int]
-    var homeAssistIDs: [Int]
-    var awayAssistIDs: [Int]
-    var homeShots: Int
-    var awayShots: Int
-    var homeOnTarget: Int
-    var awayOnTarget: Int
-    var homeExpectedGoals: Double
-    var awayExpectedGoals: Double
-    var homePossession: Int
-    var events: [MatchEvent]
-    var firstHalfHomeLineup: [Int]
-    var firstHalfAwayLineup: [Int]
-    var substitutionsUsed: Int
-    var styleAtKickoff: FootballPlayStyle
-
-    static let maxSubstitutions = 5
 }
 
 struct FootballRandom: RandomNumberGenerator {

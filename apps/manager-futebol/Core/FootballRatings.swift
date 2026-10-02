@@ -13,6 +13,9 @@ struct PlayerMatchStats: Codable, Equatable, Identifiable {
     var yellowCards = 0
     var redCard = false
     var rating = 6.0
+    /// Toques por zona do campo (4 colunas × 3 faixas), para o mapa de calor.
+    var heat: [Int] = []
+    var fouls = 0
 
     var id: Int { playerID }
 }
