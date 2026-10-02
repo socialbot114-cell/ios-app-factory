@@ -291,3 +291,22 @@ extension FootballCareer {
         }
     }
 }
+
+// MARK: - Comissão técnica (consulta)
+
+extension FootballCareer {
+    func staffMember(_ role: StaffRole) -> StaffMember? {
+        staff.first { $0.role == role }
+    }
+
+    /// Habilidade (1 a 20) do profissional contratado para a função, se houver.
+    func staffAbility(_ role: StaffRole) -> Int? {
+        staffMember(role)?.ability
+    }
+
+    /// Bônus de qualidade em pontos: -1 sem profissional, 0 a +2 conforme a habilidade.
+    func staffBonus(_ role: StaffRole) -> Int {
+        guard let ability = staffAbility(role) else { return -1 }
+        return ability >= 17 ? 2 : (ability >= 13 ? 1 : 0)
+    }
+}

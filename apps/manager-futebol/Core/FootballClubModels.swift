@@ -208,3 +208,163 @@ struct PressConference: Codable, Equatable {
 
     var isComplete: Bool { questions.allSatisfy { $0.answered != nil } }
 }
+
+// MARK: - Mercado
+
+struct TransferWindow: Equatable {
+    enum Kind: String { case preseason, midseason }
+
+    let kind: Kind
+    let startDay: Int
+    let endDay: Int
+    let currentDay: Int
+
+    var title: String { kind == .preseason ? "Janela de pré-temporada" : "Janela do meio do ano" }
+    var daysLeft: Int { endDay - currentDay + 1 }
+    var isLastDay: Bool { currentDay == endDay }
+
+    static let preseason = (start: 0, end: 1)
+    static let midseason = (start: 9, end: 11)
+}
+
+struct TransferBid: Equatable {
+    var playerID: Int
+    var fee: Int
+    var installments = 1
+    var swapPlayerID: Int? = nil
+    var goalBonus = 0
+    var wage: Int
+    var years = 3
+}
+
+enum BidResponse: Equatable {
+    case accepted
+    case counter(fee: Int)
+    case clubRefuses(String)
+    case playerRefuses(askWage: Int)
+    case notAllowed(String)
+}
+
+struct TransferRecord: Codable, Equatable, Identifiable {
+    var id: Int
+    var season: Int
+    var matchDay: Int
+    var playerName: String
+    var playerID: Int
+    var fromClubID: Int?
+    var toClubID: Int?
+    var fee: Int
+    var isLoan = false
+}
+
+struct PendingPayment: Codable, Equatable, Identifiable {
+    let id: Int
+    let amount: Int
+    let dueMatchDay: Int
+    let season: Int
+    let note: String
+}
+
+/// Bônus devido ao clube vendedor quando o atleta atingir um número de gols na temporada.
+struct GoalBonus: Codable, Equatable, Identifiable {
+    let id: Int
+    let playerID: Int
+    let clubID: Int
+    let goals: Int
+    let amount: Int
+    let season: Int
+}
+
+// MARK: - Observação
+
+struct ScoutMission: Codable, Equatable, Identifiable {
+    let id: Int
+    var region: Int?
+    var position: FootballPosition?
+    var maxAge: Int
+    var maxValue: Int
+    let startedMatchDay: Int
+    let season: Int
+    var durationMatchDays: Int
+    var completed = false
+
+    var summary: String {
+        var parts: [String] = []
+        parts.append(position?.title ?? "Qualquer posição")
+        parts.append(region.map { LeagueTeam.regionNames[$0] } ?? "Todo o país")
+        parts.append("até \(maxAge) anos")
+        parts.append("até \(FootballFormat.money(maxValue))")
+        return parts.joined(separator: " · ")
+    }
+}
+
+struct ScoutReport: Codable, Equatable, Identifiable {
+    let id: Int
+    let missionID: Int
+    let playerID: Int
+    let currentStars: Int
+    let potentialStars: Int
+    let note: String
+    let season: Int
+}
+
+struct YouthCupResult: Codable, Equatable, Identifiable {
+    let season: Int
+    let winnerID: Int
+    let userResult: String
+    let topScorerName: String
+
+    var id: Int { season }
+}
+
+// MARK: - Comissão técnica
+
+enum StaffRole: String, Codable, CaseIterable, Identifiable {
+    case assistant, fitnessCoach, headScout, doctor, goalkeeperCoach, youthCoach, analyst
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .assistant: return "Auxiliar técnico"
+        case .fitnessCoach: return "Preparador físico"
+        case .headScout: return "Olheiro-chefe"
+        case .doctor: return "Médico"
+        case .goalkeeperCoach: return "Treinador de goleiros"
+        case .youthCoach: return "Técnico da base"
+        case .analyst: return "Analista de desempenho"
+        }
+    }
+
+    var effect: String {
+        switch self {
+        case .assistant: return "Define a precisão da leitura do rival e das sugestões táticas."
+        case .fitnessCoach: return "Melhora a recuperação física e reduz o risco de lesões."
+        case .headScout: return "Relatórios de observação mais precisos."
+        case .doctor: return "Reduz o tempo de recuperação das lesões."
+        case .goalkeeperCoach: return "Acelera a evolução dos goleiros."
+        case .youthCoach: return "Eleva a qualidade dos jovens que chegam da base."
+        case .analyst: return "Libera mapa de calor, análise do adversário e jogadores-chave do rival."
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .assistant: return "person.badge.shield.checkmark"
+        case .fitnessCoach: return "figure.run"
+        case .headScout: return "binoculars.fill"
+        case .doctor: return "cross.case.fill"
+        case .goalkeeperCoach: return "hand.raised.fill"
+        case .youthCoach: return "figure.and.child.holdinghands"
+        case .analyst: return "chart.xyaxis.line"
+        }
+    }
+}
+
+struct StaffMember: Codable, Equatable, Identifiable {
+    let id: Int
+    var name: String
+    var role: StaffRole
+    var ability: Int
+    var wage: Int
+}

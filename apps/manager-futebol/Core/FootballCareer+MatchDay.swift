@@ -328,6 +328,7 @@ extension FootballCareer {
             }
             fixture.userStats = stats.sorted { $0.playerID < $1.playerID }
             startingXIAtKickoff = Set(userIsHome ? outcome.homeLineupStart : outcome.awayLineupStart)
+            for id in Set(outcome.appeared) where player(id)?.teamID != selectedClubID { observe(id, gain: 25) }
         }
         fixtures[fixtureIndex] = fixture
     }
@@ -376,7 +377,11 @@ extension FootballCareer {
         }
         collectMatchDayIncome()
         chargeMatchDayWages()
+        settlePendingPayments()
         generatePlayerRequests()
+        progressScouting(using: &postRandom)
+        marketCalendarEvents()
+        if matchDayIndex == Self.youthCupMatchDay { runYouthCup(using: &postRandom) }
         if let cupRound = slot?.cupRound { progressCup(after: cupRound) }
         offers.removeAll { $0.expiresAfterRound <= matchDayIndex }
         generateOffers(using: &postRandom)
@@ -430,21 +435,6 @@ extension FootballCareer {
         boardConfidence = min(100, max(0, boardConfidence + delta))
         let fanDelta = (result == .win ? 2 : (result == .loss ? -2 : 0)) * (derby ? 2 : 1)
         fanMood = min(100, max(0, fanMood + fanDelta))
-    }
-
-    mutating func generateOffers(using random: inout FootballRandom) {
-        guard let selectedClubID, offers.count < 2, !isSeasonComplete, random.chance(0.3) else { return }
-        let candidates = clubRoster
-            .filter { candidate in !offers.contains { $0.playerID == candidate.id } && !candidate.onLoan }
-            .sorted { $0.marketValue > $1.marketValue }
-            .prefix(8)
-        guard let target = random.pick(Array(candidates)) else { return }
-        let buyers = FootballSeason.teams.filter { $0.id != selectedClubID && $0.startingBudget >= target.marketValue / 2 }
-        guard let buyer = random.pick(buyers) else { return }
-        let amount = Int(Double(target.marketValue) * Double(random.int(in: 95...125)) / 100 / 10_000) * 10_000
-        offers.append(TransferOffer(id: nextOfferID, playerID: target.id, clubID: buyer.id,
-                                    amount: max(amount, 100_000), expiresAfterRound: matchDayIndex + 2))
-        nextOfferID += 1
     }
 
     // MARK: - Coletiva de imprensa

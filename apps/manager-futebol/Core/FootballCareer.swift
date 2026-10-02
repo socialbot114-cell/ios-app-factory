@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 5
+    static let schemaVersion = 6
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
@@ -48,6 +48,22 @@ struct FootballCareer: Codable, Equatable {
         case rivalMotivation
         case fanMood
         case pendingPress
+        case transferLog
+        case nextTransferID
+        case scoutKnowledge
+        case scoutMissions
+        case scoutReports
+        case nextScoutID
+        case watchlist
+        case pendingPayments
+        case goalBonuses
+        case nextPaymentID
+        case youthCupHistory
+        case youthAcademyLevel
+        case lastYouthIntake
+        case staff
+        case staffMarket
+        case nextStaffID
     }
 
     var seed: Int
@@ -91,6 +107,23 @@ struct FootballCareer: Codable, Equatable {
     var rivalMotivation: [Int: Double] = [:]
     var fanMood = 60
     var pendingPress: PressConference? = nil
+    var transferLog: [TransferRecord] = []
+    var nextTransferID = 1
+    /// Conhecimento do olheiro sobre cada atleta de fora do clube (0 a 100).
+    var scoutKnowledge: [Int: Int] = [:]
+    var scoutMissions: [ScoutMission] = []
+    var scoutReports: [ScoutReport] = []
+    var nextScoutID = 1
+    var watchlist: [Int] = []
+    var pendingPayments: [PendingPayment] = []
+    var goalBonuses: [GoalBonus] = []
+    var nextPaymentID = 1
+    var youthCupHistory: [YouthCupResult] = []
+    var youthAcademyLevel = 3
+    var lastYouthIntake: [Int] = []
+    var staff: [StaffMember] = []
+    var staffMarket: [StaffMember] = []
+    var nextStaffID = 1
     /// Titulares do jogo em andamento (usado para as promessas aos atletas).
     var startingXIAtKickoff: Set<Int> = []
     /// Atletas que entraram em campo no dia de jogo em andamento (condição física e presença).
@@ -186,6 +219,22 @@ struct FootballCareer: Codable, Equatable {
         rivalMotivation = try container.decodeIfPresent([Int: Double].self, forKey: .rivalMotivation) ?? [:]
         fanMood = try container.decodeIfPresent(Int.self, forKey: .fanMood) ?? 60
         pendingPress = try container.decodeIfPresent(PressConference.self, forKey: .pendingPress)
+        transferLog = try container.decodeIfPresent([TransferRecord].self, forKey: .transferLog) ?? []
+        nextTransferID = try container.decodeIfPresent(Int.self, forKey: .nextTransferID) ?? 1
+        scoutKnowledge = try container.decodeIfPresent([Int: Int].self, forKey: .scoutKnowledge) ?? [:]
+        scoutMissions = try container.decodeIfPresent([ScoutMission].self, forKey: .scoutMissions) ?? []
+        scoutReports = try container.decodeIfPresent([ScoutReport].self, forKey: .scoutReports) ?? []
+        nextScoutID = try container.decodeIfPresent(Int.self, forKey: .nextScoutID) ?? 1
+        watchlist = try container.decodeIfPresent([Int].self, forKey: .watchlist) ?? []
+        pendingPayments = try container.decodeIfPresent([PendingPayment].self, forKey: .pendingPayments) ?? []
+        goalBonuses = try container.decodeIfPresent([GoalBonus].self, forKey: .goalBonuses) ?? []
+        nextPaymentID = try container.decodeIfPresent(Int.self, forKey: .nextPaymentID) ?? 1
+        youthCupHistory = try container.decodeIfPresent([YouthCupResult].self, forKey: .youthCupHistory) ?? []
+        youthAcademyLevel = try container.decodeIfPresent(Int.self, forKey: .youthAcademyLevel) ?? 3
+        lastYouthIntake = try container.decodeIfPresent([Int].self, forKey: .lastYouthIntake) ?? []
+        staff = try container.decodeIfPresent([StaffMember].self, forKey: .staff) ?? []
+        staffMarket = try container.decodeIfPresent([StaffMember].self, forKey: .staffMarket) ?? []
+        nextStaffID = try container.decodeIfPresent(Int.self, forKey: .nextStaffID) ?? 1
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
     }
@@ -230,6 +279,22 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(rivalMotivation, forKey: .rivalMotivation)
         try container.encode(fanMood, forKey: .fanMood)
         try container.encodeIfPresent(pendingPress, forKey: .pendingPress)
+        try container.encode(transferLog, forKey: .transferLog)
+        try container.encode(nextTransferID, forKey: .nextTransferID)
+        try container.encode(scoutKnowledge, forKey: .scoutKnowledge)
+        try container.encode(scoutMissions, forKey: .scoutMissions)
+        try container.encode(scoutReports, forKey: .scoutReports)
+        try container.encode(nextScoutID, forKey: .nextScoutID)
+        try container.encode(watchlist, forKey: .watchlist)
+        try container.encode(pendingPayments, forKey: .pendingPayments)
+        try container.encode(goalBonuses, forKey: .goalBonuses)
+        try container.encode(nextPaymentID, forKey: .nextPaymentID)
+        try container.encode(youthCupHistory, forKey: .youthCupHistory)
+        try container.encode(youthAcademyLevel, forKey: .youthAcademyLevel)
+        try container.encode(lastYouthIntake, forKey: .lastYouthIntake)
+        try container.encode(staff, forKey: .staff)
+        try container.encode(staffMarket, forKey: .staffMarket)
+        try container.encode(nextStaffID, forKey: .nextStaffID)
     }
 
     /// Save v3: atletas ganham contratos coerentes e o teto salarial é definido a partir da folha atual.
@@ -705,16 +770,8 @@ struct FootballCareer: Codable, Equatable {
     }
 
     func canSell(playerID: Int) -> Bool {
-        guard let selectedClubID, liveMatch == nil, !isFired,
-              let player = player(playerID), player.teamID == selectedClubID,
-              clubRoster.count > Self.minimumRoster else { return false }
-        let remaining = clubRoster.filter { $0.id != playerID }
-        let healthyCount = remaining.filter { !$0.isInjured && !$0.isYouth }.count
-        return healthyCount >= 11 && FootballSeason.canFill(roster: remaining.map { member in
-            var healthy = member
-            healthy.injuryRounds = 0
-            return healthy
-        }, formation: formation)
+        guard isTransferWindowOpen, let athlete = player(playerID), !athlete.onLoan else { return false }
+        return canRelease(playerID: playerID)
     }
 
     @discardableResult
@@ -770,22 +827,19 @@ struct FootballCareer: Codable, Equatable {
 
     @discardableResult
     mutating func acceptOffer(_ offerID: Int) -> Bool {
-        guard canAccept(offerID: offerID),
-              let offer = offers.first(where: { $0.id == offerID }),
-              let index = players.firstIndex(where: { $0.id == offer.playerID }) else { return false }
-        let position = players[index].position
+        guard canAccept(offerID: offerID), let offer = offers.first(where: { $0.id == offerID }) else { return false }
+        if offer.kind == .loan { return acceptLoanOffer(offerID) }
+        guard let index = players.firstIndex(where: { $0.id == offer.playerID }) else { return false }
         book(.playerSales, offer.amount, "Venda de \(players[index].name) para \(FootballSeason.teamName(offer.clubID))")
         players[index].teamID = offer.clubID
         players[index].isListed = false
         players[index].isLoanListed = false
         players[index].morale = 60
+        players[index].contract.endSeason = season + 3
+        logTransfer(playerID: offer.playerID, name: players[index].name, from: selectedClubID, to: offer.clubID, fee: offer.amount)
         offers.removeAll { $0.playerID == offer.playerID }
-        // O comprador libera o atleta mais fraco da mesma posição para manter o elenco equilibrado.
-        if let released = players.indices
-            .filter({ players[$0].teamID == offer.clubID && players[$0].position == position && players[$0].id != offer.playerID })
-            .min(by: { players[$0].overall < players[$1].overall }) {
-            players[released].teamID = nil
-        }
+        var random = FootballRandom(seed: matchSeed(stream: .transfers, id: 400 + offer.playerID))
+        normalizeSquad(teamID: offer.clubID, using: &random)
         repairLineup()
         return true
     }

@@ -779,12 +779,38 @@ struct FootballStanding: Identifiable, Equatable {
     var goalDifference: Int { goalsFor - goalsAgainst }
 }
 
+enum OfferKind: String, Codable {
+    case purchase, loan
+}
+
 struct TransferOffer: Identifiable, Codable, Equatable {
     let id: Int
     let playerID: Int
     let clubID: Int
     let amount: Int
     let expiresAfterRound: Int
+    var kind: OfferKind = .purchase
+
+    init(id: Int, playerID: Int, clubID: Int, amount: Int, expiresAfterRound: Int, kind: OfferKind = .purchase) {
+        self.id = id
+        self.playerID = playerID
+        self.clubID = clubID
+        self.amount = amount
+        self.expiresAfterRound = expiresAfterRound
+        self.kind = kind
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, playerID, clubID, amount, expiresAfterRound, kind }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        playerID = try container.decode(Int.self, forKey: .playerID)
+        clubID = try container.decode(Int.self, forKey: .clubID)
+        amount = try container.decode(Int.self, forKey: .amount)
+        expiresAfterRound = try container.decodeIfPresent(Int.self, forKey: .expiresAfterRound) ?? 0
+        kind = try container.decodeIfPresent(OfferKind.self, forKey: .kind) ?? .purchase
+    }
 }
 
 struct SeasonRecord: Codable, Equatable, Identifiable {
