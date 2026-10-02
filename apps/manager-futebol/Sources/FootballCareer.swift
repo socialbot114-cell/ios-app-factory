@@ -883,7 +883,7 @@ struct FootballCareer: Codable, Equatable {
         case .loss: delta = expectation > 0 ? -6 : -3
         }
         boardConfidence = min(100, max(0, boardConfidence + delta))
-        offers.removeAll { $0.expiresAfterRound < currentRound }
+        offers.removeAll { $0.expiresAfterRound <= currentRound }
     }
 
     private mutating func generateOffers(using random: inout FootballRandom) {

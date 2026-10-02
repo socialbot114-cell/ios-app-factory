@@ -281,6 +281,16 @@ final class FootballSeasonTests: XCTestCase {
         XCTAssertEqual(career.clubRoster.count, 15)
     }
 
+    func testOffersExpireAfterTheirDeadlineRound() {
+        var career = FootballCareer(seed: 9)
+        XCTAssertTrue(career.chooseClub(4))
+        let player = career.clubRoster[5]
+        career.offers = [TransferOffer(id: 999, playerID: player.id, clubID: 1, amount: 1_000_000, expiresAfterRound: 1)]
+        XCTAssertTrue(career.simulateNextRound())
+        XCTAssertFalse(career.offers.contains { $0.id == 999 })
+        XCTAssertTrue(career.offers.allSatisfy { $0.expiresAfterRound > career.currentRound })
+    }
+
     func testCompletedSeasonAgesPlayersRecordsHistoryAndRefreshesMarket() throws {
         var career = FootballCareer(seed: 31)
         XCTAssertTrue(career.chooseClub(3))
