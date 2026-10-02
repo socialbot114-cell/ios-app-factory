@@ -330,5 +330,6 @@ struct FootballClubSelectionView: View {
                 .fill(club.primaryColor)
                 .frame(width: 5)
         }
+        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
