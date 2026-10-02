@@ -411,7 +411,7 @@ extension CrimeState {
         if screen == "home" { state.pendingEvent = 1 }
         if screen == "heists" || screen == "home" {
             state.startHeist(3, plan: .standard)
-            state.activeHeist?.remaining = 222
+            state.activeHeist?.remaining = 480
         }
         return state
     }

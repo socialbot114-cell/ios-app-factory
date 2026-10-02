@@ -111,7 +111,7 @@ struct CrimeHomeView: View {
                 store.bribe()
             } label: {
                 VStack(spacing: 1) {
-                    Text("Molhar a mão")
+                    Text("Subornar")
                     Text(CrimeFormat.cash(state.bribeCost)).font(.caption2.weight(.semibold))
                 }
             }
@@ -141,7 +141,7 @@ struct CrimeHomeView: View {
             Text(rank.title).font(.title3.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.7)
                 .accessibilityIdentifier("rank-title")
             if let next {
-                NoirBar(progress: log10(max(state.lifetimeTotal, 1)) / log10(next.threshold), tint: Noir.violet, height: 6)
+                NoirBar(progress: rankProgress(from: rank.threshold, to: next.threshold), tint: Noir.violet, height: 6)
                 Text("Próxima: \(next.title) em \(CrimeFormat.cash(next.threshold)) faturados")
                     .font(.caption2).foregroundStyle(Noir.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -149,6 +149,12 @@ struct CrimeHomeView: View {
                 Text("O topo da cidade é seu.").font(.caption2).foregroundStyle(Noir.muted)
             }
         }
+    }
+
+    /// Progresso logarítmico entre a patente atual e a próxima.
+    private func rankProgress(from current: Double, to next: Double) -> Double {
+        let low = log10(max(current, 1)), high = log10(next)
+        return (log10(max(state.lifetimeTotal, 1)) - low) / max(high - low, 0.001)
     }
 
     private func heistMini(_ heist: CrimeActiveHeist) -> some View {
