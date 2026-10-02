@@ -43,6 +43,14 @@ enum CupRound: Int, Codable, CaseIterable, Comparable {
 
     var next: CupRound? { CupRound(rawValue: rawValue + 1) }
 
+    /// Nome com a preposição certa: "na semifinal", "nas oitavas de final".
+    var withPreposition: String {
+        switch self {
+        case .roundOf16, .quarterFinal: return "nas \(name.lowercased())"
+        default: return "na \(name.lowercased())"
+        }
+    }
+
     /// Bônus pago ao clube do usuário por avançar desta fase.
     var advanceBonus: Int {
         switch self {

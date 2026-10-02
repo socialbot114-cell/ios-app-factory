@@ -396,7 +396,7 @@ struct FootballClubView: View {
                     ClubCrest(team: club, size: 64)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(club.name).font(.title.bold())
-                        Text("\(club.city) · \(club.stadium) · \(club.capacity.formatted()) lugares")
+                        Text("\(club.city) · \(club.stadium) · \(club.capacity.formatted(.number.locale(Locale(identifier: "pt_BR")))) lugares")
                             .font(.subheadline).foregroundStyle(.secondary)
                         if let division = career.userDivision {
                             PillLabel(text: division.name, tint: division.tint)

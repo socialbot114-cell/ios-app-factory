@@ -333,11 +333,11 @@ struct FootballCareer: Codable, Equatable {
             let preliminaryDrawn = cupFixtures.contains { $0.competition == .cup(.preliminary) }
             return preliminaryDrawn && !isSeasonComplete ? "Estreia nas oitavas de final" : "Não disputou"
         }
-        guard last.isPlayed else { return "Na \(round.name.lowercased())" }
+        guard last.isPlayed else { return "Próxima fase: \(round.name.lowercased())" }
         if last.winner == selectedClubID {
-            return round == .final ? "Campeão" : "Classificado para a \(round.next?.name.lowercased() ?? "próxima fase")"
+            return round == .final ? "Campeão" : "Classificado para \(round.next.map { $0 == .roundOf16 || $0 == .quarterFinal ? "as \($0.name.lowercased())" : "a \($0.name.lowercased())" } ?? "a próxima fase")"
         }
-        return round == .final ? "Vice-campeão" : "Eliminado na \(round.name.lowercased())"
+        return round == .final ? "Vice-campeão" : "Eliminado \(round.withPreposition)"
     }
 
     var isEliminatedFromCup: Bool {
