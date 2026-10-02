@@ -368,3 +368,112 @@ struct StaffMember: Codable, Equatable, Identifiable {
     var ability: Int
     var wage: Int
 }
+
+// MARK: - Estrutura do clube
+
+enum FacilityKind: String, Codable, CaseIterable, Identifiable {
+    case trainingCenter, youthAcademy, medical, stadium
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .trainingCenter: return "Centro de treinamento"
+        case .youthAcademy: return "Categoria de base"
+        case .medical: return "Departamento médico"
+        case .stadium: return "Estádio"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .trainingCenter: return "dumbbell.fill"
+        case .youthAcademy: return "graduationcap.fill"
+        case .medical: return "cross.case.fill"
+        case .stadium: return "building.columns.fill"
+        }
+    }
+
+    var effect: String {
+        switch self {
+        case .trainingCenter: return "Mais evolução no treino: de -12% (nível 1) a +12% (nível 5)."
+        case .youthAcademy: return "Mais qualidade e mais chance de joias na leva anual."
+        case .medical: return "Lesões duram menos: até 14% a menos no nível 5."
+        case .stadium: return "Cada nível amplia a capacidade em 8% e a bilheteria."
+        }
+    }
+}
+
+struct UpgradeProject: Codable, Equatable, Identifiable {
+    let id: Int
+    let kind: FacilityKind
+    let targetLevel: Int
+    let cost: Int
+    let dueSeason: Int
+    let dueMatchDay: Int
+}
+
+enum TicketPrice: Int, Codable, CaseIterable, Identifiable {
+    case popular = 0, normal, premium, elite
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .popular: return "Popular"
+        case .normal: return "Normal"
+        case .premium: return "Premium"
+        case .elite: return "Elite"
+        }
+    }
+
+    /// Quanto cada torcedor paga em relação ao preço normal.
+    var revenueMultiplier: Double {
+        switch self {
+        case .popular: return 0.65
+        case .normal: return 1.0
+        case .premium: return 1.45
+        case .elite: return 2.0
+        }
+    }
+
+    /// Efeito do preço na vontade de ir ao estádio.
+    var demandFactor: Double {
+        switch self {
+        case .popular: return 1.25
+        case .normal: return 1.0
+        case .premium: return 0.72
+        case .elite: return 0.48
+        }
+    }
+}
+
+struct SponsorOffer: Codable, Equatable, Identifiable {
+    let id: Int
+    let sponsor: String
+    let fixedPerSeason: Int
+    let bonusPerWin: Int
+    let titleBonus: Int
+    let seasons: Int
+    let profile: String
+
+    var totalIfAverage: Int { fixedPerSeason + bonusPerWin * 7 }
+}
+
+struct SponsorDeal: Codable, Equatable {
+    let sponsor: String
+    let fixedPerSeason: Int
+    let bonusPerWin: Int
+    let titleBonus: Int
+    var endSeason: Int
+}
+
+struct MonthReport: Equatable, Identifiable {
+    let month: Int
+    let income: Int
+    let expenses: Int
+    let closingCash: Int
+
+    var id: Int { month }
+    var result: Int { income - expenses }
+}

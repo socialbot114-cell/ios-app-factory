@@ -350,13 +350,14 @@ enum FootballTrainingFocus: String, CaseIterable, Codable, Identifiable {
     case defending = "Defesa"
     case attacking = "Ataque"
     case recovery = "Recuperação"
+    case setPieces = "Bola parada"
 
     var id: String { rawValue }
 
     var developmentPositions: [FootballPosition] {
         switch self {
         case .physical: return FootballPosition.allCases
-        case .recovery: return []
+        case .recovery, .setPieces: return []
         case .technical: return [.midfielder, .forward]
         case .tactical: return [.defender, .midfielder]
         case .defending: return [.goalkeeper, .defender]
@@ -372,6 +373,7 @@ enum FootballTrainingFocus: String, CaseIterable, Codable, Identifiable {
         case .defending: return "Goleiros e defensores podem evoluir."
         case .attacking: return "Atacantes e meio-campistas podem evoluir."
         case .recovery: return "Semana regenerativa: não há evolução técnica, mas o elenco recupera mais condição."
+        case .setPieces: return "Ensaia cobranças de falta, escanteios e pênaltis: mais perigo nas bolas paradas."
         }
     }
 }
@@ -392,6 +394,7 @@ enum FootballTrainingIntensity: String, CaseIterable, Codable, Identifiable {
     }
 
     func conditionRecovery(for focus: FootballTrainingFocus) -> Int {
+        if focus == .setPieces { return 8 }
         if focus == .recovery {
             switch self {
             case .light: return 18
@@ -458,12 +461,16 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
     var nationalDutyMatchDay: Int? = nil
     var learnedPositions: [FootballPosition] = []
     var individualFocus: AttributeKind? = nil
+    /// Posição que o atleta está aprendendo no treino individual e o progresso (6 sessões para aprender).
+    var learningPosition: FootballPosition? = nil
+    var learningProgress = 0
 
     private enum CodingKeys: String, CodingKey {
         case id, name, position, detail, age, overall, potential, condition, marketValue, teamID
         case attributes, traits, morale, contract, form, discipline, region
         case goals, assists, appearances, injuryRounds, careerGoals, benchStreak, isYouth
         case parentTeamID, purchaseOption, isListed, isLoanListed, nationalDutyMatchDay, learnedPositions, individualFocus
+        case learningPosition, learningProgress
     }
 
     init(id: Int, name: String, position: FootballPosition, age: Int, overall: Int, potential: Int,
@@ -539,6 +546,8 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
         nationalDutyMatchDay = try container.decodeIfPresent(Int.self, forKey: .nationalDutyMatchDay)
         learnedPositions = try container.decodeIfPresent([FootballPosition].self, forKey: .learnedPositions) ?? []
         individualFocus = try container.decodeIfPresent(AttributeKind.self, forKey: .individualFocus)
+        learningPosition = try container.decodeIfPresent(FootballPosition.self, forKey: .learningPosition)
+        learningProgress = try container.decodeIfPresent(Int.self, forKey: .learningProgress) ?? 0
     }
 
     var isInjured: Bool { injuryRounds > 0 }
@@ -582,7 +591,7 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
     /// Atributos que cada foco de treino pode melhorar para a posição do atleta.
     static func trainableAttributes(focus: FootballTrainingFocus, position: FootballPosition) -> [AttributeKind] {
         switch (focus, position) {
-        case (.recovery, _): return []
+        case (.recovery, _), (.setPieces, _): return []
         case (.physical, _): return [.pace, .stamina, .strength]
         case (.technical, .goalkeeper): return [.distribution, .handling]
         case (.technical, _): return [.passing, .dribbling, .finishing, .vision]
@@ -666,12 +675,13 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     var awayRed: Int? = nil
     /// Domínio da partida minuto a minuto (positivo favorece o mandante), só nos jogos do usuário.
     var momentum: [Int] = []
+    var attendance: Int? = nil
 
     private enum CodingKeys: String, CodingKey {
         case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
         case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties, userStats
-        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum
+        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum, attendance
     }
 
     init(id: Int, matchDay: Int, round: Int, competition: Competition, home: Int, away: Int) {
@@ -718,6 +728,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         homeRed = try container.decodeIfPresent(Int.self, forKey: .homeRed)
         awayRed = try container.decodeIfPresent(Int.self, forKey: .awayRed)
         momentum = try container.decodeIfPresent([Int].self, forKey: .momentum) ?? []
+        attendance = try container.decodeIfPresent(Int.self, forKey: .attendance)
     }
 
     var isPlayed: Bool { homeGoals != nil && awayGoals != nil }

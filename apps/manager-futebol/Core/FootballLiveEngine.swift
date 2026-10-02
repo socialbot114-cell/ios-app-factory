@@ -184,6 +184,7 @@ extension MatchSimulation {
             if let target = state.markTargetID, rival.onPitch.contains(target) { defense -= 0.4 }
             if let target = rival.markTargetID, state.onPitch.contains(target) { attack -= 1.0 }
             attack += state.attackBoost
+            defense += state.defenseBoost
             if minute >= 60 {
                 let difference = state.goals - rival.goals
                 attack += min(1.5, max(-1.5, -Double(difference) * 0.7))
@@ -257,7 +258,7 @@ extension MatchSimulation {
     private mutating func takeShot(side: MatchTeamSide, type: ShotType, players: [Int: FootballPlayer], random: inout FootballRandom) {
         guard let shooter = pickShooter(side: side, type: type, players: players, random: &random) else { return }
         let rivalKeeper = keeper(of: side.other, players: players)
-        let xg = type.meanXG * (0.7 + 0.6 * random.unit())
+        let xg = type.meanXG * (0.7 + 0.6 * random.unit()) * (type == .setPiece ? 1 + self[side].setPieceBoost : 1)
         var finishing = Double(type == .header ? shooter.attributes[.heading] : shooter.attributes[.finishing])
         if type == .setPiece || type == .longRange { finishing = Double(shooter.attributes[.passing] + shooter.attributes[.finishing]) / 2 }
         var shooterFactor = min(1.35, max(0.7, 1 + (finishing - 10) * 0.03))
@@ -363,7 +364,7 @@ extension MatchSimulation {
         guard let taker else { return }
         let teamID = state.teamID
         let chance = min(0.9, max(0.55, 0.74 + Double(taker.attributes[.finishing] - 10) * 0.012
-                                  - Double((rivalKeeper?.attributes[.handling] ?? 12) - 12) * 0.01 + (taker.has(.setPieceSpecialist) ? 0.05 : 0)))
+                                  - Double((rivalKeeper?.attributes[.handling] ?? 12) - 12) * 0.01 + (taker.has(.setPieceSpecialist) ? 0.05 : 0) + self[side].setPieceBoost * 0.3))
         if detailed {
             events.append(MatchEvent(minute: minute, kind: .penaltyAwarded, teamID: teamID,
                                      text: "Pênalti para o \(FootballSeason.teamName(teamID))! \(taker.name) vai para a bola.", playerID: taker.id))
@@ -469,7 +470,7 @@ extension MatchSimulation {
 
     private mutating func injuryPhase(side: MatchTeamSide, players: [Int: FootballPlayer], random: inout FootballRandom) {
         let state = self[side]
-        guard random.chance(Self.injuryPerMinute * (state.instructions.pressing == .high ? 1.1 : 1.0)) else { return }
+        guard random.chance(Self.injuryPerMinute * state.injuryFactor * (state.instructions.pressing == .high ? 1.1 : 1.0)) else { return }
         let candidates = state.onPitch.compactMap { players[$0] }
         let weights = candidates.map { player -> Int in
             let condition = state.matchCondition[player.id] ?? Double(player.condition)

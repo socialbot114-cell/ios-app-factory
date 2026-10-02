@@ -63,6 +63,8 @@ extension FootballCareer {
         wageCap = Int(Double(wageCap) * (objectiveMet ? 1.05 : 0.97) * (wasPromoted ? 1.2 : 1) * (wasRelegated ? 0.8 : 1))
 
         var random = FootballRandom(seed: matchSeed(stream: .offseason, id: 0))
+        closeSeasonClub(objectiveMet: objectiveMet, champion: champion == selectedClubID || (clubDivision == .serieB && position == 1), using: &random)
+        finance.summaries[finance.summaries.count - 1] = finance.summary(season: season, closingCash: transferBudget)
         returnLoans(using: &random)
         _ = expireContracts(using: &random)
         let changes = runOffseason(using: &random)
@@ -117,6 +119,7 @@ extension FootballCareer {
         var marketRandom = FootballRandom(seed: matchSeed(stream: .transfers, id: 1))
         refillFreeAgents(using: &marketRandom)
         runAIMarket(using: &marketRandom, intensity: 4)
+        prepareNewSeasonClub(using: &marketRandom)
         if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
         startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
         scheduleSeason()

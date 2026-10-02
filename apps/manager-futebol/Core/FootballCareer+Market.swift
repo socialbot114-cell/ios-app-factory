@@ -77,6 +77,7 @@ extension FootballCareer {
         guard player.teamID != nil, player.teamID != selectedClubID else { return .notAllowed("Este atleta já está no seu clube ou está sem clube.") }
         guard !player.onLoan else { return .notAllowed("Atleta emprestado: negocie a compra com o clube dono.") }
         guard isTransferWindowOpen else { return .notAllowed("A janela de transferências está fechada.") }
+        guard !isTransferBanned else { return .notAllowed("O clube está proibido de contratar por causa da dívida (transfer ban).") }
         guard clubRoster.count < Self.rosterLimit || bid.swapPlayerID != nil else { return .notAllowed("Elenco completo.") }
         guard sellerCanSell(player) else { return .clubRefuses("\(FootballSeason.teamName(player.teamID ?? 0)) não vende: precisa deste atleta para manter o elenco.") }
 
@@ -189,6 +190,7 @@ extension FootballCareer {
     func canLoanIn(playerID: Int) -> String? {
         guard let player = player(playerID), let teamID = player.teamID, teamID != selectedClubID, !player.onLoan else { return "Atleta indisponível." }
         guard !isFired, liveMatch == nil, isTransferWindowOpen else { return "A janela de transferências está fechada." }
+        guard !isTransferBanned else { return "O clube está proibido de contratar por causa da dívida (transfer ban)." }
         guard clubRoster.count < Self.rosterLimit else { return "Elenco completo." }
         guard sellerCanSell(player) else { return "O clube não empresta este atleta agora." }
         guard squadRank(of: player) >= 4 else { return "O clube não empresta uma de suas estrelas." }

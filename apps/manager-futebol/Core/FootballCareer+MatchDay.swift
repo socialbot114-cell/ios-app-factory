@@ -20,6 +20,7 @@ extension FootballCareer {
     /// Treino e recuperação antes de um dia de jogo. No meio de semana todos recuperam menos.
     mutating func prepareMatchDay() {
         guard let slot = currentSlot else { return }
+        autoSignSponsorIfNeeded()
         applyWeeklyTraining(for: slot.index, midweek: slot.isMidweek)
         let aiRecovery = slot.isMidweek ? 4 : 8
         for index in players.indices where players[index].teamID != selectedClubID {
@@ -78,6 +79,17 @@ extension FootballCareer {
         if isUser {
             state.roles = playerRoles.filter { lineupIDs.contains($0.key) }
             state.penaltyTakerID = penaltyTakerID
+            state.injuryFactor = injuryRiskFactor
+            let sessions = ([trainingFocus] + [secondaryTrainingFocus].compactMap { $0 }).filter { $0 == .setPieces }.count
+            state.setPieceBoost = 0.06 * Double(sessions)
+            if opponentPrep, let fixture = fixtures.first(where: { $0.matchDay == matchDayIndex && $0.involves(teamID) && !$0.isPlayed }) {
+                if scoutedOpponentStyle(for: fixture).isCorrect {
+                    state.attackBoost += 1.5
+                    state.defenseBoost += 1.0
+                } else {
+                    state.attackBoost -= 0.5
+                }
+            }
         } else if rivalID == selectedClubID {
             state.attackBoost = rivalMotivation[teamID] ?? 0
         }
@@ -289,10 +301,11 @@ extension FootballCareer {
         }
         for (id, rounds) in outcome.injuries.sorted(by: { $0.key < $1.key }) {
             guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
-            players[index].injuryRounds = max(players[index].injuryRounds, rounds)
+            let adjusted = players[index].teamID == selectedClubID ? max(1, Int((Double(rounds) * injuryDurationFactor).rounded())) : rounds
+            players[index].injuryRounds = max(players[index].injuryRounds, adjusted)
             if players[index].teamID == selectedClubID {
                 addInbox(.injury, title: "\(players[index].name) se lesionou",
-                         body: "Fora por \(rounds) jogo(s) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
+                         body: "Fora por \(adjusted) jogo(s) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
                          playerID: id)
             }
         }
@@ -368,6 +381,7 @@ extension FootballCareer {
                 processUserPlayers(stats: fixture.userStats, result: fixture.result(for: selectedClubID),
                                    derby: FootballSeason.isDerby(fixture.home, fixture.away), started: startingXIAtKickoff)
                 rivalMotivation[fixture.opponent(of: selectedClubID)] = nil
+                opponentPrep = false
                 pendingPress = makePressConference(fixture: fixture)
             }
             startingXIAtKickoff = []
@@ -377,6 +391,8 @@ extension FootballCareer {
         }
         collectMatchDayIncome()
         chargeMatchDayWages()
+        chargeOperatingCosts()
+        progressUpgrades()
         settlePendingPayments()
         generatePlayerRequests()
         progressScouting(using: &postRandom)
@@ -387,13 +403,6 @@ extension FootballCareer {
         generateOffers(using: &postRandom)
         for index in players.indices { refreshValue(at: index) }
         repairLineup()
-    }
-
-    /// Receitas de todo dia de jogo (a bilheteria é lançada junto com a partida em casa).
-    mutating func collectMatchDayIncome() {
-        guard let selectedClubID, let club = selectedClub else { return }
-        let tv = Int(Double(club.startingBudget) * (division(of: selectedClubID) == .serieA ? 0.012 : 0.006) / 10_000) * 10_000
-        book(.tv, tv, "Cotas de TV")
     }
 
     mutating func developAIPlayers(using random: inout FootballRandom) {
@@ -409,12 +418,15 @@ extension FootballCareer {
         guard let selectedClubID, let club = selectedClub, let result = fixture.result(for: selectedClubID) else { return }
         let isHome = fixture.home == selectedClubID
         if isHome {
-            let formBonus = form(teamID: selectedClubID).filter { $0 == .win }.count * 8_000
-            let derbyBonus = FootballSeason.isDerby(fixture.home, fixture.away) ? 1.3 : 1.0
-            lastRoundRevenue = Int(Double(club.startingBudget) * 0.018 * derbyBonus) + formBonus
-            book(.gate, lastRoundRevenue, "Bilheteria contra \(FootballSeason.teamName(fixture.away))")
+            let crowd = attendance(for: fixture)
+            lastRoundRevenue = gateRevenue(attendance: crowd)
+            if let index = fixtures.firstIndex(where: { $0.id == fixture.id }) { fixtures[index].attendance = crowd }
+            book(.gate, lastRoundRevenue, "Bilheteria contra \(FootballSeason.teamName(fixture.away)) (\(crowd) pagantes)")
         } else {
             lastRoundRevenue = 0
+        }
+        if result == .win, let deal = sponsorDeal, deal.bonusPerWin > 0 {
+            book(.sponsor, deal.bonusPerWin, "Bônus por vitória de \(deal.sponsor)")
         }
         if let round = fixture.competition.cupRound, fixture.winner == selectedClubID {
             book(.prize, round.advanceBonus, "Classificação na \(round.name)")
