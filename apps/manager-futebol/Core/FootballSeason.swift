@@ -1,30 +1,70 @@
 import Foundation
 
 enum FootballSeason {
-    static let roundsPerSeason = 14
-    static let matchesPerRound = 4
+    static let teamsPerDivision = 10
+    static let leagueRounds = 18
+    static let relegationSpots = 2
 
     static let teams: [LeagueTeam] = [
-        .init(id: 0, name: "Aurora FC", shortName: "AUR", city: "Brasília", strength: 78, startingBudget: 8_000_000,
-              preferredStyle: .possession, preferredFormation: .fourThreeThree),
-        .init(id: 1, name: "Atlético Cerrado", shortName: "ACE", city: "Goiânia", strength: 73, startingBudget: 6_200_000,
-              preferredStyle: .highPress, preferredFormation: .fourFourTwo),
-        .init(id: 2, name: "Maré Alta", shortName: "MAR", city: "Salvador", strength: 75, startingBudget: 6_800_000,
-              preferredStyle: .attacking, preferredFormation: .fourThreeThree),
-        .init(id: 3, name: "União da Serra", shortName: "UNI", city: "Belo Horizonte", strength: 77, startingBudget: 7_500_000,
-              preferredStyle: .balanced, preferredFormation: .fourTwoThreeOne),
-        .init(id: 4, name: "Estrela do Sul", shortName: "EST", city: "Porto Alegre", strength: 74, startingBudget: 6_500_000,
-              preferredStyle: .defensive, preferredFormation: .fourFourTwo),
-        .init(id: 5, name: "Portuários", shortName: "POR", city: "Santos", strength: 71, startingBudget: 5_800_000,
-              preferredStyle: .counter, preferredFormation: .fourFourTwo),
-        .init(id: 6, name: "Capital Norte", shortName: "CAP", city: "Manaus", strength: 69, startingBudget: 5_000_000,
-              preferredStyle: .counter, preferredFormation: .fourTwoThreeOne),
-        .init(id: 7, name: "Vale Verde", shortName: "VAL", city: "Curitiba", strength: 72, startingBudget: 5_600_000,
-              preferredStyle: .possession, preferredFormation: .fourTwoThreeOne)
+        // Série A
+        .init(id: 0, name: "Aurora FC", shortName: "AUR", city: "Brasília", stadium: "Arena Alvorada", capacity: 52_000,
+              strength: 78, startingBudget: 8_000_000, preferredStyle: .possession, preferredFormation: .fourThreeThree, initialDivision: .serieA),
+        .init(id: 1, name: "Atlético Cerrado", shortName: "ACE", city: "Goiânia", stadium: "Estádio do Ipê", capacity: 38_000,
+              strength: 73, startingBudget: 6_200_000, preferredStyle: .highPress, preferredFormation: .fourFourTwo, initialDivision: .serieA),
+        .init(id: 2, name: "Maré Alta", shortName: "MAR", city: "Salvador", stadium: "Arena Maré", capacity: 45_000,
+              strength: 75, startingBudget: 6_800_000, preferredStyle: .attacking, preferredFormation: .fourThreeThree, initialDivision: .serieA),
+        .init(id: 3, name: "União da Serra", shortName: "UNI", city: "Belo Horizonte", stadium: "Estádio das Gerais", capacity: 48_000,
+              strength: 77, startingBudget: 7_500_000, preferredStyle: .balanced, preferredFormation: .fourTwoThreeOne, initialDivision: .serieA),
+        .init(id: 4, name: "Estrela do Sul", shortName: "EST", city: "Porto Alegre", stadium: "Estádio Cruzeiro do Sul", capacity: 44_000,
+              strength: 74, startingBudget: 6_500_000, preferredStyle: .defensive, preferredFormation: .fourFourTwo, initialDivision: .serieA),
+        .init(id: 5, name: "Portuários", shortName: "POR", city: "Santos", stadium: "Estádio do Cais", capacity: 27_000,
+              strength: 71, startingBudget: 5_800_000, preferredStyle: .counter, preferredFormation: .fourFourTwo, initialDivision: .serieA),
+        .init(id: 6, name: "Capital Norte", shortName: "CAP", city: "Manaus", stadium: "Arena da Floresta", capacity: 40_000,
+              strength: 69, startingBudget: 5_000_000, preferredStyle: .counter, preferredFormation: .fourTwoThreeOne, initialDivision: .serieA),
+        .init(id: 7, name: "Vale Verde", shortName: "VAL", city: "Curitiba", stadium: "Estádio dos Pinheirais", capacity: 33_000,
+              strength: 72, startingBudget: 5_600_000, preferredStyle: .possession, preferredFormation: .fourTwoThreeOne, initialDivision: .serieA),
+        .init(id: 8, name: "Litoral FC", shortName: "LIT", city: "Florianópolis", stadium: "Estádio da Ilha", capacity: 26_000,
+              strength: 70, startingBudget: 5_200_000, preferredStyle: .attacking, preferredFormation: .fourThreeThree, initialDivision: .serieA),
+        .init(id: 9, name: "Sertanejos EC", shortName: "SER", city: "Petrolina", stadium: "Arena do Velho Chico", capacity: 22_000,
+              strength: 68, startingBudget: 4_600_000, preferredStyle: .defensive, preferredFormation: .fourFourTwo, initialDivision: .serieA),
+        // Série B
+        .init(id: 10, name: "Pantanal AC", shortName: "PAN", city: "Cuiabá", stadium: "Arena Pantaneira", capacity: 30_000,
+              strength: 66, startingBudget: 3_400_000, preferredStyle: .counter, preferredFormation: .fourFourTwo, initialDivision: .serieB),
+        .init(id: 11, name: "Ipê Amarelo FC", shortName: "IPÊ", city: "Campinas", stadium: "Estádio do Ipê Amarelo", capacity: 24_000,
+              strength: 65, startingBudget: 3_200_000, preferredStyle: .possession, preferredFormation: .fourTwoThreeOne, initialDivision: .serieB),
+        .init(id: 12, name: "Serra Azul EC", shortName: "SAZ", city: "Vitória", stadium: "Estádio Mestre Álvaro", capacity: 18_000,
+              strength: 64, startingBudget: 3_000_000, preferredStyle: .balanced, preferredFormation: .fourFourTwo, initialDivision: .serieB),
+        .init(id: 13, name: "Tropeiros FC", shortName: "TRO", city: "Lages", stadium: "Estádio do Planalto", capacity: 15_000,
+              strength: 63, startingBudget: 2_800_000, preferredStyle: .highPress, preferredFormation: .fourFourTwo, initialDivision: .serieB),
+        .init(id: 14, name: "Cacique EC", shortName: "CAC", city: "Natal", stadium: "Arena Potiguar", capacity: 21_000,
+              strength: 62, startingBudget: 2_700_000, preferredStyle: .attacking, preferredFormation: .fourThreeThree, initialDivision: .serieB),
+        .init(id: 15, name: "Jangadeiros AC", shortName: "JAN", city: "Fortaleza", stadium: "Estádio das Jangadas", capacity: 25_000,
+              strength: 62, startingBudget: 2_600_000, preferredStyle: .counter, preferredFormation: .fourTwoThreeOne, initialDivision: .serieB),
+        .init(id: 16, name: "Carcará FC", shortName: "CAR", city: "Teresina", stadium: "Estádio do Carcará", capacity: 16_000,
+              strength: 61, startingBudget: 2_400_000, preferredStyle: .defensive, preferredFormation: .fourFourTwo, initialDivision: .serieB),
+        .init(id: 17, name: "Garimpo EC", shortName: "GAR", city: "Porto Velho", stadium: "Estádio da Pepita", capacity: 12_000,
+              strength: 60, startingBudget: 2_200_000, preferredStyle: .balanced, preferredFormation: .fourFourTwo, initialDivision: .serieB),
+        .init(id: 18, name: "Araucária FC", shortName: "ARA", city: "Ponta Grossa", stadium: "Estádio dos Campos Gerais", capacity: 14_000,
+              strength: 59, startingBudget: 2_100_000, preferredStyle: .possession, preferredFormation: .fourThreeThree, initialDivision: .serieB),
+        .init(id: 19, name: "Rio Doce FC", shortName: "RDO", city: "Ipatinga", stadium: "Arena do Vale do Aço", capacity: 13_000,
+              strength: 58, startingBudget: 2_000_000, preferredStyle: .highPress, preferredFormation: .fourFourTwo, initialDivision: .serieB)
     ]
 
-    /// Premiação por posição final (1º ao 8º).
-    static let prizeMoney: [Int] = [3_000_000, 2_200_000, 1_700_000, 1_300_000, 1_000_000, 800_000, 650_000, 500_000]
+    /// Clássicos regionais: jogos com mais peso para torcida e diretoria.
+    static let rivalries: [Set<Int>] = [[0, 6], [3, 1], [2, 15], [4, 7], [5, 11], [8, 13], [9, 16], [10, 17]]
+
+    static func isDerby(_ first: Int, _ second: Int) -> Bool {
+        rivalries.contains([first, second])
+    }
+
+    /// Premiação por posição final em cada divisão (1º ao 10º).
+    static func prizeMoney(division: Division, position: Int) -> Int {
+        let table: [Int] = division == .serieA
+            ? [3_000_000, 2_400_000, 2_000_000, 1_700_000, 1_500_000, 1_300_000, 1_100_000, 1_000_000, 800_000, 700_000]
+            : [1_200_000, 1_000_000, 800_000, 700_000, 600_000, 550_000, 500_000, 450_000, 400_000, 350_000]
+        return table[min(max(position, 1), table.count) - 1]
+    }
+
     static let objectiveBonus = 500_000
 
     private static let firstNames = [
@@ -46,7 +86,7 @@ enum FootballSeason {
     ]
 
     static func team(_ id: Int) -> LeagueTeam? {
-        teams.first { $0.id == id }
+        teams.indices.contains(id) && teams[id].id == id ? teams[id] : teams.first { $0.id == id }
     }
 
     static func teamName(_ id: Int) -> String {
@@ -55,16 +95,50 @@ enum FootballSeason {
 
     // MARK: - Calendário
 
-    static func fixtures() -> [LeagueFixture] {
-        let ids = teams.map(\.id)
-        var firstLeg: [(Int, Int)] = []
-        var rotating = ids
-        for round in 0..<7 {
-            for index in 0..<4 {
-                let first = rotating[index]
-                let second = rotating[7 - index]
-                firstLeg.append(round.isMultiple(of: 2) ? (first, second) : (second, first))
+    /// Fases da copa disputadas no meio de semana, logo após estas rodadas da liga.
+    static let cupAfterLeagueRound: [Int: CupRound] = [
+        3: .preliminary, 6: .roundOf16, 9: .quarterFinal, 12: .semiFinal, 15: .final
+    ]
+
+    static let calendar: [MatchDaySlot] = {
+        var slots: [MatchDaySlot] = []
+        var week = 4
+        for round in 1...leagueRounds {
+            slots.append(MatchDaySlot(index: slots.count, week: week, isMidweek: false, leagueRound: round, cupRound: nil))
+            if let cupRound = cupAfterLeagueRound[round] {
+                slots.append(MatchDaySlot(index: slots.count, week: week + 1, isMidweek: true, leagueRound: nil, cupRound: cupRound))
             }
+            week += 1
+        }
+        return slots
+    }()
+
+    static var matchDaysPerSeason: Int { calendar.count }
+
+    static func matchDayIndex(leagueRound: Int) -> Int {
+        calendar.first { $0.leagueRound == leagueRound }?.index ?? 0
+    }
+
+    static func matchDayIndex(cupRound: CupRound) -> Int {
+        calendar.first { $0.cupRound == cupRound }?.index ?? 0
+    }
+
+    /// Turno e returno pelo método do círculo, alternando mandos.
+    static func leagueFixtures(teamIDs: [Int], division: Division, firstID: Int) -> [LeagueFixture] {
+        let count = teamIDs.count
+        guard count >= 2, count.isMultiple(of: 2) else { return [] }
+        let roundsPerLeg = count - 1
+        var firstLeg: [[(Int, Int)]] = []
+        var rotating = teamIDs
+        for round in 0..<roundsPerLeg {
+            var pairs: [(Int, Int)] = []
+            for index in 0..<(count / 2) {
+                let first = rotating[index]
+                let second = rotating[count - 1 - index]
+                let flip = index == 0 ? round.isMultiple(of: 2) : (round + index).isMultiple(of: 2)
+                pairs.append(flip ? (first, second) : (second, first))
+            }
+            firstLeg.append(pairs)
             let fixed = rotating[0]
             var rest = Array(rotating.dropFirst())
             let last = rest.removeLast()
@@ -73,20 +147,22 @@ enum FootballSeason {
         }
 
         var output: [LeagueFixture] = []
-        for round in 0..<roundsPerSeason {
-            for match in 0..<matchesPerRound {
-                let pair = firstLeg[(round % 7) * 4 + match]
-                let home = round < 7 ? pair.0 : pair.1
-                let away = round < 7 ? pair.1 : pair.0
-                output.append(LeagueFixture(id: output.count, round: round + 1, home: home, away: away))
+        for round in 0..<(roundsPerLeg * 2) {
+            let leagueRound = round + 1
+            for pair in firstLeg[round % roundsPerLeg] {
+                let home = round < roundsPerLeg ? pair.0 : pair.1
+                let away = round < roundsPerLeg ? pair.1 : pair.0
+                output.append(LeagueFixture(id: firstID + output.count, matchDay: matchDayIndex(leagueRound: leagueRound),
+                                            round: leagueRound, competition: .league(division), home: home, away: away))
             }
         }
         return output
     }
 
-    static func standings(results: [LeagueFixture]) -> [FootballStanding] {
-        var table = Dictionary(uniqueKeysWithValues: teams.map { ($0.id, FootballStanding(team: $0)) })
-        for match in results.sorted(by: { $0.round < $1.round }) {
+    /// Tabela de uma divisão, considerando apenas jogos de liga entre os clubes informados.
+    static func standings(teamIDs: [Int], fixtures: [LeagueFixture]) -> [FootballStanding] {
+        var table = Dictionary(uniqueKeysWithValues: teamIDs.compactMap { id in team(id).map { (id, FootballStanding(team: $0)) } })
+        for match in fixtures.sorted(by: { $0.matchDay < $1.matchDay }) where match.competition.division != nil {
             guard let homeGoals = match.homeGoals, let awayGoals = match.awayGoals else { continue }
             guard var home = table[match.home], var away = table[match.away] else { continue }
             home.played += 1
@@ -276,151 +352,3 @@ enum FootballSeason {
     }
 }
 
-// MARK: - Motor de partida
-
-struct GoalRecord: Equatable {
-    let minute: Int
-    let scorerID: Int
-    let assistID: Int?
-}
-
-struct MatchSide {
-    let teamID: Int
-    let lineup: [FootballPlayer]
-    let formation: FootballFormation
-    let style: FootballPlayStyle
-    let opponentStyle: FootballPlayStyle
-    let isHome: Bool
-
-    var rating: Double { FootballSeason.rating(of: lineup, formation: formation) }
-
-    var attack: Double {
-        rating + Double(formation.attackBonus + style.attackAdjustment + style.attackBonus(against: opponentStyle)) + (isHome ? 1.5 : 0)
-    }
-
-    var defense: Double {
-        rating + Double(formation.defenseBonus + style.defenseAdjustment) + (isHome ? 1 : 0)
-    }
-
-    var control: Double {
-        rating + Double(formation.midfieldBonus + style.controlAdjustment) + (isHome ? 1 : 0)
-    }
-}
-
-struct HalfResult {
-    var homeGoals: [GoalRecord] = []
-    var awayGoals: [GoalRecord] = []
-    var homeShots = 0
-    var awayShots = 0
-    var homeOnTarget = 0
-    var awayOnTarget = 0
-    var homeExpectedGoals = 0.0
-    var awayExpectedGoals = 0.0
-    var homePossession = 50
-    var events: [MatchEvent] = []
-}
-
-enum FootballMatchEngine {
-    /// Gols esperados em um tempo. Diferença de 20 pontos entre ataque e defesa multiplica as chances por e.
-    static func expectedGoals(attack: Double, defense: Double, possessionShare: Double) -> Double {
-        let value = 0.62 * exp((attack - defense) / 20) * pow(possessionShare / 0.5, 0.35)
-        return min(1.9, max(0.04, value))
-    }
-
-    /// Arredonda para duas casas, mantendo o save estável e legível.
-    static func rounded(_ value: Double) -> Double {
-        (max(0.04, value) * 100).rounded() / 100
-    }
-
-    static func possessionShare(home: MatchSide, away: MatchSide, noise: Double) -> Double {
-        min(0.7, max(0.3, 0.5 + (home.control - away.control) * 0.015 + noise))
-    }
-
-    static func simulateHalf(home: MatchSide, away: MatchSide, half: Int, narrate: Bool,
-                             using random: inout FootballRandom) -> HalfResult {
-        var result = HalfResult()
-        let share = possessionShare(home: home, away: away, noise: Double(random.int(in: -3...3)) / 100)
-        result.homePossession = Int((share * 100).rounded())
-        result.homeExpectedGoals = rounded(expectedGoals(attack: home.attack, defense: away.defense, possessionShare: share))
-        result.awayExpectedGoals = rounded(expectedGoals(attack: away.attack, defense: home.defense, possessionShare: 1 - share))
-
-        let minutes = half == 1 ? 1...45 : 46...90
-        let homeGoalCount = random.poisson(lambda: result.homeExpectedGoals)
-        let awayGoalCount = random.poisson(lambda: result.awayExpectedGoals)
-        result.homeGoals = (0..<homeGoalCount).map { _ in goal(for: home.lineup, minutes: minutes, using: &random) }
-        result.awayGoals = (0..<awayGoalCount).map { _ in goal(for: away.lineup, minutes: minutes, using: &random) }
-        result.homeGoals.sort { $0.minute < $1.minute }
-        result.awayGoals.sort { $0.minute < $1.minute }
-
-        result.homeShots = homeGoalCount + Int((result.homeExpectedGoals * 7).rounded()) + random.int(in: 0...3)
-        result.awayShots = awayGoalCount + Int((result.awayExpectedGoals * 7).rounded()) + random.int(in: 0...3)
-        result.homeOnTarget = homeGoalCount + random.int(in: 0...max(0, (result.homeShots - homeGoalCount) / 2))
-        result.awayOnTarget = awayGoalCount + random.int(in: 0...max(0, (result.awayShots - awayGoalCount) / 2))
-
-        if narrate {
-            result.events = narration(home: home, away: away, result: result, minutes: minutes, using: &random)
-        }
-        return result
-    }
-
-    private static func goal(for lineup: [FootballPlayer], minutes: ClosedRange<Int>, using random: inout FootballRandom) -> GoalRecord {
-        let scoringWeights = lineup.map { $0.position.scoringWeight * max(1, $0.overall - 40) }
-        let scorer: FootballPlayer? = random.weightedIndex(scoringWeights).map { lineup[$0] }
-            ?? lineup.first(where: { $0.position != .goalkeeper })
-            ?? lineup.first
-        let scorerID = scorer?.id ?? -1
-        var assistID: Int?
-        if random.chance(0.72) {
-            let mates = lineup.filter { $0.id != scorerID }
-            let assistWeights = mates.map { $0.position.assistWeight * max(1, $0.overall - 40) }
-            if let index = random.weightedIndex(assistWeights) { assistID = mates[index].id }
-        }
-        return GoalRecord(minute: random.int(in: minutes), scorerID: scorerID, assistID: assistID)
-    }
-
-    private static func narration(home: MatchSide, away: MatchSide, result: HalfResult, minutes: ClosedRange<Int>,
-                                  using random: inout FootballRandom) -> [MatchEvent] {
-        var events: [MatchEvent] = []
-        let sides: [(MatchSide, MatchSide, [GoalRecord], Int, Int)] = [
-            (home, away, result.homeGoals, result.homeShots, result.homeOnTarget),
-            (away, home, result.awayGoals, result.awayShots, result.awayOnTarget)
-        ]
-        for (side, rival, goals, shots, onTarget) in sides {
-            let teamName = FootballSeason.teamName(side.teamID)
-            for goal in goals {
-                let scorer = side.lineup.first { $0.id == goal.scorerID }?.name ?? "Atleta"
-                var text = "GOL! \(scorer) marca para o \(teamName)"
-                if let assistID = goal.assistID, let assist = side.lineup.first(where: { $0.id == assistID }) {
-                    text += ", após passe de \(assist.name)."
-                } else {
-                    text += "."
-                }
-                events.append(MatchEvent(minute: goal.minute, kind: .goal, teamID: side.teamID, text: text))
-            }
-            let saves = min(2, max(0, onTarget - goals.count))
-            let keeper = rival.lineup.first { $0.position == .goalkeeper }?.name ?? "o goleiro"
-            for _ in 0..<saves {
-                let shooter = shooterName(side.lineup, using: &random)
-                let text = random.chance(0.5)
-                    ? "\(keeper) faz grande defesa em chute de \(shooter)."
-                    : "\(shooter) arrisca de fora da área e \(keeper) espalma."
-                events.append(MatchEvent(minute: random.int(in: minutes), kind: .save, teamID: side.teamID, text: text))
-            }
-            let misses = min(1, max(0, shots - onTarget))
-            for _ in 0..<misses {
-                let shooter = shooterName(side.lineup, using: &random)
-                let text = random.chance(0.5)
-                    ? "\(shooter) finaliza por cima do travessão."
-                    : "Chance do \(teamName): \(shooter) cabeceia rente à trave."
-                events.append(MatchEvent(minute: random.int(in: minutes), kind: .chance, teamID: side.teamID, text: text))
-            }
-        }
-        return events.sorted { $0.minute < $1.minute }
-    }
-
-    private static func shooterName(_ lineup: [FootballPlayer], using random: inout FootballRandom) -> String {
-        let weights = lineup.map { $0.position.scoringWeight }
-        guard let index = random.weightedIndex(weights) else { return "Atleta" }
-        return lineup[index].name
-    }
-}

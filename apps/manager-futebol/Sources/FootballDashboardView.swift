@@ -19,12 +19,15 @@ struct FootballDashboardView: View {
                     nextMatchPanel(fixture: fixture, club: club)
                 } else if career.isSeasonComplete {
                     seasonEndPanel
+                } else if career.canAdvanceWithoutPlaying {
+                    restDayPanel
                 }
+                cupPanel
                 if !career.offers.isEmpty && !career.isFired {
                     FootballOffersPanel(career: $career, onAlert: onAlert)
                 }
                 if let lastResult = career.latestUserFixture {
-                    FactoryPanel(title: "Último resultado · rodada \(lastResult.round)", systemImage: "sportscourt.fill") {
+                    FactoryPanel(title: "Último resultado · \(lastResult.title)", systemImage: "sportscourt.fill") {
                         FootballMatchReport(fixture: lastResult, career: career, showAllEvents: false)
                     }
                 } else {
@@ -56,10 +59,20 @@ struct FootballDashboardView: View {
         let ownRating = career.teamRating(club.id)
         let rivalRating = career.teamRating(opponentID)
 
-        return FactoryPanel(title: "Próxima partida · rodada \(fixture.round)", systemImage: "calendar") {
+        let slot = career.currentSlot
+        let venue = fixture.home == club.id ? "Em casa" : "Fora de casa"
+        return FactoryPanel(title: "Próxima partida", systemImage: "calendar") {
+            HStack(spacing: 6) {
+                PillLabel(text: fixture.title, systemImage: fixture.competition.isCup ? "trophy.fill" : "list.number",
+                          tint: fixture.competition.isCup ? FootballTheme.gold : (fixture.competition.division?.tint ?? FootballTheme.accent))
+                if FootballSeason.isDerby(fixture.home, fixture.away) {
+                    PillLabel(text: "CLÁSSICO", systemImage: "flame.fill", tint: .red)
+                }
+            }
             MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away), homeScore: nil, awayScore: nil)
-            Text(fixture.home == club.id ? "Em casa · bilheteria para o clube" : "Fora de casa")
+            Text("\(venue) · \(slot?.dayName ?? "") · semana \(slot?.week ?? 0)\(fixture.competition.isCup ? " · mata-mata, empate vai à prorrogação" : "")")
                 .font(.caption).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
 
             VStack(alignment: .leading, spacing: 12) {
@@ -137,6 +150,49 @@ struct FootballDashboardView: View {
         }
     }
 
+    private var restDayPanel: some View {
+        FactoryPanel(title: career.currentSlot?.title ?? "Dia de jogo", systemImage: "calendar.badge.clock") {
+            Text(career.isEliminatedFromCup
+                 ? "Seu clube está fora da copa. Os outros clubes jogam no meio de semana e o seu elenco ganha tempo para recuperar energia."
+                 : "Seu clube não entra em campo nesta fase. Aproveite para recuperar o elenco antes da próxima rodada.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Button {
+                if !career.simulateNextMatchDay() {
+                    onAlert("Não foi possível avançar o calendário.")
+                }
+            } label: {
+                Label("Avançar para o próximo jogo", systemImage: "forward.fill")
+            }
+            .buttonStyle(FactoryPrimaryButtonStyle())
+            .accessibilityIdentifier("simulate-round")
+        }
+    }
+
+    @ViewBuilder
+    private var cupPanel: some View {
+        if !career.cupFixtures.isEmpty && !career.isFired {
+            FactoryPanel(title: "Copa Nacional", systemImage: "trophy.fill") {
+                HStack {
+                    Text(career.userCupStatus).font(.subheadline.weight(.semibold))
+                    Spacer()
+                    if let next = career.upcomingUserFixtures.first(where: { $0.competition.isCup }),
+                       let opponent = career.selectedClubID.map({ next.opponent(of: $0) }),
+                       let team = FootballSeason.team(opponent) {
+                        HStack(spacing: 6) {
+                            Text("próximo:").font(.caption).foregroundStyle(.secondary)
+                            ClubCrest(team: team, size: 20)
+                            Text(team.shortName).font(.caption.weight(.bold))
+                        }
+                    }
+                }
+                Button { onNavigate(.table) } label: {
+                    Label("Ver chaveamento", systemImage: "list.bullet.indent")
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+        }
+    }
+
     private var resumePanel: some View {
         FactoryPanel(title: "Partida em andamento", systemImage: "pause.circle.fill") {
             if let live = career.liveMatch, let fixture = career.fixtures.first(where: { $0.id == live.fixtureID }) {
@@ -159,16 +215,23 @@ struct FootballDashboardView: View {
                 HStack(spacing: 12) {
                     ClubCrest(team: champion, size: 44)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Campeão").font(.caption.weight(.bold)).foregroundStyle(FootballTheme.gold)
+                        Text("Campeão da Série A").font(.caption.weight(.bold)).foregroundStyle(FootballTheme.gold)
                         Text(champion.name).font(.title3.bold())
                     }
                     Spacer()
                     Image(systemName: "trophy.fill").font(.largeTitle).foregroundStyle(FootballTheme.gold)
                 }
             }
-            if let position = career.userPosition {
-                Text("Seu clube terminou em \(position)º. Meta da diretoria: \(career.objectiveText.lowercased()).")
+            if let position = career.userPosition, let division = career.userDivision {
+                Text("Seu clube terminou em \(position)º na \(division.name). Meta da diretoria: \(career.objectiveText.lowercased()).")
                     .font(.subheadline).foregroundStyle(.secondary)
+                if division == .serieB && position <= FootballSeason.relegationSpots {
+                    Label("Acesso garantido à Série A!", systemImage: "arrow.up.circle.fill")
+                        .font(.subheadline.weight(.bold)).foregroundStyle(.green)
+                } else if division == .serieA && position > FootballSeason.teamsPerDivision - FootballSeason.relegationSpots {
+                    Label("Rebaixado para a Série B.", systemImage: "arrow.down.circle.fill")
+                        .font(.subheadline.weight(.bold)).foregroundStyle(.red)
+                }
             }
             Button {
                 if let record = career.startNextSeason() {
@@ -249,7 +312,7 @@ struct ClubHeroCard: View {
             HStack(spacing: 14) {
                 ClubCrest(team: club, size: 56)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("TEMPORADA \(career.season) · RODADA \(career.currentRound)/\(FootballSeason.roundsPerSeason)")
+                    Text("\(career.userDivision?.name.uppercased() ?? "") · TEMPORADA \(career.season) · SEMANA \(career.currentSlot?.week ?? FootballSeason.calendar.last?.week ?? 0)")
                         .font(.caption2.weight(.heavy)).tracking(1.1)
                         .foregroundStyle(club.secondaryColor)
                     Text(club.name).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(.white)
@@ -439,7 +502,7 @@ struct FootballOffersPanel: View {
                         HStack {
                             Text(FootballFormat.money(offer.amount))
                                 .font(.headline.monospacedDigit()).foregroundStyle(FootballTheme.accent)
-                            Text("expira após a rodada \(offer.expiresAfterRound)").font(.caption2).foregroundStyle(.secondary)
+                            Text("expira em \(max(1, offer.expiresAfterRound - career.matchDayIndex)) jogo(s)").font(.caption2).foregroundStyle(.secondary)
                             Spacer()
                             Button("Recusar") { career.rejectOffer(offer.id) }
                                 .buttonStyle(.bordered)

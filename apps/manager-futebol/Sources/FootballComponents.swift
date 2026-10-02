@@ -52,26 +52,45 @@ enum FootballFormat {
 }
 
 extension LeagueTeam {
+    private static func rgb(_ red: Double, _ green: Double, _ blue: Double) -> Color {
+        Color(red: red, green: green, blue: blue)
+    }
+
     var primaryColor: Color {
         switch id {
-        case 0: return Color(red: 0.95, green: 0.55, blue: 0.10)
-        case 1: return Color(red: 0.72, green: 0.11, blue: 0.14)
-        case 2: return Color(red: 0.05, green: 0.42, blue: 0.70)
-        case 3: return Color(red: 0.16, green: 0.18, blue: 0.22)
-        case 4: return Color(red: 0.10, green: 0.25, blue: 0.55)
-        case 5: return Color(red: 0.00, green: 0.50, blue: 0.48)
-        case 6: return Color(red: 0.45, green: 0.20, blue: 0.55)
-        default: return Color(red: 0.16, green: 0.55, blue: 0.24)
+        case 0: return Self.rgb(0.95, 0.55, 0.10)
+        case 1: return Self.rgb(0.72, 0.11, 0.14)
+        case 2: return Self.rgb(0.05, 0.42, 0.70)
+        case 3: return Self.rgb(0.16, 0.18, 0.22)
+        case 4: return Self.rgb(0.10, 0.25, 0.55)
+        case 5: return Self.rgb(0.00, 0.50, 0.48)
+        case 6: return Self.rgb(0.45, 0.20, 0.55)
+        case 7: return Self.rgb(0.16, 0.55, 0.24)
+        case 8: return Self.rgb(0.00, 0.62, 0.78)
+        case 9: return Self.rgb(0.62, 0.36, 0.16)
+        case 10: return Self.rgb(0.33, 0.47, 0.18)
+        case 11: return Self.rgb(0.92, 0.72, 0.05)
+        case 12: return Self.rgb(0.18, 0.36, 0.78)
+        case 13: return Self.rgb(0.50, 0.12, 0.16)
+        case 14: return Self.rgb(0.85, 0.30, 0.10)
+        case 15: return Self.rgb(0.10, 0.30, 0.42)
+        case 16: return Self.rgb(0.30, 0.30, 0.32)
+        case 17: return Self.rgb(0.70, 0.55, 0.20)
+        case 18: return Self.rgb(0.12, 0.40, 0.30)
+        default: return Self.rgb(0.55, 0.15, 0.40)
         }
     }
 
     var secondaryColor: Color {
         switch id {
-        case 0, 3: return Color(red: 0.98, green: 0.86, blue: 0.40)
-        case 1, 4, 5: return .white
-        case 2: return Color(red: 0.55, green: 0.85, blue: 0.95)
-        case 6: return Color(red: 0.95, green: 0.78, blue: 0.20)
-        default: return Color(red: 0.92, green: 0.96, blue: 0.88)
+        case 0, 3, 13, 16: return Self.rgb(0.98, 0.86, 0.40)
+        case 1, 4, 5, 8, 12, 14, 19: return .white
+        case 2, 15: return Self.rgb(0.55, 0.85, 0.95)
+        case 6: return Self.rgb(0.95, 0.78, 0.20)
+        case 9: return Self.rgb(0.98, 0.92, 0.75)
+        case 11: return Self.rgb(0.20, 0.30, 0.15)
+        case 17: return Self.rgb(0.20, 0.18, 0.12)
+        default: return Self.rgb(0.92, 0.96, 0.88)
         }
     }
 
@@ -84,9 +103,25 @@ extension LeagueTeam {
         case 4: return "star.fill"
         case 5: return "ferry.fill"
         case 6: return "tree.fill"
-        default: return "laurel.leading"
+        case 7: return "laurel.leading"
+        case 8: return "sailboat.fill"
+        case 9: return "sun.dust.fill"
+        case 10: return "fish.fill"
+        case 11: return "camera.macro"
+        case 12: return "drop.fill"
+        case 13: return "flame.fill"
+        case 14: return "bolt.fill"
+        case 15: return "wind"
+        case 16: return "bird.fill"
+        case 17: return "diamond.fill"
+        case 18: return "tree.circle.fill"
+        default: return "crown.fill"
         }
     }
+}
+
+extension Division {
+    var tint: Color { self == .serieA ? FootballTheme.accent : .indigo }
 }
 
 struct ShieldShape: Shape {

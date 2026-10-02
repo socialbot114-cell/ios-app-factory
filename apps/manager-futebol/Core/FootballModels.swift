@@ -5,10 +5,100 @@ struct LeagueTeam: Identifiable, Codable, Hashable {
     let name: String
     let shortName: String
     let city: String
+    let stadium: String
+    let capacity: Int
     let strength: Int
     let startingBudget: Int
     let preferredStyle: FootballPlayStyle
     let preferredFormation: FootballFormation
+    let initialDivision: Division
+}
+
+enum Division: Int, Codable, CaseIterable, Identifiable, Comparable {
+    case serieA = 1
+    case serieB = 2
+
+    var id: Int { rawValue }
+    var name: String { self == .serieA ? "Série A" : "Série B" }
+
+    static func < (lhs: Division, rhs: Division) -> Bool { lhs.rawValue < rhs.rawValue }
+}
+
+enum CupRound: Int, Codable, CaseIterable, Comparable {
+    case preliminary = 0
+    case roundOf16
+    case quarterFinal
+    case semiFinal
+    case final
+
+    var name: String {
+        switch self {
+        case .preliminary: return "Fase preliminar"
+        case .roundOf16: return "Oitavas de final"
+        case .quarterFinal: return "Quartas de final"
+        case .semiFinal: return "Semifinal"
+        case .final: return "Final"
+        }
+    }
+
+    var next: CupRound? { CupRound(rawValue: rawValue + 1) }
+
+    /// Bônus pago ao clube do usuário por avançar desta fase.
+    var advanceBonus: Int {
+        switch self {
+        case .preliminary: return 150_000
+        case .roundOf16: return 300_000
+        case .quarterFinal: return 500_000
+        case .semiFinal: return 900_000
+        case .final: return 2_000_000
+        }
+    }
+
+    static func < (lhs: CupRound, rhs: CupRound) -> Bool { lhs.rawValue < rhs.rawValue }
+}
+
+enum Competition: Codable, Hashable {
+    case league(Division)
+    case cup(CupRound)
+
+    var name: String {
+        switch self {
+        case .league(let division): return division.name
+        case .cup: return "Copa Nacional"
+        }
+    }
+
+    var isCup: Bool {
+        if case .cup = self { return true }
+        return false
+    }
+
+    var division: Division? {
+        if case .league(let division) = self { return division }
+        return nil
+    }
+
+    var cupRound: CupRound? {
+        if case .cup(let round) = self { return round }
+        return nil
+    }
+}
+
+/// Um dia de jogo do calendário: rodada de liga no fim de semana ou fase da copa no meio de semana.
+struct MatchDaySlot: Equatable {
+    let index: Int
+    let week: Int
+    let isMidweek: Bool
+    let leagueRound: Int?
+    let cupRound: CupRound?
+
+    var title: String {
+        if let leagueRound { return "Rodada \(leagueRound)" }
+        if let cupRound { return "Copa · \(cupRound.name)" }
+        return "Dia de jogo"
+    }
+
+    var dayName: String { isMidweek ? "Quarta-feira" : "Domingo" }
 }
 
 enum FootballPosition: String, CaseIterable, Codable, Hashable {
@@ -377,7 +467,7 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
 
 struct MatchEvent: Codable, Equatable {
     enum Kind: String, Codable {
-        case kickoff, goal, chance, save, halfTime, tactic, substitution, fullTime, injury
+        case kickoff, goal, chance, save, halfTime, tactic, substitution, fullTime, injury, extraTime, penalties
     }
 
     let minute: Int
@@ -388,7 +478,9 @@ struct MatchEvent: Codable, Equatable {
 
 struct LeagueFixture: Identifiable, Codable, Equatable {
     let id: Int
+    let matchDay: Int
     let round: Int
+    let competition: Competition
     let home: Int
     let away: Int
     var homeGoals: Int?
@@ -405,16 +497,21 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     var awayPossession: Int? = nil
     var homeExpectedGoals: Double? = nil
     var awayExpectedGoals: Double? = nil
+    var wentToExtraTime = false
+    var homePenalties: Int? = nil
+    var awayPenalties: Int? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case id, round, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
+        case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
-        case homeExpectedGoals, awayExpectedGoals
+        case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties
     }
 
-    init(id: Int, round: Int, home: Int, away: Int) {
+    init(id: Int, matchDay: Int, round: Int, competition: Competition, home: Int, away: Int) {
         self.id = id
+        self.matchDay = matchDay
         self.round = round
+        self.competition = competition
         self.home = home
         self.away = away
     }
@@ -423,6 +520,8 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(Int.self, forKey: .id)
         round = try container.decode(Int.self, forKey: .round)
+        matchDay = try container.decodeIfPresent(Int.self, forKey: .matchDay) ?? max(0, round - 1)
+        competition = try container.decodeIfPresent(Competition.self, forKey: .competition) ?? .league(.serieA)
         home = try container.decode(Int.self, forKey: .home)
         away = try container.decode(Int.self, forKey: .away)
         homeGoals = try container.decodeIfPresent(Int.self, forKey: .homeGoals)
@@ -439,6 +538,9 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         awayPossession = try container.decodeIfPresent(Int.self, forKey: .awayPossession)
         homeExpectedGoals = try container.decodeIfPresent(Double.self, forKey: .homeExpectedGoals)
         awayExpectedGoals = try container.decodeIfPresent(Double.self, forKey: .awayExpectedGoals)
+        wentToExtraTime = try container.decodeIfPresent(Bool.self, forKey: .wentToExtraTime) ?? false
+        homePenalties = try container.decodeIfPresent(Int.self, forKey: .homePenalties)
+        awayPenalties = try container.decodeIfPresent(Int.self, forKey: .awayPenalties)
     }
 
     var isPlayed: Bool { homeGoals != nil && awayGoals != nil }
@@ -447,7 +549,17 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
 
     func opponent(of teamID: Int) -> Int { home == teamID ? away : home }
 
-    /// "V", "E" ou "D" do ponto de vista do clube informado.
+    /// Vencedor considerando prorrogação e pênaltis; nil em empate de liga ou jogo não disputado.
+    var winner: Int? {
+        guard let homeGoals, let awayGoals else { return nil }
+        if homeGoals != awayGoals { return homeGoals > awayGoals ? home : away }
+        if let homePenalties, let awayPenalties, homePenalties != awayPenalties {
+            return homePenalties > awayPenalties ? home : away
+        }
+        return nil
+    }
+
+    /// "V", "E" ou "D" do ponto de vista do clube informado (pênaltis contam como empate).
     func result(for teamID: Int) -> FootballResult? {
         guard let homeGoals, let awayGoals, involves(teamID) else { return nil }
         let own = home == teamID ? homeGoals : awayGoals
@@ -455,6 +567,17 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         if own > other { return .win }
         if own < other { return .loss }
         return .draw
+    }
+
+    /// "Série A · Rodada 5" ou "Copa Nacional · Oitavas de final".
+    var title: String {
+        if let cupRound = competition.cupRound { return "Copa Nacional · \(cupRound.name)" }
+        return "\(competition.name) · Rodada \(round)"
+    }
+
+    var penaltySummary: String? {
+        guard let homePenalties, let awayPenalties else { return nil }
+        return "\(homePenalties) × \(awayPenalties) nos pênaltis"
     }
 }
 
@@ -502,14 +625,66 @@ struct SeasonRecord: Codable, Equatable, Identifiable {
     let retiredPlayers: Int
     let youthPromoted: Int
     let wasFired: Bool
+    var division: Division = .serieA
+    var cupResult: String = "—"
+    var cupWinnerID: Int? = nil
+    var promoted = false
+    var relegated = false
 
     var id: Int { season }
+
+    private enum CodingKeys: String, CodingKey {
+        case season, clubID, championID, position, points, target, objectiveMet, prizeMoney, topScorerName, topScorerTeamID
+        case topScorerGoals, retiredPlayers, youthPromoted, wasFired, division, cupResult, cupWinnerID, promoted, relegated
+    }
+
+    init(season: Int, clubID: Int, championID: Int, position: Int, points: Int, target: Int, objectiveMet: Bool,
+         prizeMoney: Int, topScorerName: String, topScorerTeamID: Int?, topScorerGoals: Int, retiredPlayers: Int,
+         youthPromoted: Int, wasFired: Bool) {
+        self.season = season
+        self.clubID = clubID
+        self.championID = championID
+        self.position = position
+        self.points = points
+        self.target = target
+        self.objectiveMet = objectiveMet
+        self.prizeMoney = prizeMoney
+        self.topScorerName = topScorerName
+        self.topScorerTeamID = topScorerTeamID
+        self.topScorerGoals = topScorerGoals
+        self.retiredPlayers = retiredPlayers
+        self.youthPromoted = youthPromoted
+        self.wasFired = wasFired
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        season = try container.decode(Int.self, forKey: .season)
+        clubID = try container.decode(Int.self, forKey: .clubID)
+        championID = try container.decode(Int.self, forKey: .championID)
+        position = try container.decodeIfPresent(Int.self, forKey: .position) ?? 0
+        points = try container.decodeIfPresent(Int.self, forKey: .points) ?? 0
+        target = try container.decodeIfPresent(Int.self, forKey: .target) ?? 4
+        objectiveMet = try container.decodeIfPresent(Bool.self, forKey: .objectiveMet) ?? false
+        prizeMoney = try container.decodeIfPresent(Int.self, forKey: .prizeMoney) ?? 0
+        topScorerName = try container.decodeIfPresent(String.self, forKey: .topScorerName) ?? "—"
+        topScorerTeamID = try container.decodeIfPresent(Int.self, forKey: .topScorerTeamID)
+        topScorerGoals = try container.decodeIfPresent(Int.self, forKey: .topScorerGoals) ?? 0
+        retiredPlayers = try container.decodeIfPresent(Int.self, forKey: .retiredPlayers) ?? 0
+        youthPromoted = try container.decodeIfPresent(Int.self, forKey: .youthPromoted) ?? 0
+        wasFired = try container.decodeIfPresent(Bool.self, forKey: .wasFired) ?? false
+        division = try container.decodeIfPresent(Division.self, forKey: .division) ?? .serieA
+        cupResult = try container.decodeIfPresent(String.self, forKey: .cupResult) ?? "—"
+        cupWinnerID = try container.decodeIfPresent(Int.self, forKey: .cupWinnerID)
+        promoted = try container.decodeIfPresent(Bool.self, forKey: .promoted) ?? false
+        relegated = try container.decodeIfPresent(Bool.self, forKey: .relegated) ?? false
+    }
 }
 
 /// Estado de uma partida ao vivo interrompida no intervalo; é salvo junto com a carreira.
 struct LiveMatchState: Codable, Equatable {
     let fixtureID: Int
-    let round: Int
+    let matchDay: Int
     var homeGoals: Int
     var awayGoals: Int
     var homeScorerIDs: [Int]
