@@ -1,435 +1,15 @@
 import Foundation
 
-struct LeagueTeam: Identifiable, Codable, Hashable {
-    let id: Int
-    let name: String
-    let city: String
-    let strength: Int
-    let startingBudget: Int
-}
-
-enum FootballPosition: String, CaseIterable, Codable, Hashable {
-    case goalkeeper = "GOL"
-    case defender = "ZAG"
-    case midfielder = "MEI"
-    case forward = "ATA"
-}
-
-enum FootballFormation: String, CaseIterable, Codable, Identifiable {
-    case fourFourTwo = "4-4-2"
-    case fourThreeThree = "4-3-3"
-    case fourTwoThreeOne = "4-2-3-1"
-
-    var id: String { rawValue }
-
-    var requiredPlayers: [FootballPosition: Int] {
-        switch self {
-        case .fourFourTwo:
-            return [.goalkeeper: 1, .defender: 4, .midfielder: 4, .forward: 2]
-        case .fourThreeThree:
-            return [.goalkeeper: 1, .defender: 4, .midfielder: 3, .forward: 3]
-        case .fourTwoThreeOne:
-            return [.goalkeeper: 1, .defender: 4, .midfielder: 5, .forward: 1]
-        }
-    }
-
-    var attackBonus: Int {
-        switch self {
-        case .fourFourTwo: return 0
-        case .fourThreeThree: return 4
-        case .fourTwoThreeOne: return 1
-        }
-    }
-
-    var midfieldBonus: Int {
-        switch self {
-        case .fourFourTwo: return 0
-        case .fourThreeThree: return 1
-        case .fourTwoThreeOne: return 4
-        }
-    }
-
-    var defenseBonus: Int {
-        switch self {
-        case .fourFourTwo: return 0
-        case .fourThreeThree: return -2
-        case .fourTwoThreeOne: return 1
-        }
-    }
-}
-
-enum FootballPlayStyle: String, CaseIterable, Codable, Identifiable {
-    case balanced = "Equilibrado"
-    case attacking = "Ofensivo"
-    case defensive = "Defensivo"
-    case possession = "Posse de bola"
-    case counter = "Contra-ataque"
-    case highPress = "Pressão alta"
-
-    var id: String { rawValue }
-
-    var attackAdjustment: Int {
-        switch self {
-        case .balanced: return 0
-        case .attacking: return 4
-        case .defensive: return -3
-        case .possession: return -1
-        case .counter: return 3
-        case .highPress: return 2
-        }
-    }
-
-    var defenseAdjustment: Int {
-        switch self {
-        case .balanced: return 0
-        case .attacking: return -3
-        case .defensive: return 4
-        case .possession: return 0
-        case .counter: return 0
-        case .highPress: return 1
-        }
-    }
-
-    var controlAdjustment: Int {
-        switch self {
-        case .balanced: return 0
-        case .attacking: return 0
-        case .defensive: return 0
-        case .possession: return 5
-        case .counter: return -3
-        case .highPress: return 2
-        }
-    }
-
-    var fatigueCost: Int {
-        switch self {
-        case .balanced: return 9
-        case .attacking: return 12
-        case .defensive: return 7
-        case .possession: return 9
-        case .counter: return 9
-        case .highPress: return 14
-        }
-    }
-
-    var summary: String {
-        switch self {
-        case .balanced: return "Um plano sem grandes riscos, com energia preservada."
-        case .attacking: return "Aumenta a força ofensiva, mas deixa mais espaços na defesa e consome energia."
-        case .defensive: return "Protege a defesa e poupa energia, com menos presença no ataque."
-        case .possession: return "Favorece o controle da bola e constrói ataques com paciência."
-        case .counter: return "Busca transições rápidas e mais ataque, cedendo controle do meio-campo."
-        case .highPress: return "Pressiona a saída adversária com intensidade e alto custo físico."
-        }
-    }
-}
-
-enum FootballTrainingFocus: String, CaseIterable, Codable, Identifiable {
-    case physical = "Físico"
-    case technical = "Técnico"
-    case tactical = "Tático"
-    case defending = "Defesa"
-    case attacking = "Ataque"
-    case recovery = "Recuperação"
-
-    var id: String { rawValue }
-
-    var developmentPositions: [FootballPosition] {
-        switch self {
-        case .physical: return FootballPosition.allCases
-        case .recovery: return []
-        case .technical: return [.midfielder, .forward]
-        case .tactical: return [.defender, .midfielder]
-        case .defending: return [.goalkeeper, .defender]
-        case .attacking: return [.midfielder, .forward]
-        }
-    }
-
-    var summary: String {
-        switch self {
-        case .physical: return "Treino físico prepara o elenco inteiro; intensidade maior desenvolve mais, mas reduz a recuperação."
-        case .technical: return "Meio-campistas e atacantes podem evoluir; intensidade maior acelera o desenvolvimento."
-        case .tactical: return "Defensores e meio-campistas podem evoluir; intensidade maior acelera o desenvolvimento."
-        case .defending: return "Goleiros e defensores podem evoluir; intensidade maior acelera o desenvolvimento."
-        case .attacking: return "Atacantes e meio-campistas podem evoluir; intensidade maior acelera o desenvolvimento."
-        case .recovery: return "Semana regenerativa: não há evolução técnica, mas o elenco recupera mais condição."
-        }
-    }
-}
-
-enum FootballTrainingIntensity: String, CaseIterable, Codable, Identifiable {
-    case light = "Leve"
-    case balanced = "Equilibrada"
-    case intense = "Intensa"
-
-    var id: String { rawValue }
-
-    var developmentChance: Int {
-        switch self {
-        case .light: return 8
-        case .balanced: return 20
-        case .intense: return 35
-        }
-    }
-
-    func conditionRecovery(for focus: FootballTrainingFocus) -> Int {
-        if focus == .recovery {
-            switch self {
-            case .light: return 18
-            case .balanced: return 24
-            case .intense: return 30
-            }
-        }
-        let recovery: Int
-        switch self {
-        case .light: recovery = 12
-        case .balanced: recovery = 8
-        case .intense: recovery = 4
-        }
-        return focus == .physical ? max(recovery - 2, 0) : recovery
-    }
-}
-
-struct FootballTrainingReport: Codable, Equatable {
-    let round: Int
-    let focus: FootballTrainingFocus
-    let intensity: FootballTrainingIntensity
-    let developedPlayers: Int
-    let averageConditionGain: Int
-
-    var summary: String {
-        let development = developedPlayers == 1 ? "1 atleta evoluiu" : "\(developedPlayers) atletas evoluíram"
-        return "\(development) · recuperação média de \(averageConditionGain) pontos de condição."
-    }
-}
-
-struct FootballPlayer: Identifiable, Codable, Equatable {
-    let id: Int
-    var name: String
-    var position: FootballPosition
-    var age: Int
-    var overall: Int
-    var potential: Int
-    var condition: Int
-    var marketValue: Int
-    var teamID: Int?
-    var goals = 0
-    var assists = 0
-    var appearances = 0
-
-    var effectiveOverall: Double {
-        Double(overall) * (0.65 + 0.35 * Double(condition) / 100)
-    }
-}
-
-struct LeagueFixture: Identifiable, Codable, Equatable {
-    let id: Int
-    let round: Int
-    let home: Int
-    let away: Int
-    var homeGoals: Int?
-    var awayGoals: Int?
-    var homeScorerIDs: [Int] = []
-    var awayScorerIDs: [Int] = []
-    var commentary: [String] = []
-    var homeShots: Int? = nil
-    var awayShots: Int? = nil
-    var homePossession: Int? = nil
-    var awayPossession: Int? = nil
-
-    var isPlayed: Bool { homeGoals != nil && awayGoals != nil }
-}
-
-struct FootballStanding: Identifiable, Equatable {
-    let team: LeagueTeam
-    var played = 0
-    var wins = 0
-    var draws = 0
-    var losses = 0
-    var goalsFor = 0
-    var goalsAgainst = 0
-    var points = 0
-
-    var id: Int { team.id }
-    var goalDifference: Int { goalsFor - goalsAgainst }
-}
-
-enum FootballSeason {
-    static let teams: [LeagueTeam] = [
-        .init(id: 0, name: "Aurora FC", city: "Brasília", strength: 78, startingBudget: 8_000_000),
-        .init(id: 1, name: "Atlético Cerrado", city: "Goiânia", strength: 73, startingBudget: 6_200_000),
-        .init(id: 2, name: "Maré Alta", city: "Salvador", strength: 75, startingBudget: 6_800_000),
-        .init(id: 3, name: "União da Serra", city: "Belo Horizonte", strength: 77, startingBudget: 7_500_000),
-        .init(id: 4, name: "Estrela do Sul", city: "Porto Alegre", strength: 74, startingBudget: 6_500_000),
-        .init(id: 5, name: "Portuários", city: "Santos", strength: 71, startingBudget: 5_800_000),
-        .init(id: 6, name: "Capital Norte", city: "Manaus", strength: 69, startingBudget: 5_000_000),
-        .init(id: 7, name: "Vale Verde", city: "Curitiba", strength: 72, startingBudget: 5_600_000)
-    ]
-
-    private static let firstNames = [
-        "Rafael", "Mateus", "Lucas", "André", "João", "Caio", "Bruno", "Davi",
-        "Gabriel", "Pedro", "Igor", "Vinícius", "Daniel", "Marcos", "Felipe", "Renan",
-        "Thiago", "Samuel", "Gustavo", "Enzo", "Luan", "Ruan", "Diego", "Alex"
-    ]
-
-    private static let lastNames = [
-        "Nascimento", "Duarte", "Campos", "Ribeiro", "Nunes", "Oliveira", "Moura", "Barbosa",
-        "Freitas", "Lima", "Teixeira", "Carvalho", "Mendes", "Azevedo", "Pereira", "Costa",
-        "Cardoso", "Rocha", "Alves", "Farias", "Cavalcante", "Batista", "Gomes", "Monteiro"
-    ]
-
-    static func fixtures() -> [LeagueFixture] {
-        let ids = teams.map(\.id)
-        var firstLeg: [(Int, Int)] = []
-        var rotating = ids
-        for round in 0..<7 {
-            for index in 0..<4 {
-                let first = rotating[index]
-                let second = rotating[7 - index]
-                firstLeg.append(round.isMultiple(of: 2) ? (first, second) : (second, first))
-            }
-            let fixed = rotating[0]
-            var rest = Array(rotating.dropFirst())
-            let last = rest.removeLast()
-            rest.insert(last, at: 0)
-            rotating = [fixed] + rest
-        }
-
-        var output: [LeagueFixture] = []
-        for round in 0..<14 {
-            for match in 0..<4 {
-                let pair = firstLeg[(round % 7) * 4 + match]
-                let home = round < 7 ? pair.0 : pair.1
-                let away = round < 7 ? pair.1 : pair.0
-                output.append(.init(id: output.count, round: round + 1, home: home, away: away, homeGoals: nil, awayGoals: nil))
-            }
-        }
-        return output
-    }
-
-    static func standings(results: [LeagueFixture]) -> [FootballStanding] {
-        var table = Dictionary(uniqueKeysWithValues: teams.map { ($0.id, FootballStanding(team: $0)) })
-        for match in results {
-            guard let homeGoals = match.homeGoals, let awayGoals = match.awayGoals else { continue }
-            guard var home = table[match.home], var away = table[match.away] else { continue }
-            home.played += 1
-            away.played += 1
-            home.goalsFor += homeGoals
-            home.goalsAgainst += awayGoals
-            away.goalsFor += awayGoals
-            away.goalsAgainst += homeGoals
-            if homeGoals > awayGoals {
-                home.wins += 1
-                away.losses += 1
-                home.points += 3
-            } else if homeGoals < awayGoals {
-                away.wins += 1
-                home.losses += 1
-                away.points += 3
-            } else {
-                home.draws += 1
-                away.draws += 1
-                home.points += 1
-                away.points += 1
-            }
-            table[match.home] = home
-            table[match.away] = away
-        }
-
-        return table.values.sorted { lhs, rhs in
-            if lhs.points != rhs.points { return lhs.points > rhs.points }
-            if lhs.wins != rhs.wins { return lhs.wins > rhs.wins }
-            if lhs.goalDifference != rhs.goalDifference { return lhs.goalDifference > rhs.goalDifference }
-            if lhs.goalsFor != rhs.goalsFor { return lhs.goalsFor > rhs.goalsFor }
-            return lhs.team.name < rhs.team.name
-        }
-    }
-
-    static func lineUp(teamID: Int, players: [FootballPlayer], formation: FootballFormation) -> [Int] {
-        let roster = players.filter { $0.teamID == teamID }
-        let order: [FootballPosition] = [.goalkeeper, .defender, .midfielder, .forward]
-        return order.flatMap { position in
-            let required = formation.requiredPlayers[position, default: 0]
-            return roster
-                .filter { $0.position == position }
-                .sorted { lhs, rhs in
-                    if lhs.overall != rhs.overall { return lhs.overall > rhs.overall }
-                    return lhs.id < rhs.id
-                }
-                .prefix(required)
-                .map(\.id)
-        }
-    }
-
-    static func canFill(teamID: Int, players: [FootballPlayer], formation: FootballFormation) -> Bool {
-        let roster = players.filter { $0.teamID == teamID }
-        return formation.requiredPlayers.allSatisfy { requirement in
-            roster.filter { $0.position == requirement.key }.count >= requirement.value
-        }
-    }
-
-    static func generatePlayers(seed: Int) -> [FootballPlayer] {
-        var random = FootballRandom(seed: UInt64(bitPattern: Int64(seed)))
-        let positions: [FootballPosition] = [
-            .goalkeeper, .goalkeeper,
-            .defender, .defender, .defender, .defender, .defender,
-            .midfielder, .midfielder, .midfielder, .midfielder, .midfielder,
-            .forward, .forward, .forward, .forward
-        ]
-        var players: [FootballPlayer] = []
-        for team in teams {
-            for (offset, position) in positions.enumerated() {
-                let id = team.id * positions.count + offset
-                let overall = min(91, max(52, team.strength + random.int(in: -10...10)))
-                let age = random.int(in: 18...34)
-                let agePotential = age <= 22 ? random.int(in: 8...17) : random.int(in: 1...10)
-                let valueBase = max(150_000, (overall - 38) * (overall - 38) * 1_250)
-                let ageFactor = age <= 23 ? 1.25 : (age >= 31 ? 0.75 : 1.0)
-                let value = Int(Double(valueBase) * ageFactor)
-                let player = FootballPlayer(
-                    id: id,
-                    name: "\(firstNames[random.int(in: 0...(firstNames.count - 1))]) \(lastNames[random.int(in: 0...(lastNames.count - 1))])",
-                    position: position,
-                    age: age,
-                    overall: overall,
-                    potential: min(96, overall + agePotential),
-                    condition: random.int(in: 82...100),
-                    marketValue: value,
-                    teamID: team.id
-                )
-                players.append(player)
-            }
-        }
-
-        let freeAgentPositions: [FootballPosition] = [
-            .goalkeeper, .defender, .midfielder, .forward,
-            .defender, .midfielder, .forward, .goalkeeper,
-            .midfielder, .defender, .forward, .midfielder
-        ]
-        for (offset, position) in freeAgentPositions.enumerated() {
-            let overall = random.int(in: 62...77)
-            let age = random.int(in: 19...32)
-            let value = max(180_000, (overall - 38) * (overall - 38) * 1_100)
-            players.append(FootballPlayer(
-                id: teams.count * positions.count + offset,
-                name: "\(firstNames[random.int(in: 0...(firstNames.count - 1))]) \(lastNames[random.int(in: 0...(lastNames.count - 1))])",
-                position: position,
-                age: age,
-                overall: overall,
-                potential: min(94, overall + random.int(in: 2...14)),
-                condition: random.int(in: 85...100),
-                marketValue: value,
-                teamID: nil
-            ))
-        }
-        return players
-    }
-}
-
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
+    static let backupKey = "football.career.backup"
+    static let schemaVersion = 2
+    static let rosterLimit = 18
+    static let minimumRoster = 12
+    static let quickSaleRate = 0.7
 
     private enum CodingKeys: String, CodingKey {
+        case schemaVersion
         case seed
         case season
         case currentRound
@@ -444,6 +24,15 @@ struct FootballCareer: Codable, Equatable {
         case players
         case fixtures
         case champions
+        case boardTarget
+        case boardConfidence
+        case isFired
+        case history
+        case offers
+        case nextOfferID
+        case nextPlayerID
+        case liveMatch
+        case lastRoundRevenue
     }
 
     var seed: Int
@@ -460,8 +49,17 @@ struct FootballCareer: Codable, Equatable {
     var players: [FootballPlayer]
     var fixtures: [LeagueFixture]
     var champions: [Int]
+    var boardTarget: Int
+    var boardConfidence: Int
+    var isFired: Bool
+    var history: [SeasonRecord]
+    var offers: [TransferOffer]
+    var nextOfferID: Int
+    var nextPlayerID: Int
+    var liveMatch: LiveMatchState?
+    var lastRoundRevenue: Int
 
-    init(seed: Int = 26) {
+    init(seed: Int) {
         self.seed = seed
         self.season = 1
         self.currentRound = 0
@@ -473,46 +71,61 @@ struct FootballCareer: Codable, Equatable {
         self.trainingIntensity = .balanced
         self.lastTrainingReport = nil
         self.startingXI = []
-        self.players = FootballSeason.generatePlayers(seed: seed)
+        let generatedPlayers = FootballSeason.generatePlayers(seed: seed)
+        self.players = generatedPlayers
         self.fixtures = FootballSeason.fixtures()
         self.champions = []
+        self.boardTarget = 4
+        self.boardConfidence = 60
+        self.isFired = false
+        self.history = []
+        self.offers = []
+        self.nextOfferID = 1
+        self.nextPlayerID = (generatedPlayers.map(\.id).max() ?? 0) + 1
+        self.liveMatch = nil
+        self.lastRoundRevenue = 0
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSeed = try container.decodeIfPresent(Int.self, forKey: .seed) ?? 26
-        let decodedSeason = try container.decodeIfPresent(Int.self, forKey: .season) ?? 1
-        let decodedRound = try container.decodeIfPresent(Int.self, forKey: .currentRound) ?? 0
         let decodedClubID = try container.decodeIfPresent(Int.self, forKey: .selectedClubID)
-        let decodedBudget = try container.decodeIfPresent(Int.self, forKey: .transferBudget) ?? 0
         let decodedFormation = try container.decodeIfPresent(FootballFormation.self, forKey: .formation) ?? .fourFourTwo
-        let decodedStyle = try container.decodeIfPresent(FootballPlayStyle.self, forKey: .playStyle) ?? .balanced
-        let decodedTrainingFocus = try container.decodeIfPresent(FootballTrainingFocus.self, forKey: .trainingFocus) ?? .tactical
-        let decodedTrainingIntensity = try container.decodeIfPresent(FootballTrainingIntensity.self, forKey: .trainingIntensity) ?? .balanced
-        let decodedTrainingReport = try container.decodeIfPresent(FootballTrainingReport.self, forKey: .lastTrainingReport)
         let decodedPlayers = try container.decodeIfPresent([FootballPlayer].self, forKey: .players)
             ?? FootballSeason.generatePlayers(seed: decodedSeed)
-        let decodedLineup = try container.decodeIfPresent([Int].self, forKey: .startingXI)
-            ?? decodedClubID.map { FootballSeason.lineUp(teamID: $0, players: decodedPlayers, formation: decodedFormation) }
-            ?? []
         seed = decodedSeed
-        season = decodedSeason
-        currentRound = decodedRound
+        season = try container.decodeIfPresent(Int.self, forKey: .season) ?? 1
+        currentRound = try container.decodeIfPresent(Int.self, forKey: .currentRound) ?? 0
         selectedClubID = decodedClubID
-        transferBudget = decodedBudget
+        transferBudget = try container.decodeIfPresent(Int.self, forKey: .transferBudget) ?? 0
         formation = decodedFormation
-        playStyle = decodedStyle
-        trainingFocus = decodedTrainingFocus
-        trainingIntensity = decodedTrainingIntensity
-        lastTrainingReport = decodedTrainingReport
+        playStyle = try container.decodeIfPresent(FootballPlayStyle.self, forKey: .playStyle) ?? .balanced
+        trainingFocus = try container.decodeIfPresent(FootballTrainingFocus.self, forKey: .trainingFocus) ?? .tactical
+        trainingIntensity = try container.decodeIfPresent(FootballTrainingIntensity.self, forKey: .trainingIntensity) ?? .balanced
+        lastTrainingReport = try container.decodeIfPresent(FootballTrainingReport.self, forKey: .lastTrainingReport)
         players = decodedPlayers
-        startingXI = decodedLineup
+        startingXI = try container.decodeIfPresent([Int].self, forKey: .startingXI)
+            ?? decodedClubID.map { clubID in
+                FootballSeason.bestLineup(roster: decodedPlayers.filter { $0.teamID == clubID }, formation: decodedFormation)
+            }
+            ?? []
         fixtures = try container.decodeIfPresent([LeagueFixture].self, forKey: .fixtures) ?? FootballSeason.fixtures()
         champions = try container.decodeIfPresent([Int].self, forKey: .champions) ?? []
+        boardTarget = try container.decodeIfPresent(Int.self, forKey: .boardTarget) ?? 4
+        boardConfidence = try container.decodeIfPresent(Int.self, forKey: .boardConfidence) ?? 60
+        isFired = try container.decodeIfPresent(Bool.self, forKey: .isFired) ?? false
+        history = try container.decodeIfPresent([SeasonRecord].self, forKey: .history) ?? []
+        offers = try container.decodeIfPresent([TransferOffer].self, forKey: .offers) ?? []
+        nextOfferID = try container.decodeIfPresent(Int.self, forKey: .nextOfferID) ?? 1
+        nextPlayerID = try container.decodeIfPresent(Int.self, forKey: .nextPlayerID)
+            ?? (decodedPlayers.map(\.id).max() ?? 0) + 1
+        liveMatch = try container.decodeIfPresent(LiveMatchState.self, forKey: .liveMatch)
+        lastRoundRevenue = try container.decodeIfPresent(Int.self, forKey: .lastRoundRevenue) ?? 0
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(Self.schemaVersion, forKey: .schemaVersion)
         try container.encode(seed, forKey: .seed)
         try container.encode(season, forKey: .season)
         try container.encode(currentRound, forKey: .currentRound)
@@ -527,14 +140,30 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(players, forKey: .players)
         try container.encode(fixtures, forKey: .fixtures)
         try container.encode(champions, forKey: .champions)
+        try container.encode(boardTarget, forKey: .boardTarget)
+        try container.encode(boardConfidence, forKey: .boardConfidence)
+        try container.encode(isFired, forKey: .isFired)
+        try container.encode(history, forKey: .history)
+        try container.encode(offers, forKey: .offers)
+        try container.encode(nextOfferID, forKey: .nextOfferID)
+        try container.encode(nextPlayerID, forKey: .nextPlayerID)
+        try container.encodeIfPresent(liveMatch, forKey: .liveMatch)
+        try container.encode(lastRoundRevenue, forKey: .lastRoundRevenue)
     }
 
+    // MARK: - Persistência
+
+    static func randomSeed() -> Int { Int.random(in: 1...9_999_999) }
+
+    /// Carrega o save. Um save ilegível é preservado em uma chave de backup antes de começar do zero.
     static func load(defaults: UserDefaults = .standard) -> FootballCareer {
-        guard let data = defaults.data(forKey: saveKey),
-              let career = try? JSONDecoder().decode(FootballCareer.self, from: data) else {
-            return FootballCareer()
+        guard let data = defaults.data(forKey: saveKey) else { return FootballCareer(seed: randomSeed()) }
+        do {
+            return try JSONDecoder().decode(FootballCareer.self, from: data)
+        } catch {
+            defaults.set(data, forKey: backupKey)
+            return FootballCareer(seed: randomSeed())
         }
-        return career
     }
 
     func persist(defaults: UserDefaults = .standard) {
@@ -542,14 +171,20 @@ struct FootballCareer: Codable, Equatable {
         defaults.set(data, forKey: Self.saveKey)
     }
 
+    // MARK: - Consultas
+
     var selectedClub: LeagueTeam? {
         guard let selectedClubID else { return nil }
-        return FootballSeason.teams.first { $0.id == selectedClubID }
+        return FootballSeason.team(selectedClubID)
     }
 
     var clubRoster: [FootballPlayer] {
         guard let selectedClubID else { return [] }
         return players(forTeam: selectedClubID)
+    }
+
+    var starters: [FootballPlayer] {
+        startingXI.compactMap { player($0) }
     }
 
     var marketPlayers: [FootballPlayer] {
@@ -559,51 +194,214 @@ struct FootballCareer: Codable, Equatable {
         }
     }
 
-    var isSeasonComplete: Bool { currentRound >= 14 }
+    var isSeasonComplete: Bool { currentRound >= FootballSeason.roundsPerSeason }
+
+    var standings: [FootballStanding] { FootballSeason.standings(results: fixtures) }
+
+    var userPosition: Int? {
+        guard let selectedClubID else { return nil }
+        return standings.firstIndex { $0.team.id == selectedClubID }.map { $0 + 1 }
+    }
 
     var nextUserFixture: LeagueFixture? {
         guard let selectedClubID, !isSeasonComplete else { return nil }
-        return fixtures.first {
-            $0.round == currentRound + 1 && !$0.isPlayed && ($0.home == selectedClubID || $0.away == selectedClubID)
-        }
+        return fixtures.first { $0.round == currentRound + 1 && !$0.isPlayed && $0.involves(selectedClubID) }
     }
 
     var latestUserFixture: LeagueFixture? {
         guard let selectedClubID else { return nil }
         return fixtures
-            .filter { $0.isPlayed && ($0.home == selectedClubID || $0.away == selectedClubID) }
+            .filter { $0.isPlayed && $0.involves(selectedClubID) }
             .max { $0.round < $1.round }
     }
 
     var championID: Int? {
         guard isSeasonComplete else { return nil }
-        return FootballSeason.standings(results: fixtures).first?.team.id
+        return standings.first?.team.id
+    }
+
+    var canPlay: Bool {
+        selectedClubID != nil && !isSeasonComplete && !isFired && nextUserFixture != nil
+    }
+
+    var objectiveText: String { Self.objectiveText(target: boardTarget) }
+
+    static func objectiveText(target: Int) -> String {
+        switch target {
+        case 1: return "Conquistar o título"
+        default: return "Terminar entre os \(target) primeiros"
+        }
+    }
+
+    var jobOffers: [LeagueTeam] {
+        guard isFired else { return [] }
+        return FootballSeason.teams
+            .filter { $0.id != selectedClubID }
+            .sorted { $0.strength < $1.strength }
+            .prefix(3)
+            .map { $0 }
+    }
+
+    func player(_ id: Int) -> FootballPlayer? {
+        players.first { $0.id == id }
     }
 
     func players(forTeam teamID: Int) -> [FootballPlayer] {
-        let order: [FootballPosition: Int] = [.goalkeeper: 0, .defender: 1, .midfielder: 2, .forward: 3]
-        return players.filter { $0.teamID == teamID }.sorted {
-            let leftOrder = order[$0.position, default: 4]
-            let rightOrder = order[$1.position, default: 4]
-            if leftOrder != rightOrder { return leftOrder < rightOrder }
+        players.filter { $0.teamID == teamID }.sorted {
+            if $0.position.sortOrder != $1.position.sortOrder { return $0.position.sortOrder < $1.position.sortOrder }
             if $0.overall != $1.overall { return $0.overall > $1.overall }
             return $0.name < $1.name
         }
     }
 
+    func topScorers(limit: Int = 10) -> [FootballPlayer] {
+        Array(players.filter { $0.goals > 0 }.sorted {
+            if $0.goals != $1.goals { return $0.goals > $1.goals }
+            if $0.assists != $1.assists { return $0.assists > $1.assists }
+            return $0.name < $1.name
+        }.prefix(limit))
+    }
+
+    func form(teamID: Int) -> [FootballResult] {
+        standings.first { $0.team.id == teamID }?.form ?? []
+    }
+
+    /// Formação usada por um clube da IA: a preferida, se o elenco disponível permitir.
+    func aiFormation(teamID: Int) -> FootballFormation {
+        let roster = players.filter { $0.teamID == teamID }
+        if let preferred = FootballSeason.team(teamID)?.preferredFormation,
+           FootballSeason.canFill(roster: roster, formation: preferred) {
+            return preferred
+        }
+        return FootballFormation.allCases.first { FootballSeason.canFill(roster: roster, formation: $0) } ?? .fourFourTwo
+    }
+
+    func formation(for teamID: Int) -> FootballFormation {
+        teamID == selectedClubID ? formation : aiFormation(teamID: teamID)
+    }
+
+    func lineup(for teamID: Int) -> [Int] {
+        if teamID == selectedClubID, startingXI.count == 11 { return startingXI }
+        return FootballSeason.bestLineup(roster: players.filter { $0.teamID == teamID }, formation: formation(for: teamID))
+    }
+
+    func teamRating(_ teamID: Int) -> Double {
+        let lineupPlayers = lineup(for: teamID).compactMap { player($0) }
+        return FootballSeason.rating(of: lineupPlayers, formation: formation(for: teamID))
+    }
+
+    /// Estilo que a IA escolhe para uma partida: recua contra favoritos e se impõe contra os mais fracos.
+    func aiStyle(teamID: Int, opponentID: Int) -> FootballPlayStyle {
+        guard let team = FootballSeason.team(teamID) else { return .balanced }
+        let difference = teamRating(teamID) - teamRating(opponentID)
+        if difference <= -4 {
+            return team.id.isMultiple(of: 2) ? .counter : .defensive
+        }
+        if difference >= 4 {
+            switch team.preferredStyle {
+            case .defensive, .counter: return .possession
+            default: return team.preferredStyle
+            }
+        }
+        return team.preferredStyle
+    }
+
+    func style(for teamID: Int, against opponentID: Int) -> FootballPlayStyle {
+        teamID == selectedClubID ? playStyle : aiStyle(teamID: teamID, opponentID: opponentID)
+    }
+
+    /// Reação da IA no intervalo, conforme o placar.
+    func aiSecondHalfStyle(teamID: Int, opponentID: Int, goalsFor: Int, goalsAgainst: Int) -> FootballPlayStyle {
+        if goalsFor < goalsAgainst { return .attacking }
+        if goalsFor - goalsAgainst >= 2 { return .defensive }
+        return aiStyle(teamID: teamID, opponentID: opponentID)
+    }
+
+    var predictedOpponentStyle: FootballPlayStyle? {
+        guard let selectedClubID, let fixture = nextUserFixture else { return nil }
+        let opponentID = fixture.opponent(of: selectedClubID)
+        if let liveMatch, liveMatch.fixtureID == fixture.id {
+            let isHome = fixture.home == selectedClubID
+            let opponentGoals = isHome ? liveMatch.awayGoals : liveMatch.homeGoals
+            let ownGoals = isHome ? liveMatch.homeGoals : liveMatch.awayGoals
+            return aiSecondHalfStyle(teamID: opponentID, opponentID: selectedClubID, goalsFor: opponentGoals, goalsAgainst: ownGoals)
+        }
+        return aiStyle(teamID: opponentID, opponentID: selectedClubID)
+    }
+
+    var lineupWarnings: [String] {
+        var warnings: [String] = []
+        let starters = self.starters
+        let injured = starters.filter(\.isInjured)
+        if !injured.isEmpty {
+            warnings.append("\(injured.count) titular(es) lesionado(s) serão substituídos automaticamente.")
+        }
+        let tired = starters.filter { !$0.isInjured && $0.condition < 65 }
+        if !tired.isEmpty {
+            warnings.append("\(tired.count) titular(es) com energia abaixo de 65%.")
+        }
+        let outOfPosition = FootballSeason.outOfPositionCount(lineup: starters, formation: formation)
+        if outOfPosition > 0 {
+            warnings.append("\(outOfPosition) atleta(s) improvisado(s) fora de posição.")
+        }
+        return warnings
+    }
+
+    // MARK: - Clube e diretoria
+
     mutating func chooseClub(_ clubID: Int) -> Bool {
-        guard selectedClubID == nil,
-              let club = FootballSeason.teams.first(where: { $0.id == clubID }) else { return false }
+        guard selectedClubID == nil, let club = FootballSeason.team(clubID) else { return false }
         selectedClubID = club.id
         transferBudget = club.startingBudget
-        startingXI = FootballSeason.lineUp(teamID: club.id, players: players, formation: formation)
+        boardConfidence = 60
+        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
+        boardTarget = computeBoardTarget()
         return startingXI.count == 11
     }
 
-    mutating func setFormation(_ newFormation: FootballFormation) {
-        guard let selectedClubID, FootballSeason.canFill(teamID: selectedClubID, players: players, formation: newFormation) else { return }
+    @discardableResult
+    mutating func acceptJob(_ clubID: Int) -> Bool {
+        guard isFired, liveMatch == nil, clubID != selectedClubID,
+              jobOffers.contains(where: { $0.id == clubID }),
+              let club = FootballSeason.team(clubID) else { return false }
+        selectedClubID = club.id
+        transferBudget = club.startingBudget / 2
+        boardConfidence = 55
+        isFired = false
+        offers = []
+        if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
+        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
+        boardTarget = computeBoardTarget()
+        return true
+    }
+
+    private func computeBoardTarget() -> Int {
+        guard let selectedClubID else { return 4 }
+        let ranking = FootballSeason.teams
+            .map { team -> (Int, Double) in
+                let roster = players.filter { $0.teamID == team.id }
+                let teamFormation = team.id == selectedClubID ? formation : aiFormation(teamID: team.id)
+                let lineup = FootballSeason.bestLineup(roster: roster, formation: teamFormation).compactMap { player($0) }
+                return (team.id, lineup.map { Double($0.overall) }.reduce(0, +) / Double(max(1, lineup.count)))
+            }
+            .sorted { $0.1 > $1.1 }
+        let rank = (ranking.firstIndex { $0.0 == selectedClubID } ?? 3) + 1
+        switch rank {
+        case 1: return 1
+        case 2...3: return 3
+        case 4...5: return 4
+        default: return 6
+        }
+    }
+
+    // MARK: - Tática e escalação
+
+    @discardableResult
+    mutating func setFormation(_ newFormation: FootballFormation) -> Bool {
+        guard selectedClubID != nil, FootballSeason.canFill(roster: clubRoster, formation: newFormation) else { return false }
         formation = newFormation
-        startingXI = FootballSeason.lineUp(teamID: selectedClubID, players: players, formation: newFormation)
+        startingXI = rebuiltLineup(keeping: startingXI, formation: newFormation)
+        return true
     }
 
     mutating func setPlayStyle(_ newStyle: FootballPlayStyle) {
@@ -618,16 +416,166 @@ struct FootballCareer: Codable, Equatable {
         trainingIntensity = newIntensity
     }
 
+    mutating func autoSelectLineup() {
+        guard liveMatch == nil else { return }
+        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
+    }
+
+    /// Mantém os titulares escolhidos que ainda servem à formação e completa as vagas com os melhores disponíveis.
+    private func rebuiltLineup(keeping current: [Int], formation: FootballFormation) -> [Int] {
+        let roster = clubRoster.filter { !$0.isInjured }
+        var chosen: [Int] = []
+        for position in FootballPosition.allCases {
+            let required = formation.requiredPlayers[position, default: 0]
+            let kept = roster
+                .filter { $0.position == position && current.contains($0.id) }
+                .sorted(by: FootballSeason.strongerFirst)
+                .prefix(required)
+                .map(\.id)
+            chosen.append(contentsOf: kept)
+            if kept.count < required {
+                let fill = roster
+                    .filter { $0.position == position && !chosen.contains($0.id) }
+                    .sorted(by: FootballSeason.strongerFirst)
+                    .prefix(required - kept.count)
+                    .map(\.id)
+                chosen.append(contentsOf: fill)
+            }
+        }
+        if chosen.count < 11 {
+            let extras = roster
+                .filter { !chosen.contains($0.id) }
+                .sorted(by: FootballSeason.strongerFirst)
+                .prefix(11 - chosen.count)
+                .map(\.id)
+            chosen.append(contentsOf: extras)
+        }
+        return chosen
+    }
+
+    /// Remove lesionados e ex-atletas da escalação, repondo pela mesma posição sempre que possível.
+    mutating func repairLineup() {
+        guard let selectedClubID else { return }
+        var lineup: [Int] = []
+        for id in startingXI where !lineup.contains(id) {
+            if let candidate = player(id), candidate.teamID == selectedClubID, !candidate.isInjured {
+                lineup.append(id)
+            }
+        }
+        if lineup.count > 11 { lineup = Array(lineup.prefix(11)) }
+        if lineup.count < 11 || lineup.count != startingXI.count {
+            lineup = rebuiltLineup(keeping: lineup, formation: formation)
+        }
+        startingXI = lineup
+    }
+
+    func canSubstitute(outgoingID: Int, incomingID: Int) -> Bool {
+        guard let selectedClubID,
+              startingXI.contains(outgoingID), !startingXI.contains(incomingID),
+              let incoming = player(incomingID), incoming.teamID == selectedClubID, !incoming.isInjured else { return false }
+        if let liveMatch { return liveMatch.substitutionsUsed < LiveMatchState.maxSubstitutions }
+        return true
+    }
+
+    @discardableResult
+    mutating func substitute(outgoingID: Int, incomingID: Int) -> Bool {
+        guard canSubstitute(outgoingID: outgoingID, incomingID: incomingID),
+              let index = startingXI.firstIndex(of: outgoingID) else { return false }
+        startingXI[index] = incomingID
+        if var live = liveMatch {
+            live.substitutionsUsed += 1
+            let outName = player(outgoingID)?.name ?? "Atleta"
+            let inName = player(incomingID)?.name ?? "Atleta"
+            live.events.append(MatchEvent(minute: 45, kind: .substitution, teamID: selectedClubID,
+                                          text: "Substituição: sai \(outName), entra \(inName)."))
+            liveMatch = live
+        }
+        return true
+    }
+
+    // MARK: - Mercado
+
+    func quickSalePrice(playerID: Int) -> Int {
+        guard let player = player(playerID) else { return 0 }
+        return Int(Double(player.marketValue) * Self.quickSaleRate / 10_000) * 10_000
+    }
+
+    func canSell(playerID: Int) -> Bool {
+        guard let selectedClubID, liveMatch == nil, !isFired,
+              let player = player(playerID), player.teamID == selectedClubID,
+              clubRoster.count > Self.minimumRoster else { return false }
+        let remaining = clubRoster.filter { $0.id != playerID }
+        let healthyCount = remaining.filter { !$0.isInjured }.count
+        return healthyCount >= 11 && FootballSeason.canFill(roster: remaining.map { member in
+            var healthy = member
+            healthy.injuryRounds = 0
+            return healthy
+        }, formation: formation)
+    }
+
+    @discardableResult
+    mutating func sellPlayer(playerID: Int) -> Bool {
+        guard canSell(playerID: playerID), let index = players.firstIndex(where: { $0.id == playerID }) else { return false }
+        transferBudget += quickSalePrice(playerID: playerID)
+        players[index].teamID = nil
+        offers.removeAll { $0.playerID == playerID }
+        repairLineup()
+        return true
+    }
+
+    func canSign(playerID: Int) -> Bool {
+        guard selectedClubID != nil, liveMatch == nil, !isFired,
+              let player = player(playerID), player.teamID == nil else { return false }
+        return clubRoster.count < Self.rosterLimit && transferBudget >= player.marketValue
+    }
+
+    @discardableResult
+    mutating func signPlayer(playerID: Int) -> Bool {
+        guard canSign(playerID: playerID), let selectedClubID,
+              let index = players.firstIndex(where: { $0.id == playerID }) else { return false }
+        transferBudget -= players[index].marketValue
+        players[index].teamID = selectedClubID
+        players[index].goals = 0
+        players[index].assists = 0
+        players[index].appearances = 0
+        return true
+    }
+
+    func canAccept(offerID: Int) -> Bool {
+        guard let offer = offers.first(where: { $0.id == offerID }) else { return false }
+        return canSell(playerID: offer.playerID)
+    }
+
+    @discardableResult
+    mutating func acceptOffer(_ offerID: Int) -> Bool {
+        guard canAccept(offerID: offerID),
+              let offer = offers.first(where: { $0.id == offerID }),
+              let index = players.firstIndex(where: { $0.id == offer.playerID }) else { return false }
+        let position = players[index].position
+        transferBudget += offer.amount
+        players[index].teamID = offer.clubID
+        offers.removeAll { $0.playerID == offer.playerID }
+        // O comprador libera o atleta mais fraco da mesma posição para manter o elenco equilibrado.
+        if let released = players.indices
+            .filter({ players[$0].teamID == offer.clubID && players[$0].position == position && players[$0].id != offer.playerID })
+            .min(by: { players[$0].overall < players[$1].overall }) {
+            players[released].teamID = nil
+        }
+        repairLineup()
+        return true
+    }
+
+    mutating func rejectOffer(_ offerID: Int) {
+        offers.removeAll { $0.id == offerID }
+    }
+
+    // MARK: - Treino
+
     @discardableResult
     mutating func applyWeeklyTraining(for round: Int) -> FootballTrainingReport {
         guard let selectedClubID else {
-            let emptyReport = FootballTrainingReport(
-                round: round,
-                focus: trainingFocus,
-                intensity: trainingIntensity,
-                developedPlayers: 0,
-                averageConditionGain: 0
-            )
+            let emptyReport = FootballTrainingReport(round: round, focus: trainingFocus, intensity: trainingIntensity,
+                                                     developedPlayers: 0, averageConditionGain: 0)
             lastTrainingReport = emptyReport
             return emptyReport
         }
@@ -643,317 +591,436 @@ struct FootballCareer: Codable, Equatable {
             players[index].condition = min(100, conditionBefore + trainingIntensity.conditionRecovery(for: trainingFocus))
             totalConditionGain += players[index].condition - conditionBefore
 
-            guard trainingFocus.developmentPositions.contains(player.position), player.overall < player.potential else { continue }
-            let ageMultiplier: Double
-            if player.age <= 21 { ageMultiplier = 1.35 }
-            else if player.age <= 25 { ageMultiplier = 1.15 }
-            else if player.age >= 30 { ageMultiplier = 0.65 }
-            else { ageMultiplier = 1.0 }
-            let developmentChance = min(75, Int(Double(trainingIntensity.developmentChance) * ageMultiplier))
+            guard !player.isInjured,
+                  trainingFocus.developmentPositions.contains(player.position),
+                  player.overall < player.potential else { continue }
+            let developmentChance = min(75, Int(Double(trainingIntensity.developmentChance) * ageMultiplier(player.age)))
             guard random.int(in: 0...99) < developmentChance else { continue }
-
-            var developedPlayer = players[index]
-            developedPlayer.overall += 1
-            developedPlayer.marketValue = marketValue(for: developedPlayer, overall: developedPlayer.overall)
-            players[index] = developedPlayer
+            players[index].overall += 1
+            refreshValue(at: index)
             developedPlayers += 1
         }
 
         let averageConditionGain = rosterIndices.isEmpty ? 0 : totalConditionGain / rosterIndices.count
-        let report = FootballTrainingReport(
-            round: round,
-            focus: trainingFocus,
-            intensity: trainingIntensity,
-            developedPlayers: developedPlayers,
-            averageConditionGain: averageConditionGain
-        )
+        let report = FootballTrainingReport(round: round, focus: trainingFocus, intensity: trainingIntensity,
+                                            developedPlayers: developedPlayers, averageConditionGain: averageConditionGain)
         lastTrainingReport = report
         return report
     }
 
-    @discardableResult
-    mutating func swapWithStarter(playerID: Int) -> Bool {
-        guard let selectedClubID,
-              let incoming = players.first(where: { $0.id == playerID && $0.teamID == selectedClubID }),
-              !startingXI.contains(playerID) else { return false }
-        let replaceable = startingXI.compactMap { id in players.first(where: { $0.id == id }) }
-            .filter { $0.position == incoming.position }
-            .sorted { lhs, rhs in
-                if lhs.overall != rhs.overall { return lhs.overall < rhs.overall }
-                return lhs.id < rhs.id
-            }
-        guard let outgoing = replaceable.first else { return false }
-        startingXI.removeAll { $0 == outgoing.id }
-        startingXI.append(incoming.id)
-        return true
+    private func ageMultiplier(_ age: Int) -> Double {
+        if age <= 21 { return 1.35 }
+        if age <= 25 { return 1.15 }
+        if age >= 30 { return 0.6 }
+        return 1.0
     }
 
-    func canSell(playerID: Int) -> Bool {
-        guard let selectedClubID,
-              let player = players.first(where: { $0.id == playerID && $0.teamID == selectedClubID }),
-              !startingXI.contains(playerID),
-              clubRoster.count > 11 else { return false }
-        var remaining = players
-        remaining.removeAll { $0.id == playerID }
-        return FootballSeason.canFill(teamID: selectedClubID, players: remaining, formation: formation)
-    }
+    // MARK: - Rodada
 
-    @discardableResult
-    mutating func sellPlayer(playerID: Int) -> Bool {
-        guard canSell(playerID: playerID),
-              let index = players.firstIndex(where: { $0.id == playerID }) else { return false }
-        let saleValue = players[index].marketValue
-        players[index].teamID = nil
-        transferBudget += saleValue
-        return true
-    }
-
-    func canSign(playerID: Int) -> Bool {
-        guard let selectedClubID,
-              let player = players.first(where: { $0.id == playerID && $0.teamID == nil }) else { return false }
-        return clubRoster.count < 16 && transferBudget >= player.marketValue
-    }
-
-    @discardableResult
-    mutating func signPlayer(playerID: Int) -> Bool {
-        guard canSign(playerID: playerID),
-              let selectedClubID,
-              let index = players.firstIndex(where: { $0.id == playerID && $0.teamID == nil }) else { return false }
-        transferBudget -= players[index].marketValue
-        players[index].teamID = selectedClubID
-        if players[index].position == .goalkeeper && !startingXI.contains(where: { id in
-            players.first(where: { $0.id == id })?.position == .goalkeeper
-        }) {
-            startingXI.append(playerID)
-        }
-        return true
-    }
-
+    /// Joga a rodada inteira de uma vez (simulação rápida).
     @discardableResult
     mutating func simulateNextRound() -> Bool {
-        guard let selectedClubID, !isSeasonComplete else { return false }
+        guard beginMatchDay() else { return false }
+        return finishMatchDay()
+    }
+
+    /// Aplica o treino e joga o primeiro tempo da partida do usuário. A carreira fica no intervalo.
+    @discardableResult
+    mutating func beginMatchDay() -> Bool {
+        guard liveMatch == nil, canPlay, let selectedClubID, let fixture = nextUserFixture else { return false }
         let round = currentRound + 1
-        let matchIndices = fixtures.indices.filter { fixtures[$0].round == round && !fixtures[$0].isPlayed }
-        guard matchIndices.count == 4 else { return false }
-        _ = applyWeeklyTraining(for: round)
+        guard fixtures.filter({ $0.round == round && !$0.isPlayed }).count == FootballSeason.matchesPerRound else { return false }
 
-        for fixtureIndex in matchIndices {
-            var fixture = fixtures[fixtureIndex]
-            var random = FootballRandom(seed: matchSeed(fixtureID: fixture.id))
-            let homeFormation = fixture.home == selectedClubID ? formation : .fourFourTwo
-            let awayFormation = fixture.away == selectedClubID ? formation : .fourFourTwo
-            let homeStyle = matchPlayStyle(for: fixture.home)
-            let awayStyle = matchPlayStyle(for: fixture.away)
-            let homeBase = teamPower(teamID: fixture.home, formation: homeFormation)
-            let awayBase = teamPower(teamID: fixture.away, formation: awayFormation)
-            let homeAttack = homeBase + homeFormation.attackBonus + homeStyle.attackAdjustment + homeStyle.controlAdjustment / 2 + 2
-            let homeDefense = homeBase + homeFormation.defenseBonus + homeStyle.defenseAdjustment
-            let awayAttack = awayBase + awayFormation.attackBonus + awayStyle.attackAdjustment + awayStyle.controlAdjustment / 2
-            let awayDefense = awayBase + awayFormation.defenseBonus + awayStyle.defenseAdjustment
-            let homeExpectedGoals = min(2.5, max(0.35, 1.12 + Double(homeAttack - awayDefense) / 28))
-            let awayExpectedGoals = min(2.5, max(0.35, 1.08 + Double(awayAttack - homeDefense) / 29))
-            let homeGoals = FootballRandom.poisson(lambda: homeExpectedGoals, using: &random)
-            let awayGoals = FootballRandom.poisson(lambda: awayExpectedGoals, using: &random)
-            let homeShots = homeGoals + random.int(in: 2...7)
-            let awayShots = awayGoals + random.int(in: 2...7)
-            let homeControl = homeBase + homeFormation.midfieldBonus + homeStyle.controlAdjustment + 2
-            let awayControl = awayBase + awayFormation.midfieldBonus + awayStyle.controlAdjustment
-            let homePossession = min(68, max(32, 50 + (homeControl - awayControl) * 2 + random.int(in: -5...5)))
-            let homeLineup = lineUp(teamID: fixture.home, formation: homeFormation)
-            let awayLineup = lineUp(teamID: fixture.away, formation: awayFormation)
-            let homeScorers = chooseScorers(goals: homeGoals, from: homeLineup, using: &random)
-            let awayScorers = chooseScorers(goals: awayGoals, from: awayLineup, using: &random)
-
-            recordAppearances(for: homeLineup)
-            recordAppearances(for: awayLineup)
-            recordGoals(homeScorers, from: homeLineup, using: &random)
-            recordGoals(awayScorers, from: awayLineup, using: &random)
-
-            fixture.homeGoals = homeGoals
-            fixture.awayGoals = awayGoals
-            fixture.homeScorerIDs = homeScorers
-            fixture.awayScorerIDs = awayScorers
-            fixture.homeShots = homeShots
-            fixture.awayShots = awayShots
-            fixture.homePossession = homePossession
-            fixture.awayPossession = 100 - homePossession
-            if fixture.home == selectedClubID || fixture.away == selectedClubID {
-                fixture.commentary = makeCommentary(
-                    home: fixture.home,
-                    away: fixture.away,
-                    homeGoals: homeGoals,
-                    awayGoals: awayGoals,
-                    homeScorers: homeScorers,
-                    awayScorers: awayScorers,
-                    using: &random
-                )
-            }
-            fixtures[fixtureIndex] = fixture
+        applyWeeklyTraining(for: round)
+        for index in players.indices where players[index].teamID != selectedClubID {
+            players[index].condition = min(100, players[index].condition + 8)
         }
+        repairLineup()
 
-        currentRound = round
-        for index in players.indices where players[index].teamID == selectedClubID {
-            if startingXI.contains(players[index].id) {
-                players[index].condition = max(42, players[index].condition - playStyle.fatigueCost)
-            } else {
-                players[index].condition = min(100, players[index].condition + 7)
-            }
-        }
+        let home = side(teamID: fixture.home, opponentID: fixture.away, isHome: true, style: nil)
+        let away = side(teamID: fixture.away, opponentID: fixture.home, isHome: false, style: nil)
+        var random = FootballRandom(seed: matchSeed(fixtureID: fixture.id))
+        let half = FootballMatchEngine.simulateHalf(home: home, away: away, half: 1, narrate: true, using: &random)
+
+        var events = [MatchEvent(minute: 0, kind: .kickoff, teamID: nil,
+                                 text: "Bola rolando: \(FootballSeason.teamName(fixture.home)) × \(FootballSeason.teamName(fixture.away)).")]
+        events.append(contentsOf: half.events)
+        events.append(MatchEvent(minute: 45, kind: .halfTime, teamID: nil,
+                                 text: "Intervalo: \(FootballSeason.teamName(fixture.home)) \(half.homeGoals.count) × \(half.awayGoals.count) \(FootballSeason.teamName(fixture.away))."))
+
+        liveMatch = LiveMatchState(
+            fixtureID: fixture.id,
+            round: round,
+            homeGoals: half.homeGoals.count,
+            awayGoals: half.awayGoals.count,
+            homeScorerIDs: half.homeGoals.map(\.scorerID),
+            awayScorerIDs: half.awayGoals.map(\.scorerID),
+            homeAssistIDs: half.homeGoals.compactMap(\.assistID),
+            awayAssistIDs: half.awayGoals.compactMap(\.assistID),
+            homeShots: half.homeShots,
+            awayShots: half.awayShots,
+            homeOnTarget: half.homeOnTarget,
+            awayOnTarget: half.awayOnTarget,
+            homeExpectedGoals: half.homeExpectedGoals,
+            awayExpectedGoals: half.awayExpectedGoals,
+            homePossession: half.homePossession,
+            events: events,
+            firstHalfHomeLineup: home.lineup.map(\.id),
+            firstHalfAwayLineup: away.lineup.map(\.id),
+            substitutionsUsed: 0,
+            styleAtKickoff: playStyle
+        )
         return true
     }
 
-    mutating func startNextSeason() {
-        guard isSeasonComplete else { return }
-        let previousChampion = championID
-        if let previousChampion { champions.append(previousChampion) }
-        if previousChampion == selectedClubID { transferBudget += 750_000 }
-        else { transferBudget += 250_000 }
+    /// Joga o segundo tempo do usuário (com as mudanças feitas no intervalo) e as demais partidas da rodada.
+    @discardableResult
+    mutating func finishMatchDay() -> Bool {
+        guard let live = liveMatch, let selectedClubID,
+              let userIndex = fixtures.firstIndex(where: { $0.id == live.fixtureID }) else { return false }
+        repairLineup()
+        let fixture = fixtures[userIndex]
+        let round = live.round
+
+        // Segundo tempo da partida do usuário.
+        let userIsHome = fixture.home == selectedClubID
+        let opponentID = fixture.opponent(of: selectedClubID)
+        let opponentGoals = userIsHome ? live.awayGoals : live.homeGoals
+        let ownGoals = userIsHome ? live.homeGoals : live.awayGoals
+        let opponentStyle = aiSecondHalfStyle(teamID: opponentID, opponentID: selectedClubID,
+                                              goalsFor: opponentGoals, goalsAgainst: ownGoals)
+        let homeStyle = userIsHome ? playStyle : opponentStyle
+        let awayStyle = userIsHome ? opponentStyle : playStyle
+        let home = side(teamID: fixture.home, opponentID: fixture.away, isHome: true, style: homeStyle, opponentStyle: awayStyle)
+        let away = side(teamID: fixture.away, opponentID: fixture.home, isHome: false, style: awayStyle, opponentStyle: homeStyle)
+        var random = FootballRandom(seed: matchSeed(fixtureID: fixture.id) ^ 0x5DEECE66D)
+        let second = FootballMatchEngine.simulateHalf(home: home, away: away, half: 2, narrate: true, using: &random)
+
+        var events = live.events
+        if playStyle != live.styleAtKickoff {
+            events.append(MatchEvent(minute: 46, kind: .tactic, teamID: selectedClubID,
+                                     text: "Mudança tática do \(FootballSeason.teamName(selectedClubID)): \(playStyle.rawValue)."))
+        }
+        let previousOpponentStyle = aiStyle(teamID: opponentID, opponentID: selectedClubID)
+        if opponentStyle != previousOpponentStyle {
+            events.append(MatchEvent(minute: 46, kind: .tactic, teamID: opponentID,
+                                     text: "O \(FootballSeason.teamName(opponentID)) volta do intervalo em postura \(opponentStyle.rawValue.lowercased())."))
+        }
+        events.append(contentsOf: second.events)
+
+        var userFixture = fixture
+        let homeGoals = live.homeGoals + second.homeGoals.count
+        let awayGoals = live.awayGoals + second.awayGoals.count
+        userFixture.homeGoals = homeGoals
+        userFixture.awayGoals = awayGoals
+        userFixture.homeScorerIDs = live.homeScorerIDs + second.homeGoals.map(\.scorerID)
+        userFixture.awayScorerIDs = live.awayScorerIDs + second.awayGoals.map(\.scorerID)
+        userFixture.homeShots = live.homeShots + second.homeShots
+        userFixture.awayShots = live.awayShots + second.awayShots
+        userFixture.homeOnTarget = live.homeOnTarget + second.homeOnTarget
+        userFixture.awayOnTarget = live.awayOnTarget + second.awayOnTarget
+        userFixture.homeExpectedGoals = FootballMatchEngine.rounded(live.homeExpectedGoals + second.homeExpectedGoals)
+        userFixture.awayExpectedGoals = FootballMatchEngine.rounded(live.awayExpectedGoals + second.awayExpectedGoals)
+        let possession = (live.homePossession + second.homePossession) / 2
+        userFixture.homePossession = possession
+        userFixture.awayPossession = 100 - possession
+        events.append(MatchEvent(minute: 90, kind: .fullTime, teamID: nil,
+                                 text: "Apito final: \(FootballSeason.teamName(fixture.home)) \(homeGoals) × \(awayGoals) \(FootballSeason.teamName(fixture.away))."))
+
+        // Estatísticas individuais da partida do usuário.
+        let homeFinal = home.lineup.map(\.id)
+        let awayFinal = away.lineup.map(\.id)
+        var participation: [(lineupStart: [Int], lineupEnd: [Int], style: FootballPlayStyle)] = [
+            (live.firstHalfHomeLineup, homeFinal, homeStyle),
+            (live.firstHalfAwayLineup, awayFinal, awayStyle)
+        ]
+        let scorers = userFixture.homeScorerIDs + userFixture.awayScorerIDs
+        let assists = live.homeAssistIDs + live.awayAssistIDs + second.homeGoals.compactMap(\.assistID) + second.awayGoals.compactMap(\.assistID)
+        userFixture.events = events
+        fixtures[userIndex] = userFixture
+        liveMatch = nil
+
+        // Demais partidas da rodada.
+        for index in fixtures.indices where fixtures[index].round == round && !fixtures[index].isPlayed {
+            let other = fixtures[index]
+            let otherHomeStyle = aiStyle(teamID: other.home, opponentID: other.away)
+            let otherAwayStyle = aiStyle(teamID: other.away, opponentID: other.home)
+            let otherHome = side(teamID: other.home, opponentID: other.away, isHome: true, style: otherHomeStyle, opponentStyle: otherAwayStyle)
+            let otherAway = side(teamID: other.away, opponentID: other.home, isHome: false, style: otherAwayStyle, opponentStyle: otherHomeStyle)
+            var otherRandom = FootballRandom(seed: matchSeed(fixtureID: other.id))
+            let first = FootballMatchEngine.simulateHalf(home: otherHome, away: otherAway, half: 1, narrate: false, using: &otherRandom)
+            let last = FootballMatchEngine.simulateHalf(home: otherHome, away: otherAway, half: 2, narrate: false, using: &otherRandom)
+            var played = other
+            played.homeGoals = first.homeGoals.count + last.homeGoals.count
+            played.awayGoals = first.awayGoals.count + last.awayGoals.count
+            played.homeScorerIDs = (first.homeGoals + last.homeGoals).map(\.scorerID)
+            played.awayScorerIDs = (first.awayGoals + last.awayGoals).map(\.scorerID)
+            played.homeShots = first.homeShots + last.homeShots
+            played.awayShots = first.awayShots + last.awayShots
+            played.homeOnTarget = first.homeOnTarget + last.homeOnTarget
+            played.awayOnTarget = first.awayOnTarget + last.awayOnTarget
+            played.homeExpectedGoals = FootballMatchEngine.rounded(first.homeExpectedGoals + last.homeExpectedGoals)
+            played.awayExpectedGoals = FootballMatchEngine.rounded(first.awayExpectedGoals + last.awayExpectedGoals)
+            let otherPossession = (first.homePossession + last.homePossession) / 2
+            played.homePossession = otherPossession
+            played.awayPossession = 100 - otherPossession
+            fixtures[index] = played
+
+            let lineupHome = otherHome.lineup.map(\.id)
+            let lineupAway = otherAway.lineup.map(\.id)
+            participation.append((lineupHome, lineupHome, otherHomeStyle))
+            participation.append((lineupAway, lineupAway, otherAwayStyle))
+            recordGoals(played.homeScorerIDs + played.awayScorerIDs)
+            recordAssists((first.homeGoals + last.homeGoals + first.awayGoals + last.awayGoals).compactMap(\.assistID))
+        }
+        recordGoals(scorers)
+        recordAssists(assists)
+
+        // Lesões anteriores avançam uma rodada antes de novas lesões serem sorteadas.
+        for index in players.indices where players[index].injuryRounds > 0 {
+            players[index].injuryRounds -= 1
+        }
+
+        var postRandom = FootballRandom(seed: matchSeed(fixtureID: 20_000 + round))
+        var userInjuries: [String] = []
+        var playedIDs = Set<Int>()
+        for entry in participation {
+            let starters = Set(entry.lineupStart)
+            let finishers = Set(entry.lineupEnd)
+            for id in starters.union(finishers) {
+                guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+                playedIDs.insert(id)
+                players[index].appearances += 1
+                let fullMatch = starters.contains(id) && finishers.contains(id)
+                let cost = fullMatch ? entry.style.fatigueCost : (entry.style.fatigueCost + 1) / 2
+                players[index].condition = max(40, players[index].condition - cost)
+
+                var injuryChance = 0.012
+                if players[index].condition < 55 { injuryChance += 0.03 } else if players[index].condition < 70 { injuryChance += 0.012 }
+                if entry.style == .highPress { injuryChance += 0.006 }
+                if postRandom.chance(injuryChance) {
+                    let rounds = postRandom.int(in: 1...4)
+                    players[index].injuryRounds = rounds
+                    if players[index].teamID == selectedClubID {
+                        userInjuries.append("\(players[index].name) sofreu uma lesão e ficará fora por \(rounds) rodada(s).")
+                    }
+                }
+            }
+        }
+        for index in players.indices where players[index].teamID != nil && !playedIDs.contains(players[index].id) {
+            players[index].condition = min(100, players[index].condition + 6)
+        }
+        if !userInjuries.isEmpty {
+            fixtures[userIndex].events.append(contentsOf: userInjuries.map {
+                MatchEvent(minute: 90, kind: .injury, teamID: selectedClubID, text: "Departamento médico: \($0)")
+            })
+        }
+
+        developAIPlayers(using: &postRandom)
+        currentRound = round
+        settleUserRound(fixture: fixtures[userIndex])
+        generateOffers(using: &postRandom)
+        for index in players.indices { refreshValue(at: index) }
+        repairLineup()
+        return true
+    }
+
+    private func side(teamID: Int, opponentID: Int, isHome: Bool, style: FootballPlayStyle?,
+                      opponentStyle: FootballPlayStyle? = nil) -> MatchSide {
+        let ownStyle = style ?? self.style(for: teamID, against: opponentID)
+        let rivalStyle = opponentStyle ?? self.style(for: opponentID, against: teamID)
+        return MatchSide(
+            teamID: teamID,
+            lineup: lineup(for: teamID).compactMap { player($0) },
+            formation: formation(for: teamID),
+            style: ownStyle,
+            opponentStyle: rivalStyle,
+            isHome: isHome
+        )
+    }
+
+    private mutating func recordGoals(_ scorerIDs: [Int]) {
+        for id in scorerIDs {
+            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+            players[index].goals += 1
+            players[index].careerGoals += 1
+        }
+    }
+
+    private mutating func recordAssists(_ assistIDs: [Int]) {
+        for id in assistIDs {
+            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
+            players[index].assists += 1
+        }
+    }
+
+    private mutating func developAIPlayers(using random: inout FootballRandom) {
+        for index in players.indices {
+            guard let teamID = players[index].teamID, teamID != selectedClubID,
+                  players[index].overall < players[index].potential else { continue }
+            let chance = 0.03 * ageMultiplier(players[index].age)
+            if random.chance(chance) { players[index].overall += 1 }
+        }
+    }
+
+    /// Bilheteria, confiança da diretoria e expiração de propostas após a partida do usuário.
+    private mutating func settleUserRound(fixture: LeagueFixture) {
+        guard let selectedClubID, let club = selectedClub, let result = fixture.result(for: selectedClubID) else { return }
+        let isHome = fixture.home == selectedClubID
+        if isHome {
+            let formBonus = form(teamID: selectedClubID).filter { $0 == .win }.count * 8_000
+            lastRoundRevenue = Int(Double(club.startingBudget) * 0.018) + formBonus
+            transferBudget += lastRoundRevenue
+        } else {
+            lastRoundRevenue = 0
+        }
+
+        let expectation = teamRating(selectedClubID) - teamRating(fixture.opponent(of: selectedClubID)) + (isHome ? 1.5 : -1.5)
+        let delta: Int
+        switch result {
+        case .win: delta = expectation < -2 ? 6 : 4
+        case .draw: delta = expectation > 3 ? -2 : 1
+        case .loss: delta = expectation > 0 ? -6 : -3
+        }
+        boardConfidence = min(100, max(0, boardConfidence + delta))
+        offers.removeAll { $0.expiresAfterRound < currentRound }
+    }
+
+    private mutating func generateOffers(using random: inout FootballRandom) {
+        guard let selectedClubID, offers.count < 2, !isSeasonComplete, random.chance(0.3) else { return }
+        let candidates = clubRoster
+            .filter { candidate in !offers.contains { $0.playerID == candidate.id } }
+            .sorted { $0.marketValue > $1.marketValue }
+            .prefix(8)
+        guard let target = random.pick(Array(candidates)) else { return }
+        let buyers = FootballSeason.teams.filter { $0.id != selectedClubID }
+        guard let buyer = random.pick(buyers) else { return }
+        let amount = Int(Double(target.marketValue) * Double(random.int(in: 95...125)) / 100 / 10_000) * 10_000
+        offers.append(TransferOffer(id: nextOfferID, playerID: target.id, clubID: buyer.id,
+                                    amount: max(amount, 100_000), expiresAfterRound: currentRound + 2))
+        nextOfferID += 1
+    }
+
+    private mutating func refreshValue(at index: Int) {
+        let player = players[index]
+        players[index].marketValue = FootballSeason.marketValue(overall: player.overall, age: player.age, potential: player.potential)
+    }
+
+    // MARK: - Temporada
+
+    /// Encerra a temporada (premiação, diretoria, envelhecimento, aposentadorias e base) e inicia a próxima.
+    @discardableResult
+    mutating func startNextSeason() -> SeasonRecord? {
+        guard isSeasonComplete, liveMatch == nil, let selectedClubID else { return nil }
+        let table = standings
+        guard let champion = table.first?.team.id else { return nil }
+        champions.append(champion)
+
+        let position = (table.firstIndex { $0.team.id == selectedClubID } ?? table.count - 1) + 1
+        let points = table.first { $0.team.id == selectedClubID }?.points ?? 0
+        let objectiveMet = position <= boardTarget
+        let prize = FootballSeason.prizeMoney[min(position, FootballSeason.prizeMoney.count) - 1]
+            + (objectiveMet ? FootballSeason.objectiveBonus : 0)
+        transferBudget += prize
+        boardConfidence = min(100, max(0, boardConfidence + (objectiveMet ? 15 : -20) + (champion == selectedClubID ? 10 : 0)))
+        let fired = !objectiveMet && boardConfidence <= 20
+        let topScorer = topScorers(limit: 1).first
+
+        var random = FootballRandom(seed: matchSeed(fixtureID: 50_000) ^ 0x2545F4914F6CDD1D)
+        let changes = runOffseason(using: &random)
+
+        let record = SeasonRecord(
+            season: season,
+            clubID: selectedClubID,
+            championID: champion,
+            position: position,
+            points: points,
+            target: boardTarget,
+            objectiveMet: objectiveMet,
+            prizeMoney: prize,
+            topScorerName: topScorer?.name ?? "—",
+            topScorerTeamID: topScorer?.teamID,
+            topScorerGoals: topScorer?.goals ?? 0,
+            retiredPlayers: changes.retired,
+            youthPromoted: changes.youth,
+            wasFired: fired
+        )
+        history.append(record)
+
         season += 1
         currentRound = 0
         fixtures = FootballSeason.fixtures()
         lastTrainingReport = nil
+        lastRoundRevenue = 0
+        offers = []
         for index in players.indices {
             players[index].goals = 0
             players[index].assists = 0
             players[index].appearances = 0
-            players[index].condition = min(100, players[index].condition + 18)
+            players[index].injuryRounds = 0
+            players[index].condition = min(100, players[index].condition + 30)
+            refreshValue(at: index)
         }
-        if let selectedClubID {
-            startingXI = FootballSeason.lineUp(teamID: selectedClubID, players: players, formation: formation)
+        if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
+        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
+        boardTarget = computeBoardTarget()
+        if fired {
+            isFired = true
+            boardConfidence = 0
         }
+        return record
     }
 
-    private func lineUp(teamID: Int, formation: FootballFormation) -> [Int] {
-        if teamID == selectedClubID, startingXI.count == 11 { return startingXI }
-        return FootballSeason.lineUp(teamID: teamID, players: players, formation: formation)
-    }
+    private mutating func runOffseason(using random: inout FootballRandom) -> (retired: Int, youth: Int) {
+        var retired = 0
+        var youth = 0
+        var survivors: [FootballPlayer] = []
+        var replacements: [FootballPlayer] = []
 
-    private func teamPower(teamID: Int, formation: FootballFormation) -> Int {
-        let ids = lineUp(teamID: teamID, formation: formation)
-        let selectedPlayers = ids.compactMap { id in players.first(where: { $0.id == id }) }
-        guard !selectedPlayers.isEmpty else {
-            return FootballSeason.teams.first(where: { $0.id == teamID })?.strength ?? 65
+        for var player in players {
+            player.age += 1
+            if player.age <= 23, player.overall < player.potential {
+                player.overall = min(player.potential, player.overall + random.int(in: 0...2))
+            } else if player.age <= 28, player.overall < player.potential, random.chance(0.4) {
+                player.overall += 1
+            } else if player.age >= 33 {
+                player.overall = max(48, player.overall - random.int(in: 1...3))
+            } else if player.age >= 31 {
+                player.overall = max(48, player.overall - random.int(in: 0...2))
+            }
+            player.potential = max(player.overall, player.age >= 30 ? player.overall : player.potential)
+
+            let retires = player.age >= 36 || (player.age >= 33 && random.chance(0.3))
+            if retires {
+                if player.teamID == selectedClubID { retired += 1 }
+                if let teamID = player.teamID {
+                    let strength = FootballSeason.team(teamID)?.strength ?? 70
+                    replacements.append(FootballSeason.makeYouth(id: nextPlayerID, position: player.position,
+                                                                 teamStrength: strength, teamID: teamID, using: &random))
+                    nextPlayerID += 1
+                    if teamID == selectedClubID { youth += 1 }
+                }
+                continue
+            }
+            survivors.append(player)
         }
-        let rating = selectedPlayers.map(\.effectiveOverall).reduce(0, +) / Double(selectedPlayers.count)
-        return Int(rating.rounded())
-    }
+        players = survivors + replacements
 
-    private func marketValue(for player: FootballPlayer, overall: Int) -> Int {
-        let valueBase = max(150_000, (overall - 38) * (overall - 38) * 1_250)
-        let ageFactor = player.age <= 23 ? 1.25 : (player.age >= 31 ? 0.75 : 1.0)
-        return Int(Double(valueBase) * ageFactor)
-    }
-
-    private func matchPlayStyle(for teamID: Int) -> FootballPlayStyle {
-        guard teamID == selectedClubID else {
-            let index = (teamID + season - 1) % FootballPlayStyle.allCases.count
-            return FootballPlayStyle.allCases[index]
+        // Renova o mercado de agentes livres.
+        let marketCount = players.filter { $0.teamID == nil }.count
+        if marketCount < 14 {
+            for offset in 0..<(14 - marketCount) {
+                let position = FootballSeason.freeAgentTemplate[offset % FootballSeason.freeAgentTemplate.count]
+                players.append(FootballSeason.makeFreeAgent(id: nextPlayerID, position: position, using: &random))
+                nextPlayerID += 1
+            }
         }
-        return playStyle
+        return (retired, youth)
     }
 
     private func matchSeed(fixtureID: Int) -> UInt64 {
         UInt64(bitPattern: Int64(seed))
             &+ UInt64(season) &* 0x9E3779B97F4A7C15
             &+ UInt64(fixtureID + 1) &* 0xBF58476D1CE4E5B9
-    }
-
-    private func chooseScorers(goals: Int, from lineUp: [Int], using random: inout FootballRandom) -> [Int] {
-        let candidates = lineUp.compactMap { id in players.first(where: { $0.id == id }) }
-        guard !candidates.isEmpty else { return [] }
-        return (0..<goals).compactMap { _ in
-            let weights = candidates.map { player -> Int in
-                switch player.position {
-                case .goalkeeper: return 1
-                case .defender: return 2
-                case .midfielder: return 4
-                case .forward: return 7
-                }
-            }
-            let total = weights.reduce(0, +)
-            var draw = random.int(in: 1...total)
-            for (index, weight) in weights.enumerated() {
-                draw -= weight
-                if draw <= 0 { return candidates[index].id }
-            }
-            return candidates.last?.id
-        }
-    }
-
-    private mutating func recordAppearances(for lineUp: [Int]) {
-        for id in lineUp {
-            guard let index = players.firstIndex(where: { $0.id == id }) else { continue }
-            players[index].appearances += 1
-        }
-    }
-
-    private mutating func recordGoals(_ scorers: [Int], from lineUp: [Int], using random: inout FootballRandom) {
-        for scorerID in scorers {
-            guard let scorerIndex = players.firstIndex(where: { $0.id == scorerID }) else { continue }
-            players[scorerIndex].goals += 1
-            let potentialAssists = lineUp.filter { $0 != scorerID }
-            guard !potentialAssists.isEmpty, random.int(in: 0...99) < 66,
-                  let assistID = potentialAssists.randomElement(using: &random),
-                  let assistIndex = players.firstIndex(where: { $0.id == assistID }) else { continue }
-            players[assistIndex].assists += 1
-        }
-    }
-
-    private func makeCommentary(
-        home: Int,
-        away: Int,
-        homeGoals: Int,
-        awayGoals: Int,
-        homeScorers: [Int],
-        awayScorers: [Int],
-        using random: inout FootballRandom
-    ) -> [String] {
-        let homeName = FootballSeason.teams.first(where: { $0.id == home })?.name ?? "Mandante"
-        let awayName = FootballSeason.teams.first(where: { $0.id == away })?.name ?? "Visitante"
-        var events: [(minute: Int, text: String)] = []
-        for (teamID, scorers) in [(home, homeScorers), (away, awayScorers)] {
-            let teamName = teamID == home ? homeName : awayName
-            for scorerID in scorers {
-                let name = players.first(where: { $0.id == scorerID })?.name ?? "Atleta"
-                events.append((random.int(in: 4...89), "\(name) marca para \(teamName)."))
-            }
-        }
-        events.sort { $0.minute < $1.minute }
-        var lines = events.map { "\($0.minute)′ — \($0.text)" }
-        if lines.isEmpty { lines.append("As defesas levaram a melhor e o placar não saiu do zero.") }
-        lines.append("Apito final: \(homeName) \(homeGoals) × \(awayGoals) \(awayName).")
-        return lines
-    }
-}
-
-private struct FootballRandom: RandomNumberGenerator {
-    private var state: UInt64
-
-    init(seed: UInt64) { state = seed }
-
-    mutating func next() -> UInt64 {
-        state &+= 0x9E3779B97F4A7C15
-        var value = state
-        value = (value ^ (value >> 30)) &* 0xBF58476D1CE4E5B9
-        value = (value ^ (value >> 27)) &* 0x94D049BB133111EB
-        return value ^ (value >> 31)
-    }
-
-    mutating func int(in range: ClosedRange<Int>) -> Int {
-        let width = UInt64(range.upperBound - range.lowerBound + 1)
-        return range.lowerBound + Int(next() % width)
-    }
-
-    static func poisson(lambda: Double, using random: inout FootballRandom) -> Int {
-        let draw = Double(random.next() >> 11) / Double(1 << 53)
-        var probability = exp(-lambda)
-        var cumulative = probability
-        if draw < cumulative { return 0 }
-        for goals in 1...6 {
-            probability *= lambda / Double(goals)
-            cumulative += probability
-            if draw < cumulative { return goals }
-        }
-        return 6
     }
 }
