@@ -41,7 +41,7 @@ struct FootballLiveMatchView: View {
             case .halfTime:
                 return true
             case .secondHalf:
-                return event.kind != .fullTime && event.kind != .injury && event.minute <= minute
+                return event.kind != .fullTime && event.kind != .injury && event.kind != .penalties && event.minute <= minute
             case .fullTime:
                 return true
             }
@@ -50,6 +50,11 @@ struct FootballLiveMatchView: View {
 
     private func goals(for teamID: Int?) -> Int {
         visibleEvents.filter { $0.kind == .goal && $0.teamID == teamID }.count
+    }
+
+    /// Minuto final: 120 quando o mata-mata foi para a prorrogação.
+    private var finalMinute: Int {
+        phase == .firstHalf || phase == .halfTime ? 90 : (fixture?.wentToExtraTime == true ? 120 : 90)
     }
 
     private var goalCount: Int {
@@ -87,7 +92,7 @@ struct FootballLiveMatchView: View {
                 .animation(.easeOut(duration: 0.25), value: visibleEvents.count)
             }
             .background(FactoryColor.canvas.ignoresSafeArea())
-            .navigationTitle("Rodada \(fixture?.round ?? career.currentRound + 1)")
+            .navigationTitle(fixture?.title ?? "Partida")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if phase == .halfTime && !staticPreview {
@@ -114,6 +119,9 @@ struct FootballLiveMatchView: View {
                 MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away),
                               homeScore: goals(for: fixture.home), awayScore: goals(for: fixture.away), crestSize: 54)
                     .accessibilityIdentifier("live-scoreboard")
+                if phase == .fullTime, let penalties = fixture.penaltySummary {
+                    Text(penalties).font(.subheadline.weight(.bold)).foregroundStyle(FootballTheme.gold)
+                }
             }
             HStack(spacing: 8) {
                 Circle().fill(isRunning ? Color.red : Color.secondary).frame(width: 8, height: 8)
@@ -125,7 +133,7 @@ struct FootballLiveMatchView: View {
             .padding(.vertical, 6)
             .background(Color.primary.opacity(0.06), in: Capsule())
             .accessibilityIdentifier("live-clock")
-            ProgressView(value: Double(minute), total: 90)
+            ProgressView(value: Double(min(minute, finalMinute)), total: Double(finalMinute))
                 .tint(FootballTheme.accent)
         }
         .padding(18)
@@ -136,7 +144,8 @@ struct FootballLiveMatchView: View {
 
     private var clockText: String {
         switch phase {
-        case .firstHalf, .secondHalf: return "\(minute)′"
+        case .firstHalf: return "\(minute)′"
+        case .secondHalf: return minute > 90 ? "Prorrogação · \(minute)′" : "\(minute)′"
         case .halfTime: return "Intervalo"
         case .fullTime: return "Fim de jogo"
         }
@@ -320,7 +329,7 @@ struct FootballLiveMatchView: View {
             minute = 45
             phase = .halfTime
         case .secondHalf:
-            minute = 90
+            minute = finalMinute
             phase = .fullTime
         default:
             break
@@ -335,7 +344,7 @@ struct FootballLiveMatchView: View {
         }
         minute = 45
         phase = .secondHalf
-        runClock(to: 90) { phase = .fullTime }
+        runClock(to: finalMinute) { phase = .fullTime }
     }
 }
 
@@ -428,7 +437,7 @@ struct FootballSeasonSummaryView: View {
                         VStack(spacing: 10) {
                             Image(systemName: "trophy.fill").font(.system(size: 44)).foregroundStyle(FootballTheme.gold)
                             ClubCrest(team: champion, size: 64)
-                            Text("\(champion.name) é campeão da temporada \(record.season)")
+                            Text("\(champion.name) é campeão da Série A na temporada \(record.season)")
                                 .font(.title3.bold()).multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity)
@@ -436,12 +445,21 @@ struct FootballSeasonSummaryView: View {
                     }
                     FactoryPanel(title: "Sua campanha", systemImage: "chart.line.uptrend.xyaxis") {
                         summaryRow("Posição final", "\(record.position)º · \(record.points) pts")
-                        summaryRow("Meta da diretoria", FootballCareer.objectiveText(target: record.target))
+                        summaryRow("Divisão", record.division.name)
+                        summaryRow("Meta da diretoria", FootballCareer.objectiveText(target: record.target, division: record.division))
                         Label(record.objectiveMet ? "Meta cumprida" : "Meta não cumprida",
                               systemImage: record.objectiveMet ? "checkmark.seal.fill" : "xmark.seal.fill")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(record.objectiveMet ? .green : .red)
+                        summaryRow("Copa Nacional", record.cupResult)
                         summaryRow("Premiação recebida", FootballFormat.money(record.prizeMoney))
+                        if record.promoted {
+                            Label("Acesso à Série A conquistado!", systemImage: "arrow.up.circle.fill")
+                                .font(.subheadline.weight(.bold)).foregroundStyle(.green)
+                        } else if record.relegated {
+                            Label("Rebaixado para a Série B.", systemImage: "arrow.down.circle.fill")
+                                .font(.subheadline.weight(.bold)).foregroundStyle(.red)
+                        }
                     }
                     FactoryPanel(title: "Destaques", systemImage: "star.fill") {
                         summaryRow("Artilheiro da liga", "\(record.topScorerName) · \(record.topScorerGoals) gols")

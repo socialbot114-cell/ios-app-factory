@@ -76,7 +76,7 @@ targets:
   ManagerFutebol:
     type: application
     platform: iOS
-    sources: [FactoryShared, apps/manager-futebol/Sources]
+    sources: [FactoryShared, apps/manager-futebol/Sources, apps/manager-futebol/Core]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.managerfutebol

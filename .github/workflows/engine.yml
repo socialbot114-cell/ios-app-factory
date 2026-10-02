@@ -1,0 +1,33 @@
+name: Manager de Futebol engine (Linux)
+
+on:
+  pull_request:
+    paths:
+      - "apps/manager-futebol/Core/**"
+      - "apps/manager-futebol/Tests/**"
+      - "apps/manager-futebol/Package.swift"
+      - ".github/workflows/engine.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/manager-futebol/Core/**"
+      - "apps/manager-futebol/Tests/**"
+      - "apps/manager-futebol/Package.swift"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engine-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container: swift:6.1-noble
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build engine
+        run: swift build --package-path apps/manager-futebol
+      - name: Unit and balance tests
+        run: |
+          swift test --package-path apps/manager-futebol 2>&1 | tee engine-tests.log
+          grep "BALANCE" engine-tests.log >> "$GITHUB_STEP_SUMMARY" || true

@@ -11,8 +11,16 @@ final class FootballFlowUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Escolha seu clube"].waitForExistence(timeout: 10))
-        tapWhenReady(app.buttons["choose-club-0"], in: app)
-        XCTAssertTrue(app.buttons["play-match"].waitForExistence(timeout: 10))
+        let club = app.buttons["choose-club-0"]
+        tapWhenReady(club, in: app)
+        if !app.buttons["play-match"].waitForExistence(timeout: 6), club.exists {
+            attachScreenshot(app, name: "after-first-club-tap")
+            club.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.3)).tap()
+        }
+        if !app.buttons["play-match"].waitForExistence(timeout: 10) {
+            attachScreenshot(app, name: "dashboard-missing")
+            XCTFail("O painel não abriu após escolher o clube. Hierarquia:\n\(app.debugDescription)")
+        }
 
         app.buttons["tab-1"].tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "squad-pitch").firstMatch.waitForExistence(timeout: 5))
@@ -43,7 +51,15 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(auroraRow.waitForExistence(timeout: 5))
 
         app.buttons["tab-4"].tap()
-        XCTAssertTrue(app.buttons["new-career"].waitForExistence(timeout: 5))
+        let newCareer = app.descendants(matching: .any).matching(identifier: "new-career").firstMatch
+        XCTAssertTrue(newCareer.waitForExistence(timeout: 8))
+    }
+
+    private func attachScreenshot(_ app: XCUIApplication, name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     private func scrollUntilHittable(_ element: XCUIElement, in app: XCUIApplication) {

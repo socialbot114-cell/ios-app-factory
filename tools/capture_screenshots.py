@@ -16,7 +16,7 @@ CAPTURES = {
     "atelie-colorir": ["home", "editor", "saved"],
     "crime-idle": ["home", "operations", "heists", "crew", "territory"],
     "detetive-na-testa": ["home", "game", "result"],
-    "manager-futebol": ["select", "home", "match", "squad", "table", "market", "club"],
+    "manager-futebol": ["select", "home", "match", "squad", "table", "cup", "market", "club"],
     "meu-qr-pix": ["form", "qr", "history"],
     "leitor-pdf-bolso": ["library", "reader", "search"],
     "brasilia-politica-contexto": ["home", "article", "saved"],
@@ -126,7 +126,7 @@ def capture_device(udid: str, device_name: str, family: str, app: dict, app_path
         destination = output / family / f"{screen}.png"
         destination.parent.mkdir(parents=True, exist_ok=True)
         diversity = 0
-        for attempt in range(1, 5):
+        for attempt in range(1, 9):
             time.sleep(3)
             run("xcrun", "simctl", "io", udid, "screenshot", str(destination))
             diversity = png_color_diversity(destination)

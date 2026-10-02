@@ -27,7 +27,10 @@ enum FootballTab: Int, CaseIterable, Identifiable {
 }
 
 struct FootballHome: View {
-    @State private var career = FootballCareer.load()
+    @State private var career = FootballHome.initialCareer()
+    @State private var activeSlot = FootballSaveStore().activeSlot
+    @State private var slotSummaries: [SaveSlotSummary?] = []
+    @State private var tableSection: FootballTableView.LeagueSection?
     @State private var selectedTab: FootballTab = .dashboard
     @State private var alertMessage: String?
     @State private var showLiveMatch = false
@@ -61,7 +64,9 @@ struct FootballHome: View {
         }
         .onAppear(perform: prepareInitialState)
         .onChange(of: career) { _, updatedCareer in
-            if capture == nil { updatedCareer.persist() }
+            guard capture == nil else { return }
+            FootballSaveStore().save(updatedCareer, slot: activeSlot)
+            refreshSlots()
         }
     }
 
@@ -97,11 +102,18 @@ struct FootballHome: View {
             case .squad:
                 FootballSquadView(career: $career, onAlert: showAlert)
             case .table:
-                FootballTableView(career: career)
+                FootballTableView(career: career, initialSection: tableSection)
             case .market:
                 FootballMarketView(career: $career, onAlert: showAlert)
             case .club:
-                FootballClubView(career: $career, onNewCareer: startNewCareer)
+                FootballClubView(
+                    career: $career,
+                    activeSlot: activeSlot,
+                    slotSummaries: slotSummaries,
+                    onLoadSlot: loadSlot,
+                    onNewCareer: startNewCareer,
+                    onDeleteSlot: deleteSlot
+                )
             }
         }
     }
@@ -110,7 +122,7 @@ struct FootballHome: View {
         HStack(spacing: 6) {
             ClubCrest(team: club, size: 18)
             Text(club.name.uppercased())
-            Text("· T\(career.season) · R\(min(career.currentRound + 1, FootballSeason.roundsPerSeason))")
+            Text("· T\(career.season) · SEM. \(career.currentSlot?.week ?? FootballSeason.calendar.last?.week ?? 1)")
                 .foregroundStyle(.secondary)
         }
         .font(.caption.weight(.bold))
@@ -156,9 +168,43 @@ struct FootballHome: View {
         showLiveMatch = true
     }
 
-    private func startNewCareer() {
+    private func startNewCareer(slot: Int) {
+        if capture == nil { FootballSaveStore().save(career, slot: activeSlot) }
+        activeSlot = slot
+        FootballSaveStore().activeSlot = slot
         career = FootballCareer(seed: FactoryCapture.isUITesting ? 26 : FootballCareer.randomSeed())
         selectedTab = .dashboard
+        refreshSlots()
+    }
+
+    private func loadSlot(_ slot: Int) {
+        guard slot != activeSlot else { return }
+        let store = FootballSaveStore()
+        if capture == nil { store.save(career, slot: activeSlot) }
+        activeSlot = slot
+        store.activeSlot = slot
+        career = store.load(slot: slot) ?? FootballCareer(seed: FootballCareer.randomSeed())
+        selectedTab = .dashboard
+        refreshSlots()
+    }
+
+    private func deleteSlot(_ slot: Int) {
+        guard slot != activeSlot else { return }
+        FootballSaveStore().delete(slot: slot)
+        refreshSlots()
+    }
+
+    private func refreshSlots() {
+        let store = FootballSaveStore()
+        slotSummaries = (0..<FootballSaveStore.slotCount).map { store.summary(slot: $0) }
+    }
+
+    /// Carrega o slot ativo, trazendo antes o save antigo do UserDefaults, se existir.
+    static func initialCareer() -> FootballCareer {
+        if FactoryCapture.isUITesting || FactoryCapture.screen != nil { return FootballCareer(seed: 26) }
+        let store = FootballSaveStore()
+        store.migrateLegacyDefaults()
+        return store.load(slot: store.activeSlot) ?? FootballCareer(seed: FootballCareer.randomSeed())
     }
 
     private func prepareInitialState() {
@@ -166,18 +212,33 @@ struct FootballHome: View {
         didPrepare = true
         if FactoryCapture.isUITesting {
             FactoryCapture.resetAppDefaults()
+            FootballSaveStore().deleteAll()
+            activeSlot = 0
             career = FootballCareer(seed: 26)
             selectedTab = .dashboard
+            refreshSlots()
             return
         }
-        guard let capture else { return }
+        guard let capture else {
+            refreshSlots()
+            return
+        }
         if capture == "select" {
             career = FootballCareer(seed: 26)
             return
         }
         career = Self.previewCareer(liveMatch: capture == "match")
+        slotSummaries = [
+            SaveSlotSummary(slot: 0, clubID: career.selectedClubID, season: career.season, matchDay: career.matchDayIndex,
+                            division: career.userDivision, updatedAt: Date()),
+            SaveSlotSummary(slot: 1, clubID: 11, season: 4, matchDay: 12, division: .serieB, updatedAt: Date().addingTimeInterval(-86_400)),
+            nil
+        ]
         switch capture {
         case "table": selectedTab = .table
+        case "cup":
+            tableSection = .cup
+            selectedTab = .table
         case "squad": selectedTab = .squad
         case "market": selectedTab = .market
         case "club": selectedTab = .club
@@ -185,15 +246,18 @@ struct FootballHome: View {
         }
     }
 
-    /// Carreira de demonstração para capturas: uma temporada completa e três rodadas da seguinte.
+    /// Carreira de demonstração para capturas: uma temporada completa e oito dias de jogo da seguinte.
     static func previewCareer(liveMatch: Bool) -> FootballCareer {
         var preview = FootballCareer(seed: 26)
         _ = preview.chooseClub(0)
-        for _ in 0..<FootballSeason.roundsPerSeason { preview.simulateNextRound() }
+        for _ in 0..<FootballSeason.matchDaysPerSeason { preview.simulateNextMatchDay() }
         preview.startNextSeason()
         if preview.isFired, let job = preview.jobOffers.first { preview.acceptJob(job.id) }
-        for _ in 0..<3 { preview.simulateNextRound() }
-        if liveMatch { preview.beginMatchDay() }
+        for _ in 0..<8 { preview.simulateNextMatchDay() }
+        if liveMatch {
+            while !preview.canPlay && preview.canAdvanceWithoutPlaying { preview.simulateNextMatchDay() }
+            preview.beginMatchDay()
+        }
         return preview
     }
 }
@@ -209,21 +273,33 @@ struct FootballClubSelectionView: View {
             FactoryHeader(
                 eyebrow: "Nova carreira",
                 title: "Escolha seu clube",
-                subtitle: "Oito clubes, um título. Monte o elenco, defina a tática e comande cada partida ao vivo. Tudo offline, com salvamento automático.",
+                subtitle: "Vinte clubes em duas divisões, uma copa nacional e uma carreira sem fim. Comande cada partida ao vivo, tudo offline e com salvamento automático.",
                 accent: FootballTheme.accent
             )
             FactoryDemoNotice(message: "Liga, clubes e atletas fictícios")
-            ForEach(FootballSeason.teams) { club in
-                Button {
-                    if !career.chooseClub(club.id) {
-                        onAlert("Não foi possível montar o elenco inicial deste clube.")
+            ForEach(Division.allCases) { division in
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(division.name.uppercased())
+                            .font(.caption.weight(.heavy)).tracking(1.4)
+                            .foregroundStyle(division.tint)
+                        Spacer()
+                        Text(division == .serieA ? "Brigue pelo título" : "Desafio: conquiste o acesso")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
-                } label: {
-                    clubCard(club)
+                    ForEach(FootballSeason.teams.filter { career.division(of: $0.id) == division }) { club in
+                        Button {
+                            if !career.chooseClub(club.id) {
+                                onAlert("Não foi possível montar o elenco inicial deste clube.")
+                            }
+                        } label: {
+                            clubCard(club)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("choose-club-\(club.id)")
+                        .accessibilityLabel("Escolher \(club.name), \(division.name), força \(club.strength), orçamento \(FootballFormat.money(club.startingBudget))")
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("choose-club-\(club.id)")
-                .accessibilityLabel("Escolher \(club.name), força \(club.strength), orçamento \(FootballFormat.money(club.startingBudget))")
             }
         }
         .factoryPage()
@@ -235,11 +311,12 @@ struct FootballClubSelectionView: View {
             ClubCrest(team: club, size: 46)
             VStack(alignment: .leading, spacing: 4) {
                 Text(club.name).font(.headline).foregroundStyle(.primary)
-                Text("\(club.city) · \(club.preferredFormation.rawValue) · \(club.preferredStyle.rawValue)")
-                    .font(.caption).foregroundStyle(.secondary)
+                Text("\(club.city) · \(club.stadium)")
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 HStack(spacing: 6) {
                     PillLabel(text: "FOR \(club.strength)", tint: club.primaryColor)
                     PillLabel(text: FootballFormat.money(club.startingBudget), systemImage: "banknote", tint: .secondary)
+                    PillLabel(text: club.preferredStyle.rawValue, tint: .secondary)
                 }
             }
             Spacer(minLength: 6)
@@ -253,5 +330,6 @@ struct FootballClubSelectionView: View {
                 .fill(club.primaryColor)
                 .frame(width: 5)
         }
+        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }

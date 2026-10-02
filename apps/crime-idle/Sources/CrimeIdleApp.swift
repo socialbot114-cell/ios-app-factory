@@ -1,468 +1,418 @@
+import Observation
 import SwiftUI
+import UIKit
 
 @main
 struct CrimeIdleApp: App {
-    var body: some Scene { WindowGroup { CrimeIdleHome() } }
+    var body: some Scene { WindowGroup { CrimeIdleRoot() } }
 }
 
-struct CrimeBusiness: Identifiable, Equatable {
-    let id: Int
-    let name: String
-    let systemImage: String
-    let districtID: Int
-    let baseCost: Double
-
-    var baseIncomePerSecond: Double { Double(id + 1) * 0.35 }
-
-    static let catalog: [CrimeBusiness] = [
-        .init(id: 0, name: "Café Aurora", systemImage: "cup.and.saucer.fill", districtID: 0, baseCost: 25),
-        .init(id: 1, name: "Estúdio Nocturno", systemImage: "film.fill", districtID: 0, baseCost: 80),
-        .init(id: 2, name: "Táxi Estelar", systemImage: "car.fill", districtID: 1, baseCost: 220),
-        .init(id: 3, name: "Clube Neblina", systemImage: "music.note.house.fill", districtID: 1, baseCost: 600),
-        .init(id: 4, name: "Teatro Eclipse", systemImage: "theatermasks.fill", districtID: 2, baseCost: 1_500),
-        .init(id: 5, name: "Hotel Horizonte", systemImage: "building.fill", districtID: 2, baseCost: 4_000)
-    ]
+struct CrimeFloater: Identifiable, Equatable {
+    let id = UUID()
+    let text: String
+    let critical: Bool
+    let drift: Double
 }
 
-enum CrimeMissionGoal: Equatable {
-    case influence(Double)
-    case totalBusinesses(Int)
-    case businessOwned(index: Int, count: Int)
-    case districts(Int)
-    case incomePerSecond(Double)
+enum CrimeHaptics {
+    static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+    static func thud() { UIImpactFeedbackGenerator(style: .heavy).impactOccurred() }
+    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    static func failure() { UINotificationFeedbackGenerator().notificationOccurred(.error) }
 }
 
-struct CrimeMission: Identifiable, Equatable {
-    let id: Int
-    let title: String
-    let goal: CrimeMissionGoal
-    var reward: Double = 25
+@MainActor
+@Observable
+final class CrimeGameStore {
+    static let saveKey = "crime.save.v2"
 
-    static let catalog: [CrimeMission] = [
-        .init(id: 0, title: "Alcance 150 de influência", goal: .influence(150)),
-        .init(id: 1, title: "Abra dois empreendimentos", goal: .totalBusinesses(2)),
-        .init(id: 2, title: "Expanda o Café Aurora", goal: .businessOwned(index: 0, count: 3)),
-        .init(id: 3, title: "Alcance 500 de influência", goal: .influence(500)),
-        .init(id: 4, title: "Abra cinco negócios", goal: .totalBusinesses(5)),
-        .init(id: 5, title: "Compre o Hotel Horizonte", goal: .businessOwned(index: 5, count: 1)),
-        .init(id: 6, title: "Abra um novo distrito", goal: .districts(2)),
-        .init(id: 7, title: "Produza 5 de influência/s", goal: .incomePerSecond(5)),
-        .init(id: 8, title: "Tenha 12 negócios", goal: .totalBusinesses(12)),
-        .init(id: 9, title: "Alcance 2.000 de influência", goal: .influence(2_000)),
-        .init(id: 10, title: "Abra todos os distritos", goal: .districts(3)),
-        .init(id: 11, title: "Construa 20 negócios", goal: .totalBusinesses(20))
-    ]
+    var state: CrimeState
+    var floaters: [CrimeFloater] = []
+    var offlineReport: CrimeOfflineReport?
+    var heistOutcome: CrimeHeistOutcome?
+    var toast: String?
+    var eventsEnabled = true
+    var persists = true
 
-    func progress(in economy: CrimeEconomy) -> Double {
-        switch goal {
-        case let .influence(target):
-            return min(economy.influence / target, 1)
-        case let .totalBusinesses(target):
-            return min(Double(economy.owned.reduce(0, +)) / Double(target), 1)
-        case let .businessOwned(index, count):
-            guard economy.owned.indices.contains(index) else { return 0 }
-            return min(Double(economy.owned[index]) / Double(count), 1)
-        case let .districts(target):
-            guard target > 1 else { return economy.unlockedDistricts >= target ? 1 : 0 }
-            return min(Double(max(economy.unlockedDistricts - 1, 0)) / Double(target - 1), 1)
-        case let .incomePerSecond(target):
-            return min(economy.incomePerSecond / target, 1)
+    @ObservationIgnored private var lastTick = Date()
+    @ObservationIgnored private var lastSave = Date()
+    @ObservationIgnored private var toastTask: Task<Void, Never>?
+
+    init(state: CrimeState) {
+        self.state = state
+    }
+
+    static func loadSaved(defaults: UserDefaults = .standard) -> CrimeState {
+        guard let data = defaults.data(forKey: saveKey),
+              let state = try? JSONDecoder().decode(CrimeState.self, from: data) else { return CrimeState(seed: UInt64.random(in: 1...UInt64.max)) }
+        return state
+    }
+
+    func save() {
+        guard persists, let data = try? JSONEncoder().encode(state) else { return }
+        UserDefaults.standard.set(data, forKey: Self.saveKey)
+        lastSave = Date()
+    }
+
+    // MARK: - Relógio
+
+    func resume(now: Date = Date()) {
+        if let report = state.resume(at: now), persists { offlineReport = report }
+        lastTick = now
+        save()
+    }
+
+    func tick(now: Date = Date()) {
+        let elapsed = min(max(now.timeIntervalSince(lastTick), 0), 1)
+        lastTick = now
+        state.tick(elapsed, online: eventsEnabled)
+        state.lastSeen = now
+        if now.timeIntervalSince(lastSave) > 5 { save() }
+    }
+
+    func runLoop() async {
+        lastTick = Date()
+        while !Task.isCancelled {
+            do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+            tick()
         }
     }
 
-    func isComplete(in economy: CrimeEconomy) -> Bool { progress(in: economy) >= 1 }
-}
+    // MARK: - Ações do jogador
 
-struct CrimeEconomy: Codable, Equatable {
-    private enum CodingKeys: String, CodingKey {
-        case influence
-        case owned
-        case claimedMissions
-        case unlockedDistricts
-        case lastSavedAt
-    }
-
-    static let cap: TimeInterval = 8 * 60 * 60
-    static let businesses = CrimeBusiness.catalog
-    static let districtNames = ["Centro das Lanternas", "Rua da Neblina", "Colinas do Norte"]
-    static let districtSymbols = ["sun.max.fill", "cloud.fog.fill", "mountain.2.fill"]
-    static let districtUnlockCosts: [Double] = [0, 500, 2_000]
-    static var baseCosts: [Double] { businesses.map(\.baseCost) }
-
-    private(set) var influence: Double = 100
-    private(set) var owned = Array(repeating: 0, count: CrimeBusiness.catalog.count)
-    private(set) var claimedMissions: Set<Int> = []
-    private(set) var unlockedDistricts = 1
-    private(set) var lastSavedAt: Date = .now
-
-    init() { }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let decodedInfluence = try container.decodeIfPresent(Double.self, forKey: .influence) ?? 100
-        let decodedOwned = try container.decodeIfPresent([Int].self, forKey: .owned) ?? []
-        var normalizedOwned = Array(repeating: 0, count: Self.businesses.count)
-        for index in 0..<min(decodedOwned.count, normalizedOwned.count) {
-            normalizedOwned[index] = max(decodedOwned[index], 0)
-        }
-        let highestOwnedDistrict = Self.businesses.indices
-            .filter { normalizedOwned[$0] > 0 }
-            .map { Self.businesses[$0].districtID + 1 }
-            .max() ?? 1
-        let decodedDistricts = try container.decodeIfPresent(Int.self, forKey: .unlockedDistricts) ?? 1
-
-        influence = decodedInfluence.isFinite ? max(decodedInfluence, 0) : 100
-        owned = normalizedOwned
-        claimedMissions = try container.decodeIfPresent(Set<Int>.self, forKey: .claimedMissions) ?? []
-        unlockedDistricts = min(Self.districtNames.count, max(1, max(decodedDistricts, highestOwnedDistrict)))
-        lastSavedAt = try container.decodeIfPresent(Date.self, forKey: .lastSavedAt) ?? .now
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(influence, forKey: .influence)
-        try container.encode(owned, forKey: .owned)
-        try container.encode(claimedMissions, forKey: .claimedMissions)
-        try container.encode(unlockedDistricts, forKey: .unlockedDistricts)
-        try container.encode(lastSavedAt, forKey: .lastSavedAt)
-    }
-
-    var districtMultiplier: Double { 1 + Double(max(unlockedDistricts - 1, 0)) * 0.25 }
-
-    var incomePerSecond: Double {
-        Self.businesses.reduce(0) { $0 + incomeFromBusinessPerSecond($1.id) }
-    }
-
-    func incomeFromBusinessPerSecond(_ index: Int) -> Double {
-        guard owned.indices.contains(index) else { return 0 }
-        return Double(owned[index]) * Self.businesses[index].baseIncomePerSecond * districtMultiplier
-    }
-
-    static func requiredDistrict(forBusiness index: Int) -> Int? {
-        guard businesses.indices.contains(index) else { return nil }
-        return businesses[index].districtID + 1
-    }
-
-    func purchaseCost(forBusiness index: Int, quantity: Int = 1) -> Double? {
-        guard owned.indices.contains(index), (1...10).contains(quantity) else { return nil }
-        let baseCost = Self.businesses[index].baseCost
-        return (0..<quantity).reduce(0) { total, offset in
-            total + baseCost * pow(1.16, Double(owned[index] + offset))
+    func tapStreet() {
+        let result = state.tapStreet()
+        let floater = CrimeFloater(text: (result.critical ? "BOLADA! +" : "+") + CrimeFormat.cash(result.amount),
+                                   critical: result.critical, drift: Double.random(in: -70...70))
+        floaters.append(floater)
+        if floaters.count > 14 { floaters.removeFirst(floaters.count - 14) }
+        if result.critical { CrimeHaptics.thud() } else { CrimeHaptics.tap() }
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(1_100))
+            self?.floaters.removeAll { $0.id == floater.id }
         }
     }
 
-    func canBuy(_ index: Int, quantity: Int = 1) -> Bool {
-        guard let requiredDistrict = Self.requiredDistrict(forBusiness: index),
-              requiredDistrict <= unlockedDistricts,
-              let cost = purchaseCost(forBusiness: index, quantity: quantity) else { return false }
-        return influence >= cost
+    func buy(_ index: Int, mode: CrimeBuyMode) {
+        let quantity = state.quantity(for: mode, racket: index)
+        let before = state.owned[index]
+        guard state.buy(racket: index, quantity: quantity) else { return CrimeHaptics.failure() }
+        CrimeHaptics.tap()
+        if let milestone = CrimeRacket.nextMilestone(after: before), state.owned[index] >= milestone.count {
+            show("\(CrimeRacket.catalog[index].name): \(milestone.label)!")
+            CrimeHaptics.success()
+        }
     }
 
-    mutating func buy(_ index: Int, quantity: Int = 1, at date: Date = .now) -> Bool {
-        guard canBuy(index, quantity: quantity),
-              let cost = purchaseCost(forBusiness: index, quantity: quantity) else { return false }
-        influence -= cost
-        owned[index] += quantity
-        lastSavedAt = date
-        return true
+    func run(_ index: Int) {
+        if state.run(racket: index) { CrimeHaptics.tap() }
     }
 
-    mutating func tap(at date: Date = .now) { influence += 1; lastSavedAt = date }
-
-    mutating func accrue(seconds: TimeInterval, at date: Date = .now) {
-        if seconds > 0 { influence += incomePerSecond * min(seconds, Self.cap) }
-        lastSavedAt = date
+    func hire(_ index: Int) {
+        guard state.hireManager(index) else { return CrimeHaptics.failure() }
+        CrimeHaptics.success()
+        show("\(CrimeRacket.catalog[index].managerName) agora toca o \(CrimeRacket.catalog[index].name)")
     }
 
-    mutating func resume(at date: Date = .now) {
-        accrue(seconds: date.timeIntervalSince(lastSavedAt), at: date)
+    func buyUpgrade(_ id: Int) {
+        guard state.buyUpgrade(id), let upgrade = CrimeUpgrade.catalog.first(where: { $0.id == id }) else { return CrimeHaptics.failure() }
+        CrimeHaptics.success()
+        show("\(upgrade.name): \(upgrade.detail)")
     }
 
-    func missionProgress(_ id: Int) -> Double {
-        CrimeMission.catalog.first(where: { $0.id == id })?.progress(in: self) ?? 0
+    func bribe() {
+        guard state.bribe() else { return CrimeHaptics.failure() }
+        CrimeHaptics.success()
+        show("O delegado olhou para o outro lado")
     }
 
-    func canClaimMission(_ id: Int) -> Bool {
-        guard !claimedMissions.contains(id), let mission = CrimeMission.catalog.first(where: { $0.id == id }) else { return false }
-        return mission.isComplete(in: self)
+    func upgradeCrew(_ id: Int) {
+        let wasRecruited = state.crewLevels[id] > 0
+        guard state.upgradeCrew(id) else { return CrimeHaptics.failure() }
+        CrimeHaptics.success()
+        let member = CrimeCrewMember.catalog[id]
+        show(wasRecruited ? "\(member.name) subiu para o nível \(state.crewLevels[id])" : "\(member.name) entrou para a família")
     }
 
-    mutating func claimMission(_ id: Int, at date: Date = .now) -> Bool {
-        guard canClaimMission(id), let mission = CrimeMission.catalog.first(where: { $0.id == id }) else { return false }
-        claimedMissions.insert(id)
-        influence += mission.reward
-        lastSavedAt = date
-        return true
+    func conquer(_ id: Int) {
+        guard state.conquer(id) else { return CrimeHaptics.failure() }
+        CrimeHaptics.success()
+        show("\(CrimeDistrict.catalog[id].name) agora é seu")
     }
 
-    mutating func unlockDistrict(_ index: Int, at date: Date = .now) -> Bool {
-        guard Self.districtUnlockCosts.indices.contains(index), index == unlockedDistricts,
-              influence >= Self.districtUnlockCosts[index] else { return false }
-        influence -= Self.districtUnlockCosts[index]
-        unlockedDistricts += 1
-        lastSavedAt = date
-        return true
+    func startHeist(_ id: Int, plan: CrimeHeistPlan) {
+        guard state.startHeist(id, plan: plan) else { return CrimeHaptics.failure() }
+        CrimeHaptics.thud()
     }
 
-    static func load(defaults: UserDefaults = .standard) -> CrimeEconomy {
-        guard let data = defaults.data(forKey: "crime.save"), let value = try? JSONDecoder().decode(CrimeEconomy.self, from: data) else { return CrimeEconomy() }
-        return value
+    func revealHeist() {
+        guard let outcome = state.resolveHeist() else { return }
+        if outcome.success { CrimeHaptics.success() } else { CrimeHaptics.failure() }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { heistOutcome = outcome }
+        save()
     }
 
-    func persist(defaults: UserDefaults = .standard) {
-        guard let data = try? JSONEncoder().encode(self) else { return }
-        defaults.set(data, forKey: "crime.save")
+    func choose(_ choice: Int) {
+        guard state.choose(choice) else { return CrimeHaptics.failure() }
+        CrimeHaptics.tap()
+    }
+
+    func claimContract(_ id: Int) {
+        guard state.claimContract(id) else { return }
+        CrimeHaptics.success()
+        show("Contrato cumprido")
+    }
+
+    func prestige() {
+        let gained = state.claimableLegacy
+        guard state.prestige() else { return CrimeHaptics.failure() }
+        CrimeHaptics.success()
+        save()
+        show("Nova identidade: +\(CrimeFormat.short(gained)) de lenda")
+    }
+
+    func resetEverything() {
+        state = CrimeState(seed: UInt64.random(in: 1...UInt64.max))
+        floaters = []
+        save()
+        show("Uma nova história começa")
+    }
+
+    func show(_ message: String) {
+        toastTask?.cancel()
+        withAnimation(.spring(response: 0.35)) { toast = message }
+        toastTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.4))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.3)) { self?.toast = nil }
+        }
     }
 }
 
-struct CrimeIdleHome: View {
-    @State private var game = CrimeEconomy.load()
-    @State private var activeTab = 0
-    @State private var buyQuantity = 1
+enum CrimeTab: Int, CaseIterable, Identifiable {
+    case home, rackets, heists, crew, map
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .home: return "Império"
+        case .rackets: return "Negócios"
+        case .heists: return "Golpes"
+        case .crew: return "Família"
+        case .map: return "Mapa"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .home: return "building.2.crop.circle.fill"
+        case .rackets: return "briefcase.fill"
+        case .heists: return "bolt.shield.fill"
+        case .crew: return "person.3.fill"
+        case .map: return "map.fill"
+        }
+    }
+
+    init(capture: String?) {
+        switch capture {
+        case "operations": self = .rackets
+        case "heists": self = .heists
+        case "crew": self = .crew
+        case "territory": self = .map
+        default: self = .home
+        }
+    }
+}
+
+struct CrimeIdleRoot: View {
+    @State private var store: CrimeGameStore
+    @State private var tab: CrimeTab
     @Environment(\.scenePhase) private var scenePhase
-    private let accent = Color(red: 0.82, green: 0.64, blue: 0.31)
-    private var capture: String? { FactoryCapture.screen }
+
+    init() {
+        let store: CrimeGameStore
+        if FactoryCapture.isUITesting {
+            FactoryCapture.resetAppDefaults()
+            store = CrimeGameStore(state: CrimeState(seed: 7))
+            store.eventsEnabled = false
+        } else if let screen = FactoryCapture.screen {
+            store = CrimeGameStore(state: .capturePreview(screen: screen))
+            store.eventsEnabled = false
+            store.persists = false
+        } else {
+            store = CrimeGameStore(state: CrimeGameStore.loadSaved())
+        }
+        _store = State(initialValue: store)
+        _tab = State(initialValue: CrimeTab(capture: FactoryCapture.screen))
+    }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if capture == "businesses" || activeTab == 1 { businessView }
-                else if capture == "missions" || activeTab == 2 { missionView }
-                else if capture == "districts" || activeTab == 3 { districtsView }
-                else { headquarters }
+        ZStack {
+            Noir.ink.ignoresSafeArea()
+            switch tab {
+            case .home: CrimeHomeView(store: store, openTab: { tab = $0 })
+            case .rackets: CrimeRacketsView(store: store)
+            case .heists: CrimeHeistsView(store: store)
+            case .crew: CrimeCrewView(store: store)
+            case .map: CrimeMapView(store: store)
             }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 6) { Image(systemName: "moon.stars.fill"); Text("CIDADE NEBLINA") }
-                        .font(.caption.weight(.bold)).tracking(1.3).foregroundStyle(accent)
-                }
-            }
-            .safeAreaInset(edge: .bottom) { navigationBar }
         }
-        .tint(accent)
+        .safeAreaInset(edge: .bottom) { tabBar }
+        .overlay(alignment: .top) { toastView }
+        .overlay {
+            if let outcome = store.heistOutcome {
+                CrimeHeistOutcomeView(outcome: outcome) {
+                    withAnimation(.easeOut(duration: 0.25)) { store.heistOutcome = nil }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .sheet(isPresented: Binding(get: { store.offlineReport != nil }, set: { if !$0 { store.offlineReport = nil } })) {
+            if let report = store.offlineReport {
+                CrimeOfflineSheet(report: report) { store.offlineReport = nil }
+                    .presentationDetents([.medium])
+                    .presentationBackground(Noir.night)
+            }
+        }
+        .tint(Noir.gold)
         .preferredColorScheme(.dark)
         .task {
-            if FactoryCapture.isUITesting {
-                FactoryCapture.resetAppDefaults()
-                game = CrimeEconomy()
-            } else if let capture, ["businesses", "missions", "districts"].contains(capture) {
-                game = capturePreview(for: capture)
-                buyQuantity = capture == "businesses" ? 10 : 1
-            }
-            game.resume()
-            game.persist()
-            while !Task.isCancelled {
-                do { try await Task.sleep(for: .seconds(1)) } catch { return }
-                game.accrue(seconds: 1)
-            }
+            store.resume()
+            await store.runLoop()
         }
-        .onChange(of: game) { _, updated in updated.persist() }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { game.resume(); game.persist() }
+            switch phase {
+            case .active: store.resume()
+            case .background, .inactive: store.save()
+            @unknown default: break
+            }
         }
     }
 
-    private var headquarters: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            FactoryHeader(eyebrow: "Uma cidade fictícia", title: "A noite é sua.", subtitle: "Construa um império de entretenimento em uma história noir leve e inventada.", accent: accent)
-            FactoryDemoNotice(message: "Ficção demonstrativa · sem atividades reais")
-            FactoryPanel {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text("INFLUÊNCIA").font(.caption.bold()).tracking(1.4).foregroundStyle(.secondary)
-                        Text(game.influence.formatted(.number.precision(.fractionLength(0))))
-                            .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
-                            .contentTransition(.numericText())
-                        Text("+\(game.incomePerSecond, specifier: "%.1f") por segundo")
-                            .font(.subheadline).foregroundStyle(.secondary)
+    private var tabBar: some View {
+        HStack(spacing: 2) {
+            ForEach(CrimeTab.allCases) { item in
+                Button {
+                    withAnimation(.snappy(duration: 0.22)) { tab = item }
+                    CrimeHaptics.tap()
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: item.symbol).font(.system(size: 18, weight: .semibold))
+                        Text(item.title).font(.system(size: 10, weight: .bold))
                     }
-                    Spacer()
-                    Image(systemName: "building.2.crop.circle.fill")
-                        .font(.system(size: 44)).foregroundStyle(accent.opacity(0.9))
-                }
-                Button { game.tap() } label: { Label("Expandir influência", systemImage: "plus.circle.fill") }
-                    .buttonStyle(FactoryPrimaryButtonStyle())
-            }
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                FactoryMetric(label: "Empreendimentos", value: "\(game.owned.reduce(0, +))/6", symbol: "building.2.fill", tint: accent)
-                FactoryMetric(label: "Bairros", value: "\(game.unlockedDistricts)/3", symbol: "map.fill", tint: .red)
-                FactoryMetric(label: "Multiplicador", value: "×\(String(format: "%.2f", game.districtMultiplier))", symbol: "arrow.up.right", tint: .green)
-            }
-            FactoryPanel(title: "Próximo objetivo", systemImage: "target") {
-                if game.unlockedDistricts < CrimeEconomy.districtNames.count {
-                    let nextDistrict = game.unlockedDistricts
-                    let cost = CrimeEconomy.districtUnlockCosts[nextDistrict]
-                    Text("Abra \(CrimeEconomy.districtNames[nextDistrict]) com \(cost.formatted(.number.precision(.fractionLength(0)))) de influência.")
-                        .foregroundStyle(.secondary)
-                    ProgressView(value: min(game.influence / cost, 1)).tint(accent)
-                } else {
-                    Text("Todos os bairros estão abertos. Alcance 12 negócios para a próxima missão.")
-                        .foregroundStyle(.secondary)
-                    ProgressView(value: min(Double(game.owned.reduce(0, +)) / 12, 1)).tint(accent)
-                }
-            }
-        }
-        .factoryPage().navigationTitle("Quartel-general").navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func capturePreview(for screen: String) -> CrimeEconomy {
-        var preview = CrimeEconomy()
-        let captureDate = Date.now
-        for _ in 0..<10_000 { preview.tap(at: captureDate) }
-        _ = preview.unlockDistrict(1, at: captureDate)
-
-        if screen == "districts" {
-            _ = preview.unlockDistrict(2, at: captureDate)
-            _ = preview.buy(0, quantity: 3, at: captureDate)
-            _ = preview.buy(1, quantity: 2, at: captureDate)
-            _ = preview.buy(2, quantity: 1, at: captureDate)
-            _ = preview.buy(3, quantity: 1, at: captureDate)
-        } else {
-            _ = preview.buy(0, quantity: 3, at: captureDate)
-            _ = preview.buy(1, quantity: 2, at: captureDate)
-            if screen == "businesses" { _ = preview.buy(2, quantity: 1, at: captureDate) }
-            if screen == "missions" {
-                _ = preview.claimMission(0, at: captureDate)
-                _ = preview.buy(2, quantity: 1, at: captureDate)
-            }
-        }
-        preview.accrue(seconds: 0, at: .now)
-        return preview
-    }
-
-    private var businessView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            FactoryHeader(eyebrow: "Expansão", title: "Negócios da cidade", subtitle: "Empreendimentos totalmente fictícios. Compras usam apenas o saldo local.", accent: accent)
-            FactoryDemoNotice()
-            FactoryPanel(title: "Compra rápida", systemImage: "cart.fill") {
-                Picker("Quantidade", selection: $buyQuantity) {
-                    Text("×1").tag(1)
-                    Text("×10").tag(10)
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("business-buy-quantity")
-                Text("A compra em lote é atômica: o saldo precisa cobrir todas as unidades selecionadas.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            ForEach(CrimeEconomy.businesses) { business in
-                let requiredDistrict = business.districtID + 1
-                let districtIsOpen = requiredDistrict <= game.unlockedDistricts
-                let purchaseCost = game.purchaseCost(forBusiness: business.id, quantity: buyQuantity)
-                FactoryPanel {
-                    HStack(alignment: .top, spacing: 14) {
-                        Image(systemName: business.systemImage)
-                            .font(.title2).foregroundStyle(accent).frame(width: 34)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(business.name).font(.headline)
-                            Text("Nível \(game.owned[business.id]) · \(CrimeEconomy.districtNames[business.districtID])")
-                                .font(.caption).foregroundStyle(.secondary)
-                            Text("\(game.incomeFromBusinessPerSecond(business.id), specifier: "%.2f") influência/s · cidade ×\(game.districtMultiplier, specifier: "%.2f")")
-                                .font(.caption2).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .foregroundStyle(tab == item ? Noir.gold : Noir.muted)
+                    .background {
+                        if tab == item {
+                            Capsule().fill(Noir.gold.opacity(0.14))
                         }
-                        Spacer()
-                        Button {
-                            _ = game.buy(business.id, quantity: buyQuantity)
-                        } label: {
-                            VStack(spacing: 2) {
-                                Text(purchaseCost?.formatted(.number.precision(.fractionLength(0))) ?? "—")
-                                Text("Comprar ×\(buyQuantity)").font(.caption2)
-                            }
-                        }
-                        .buttonStyle(.borderedProminent).tint(accent)
-                        .disabled(!game.canBuy(business.id, quantity: buyQuantity))
-                        .accessibilityLabel("Comprar \(business.name), quantidade \(buyQuantity)")
-                        .accessibilityIdentifier("buy-business-\(business.id)")
                     }
-                    if !districtIsOpen {
-                        Label("Desbloqueie \(CrimeEconomy.districtNames[business.districtID]) no mapa", systemImage: "lock.fill")
-                            .font(.caption).foregroundStyle(.orange)
-                    }
-                }
-            }
-        }
-        .factoryPage().navigationTitle("Empreendimentos").navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var missionView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            FactoryHeader(eyebrow: "Pequenas vitórias", title: "Missões", subtitle: "Objetivos simples para orientar a sua carreira fictícia.", accent: accent)
-            FactoryDemoNotice()
-            ForEach(CrimeMission.catalog) { mission in
-                let progress = game.missionProgress(mission.id)
-                FactoryPanel {
-                    Label(mission.title, systemImage: game.claimedMissions.contains(mission.id) ? "checkmark.seal.fill" : "target").font(.headline)
-                    ProgressView(value: progress).tint(accent)
-                    Button(game.claimedMissions.contains(mission.id) ? "Recompensa resgatada" : "Resgatar \(mission.reward.formatted(.number.precision(.fractionLength(0)))) de influência") {
-                        _ = game.claimMission(mission.id)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!game.canClaimMission(mission.id))
-                    .accessibilityIdentifier("claim-mission-\(mission.id)")
-                }
-            }
-        }
-        .factoryPage().navigationTitle("Missões").navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var districtsView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            FactoryHeader(eyebrow: "Mapa fictício", title: "Distritos", subtitle: "Expanda a cidade ao atingir os requisitos de influência.", accent: accent)
-            FactoryDemoNotice(message: "Cidade inventada · progresso salvo localmente")
-            FactoryPanel(title: "Efeito da expansão", systemImage: "arrow.up.right") {
-                Text("Bairros abertos: \(game.unlockedDistricts)/\(CrimeEconomy.districtNames.count)")
-                Text("Multiplicador da cidade: ×\(game.districtMultiplier, specifier: "%.2f")")
-                    .font(.title3.bold()).foregroundStyle(accent)
-                Text("Cada novo bairro aumenta a renda de todos os negócios.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            ForEach(CrimeEconomy.districtNames.indices, id: \.self) { index in
-                let districtName = CrimeEconomy.districtNames[index]
-                let cost = CrimeEconomy.districtUnlockCosts[index]
-                let isOpen = index < game.unlockedDistricts
-                FactoryPanel {
-                    HStack(spacing: 14) {
-                        Image(systemName: CrimeEconomy.districtSymbols[index]).font(.title2).foregroundStyle(accent).frame(width: 42)
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(districtName).font(.headline)
-                            Text(isOpen ? "Aberto · produção da cidade ×\(game.districtMultiplier, specifier: "%.2f")" : "Requisito: \(cost.formatted(.number.precision(.fractionLength(0)))) de influência")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
-                        if isOpen { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
-                        else {
-                            Button("Abrir") { _ = game.unlockDistrict(index) }
-                                .buttonStyle(.borderedProminent).tint(accent)
-                                .disabled(index != game.unlockedDistricts || game.influence < cost)
+                    .overlay(alignment: .topTrailing) {
+                        if hasBadge(item) {
+                            Circle().fill(Noir.neon).frame(width: 9, height: 9).offset(x: -14, y: 4)
                         }
                     }
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(item.title)
+                .accessibilityValue(tab == item ? "Selecionado" : "")
+                .accessibilityIdentifier("tab-\(item.title)")
             }
-            Text("Desbloqueios são compras fictícias do progresso do jogo, sem pagamento ou compra no app.")
-                .font(.footnote).foregroundStyle(.secondary)
-        }.factoryPage().navigationTitle("Mapa da cidade").navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var navigationBar: some View {
-        HStack(spacing: 4) {
-            navButton("Cidade", symbol: "building.2.fill", index: 0)
-            navButton("Negócios", symbol: "briefcase.fill", index: 1)
-            navButton("Missões", symbol: "flag.fill", index: 2)
-            navButton("Mapa", symbol: "map.fill", index: 3)
         }
-        .padding(10)
-        .background(.regularMaterial, in: Capsule())
-        .padding(.horizontal, 10).padding(.bottom, 8)
+        .padding(6)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.08)))
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
+        .frame(maxWidth: 620)
     }
 
-    private func navButton(_ title: String, symbol: String, index: Int) -> some View {
-        Button { activeTab = index } label: {
-            Label(title, systemImage: symbol).font(.caption2.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 42)
-                .foregroundStyle(activeTab == index ? accent : .secondary)
+    private func hasBadge(_ item: CrimeTab) -> Bool {
+        let state = store.state
+        switch item {
+        case .home: return state.pendingEvent != nil || state.openContracts.contains { state.canClaimContract($0.id) }
+        case .rackets: return CrimeRacket.catalog.contains { state.canHireManager($0.id) }
+        case .heists: return state.activeHeist?.isReady == true
+        case .crew: return CrimeCrewMember.catalog.contains { state.crewLevels[$0.id] == 0 && state.canUpgradeCrew($0.id) }
+        case .map: return state.canConquer(state.districts) || state.canPrestige
         }
-        .accessibilityLabel(title)
-        .accessibilityValue(activeTab == index ? "Selecionado" : "")
-        .buttonStyle(.plain)
     }
 
+    @ViewBuilder private var toastView: some View {
+        if let toast = store.toast {
+            Text(toast)
+                .font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .background(Noir.raised, in: Capsule())
+                .overlay(Capsule().strokeBorder(Noir.gold.opacity(0.5)))
+                .shadow(color: Noir.gold.opacity(0.25), radius: 14)
+                .padding(.top, 8)
+                .padding(.horizontal, 24)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .accessibilityIdentifier("toast")
+        }
+    }
+}
+
+struct CrimeOfflineSheet: View {
+    let report: CrimeOfflineReport
+    let dismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.system(size: 46))
+                .foregroundStyle(Noir.gold)
+                .padding(.top, 26)
+            Text("Enquanto você estava fora…")
+                .font(.title3.weight(.bold))
+            Text("Seus gerentes trabalharam por \(CrimeFormat.duration(report.seconds)).")
+                .foregroundStyle(Noir.muted)
+            Text("+" + CrimeFormat.cash(report.cash))
+                .font(.system(size: 44, weight: .heavy, design: .rounded))
+                .foregroundStyle(Noir.money)
+            Button("Recolher a grana", action: dismiss)
+                .buttonStyle(NoirButtonStyle(tint: Noir.gold))
+                .padding(.horizontal, 30)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20)
+    }
+}
+
+extension CrimeState {
+    /// Estados determinísticos para capturas de revisão no simulador.
+    static func capturePreview(screen: String) -> CrimeState {
+        var state = CrimeState(seed: 2026, now: Date())
+        state.cash = 1e13
+        state.respect = 400
+        state.conquer(1)
+        state.conquer(2)
+        for (index, count) in [(0, 180), (1, 120), (2, 90), (3, 60), (4, 30), (5, 12)] {
+            state.buy(racket: index, quantity: count)
+        }
+        for index in 0..<5 { state.hireManager(index) }
+        for upgrade in [0, 1, 2, 3, 4] { state.buyUpgrade(upgrade) }
+        for (member, level) in [(0, 6), (1, 4), (2, 3), (3, 2), (4, 1)] {
+            for _ in 0..<level { state.upgradeCrew(member) }
+        }
+        state.cash = 3.42e9
+        state.respect = 38
+        state.heat = 47
+        state.lifetimeTotal = 7.9e10
+        state.lifetimeRun = 7.9e10
+        state.heistsCompleted = 9
+        state.claimedContracts = [0, 1, 2, 3, 4, 5]
+        state.progress = [0.4, 1.6, 2.2, 7.1, 9.5, 41, 0, 0, 0, 0]
+        if screen == "home" { state.pendingEvent = 1 }
+        if screen == "heists" || screen == "home" {
+            state.startHeist(3, plan: .standard)
+            state.activeHeist?.remaining = 480
+        }
+        return state
+    }
 }
