@@ -567,7 +567,7 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
 
     /// Força em campo: condição física e moral influenciam o geral.
     var effectiveOverall: Double {
-        Double(overall) * (0.72 + 0.28 * Double(condition) / 100) * (0.96 + 0.08 * Double(morale) / 100)
+        Double(overall) * (0.72 + 0.28 * Double(condition) / 100) * (0.96 + 0.08 * Double(morale) / 100) * (isInjured ? 0.88 : 1)
     }
 
     func has(_ trait: PlayerTrait) -> Bool { traits.contains(trait) }
@@ -678,12 +678,18 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     /// Domínio da partida minuto a minuto (positivo favorece o mandante), só nos jogos do usuário.
     var momentum: [Int] = []
     var attendance: Int? = nil
+    /// Detalhes usados pelo fantasy game e pelas notícias.
+    var assistIDs: [Int] = []
+    var playedIDs: [Int] = []
+    var yellowIDs: [Int] = []
+    var redIDs: [Int] = []
 
     private enum CodingKeys: String, CodingKey {
         case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
         case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties, userStats
         case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum, attendance
+        case assistIDs, playedIDs, yellowIDs, redIDs
     }
 
     init(id: Int, matchDay: Int, round: Int, competition: Competition, home: Int, away: Int) {
@@ -731,6 +737,10 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         awayRed = try container.decodeIfPresent(Int.self, forKey: .awayRed)
         momentum = try container.decodeIfPresent([Int].self, forKey: .momentum) ?? []
         attendance = try container.decodeIfPresent(Int.self, forKey: .attendance)
+        assistIDs = try container.decodeIfPresent([Int].self, forKey: .assistIDs) ?? []
+        playedIDs = try container.decodeIfPresent([Int].self, forKey: .playedIDs) ?? []
+        yellowIDs = try container.decodeIfPresent([Int].self, forKey: .yellowIDs) ?? []
+        redIDs = try container.decodeIfPresent([Int].self, forKey: .redIDs) ?? []
     }
 
     var isPlayed: Bool { homeGoals != nil && awayGoals != nil }

@@ -297,7 +297,21 @@ enum FootballSeason {
                 .map(\.id)
             chosen.append(contentsOf: extras)
         }
+        if chosen.count < 11 { chosen.append(contentsOf: emergencyFill(roster: roster, excluding: chosen, count: 11 - chosen.count, matchDay: matchDay)) }
         return chosen
+    }
+
+    /// Plano B quando faltam atletas: jovens da base e, por último, lesionados jogando no sacrifício.
+    static func emergencyFill(roster: [FootballPlayer], excluding chosen: [Int], count: Int, matchDay: Int) -> [Int] {
+        let youth = roster.filter { $0.isYouth && !chosen.contains($0.id) && $0.isAvailable(matchDay: matchDay) }.sorted(by: strongerFirst)
+        var picks = Array(youth.prefix(count)).map(\.id)
+        if picks.count < count {
+            let hurt = roster.filter {
+                !chosen.contains($0.id) && !picks.contains($0.id) && !$0.isSuspended && $0.nationalDutyMatchDay != matchDay
+            }.sorted { $0.injuryRounds != $1.injuryRounds ? $0.injuryRounds < $1.injuryRounds : strongerFirst($0, $1) }
+            picks += hurt.prefix(count - picks.count).map(\.id)
+        }
+        return picks
     }
 
     static func strongerFirst(_ lhs: FootballPlayer, _ rhs: FootballPlayer) -> Bool {

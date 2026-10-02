@@ -14,7 +14,7 @@ extension FootballCareer {
     }
 
     /// Prestígio máximo dos clubes que aceitariam o treinador, pela reputação dele.
-    var maxPrestige: Int { 50 + Int(Double(reputation) * 0.4) }
+    var maxPrestige: Int { 50 + Int(Double(reputation) * 0.4) + 3 * (world.coach.licenseLevel - 1) }
 
     func initialReputation(for club: LeagueTeam) -> Int {
         max(15, min(70, (club.strength - 55) * 2))
@@ -23,7 +23,7 @@ extension FootballCareer {
     /// Paciência da diretoria: clubes grandes demitem mais rápido.
     func boardPatienceThreshold(for clubID: Int) -> Int {
         let prestige = clubPrestige(clubID)
-        return prestige >= 80 ? 32 : (prestige >= 74 ? 26 : 20)
+        return (prestige >= 80 ? 32 : (prestige >= 74 ? 26 : 20)) + difficulty.patienceShift
     }
 
     mutating func changeReputation(_ delta: Int) {
@@ -63,6 +63,7 @@ extension FootballCareer {
     mutating func acceptInvitation(_ clubID: Int) -> Bool {
         guard liveMatch == nil, !isFired, invitations.contains(where: { $0.clubID == clubID }) else { return false }
         takeOverClub(clubID, budgetFraction: 0.75, confidence: 62)
+        bump("invitations")
         changeReputation(2)
         addInbox(.board, title: "Bem-vindo ao \(FootballSeason.teamName(clubID))", body: "Você assumiu o novo clube. A meta da diretoria: \(objectiveText.lowercased()).")
         return true
@@ -132,6 +133,8 @@ extension FootballCareer {
         if margin > records.biggestWinMargin { records.biggestWinMargin = margin; records.biggestWin = text }
         if -margin > records.biggestLossMargin { records.biggestLossMargin = -margin; records.biggestLoss = text }
         if margin >= 0 { records.currentUnbeaten += 1 } else { records.currentUnbeaten = 0 }
+        if margin > 0 { records.currentWinStreak += 1 } else { records.currentWinStreak = 0 }
+        records.longestWinStreak = max(records.longestWinStreak, records.currentWinStreak)
         records.longestUnbeaten = max(records.longestUnbeaten, records.currentUnbeaten)
         if let crowd = fixture.attendance { records.highestAttendance = max(records.highestAttendance, crowd) }
         if let points = standings.first(where: { $0.team.id == selectedClubID })?.points {

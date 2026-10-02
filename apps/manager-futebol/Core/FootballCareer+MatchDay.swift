@@ -91,7 +91,8 @@ extension FootballCareer {
                 }
             }
         } else if rivalID == selectedClubID {
-            state.attackBoost = rivalMotivation[teamID] ?? 0
+            state.attackBoost = (rivalMotivation[teamID] ?? 0) + difficulty.aiBoost
+            state.defenseBoost = difficulty.aiBoost
         }
         return state
     }
@@ -286,6 +287,10 @@ extension FootballCareer {
         fixture.wentToExtraTime = outcome.wentToExtraTime
         fixture.homePenalties = outcome.homePenalties
         fixture.awayPenalties = outcome.awayPenalties
+        fixture.assistIDs = outcome.homeAssistIDs + outcome.awayAssistIDs
+        fixture.playedIDs = Array(Set(outcome.appeared)).sorted()
+        fixture.yellowIDs = outcome.yellowCardIDs
+        fixture.redIDs = outcome.redCardIDs
 
         recordGoals(outcome.homeScorerIDs + outcome.awayScorerIDs)
         recordAssists(outcome.homeAssistIDs + outcome.awayAssistIDs)
@@ -386,8 +391,12 @@ extension FootballCareer {
                 opponentPrep = false
                 pendingPress = makePressConference(fixture: fixture)
                 updateRecords(after: fixtures[userFixtureIndex])
+                bump("matches")
+                if fixture.result(for: selectedClubID) == .win { bump("wins") }
+                checkChallengeRules(starters: startingXIAtKickoff)
                 checkFanReactions()
                 checkMidSeasonSacking()
+                checkAchievements(fixture: fixtures[userFixtureIndex])
             }
             startingXIAtKickoff = []
         } else {
@@ -397,6 +406,10 @@ extension FootballCareer {
         collectMatchDayIncome()
         chargeMatchDayWages()
         chargeOperatingCosts()
+        var worldRandom = FootballRandom(seed: matchSeed(stream: .world, id: matchDayIndex + 500))
+        tickCoachFinances(using: &worldRandom)
+        tickCoachWellbeing(result: userFixtureIndex.flatMap { fixtures[$0].result(for: selectedClubID ?? -1) },
+                           derby: userFixtureIndex.map { FootballSeason.isDerby(fixtures[$0].home, fixtures[$0].away) } ?? false)
         progressUpgrades()
         settlePendingPayments()
         generatePlayerRequests()
@@ -408,6 +421,16 @@ extension FootballCareer {
         generateOffers(using: &postRandom)
         for index in players.indices { refreshValue(at: index) }
         generateLeagueNews(forMatchDay: matchDayIndex - 1)
+        generateSocialFeed(fixture: userFixtureIndex.map { fixtures[$0] }, using: &worldRandom)
+        settleBets()
+        updateTipsters(using: &worldRandom)
+        scoreFantasyRound(matchDay: matchDayIndex - 1)
+        expireWorldEvents()
+        generateWorldEvent(using: &worldRandom)
+        tickBusiness(using: &worldRandom)
+        if worldDay - world.quests.lastRefreshWorldDay >= 6 { refreshQuests(using: &worldRandom) }
+        updateQuests()
+        if matchDayIndex % 8 == 0 { refreshBrandOffers() }
         manageNationalDuty()
         repairLineup()
     }
@@ -510,6 +533,7 @@ extension FootballCareer {
         }
         boardConfidence = min(100, max(0, boardConfidence))
         fanMood = min(100, max(0, fanMood))
+        bump("press")
         pendingPress = press.isComplete ? nil : press
     }
 

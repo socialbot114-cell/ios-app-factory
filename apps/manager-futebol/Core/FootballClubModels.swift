@@ -5,6 +5,7 @@ import Foundation
 enum FinanceCategory: String, Codable, CaseIterable, Identifiable {
     case gate, members, tv, sponsor, prize, playerSales, playerPurchases, loans
     case wages, staff, facilities, interest, other
+    case merchandise, naming, community, personal
 
     var id: String { rawValue }
 
@@ -23,6 +24,10 @@ enum FinanceCategory: String, Codable, CaseIterable, Identifiable {
         case .facilities: return "Estrutura"
         case .interest: return "Juros"
         case .other: return "Outros"
+        case .merchandise: return "Loja do clube"
+        case .naming: return "Naming rights"
+        case .community: return "Ações sociais"
+        case .personal: return "Pessoal"
         }
     }
 
@@ -41,6 +46,10 @@ enum FinanceCategory: String, Codable, CaseIterable, Identifiable {
         case .facilities: return "building.2.fill"
         case .interest: return "percent"
         case .other: return "ellipsis.circle.fill"
+        case .merchandise: return "bag.fill"
+        case .naming: return "signature"
+        case .community: return "heart.fill"
+        case .personal: return "person.fill"
         }
     }
 }
@@ -101,6 +110,7 @@ struct FinanceBook: Codable, Equatable {
 enum InboxKind: String, Codable {
     case playerPlayingTime, playerContract, playerWantsOut
     case offer, transfer, scouting, injury, board, finance, staff, news, press, general
+    case event, social, agent, bet
 
     var symbol: String {
         switch self {
@@ -117,13 +127,17 @@ enum InboxKind: String, Codable {
         case .news: return "newspaper.fill"
         case .press: return "mic.fill"
         case .general: return "info.circle.fill"
+        case .event: return "exclamationmark.bubble.fill"
+        case .social: return "bubble.left.and.bubble.right.fill"
+        case .agent: return "briefcase.fill"
+        case .bet: return "ticket.fill"
         }
     }
 
     /// Mensagens que pedem uma resposta do treinador.
     var needsResponse: Bool {
         switch self {
-        case .playerPlayingTime, .playerContract, .playerWantsOut, .offer: return true
+        case .playerPlayingTime, .playerContract, .playerWantsOut, .offer, .event, .agent: return true
         default: return false
         }
     }
@@ -503,6 +517,8 @@ struct ClubRecords: Codable, Equatable {
     var biggestLossMargin = 0
     var longestUnbeaten = 0
     var currentUnbeaten = 0
+    var longestWinStreak = 0
+    var currentWinStreak = 0
     var highestAttendance = 0
     var mostPointsInSeason = 0
 }

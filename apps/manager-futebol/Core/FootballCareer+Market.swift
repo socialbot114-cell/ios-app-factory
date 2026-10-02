@@ -38,7 +38,7 @@ extension FootballCareer {
         if player.contract.endSeason != 0 && player.contract.endSeason <= season { factor *= 0.7 }
         if player.age >= 33 { factor *= 0.8 }
         if player.potential - player.overall >= 10 && player.age <= 21 { factor *= 1.15 }
-        return Int((Double(player.marketValue) * factor) / 10_000) * 10_000
+        return Int((Double(player.marketValue) * factor * difficulty.priceFactor) / 10_000) * 10_000
     }
 
     func positionCount(teamID: Int, position: FootballPosition) -> Int {
@@ -139,6 +139,7 @@ extension FootballCareer {
         players[index].form = PlayerForm()
         players[index].isListed = false
         scoutKnowledge[bid.playerID] = nil
+        bump("signings")
         logTransfer(playerID: bid.playerID, name: name, from: sellerID, to: selectedClubID, fee: bid.fee)
 
         if let swapID = bid.swapPlayerID, let swapIndex = players.firstIndex(where: { $0.id == swapID }) {

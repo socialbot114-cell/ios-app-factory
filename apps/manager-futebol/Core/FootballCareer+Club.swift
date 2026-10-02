@@ -34,6 +34,8 @@ extension FootballCareer {
         refreshStaffMarket(using: &random)
         sponsorOffers = makeSponsorOffers(using: &random)
         if let balanced = sponsorOffers.first(where: { $0.profile == "Equilibrado" }) { signSponsor(balanced) }
+        setupSocial()
+        ensureTipsters()
     }
 
     // MARK: - Estádio e bilheteria

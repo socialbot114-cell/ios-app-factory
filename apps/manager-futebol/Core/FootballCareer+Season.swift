@@ -146,6 +146,14 @@ extension FootballCareer {
             generateInvitations(using: &random)
         }
         leaderID = nil
+        settleOutrights(champion: champion, relegated: relegatedIDs, cupWinner: cupWinner)
+        closeBettingSeason()
+        closeFantasySeason()
+        closeBusinessSeason(using: &random)
+        refreshQuests(using: &random)
+        settleBrandDeals()
+        evaluateChallenge(after: record)
+        checkAchievements(record: record)
         return record
     }
 

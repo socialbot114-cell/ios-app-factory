@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 8
+    static let schemaVersion = 10
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
@@ -83,6 +83,13 @@ struct FootballCareer: Codable, Equatable {
         case invitations
         case leaderID
         case lastProtestMatchDay
+        case difficulty
+        case challenge
+        case achievements
+        case counters
+        case tutorialSeen
+        case tutorialDismissed
+        case world
     }
 
     var seed: Int
@@ -163,6 +170,14 @@ struct FootballCareer: Codable, Equatable {
     var invitations: [JobInvitation] = []
     var leaderID: Int? = nil
     var lastProtestMatchDay = -10
+    var difficulty = Difficulty.normal
+    var challenge: ChallengeState? = nil
+    /// Conquistas desbloqueadas: id e temporada em que saiu.
+    var achievements: [String: Int] = [:]
+    var counters: [String: Int] = [:]
+    var tutorialSeen: [String] = []
+    var tutorialDismissed = false
+    var world = WorldState()
     /// Titulares do jogo em andamento (usado para as promessas aos atletas).
     var startingXIAtKickoff: Set<Int> = []
     /// Atletas que entraram em campo no dia de jogo em andamento (condição física e presença).
@@ -294,6 +309,13 @@ struct FootballCareer: Codable, Equatable {
         invitations = try container.decodeIfPresent([JobInvitation].self, forKey: .invitations) ?? []
         leaderID = try container.decodeIfPresent(Int.self, forKey: .leaderID)
         lastProtestMatchDay = try container.decodeIfPresent(Int.self, forKey: .lastProtestMatchDay) ?? -10
+        difficulty = try container.decodeIfPresent(Difficulty.self, forKey: .difficulty) ?? .normal
+        challenge = try container.decodeIfPresent(ChallengeState.self, forKey: .challenge)
+        achievements = try container.decodeIfPresent([String: Int].self, forKey: .achievements) ?? [:]
+        counters = try container.decodeIfPresent([String: Int].self, forKey: .counters) ?? [:]
+        tutorialSeen = try container.decodeIfPresent([String].self, forKey: .tutorialSeen) ?? []
+        tutorialDismissed = try container.decodeIfPresent(Bool.self, forKey: .tutorialDismissed) ?? false
+        world = try container.decodeIfPresent(WorldState.self, forKey: .world) ?? WorldState()
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
     }
@@ -373,6 +395,13 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(invitations, forKey: .invitations)
         try container.encodeIfPresent(leaderID, forKey: .leaderID)
         try container.encode(lastProtestMatchDay, forKey: .lastProtestMatchDay)
+        try container.encode(difficulty, forKey: .difficulty)
+        try container.encodeIfPresent(challenge, forKey: .challenge)
+        try container.encode(achievements, forKey: .achievements)
+        try container.encode(counters, forKey: .counters)
+        try container.encode(tutorialSeen, forKey: .tutorialSeen)
+        try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
+        try container.encode(world, forKey: .world)
     }
 
     /// Save v3: atletas ganham contratos coerentes e o teto salarial é definido a partir da folha atual.
@@ -709,6 +738,9 @@ struct FootballCareer: Codable, Equatable {
         if outOfPosition > 0 {
             warnings.append("\(outOfPosition) atleta(s) improvisado(s) fora de posição.")
         }
+        if let limit = starterAgeLimit, let old = starters.first(where: { $0.age > limit }) {
+            warnings.append("Desafio: \(old.name) tem \(old.age) anos e o limite para titulares é \(limit).")
+        }
         if let slot = currentSlot, slot.isMidweek, nextUserFixture != nil {
             warnings.append("Jogo no meio de semana: o elenco recupera só metade da energia. Considere poupar titulares.")
         }
@@ -735,6 +767,7 @@ struct FootballCareer: Codable, Equatable {
         guard isFired, liveMatch == nil, clubID != selectedClubID,
               jobOffers.contains(where: { $0.id == clubID }) else { return false }
         takeOverClub(clubID, budgetFraction: 0.5, confidence: 55)
+        bump("rehired")
         return true
     }
 
@@ -788,12 +821,12 @@ struct FootballCareer: Codable, Equatable {
 
     mutating func autoSelectLineup() {
         guard liveMatch == nil else { return }
-        startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
+        startingXI = eligibleLineup()
     }
 
     /// Mantém os titulares escolhidos que ainda servem à formação e completa as vagas com os melhores disponíveis.
     func rebuiltLineup(keeping current: [Int], formation: FootballFormation) -> [Int] {
-        let roster = clubRoster.filter { $0.isAvailable(matchDay: matchDayIndex) }
+        let roster = lineupEligibleRoster.filter { $0.isAvailable(matchDay: matchDayIndex) }
         var chosen: [Int] = []
         for position in FootballPosition.allCases {
             let required = formation.requiredPlayers[position, default: 0]
@@ -819,6 +852,10 @@ struct FootballCareer: Codable, Equatable {
                 .prefix(11 - chosen.count)
                 .map(\.id)
             chosen.append(contentsOf: extras)
+        }
+        if chosen.count < 11 {
+            let everyone = players.filter { $0.teamID == selectedClubID }
+            chosen.append(contentsOf: FootballSeason.emergencyFill(roster: everyone, excluding: chosen, count: 11 - chosen.count, matchDay: matchDayIndex))
         }
         return chosen
     }
@@ -891,6 +928,7 @@ struct FootballCareer: Codable, Equatable {
         players[index].assists = 0
         players[index].appearances = 0
         players[index].benchStreak = 0
+        bump("signings")
         players[index].morale = 70
         players[index].form = PlayerForm()
         let status = expectedStatus(of: players[index])
@@ -1025,6 +1063,7 @@ struct FootballCareer: Codable, Equatable {
     /// Cada subsistema usa um fluxo próprio, para que mudar um não altere os resultados dos outros.
     enum RandomStream: UInt64 {
         case match = 1, secondHalf, extraTime, penalties, training, postMatch, offseason, cupDraw, transfers
+        case world, social, betting, events, fantasy, business, quests
     }
 
     func matchSeed(stream: RandomStream, id: Int) -> UInt64 {

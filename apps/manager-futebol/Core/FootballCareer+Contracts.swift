@@ -6,7 +6,11 @@ extension FootballCareer {
     // MARK: - Finanças
 
     /// Toda movimentação de dinheiro passa por aqui: atualiza o caixa e registra no livro financeiro.
-    mutating func book(_ category: FinanceCategory, _ amount: Int, _ note: String) {
+    mutating func book(_ category: FinanceCategory, _ rawAmount: Int, _ note: String) {
+        var amount = rawAmount
+        if amount > 0, [FinanceCategory.gate, .members, .tv, .sponsor].contains(category) {
+            amount = Int(Double(amount) * difficulty.incomeFactor)
+        }
         guard amount != 0 else { return }
         transferBudget += amount
         finance.add(FinanceEntry(season: season, matchDay: matchDayIndex, category: category, amount: amount, note: note))
