@@ -244,11 +244,13 @@ struct PhoneWallpaper: View {
 
     var body: some View {
         let color = team?.primaryColor ?? FootballTheme.accent
-        LinearGradient(colors: [color, color.opacity(0.55), Color.black.opacity(0.92)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            .overlay(alignment: .topTrailing) {
-                Image(systemName: team?.crestSymbol ?? "soccerball").font(.system(size: 220)).foregroundStyle(.white.opacity(0.06)).offset(x: 50, y: 60)
-            }
-            .ignoresSafeArea()
+        ZStack {
+            Color.black
+            LinearGradient(colors: [color, color.opacity(0.55), Color.black.opacity(0.92)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            Image(systemName: team?.crestSymbol ?? "soccerball").font(.system(size: 220)).foregroundStyle(.white.opacity(0.06))
+                .offset(x: 90, y: -230)
+        }
+        .ignoresSafeArea()
     }
 }
 
@@ -294,14 +296,14 @@ struct PhoneHomeScreen: View {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 18) {
                             ForEach(PhoneApp.grid) { app in icon(app, id: "app-\(app.rawValue)") }
                         }
-                        Color.clear.frame(height: 90)
+                        Color.clear.frame(height: 8)
                     }
                     .padding(.horizontal, 4)
                 }
+                dock
             }
             .padding(.horizontal, 16)
         }
-        .overlay(alignment: .bottom) { dock }
     }
 
     // MARK: Widgets
@@ -394,7 +396,6 @@ struct PhoneHomeScreen: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 30, style: .continuous))
-        .padding(.horizontal, 14)
         .padding(.bottom, 6)
     }
 }
