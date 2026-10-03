@@ -27,7 +27,15 @@ struct FootballGrowthView: View {
 
     private var pressurePanel: some View {
         FactoryPanel(title: "Pressão da torcida: \(career.pressureLabel)", systemImage: "flame.fill") {
-            ConditionBar(value: 100 - career.fanPressure)
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.08))
+                    Capsule().fill(career.fanPressure >= 75 ? Color.red : (career.fanPressure >= 55 ? Color.orange : FootballTheme.accent))
+                        .frame(width: proxy.size.width * CGFloat(career.fanPressure) / 100)
+                }
+            }
+            .frame(height: 6)
+            .accessibilityLabel("Pressão \(career.fanPressure) de 100")
             Text("Posição na tabela contra a meta, humor da torcida, últimos resultados e prestígio do clube. Pressão alta estressa você e abala atletas menos determinados. Em casa, estádio feliz e cheio empurra o time.")
                 .font(.caption).foregroundStyle(.secondary)
         }

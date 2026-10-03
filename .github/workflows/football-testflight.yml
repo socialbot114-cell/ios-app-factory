@@ -1,0 +1,94 @@
+name: Football TestFlight
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version
+        required: true
+        default: '1.0'
+      build:
+        description: Unique build number
+        required: true
+        default: '1'
+permissions:
+  contents: read
+concurrency:
+  group: football-testflight
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ inputs.version }}
+      BUILD: ${{ inputs.build }}
+      BUNDLE: br.com.sejao.tecnico.soccer
+    steps:
+      - uses: actions/checkout@v7
+      - run: brew list xcodegen || brew install xcodegen
+      - run: python3 tools/validate_factory.py
+      - run: xcodegen generate --spec project.yml
+      - name: Test iPhone and iPad
+        run: |
+          set -euo pipefail
+          for family in iphone ipad; do
+            simulator=$(python3 tools/select_simulator.py "$family")
+            xcodebuild test -project IOSAppFactory.xcodeproj -scheme ManagerFutebol -destination "id=$simulator" -resultBundlePath "$RUNNER_TEMP/$family.xcresult" CODE_SIGNING_ALLOWED=NO
+          done
+      - name: Install signing
+        env:
+          CERT: ${{ secrets.APPLE_DISTRIBUTION_CERT }}
+          KEY: ${{ secrets.APPLE_DISTRIBUTION_KEY }}
+          PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          API_KEY: ${{ secrets.APPLE_API_KEY_P8 }}
+          API_ID: ${{ secrets.APPLE_API_KEY_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for name in CERT KEY PROFILE API_KEY API_ID; do test -n "${!name}"; done
+          printf '%s' "$CERT" | base64 --decode > "$RUNNER_TEMP/dist.cer"
+          printf '%s' "$KEY" | base64 --decode > "$RUNNER_TEMP/dist.key"
+          printf '%s' "$PROFILE" | base64 --decode > "$RUNNER_TEMP/dist.mobileprovision"
+          security cms -D -i "$RUNNER_TEMP/dist.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          python3 tools/football_signing.py
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/private_keys"
+          uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          cp "$RUNNER_TEMP/dist.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$uuid.mobileprovision"
+          printf '%s' "$API_KEY" > "$HOME/private_keys/AuthKey_$API_ID.p8"
+          password=$(openssl rand -hex 32)
+          security create-keychain -p "$password" "$RUNNER_TEMP/signing.keychain-db"
+          security unlock-keychain -p "$password" "$RUNNER_TEMP/signing.keychain-db"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/signing.keychain-db"
+          security import "$RUNNER_TEMP/dist.key" -k "$RUNNER_TEMP/signing.keychain-db" -P '' -T /usr/bin/codesign
+          security import "$RUNNER_TEMP/dist.cer" -k "$RUNNER_TEMP/signing.keychain-db" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$RUNNER_TEMP/signing.keychain-db"
+          security list-keychains -d user -s "$RUNNER_TEMP/signing.keychain-db"
+      - name: Archive and export
+        run: |
+          set -euo pipefail
+          xcodebuild archive -project IOSAppFactory.xcodeproj -scheme ManagerFutebol -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Football.xcarchive" CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='iPhone Distribution' DEVELOPMENT_TEAM="$TEAM" PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD"
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Football.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export"
+          unzip -q "$RUNNER_TEMP/export/ManagerFutebol.ipa" -d "$RUNNER_TEMP/unpacked"
+          app="$RUNNER_TEMP/unpacked/Payload/ManagerFutebol.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = "$BUNDLE"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")" = "$VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Info.plist")" = "$BUILD"
+          codesign --verify --deep --strict "$app"
+      - name: Upload TestFlight
+        env:
+          API_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: xcrun altool --upload-app --type ios --file "$RUNNER_TEMP/export/ManagerFutebol.ipa" --apiKey "$API_ID" --apiIssuer "$ISSUER"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: football-release-${{ inputs.version }}-${{ inputs.build }}
+          path: |
+            ${{ runner.temp }}/*.xcresult
+            ${{ runner.temp }}/export/*.ipa
+          retention-days: 14
+      - name: Cleanup
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP"/dist.* "$RUNNER_TEMP/profile.plist" "$HOME"/private_keys/AuthKey_*.p8

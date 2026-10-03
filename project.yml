@@ -79,7 +79,9 @@ targets:
     sources: [FactoryShared, apps/manager-futebol/Sources, apps/manager-futebol/Core]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.managerfutebol
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.sejao.tecnico.soccer
+        MARKETING_VERSION: '1.0'
+        CURRENT_PROJECT_VERSION: '1'
         INFOPLIST_KEY_CFBundleDisplayName: Manager de Futebol
   ManagerFutebolTests:
     type: bundle.unit-test
