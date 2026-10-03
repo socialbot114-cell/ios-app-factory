@@ -21,6 +21,7 @@ extension FootballCareer {
     mutating func prepareMatchDay() {
         guard let slot = currentSlot else { return }
         autoSignSponsorIfNeeded()
+        autoSignTVIfNeeded()
         applyWeeklyTraining(for: slot.index, midweek: slot.isMidweek)
         let aiRecovery = slot.isMidweek ? 4 : 8
         for index in players.indices where players[index].teamID != selectedClubID {
@@ -65,7 +66,7 @@ extension FootballCareer {
         return instructions
     }
 
-    func makeSideState(teamID: Int, rivalID: Int, isUser: Bool, styleOverride: FootballPlayStyle? = nil) -> MatchSideState {
+    func makeSideState(teamID: Int, rivalID: Int, isUser: Bool, styleOverride: FootballPlayStyle? = nil, atHome: Bool = false) -> MatchSideState {
         let lineupIDs = lineup(for: teamID)
         let available = players.filter { $0.teamID == teamID && !$0.isYouth && $0.isAvailable(matchDay: matchDayIndex) }
         let bench = available.filter { !lineupIDs.contains($0.id) }.sorted(by: FootballSeason.strongerFirst).prefix(7).map(\.id)
@@ -80,6 +81,7 @@ extension FootballCareer {
             state.roles = playerRoles.filter { lineupIDs.contains($0.key) }
             state.penaltyTakerID = penaltyTakerID
             state.injuryFactor = injuryRiskFactor
+            if atHome { state.attackBoost += stadiumAtmosphere }
             let sessions = ([trainingFocus] + [secondaryTrainingFocus].compactMap { $0 }).filter { $0 == .setPieces }.count
             state.setPieceBoost = 0.06 * Double(sessions)
             if opponentPrep, let fixture = fixtures.first(where: { $0.matchDay == matchDayIndex && $0.involves(teamID) && !$0.isPlayed }) {
@@ -99,7 +101,7 @@ extension FootballCareer {
 
     func makeSimulation(fixture: LeagueFixture, detailed: Bool) -> MatchSimulation {
         let userID = selectedClubID
-        let home = makeSideState(teamID: fixture.home, rivalID: fixture.away, isUser: detailed && fixture.home == userID)
+        let home = makeSideState(teamID: fixture.home, rivalID: fixture.away, isUser: detailed && fixture.home == userID, atHome: true)
         let away = makeSideState(teamID: fixture.away, rivalID: fixture.home, isUser: detailed && fixture.away == userID)
         return MatchSimulation.make(fixtureID: fixture.id, seed: matchSeed(stream: .match, id: fixture.id),
                                     isCup: fixture.competition.isCup, isDerby: FootballSeason.isDerby(fixture.home, fixture.away),
@@ -392,7 +394,7 @@ extension FootballCareer {
                 pendingPress = makePressConference(fixture: fixture)
                 updateRecords(after: fixtures[userFixtureIndex])
                 bump("matches")
-                if fixture.result(for: selectedClubID) == .win { bump("wins") }
+                if fixture.result(for: selectedClubID) == .win { bump("wins"); settleTVWin() }
                 checkChallengeRules(starters: startingXIAtKickoff)
                 checkFanReactions()
                 checkMidSeasonSacking()
@@ -428,6 +430,7 @@ extension FootballCareer {
         expireWorldEvents()
         generateWorldEvent(using: &worldRandom)
         tickBusiness(using: &worldRandom)
+        tickGrowth(using: &worldRandom)
         if worldDay - world.quests.lastRefreshWorldDay >= 6 { refreshQuests(using: &worldRandom) }
         updateQuests()
         if matchDayIndex % 8 == 0 { refreshBrandOffers() }

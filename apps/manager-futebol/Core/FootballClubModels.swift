@@ -5,7 +5,7 @@ import Foundation
 enum FinanceCategory: String, Codable, CaseIterable, Identifiable {
     case gate, members, tv, sponsor, prize, playerSales, playerPurchases, loans
     case wages, staff, facilities, interest, other
-    case merchandise, naming, community, personal
+    case merchandise, naming, community, personal, marketing, academy
 
     var id: String { rawValue }
 
@@ -28,6 +28,8 @@ enum FinanceCategory: String, Codable, CaseIterable, Identifiable {
         case .naming: return "Naming rights"
         case .community: return "Ações sociais"
         case .personal: return "Pessoal"
+        case .marketing: return "Marketing"
+        case .academy: return "Categorias de base"
         }
     }
 
@@ -50,6 +52,8 @@ enum FinanceCategory: String, Codable, CaseIterable, Identifiable {
         case .naming: return "signature"
         case .community: return "heart.fill"
         case .personal: return "person.fill"
+        case .marketing: return "megaphone.fill"
+        case .academy: return "graduationcap.fill"
         }
     }
 }

@@ -16,7 +16,7 @@ CAPTURES = {
     "atelie-colorir": ["home", "editor", "saved"],
     "crime-idle": ["home", "operations", "heists", "crew", "territory"],
     "detetive-na-testa": ["home", "game", "result"],
-    "manager-futebol": ["select", "home", "match", "squad", "table", "cup", "market", "club", "world", "betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "player", "inbox", "finance", "achievements"],
+    "manager-futebol": ["select", "home", "match", "squad", "table", "cup", "market", "club", "world", "betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "player", "inbox", "finance", "achievements", "growth"],
     "meu-qr-pix": ["form", "qr", "history"],
     "leitor-pdf-bolso": ["library", "reader", "search"],
     "brasilia-politica-contexto": ["home", "article", "saved"],

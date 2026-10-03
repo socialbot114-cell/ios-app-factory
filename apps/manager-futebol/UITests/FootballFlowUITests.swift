@@ -10,8 +10,8 @@ final class FootballFlowUITests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Escolha seu clube"].waitForExistence(timeout: 10))
-        let club = app.buttons["choose-club-0"]
+        XCTAssertTrue(app.staticTexts["Seu primeiro contrato"].waitForExistence(timeout: 10))
+        let club = app.buttons["choose-offer-0"]
         tapWhenReady(club, in: app)
         if !app.buttons["play-match"].waitForExistence(timeout: 6), club.exists {
             attachScreenshot(app, name: "after-first-club-tap")

@@ -359,6 +359,12 @@ struct FootballDashboardView: View {
             }
             ConditionBar(value: career.boardConfidence)
                 .accessibilityLabel("Confiança da diretoria \(career.boardConfidence)%")
+            HStack {
+                Label("Pressão da torcida", systemImage: "flame.fill").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text(career.pressureLabel).font(.caption.weight(.bold))
+                    .foregroundStyle(career.fanPressure >= 75 ? Color.red : (career.fanPressure >= 55 ? Color.orange : Color.secondary))
+            }
             if career.lastRoundRevenue > 0 {
                 Label("Bilheteria da última rodada: \(FootballFormat.money(career.lastRoundRevenue))", systemImage: "ticket.fill")
                     .font(.caption).foregroundStyle(.secondary)

@@ -36,6 +36,8 @@ extension FootballCareer {
         if let balanced = sponsorOffers.first(where: { $0.profile == "Equilibrado" }) { signSponsor(balanced) }
         setupSocial()
         ensureTipsters()
+        world.growth = GrowthState()
+        ensureGrowthOffers(using: &random)
     }
 
     // MARK: - Estádio e bilheteria
@@ -72,8 +74,7 @@ extension FootballCareer {
     /// Receitas de todo dia de jogo: TV, sócios e patrocínio (a bilheteria é lançada com a partida em casa).
     mutating func collectMatchDayIncome() {
         guard let selectedClubID, let club = selectedClub else { return }
-        let tv = Int(Double(club.startingBudget) * (division(of: selectedClubID) == .serieA ? 0.012 : 0.006) / 10_000) * 10_000
-        book(.tv, tv, "Cotas de TV")
+        book(.tv, tvIncomePerMatchDay, "Cotas de TV")
         book(.members, Int(Double(members) * 1.4 / 100) * 100, "Mensalidades dos sócios-torcedores")
         if let deal = sponsorDeal {
             book(.sponsor, deal.fixedPerSeason / FootballSeason.matchDaysPerSeason, "Patrocínio \(deal.sponsor)")
@@ -351,10 +352,12 @@ extension FootballCareer {
         }
         if let deal = sponsorDeal, deal.endSeason <= season { sponsorDeal = nil }
         refreshStaffMarket(using: &random)
+        closeGrowthSeason()
     }
 
     /// Ofertas de patrocínio para a nova temporada, quando o contrato terminou.
     mutating func prepareNewSeasonClub(using random: inout FootballRandom) {
+        prepareGrowthSeason(using: &random)
         guard selectedClubID != nil, sponsorDeal == nil else { return }
         sponsorOffers = makeSponsorOffers(using: &random)
     }

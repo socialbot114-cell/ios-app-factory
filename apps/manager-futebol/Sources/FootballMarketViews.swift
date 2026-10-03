@@ -237,22 +237,41 @@ struct FootballMarketView: View {
     // MARK: Base
 
     private var youth: some View {
-        FactoryPanel(title: "Categoria de base · nível \(career.youthAcademyLevel)", systemImage: "graduationcap.fill") {
-            if career.youthRoster.isEmpty { Text("A base chega uma vez por temporada.").font(.subheadline).foregroundStyle(.secondary) }
-            ForEach(career.youthRoster) { player in
-                VStack(alignment: .leading, spacing: 8) {
-                    Button { selected = PlayerSelection(id: player.id) } label: { PlayerRow(player: player) }.buttonStyle(.plain)
-                    HStack(spacing: 10) {
-                        Button("Promover") {
-                            if !career.promoteYouth(playerID: player.id) { onAlert("Sem vaga no elenco ou folha salarial no teto.") }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!career.canPromote(playerID: player.id))
-                        Button("Dispensar", role: .destructive) { career.releaseYouth(playerID: player.id) }.buttonStyle(.bordered)
-                    }
-                    .font(.caption.weight(.bold))
+        VStack(alignment: .leading, spacing: 14) {
+            FactoryPanel(title: "Programa da base · nível \(career.youthAcademyLevel)", systemImage: "graduationcap.fill") {
+                Picker("Programa", selection: Binding(get: { career.world.growth.youthProgram }, set: { career.setYouthProgram($0) })) {
+                    ForEach(YouthProgram.allCases) { Text($0.title).tag($0) }
                 }
-                if player.id != career.youthRoster.last?.id { Divider() }
+                .pickerStyle(.segmented)
+                Text(career.world.growth.youthProgram.summary).font(.caption).foregroundStyle(.secondary)
+                Button {
+                    if career.holdTryout(region: missionRegion).isEmpty { onAlert(career.canHoldTryout() ?? "Não foi possível realizar a peneira.") }
+                } label: {
+                    Label("Fazer peneira · \(FootballFormat.money(career.tryoutCost))", systemImage: "figure.soccer").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("hold-tryout")
+                Text("Uma peneira por temporada traz 2 jovens da região escolhida na aba Olheiros.").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(YouthCategory.allCases) { category in
+                FactoryPanel(title: "\(category.title) · \(career.youth(in: category).count)", systemImage: category == .under17 ? "person.crop.circle" : "person.crop.circle.fill") {
+                    if career.youth(in: category).isEmpty { Text("Nenhum atleta nesta categoria.").font(.subheadline).foregroundStyle(.secondary) }
+                    ForEach(career.youth(in: category)) { player in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button { selected = PlayerSelection(id: player.id) } label: { PlayerRow(player: player) }.buttonStyle(.plain)
+                            HStack(spacing: 10) {
+                                Button("Promover") {
+                                    if !career.promoteYouth(playerID: player.id) { onAlert("Sem vaga no elenco ou folha salarial no teto.") }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(!career.canPromote(playerID: player.id))
+                                Button("Dispensar", role: .destructive) { career.releaseYouth(playerID: player.id) }.buttonStyle(.bordered)
+                            }
+                            .font(.caption.weight(.bold))
+                        }
+                        if player.id != career.youth(in: category).last?.id { Divider() }
+                    }
+                }
             }
             ForEach(career.youthCupHistory.suffix(3).reversed()) { result in
                 Text("Copinha T\(result.season): \(result.userResult) · campeão \(FootballSeason.teamName(result.winnerID))").font(.caption).foregroundStyle(.secondary)

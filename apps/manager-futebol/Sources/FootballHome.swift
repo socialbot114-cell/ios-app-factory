@@ -95,7 +95,7 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = ["betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "finance", "player", "inbox", "achievements", "staff"]
+    static let deepCaptures: Set<String> = ["betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "finance", "player", "inbox", "achievements", "staff", "growth"]
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -111,6 +111,7 @@ struct FootballHome: View {
         case "inbox": FootballInboxView(career: $career, onAlert: showAlert)
         case "achievements": FootballAchievementsView(career: career)
         case "staff": FootballStaffView(career: $career, onAlert: showAlert)
+        case "growth": FootballGrowthView(career: $career, onAlert: showAlert)
         default:
             FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0, onAlert: showAlert)
         }
@@ -343,65 +344,93 @@ struct FootballHome: View {
     }
 }
 
-// MARK: - Escolha de clube
+// MARK: - Início de carreira: nome e seis propostas
 
 struct FootballClubSelectionView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
+    @State private var coachName = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(
                 eyebrow: "Nova carreira",
-                title: "Escolha seu clube",
-                subtitle: "Vinte clubes em duas divisões, uma copa nacional e uma carreira sem fim. Comande cada partida ao vivo, tudo offline e com salvamento automático.",
+                title: "Seu primeiro contrato",
+                subtitle: "Diga como você se chama e escolha entre seis propostas. Orçamento, meta, paciência da diretoria e pressão da torcida mudam a dificuldade da sua carreira.",
                 accent: FootballTheme.accent
             )
+            FactoryPanel(title: "Treinador", systemImage: "person.text.rectangle.fill") {
+                TextField("Seu nome", text: $coachName)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .font(.title3.weight(.semibold))
+                    .padding(12)
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .accessibilityIdentifier("coach-name-field")
+                    .onChange(of: coachName) { _, value in
+                        if value.count > FootballCareer.coachNameLimit { coachName = String(value.prefix(FootballCareer.coachNameLimit)) }
+                    }
+                Text("Aparece nas redes, na imprensa e nos contratos.").font(.caption).foregroundStyle(.secondary)
+            }
             FactoryDemoNotice(message: "Liga, clubes e atletas fictícios")
-            ForEach(Division.allCases) { division in
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(division.name.uppercased())
-                            .font(.caption.weight(.heavy)).tracking(1.4)
-                            .foregroundStyle(division.tint)
-                        Spacer()
-                        Text(division == .serieA ? "Brigue pelo título" : "Desafio: conquiste o acesso")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    ForEach(FootballSeason.teams.filter { career.division(of: $0.id) == division }) { club in
-                        Button {
-                            if !career.chooseClub(club.id) {
-                                onAlert("Não foi possível montar o elenco inicial deste clube.")
-                            }
-                        } label: {
-                            clubCard(club)
+            Text("PROPOSTAS").font(.caption.weight(.heavy)).tracking(1.4).foregroundStyle(.secondary)
+            let offers = career.careerOffers()
+            ForEach(Array(offers.enumerated()), id: \.element.id) { index, offer in
+                if let club = FootballSeason.team(offer.clubID) {
+                    Button {
+                        if !career.acceptCareerOffer(clubID: offer.clubID, coachName: coachName) {
+                            onAlert("Não foi possível fechar esta proposta.")
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("choose-club-\(club.id)")
-                        .accessibilityLabel("Escolher \(club.name), \(division.name), força \(club.strength), orçamento \(FootballFormat.money(club.startingBudget))")
+                    } label: {
+                        offerCard(offer, club: club)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("choose-offer-\(index)")
+                    .accessibilityLabel("Proposta do \(club.name), dificuldade \(offer.difficulty) de 5, orçamento \(FootballFormat.money(offer.budget))")
                 }
             }
         }
         .factoryPage()
-        .navigationTitle("Escolha do clube")
+        .navigationTitle("Nova carreira")
     }
 
-    private func clubCard(_ club: LeagueTeam) -> some View {
-        HStack(spacing: 14) {
-            ClubCrest(team: club, size: 46)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(club.name).font(.headline).foregroundStyle(.primary)
-                Text("\(club.city) · \(club.stadium)")
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                HStack(spacing: 6) {
-                    PillLabel(text: "FOR \(club.strength)", tint: club.primaryColor)
-                    PillLabel(text: FootballFormat.money(club.startingBudget), systemImage: "banknote", tint: .secondary)
-                    PillLabel(text: club.preferredStyle.rawValue, tint: .secondary)
+    private func offerCard(_ offer: CareerOffer, club: LeagueTeam) -> some View {
+        let division = career.division(of: club.id)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 14) {
+                ClubCrest(team: club, size: 46)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(club.name).font(.headline).foregroundStyle(.primary)
+                    Text("\(club.city) · \(club.stadium)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    HStack(spacing: 6) {
+                        PillLabel(text: division.name, tint: division.tint)
+                        PillLabel(text: "FOR \(club.strength)", tint: club.primaryColor)
+                    }
+                }
+                Spacer(minLength: 6)
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 1) {
+                        ForEach(0..<5, id: \.self) { Image(systemName: $0 < offer.difficulty ? "flame.fill" : "flame").font(.caption2) }
+                    }
+                    .foregroundStyle(offer.difficulty >= 4 ? Color.red : (offer.difficulty >= 3 ? Color.orange : Color.green))
+                    Text(["", "Tranquilo", "Moderado", "Exigente", "Difícil", "Extremo"][offer.difficulty]).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                 }
             }
-            Spacer(minLength: 6)
-            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            Text(offer.pitch).font(.subheadline).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                GridRow {
+                    term("Orçamento", FootballFormat.money(offer.budget))
+                    term("Meta", FootballCareer.objectiveText(target: offer.boardTarget, division: division))
+                }
+                GridRow {
+                    term("Contrato", "\(offer.contractSeasons) temporada(s)")
+                    term("Luvas", FootballFormat.money(offer.signingBonus))
+                }
+                GridRow {
+                    term("Diretoria", offer.patienceBonus >= 5 ? "Paciente" : (offer.patienceBonus < 0 ? "Impaciente" : "Normal"))
+                    term("Torcida", offer.fanMood >= 60 ? "Tranquila" : (offer.fanMood >= 48 ? "Exigente" : "Pressionando"))
+                }
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -412,5 +441,13 @@ struct FootballClubSelectionView: View {
                 .frame(width: 5)
         }
         .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    private func term(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption2).foregroundStyle(.secondary)
+            Text(value).font(.caption.weight(.semibold)).foregroundStyle(.primary).lineLimit(2).minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

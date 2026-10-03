@@ -23,7 +23,7 @@ extension FootballCareer {
     /// Paciência da diretoria: clubes grandes demitem mais rápido.
     func boardPatienceThreshold(for clubID: Int) -> Int {
         let prestige = clubPrestige(clubID)
-        return (prestige >= 80 ? 32 : (prestige >= 74 ? 26 : 20)) + difficulty.patienceShift
+        return (prestige >= 80 ? 32 : (prestige >= 74 ? 26 : 20)) + difficulty.patienceShift - (world.coach.contract?.patienceBonus ?? 0)
     }
 
     mutating func changeReputation(_ delta: Int) {
@@ -39,6 +39,7 @@ extension FootballCareer {
         transferBudget = Int(Double(club.startingBudget) * budgetFraction)
         boardConfidence = confidence
         isFired = false
+        world.coach.contract = nil
         offers = []
         promises = []
         inbox = []
@@ -207,6 +208,7 @@ extension FootballCareer {
     mutating func checkMidSeasonSacking() {
         guard !isFired, matchDayIndex >= 8, boardConfidence <= 6, selectedClubID != nil else { return }
         isFired = true
+        payContractSeverance()
         changeReputation(-8)
         addInbox(.board, title: "Você foi demitido", body: "A diretoria perdeu a paciência com a sequência de resultados e encerrou seu contrato no meio da temporada.")
     }

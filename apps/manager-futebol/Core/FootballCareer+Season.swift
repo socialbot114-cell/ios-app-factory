@@ -141,6 +141,7 @@ extension FootballCareer {
         boardTarget = computeBoardTarget()
         if fired {
             isFired = true
+            payContractSeverance()
             boardConfidence = 0
         } else {
             generateInvitations(using: &random)

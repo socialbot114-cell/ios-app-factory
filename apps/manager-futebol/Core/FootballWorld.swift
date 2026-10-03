@@ -217,6 +217,7 @@ struct CoachProfile: Codable, Equatable {
     var bookSessions = 0
     var booksPublished = 0
     var nextItemID = 1
+    var contract: CoachContract? = nil
 
     static let licenseNames = ["Licença C", "Licença B", "Licença A", "Licença Pro"]
     static let courseCosts = [0, 40_000, 90_000, 180_000]
@@ -654,10 +655,11 @@ struct WorldState: Codable, Equatable {
     var events = EventsState()
     var business = BusinessState()
     var quests = QuestState()
+    var growth = GrowthState()
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case coach, social, betting, fantasy, events, business, quests }
+    private enum CodingKeys: String, CodingKey { case coach, social, betting, fantasy, events, business, quests, growth }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -668,5 +670,6 @@ struct WorldState: Codable, Equatable {
         events = try container.decodeIfPresent(EventsState.self, forKey: .events) ?? EventsState()
         business = try container.decodeIfPresent(BusinessState.self, forKey: .business) ?? BusinessState()
         quests = try container.decodeIfPresent(QuestState.self, forKey: .quests) ?? QuestState()
+        growth = try container.decodeIfPresent(GrowthState.self, forKey: .growth) ?? GrowthState()
     }
 }

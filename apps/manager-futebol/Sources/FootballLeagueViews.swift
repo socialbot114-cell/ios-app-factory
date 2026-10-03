@@ -419,6 +419,8 @@ struct FootballClubView: View {
             Divider()
             link("Comissão técnica", "person.2.fill", id: "club-staff") { FootballStaffView(career: $career, onAlert: onAlert) }
             Divider()
+            link("Marketing, TV e cotas", "tv.and.mediabox.fill", id: "club-growth") { FootballGrowthView(career: $career, onAlert: onAlert) }
+            Divider()
             link("Patrocínio", "megaphone.fill", id: "club-sponsor") { FootballSponsorView(career: $career, onAlert: onAlert) }
             Divider()
             link("História, recordes e convites", "list.star", badge: career.invitations.count, id: "club-story") { FootballStoryView(career: $career, onAlert: onAlert) }

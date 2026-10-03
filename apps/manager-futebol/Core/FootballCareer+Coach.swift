@@ -15,7 +15,8 @@ extension FootballCareer {
     var coachSalaryPerSeason: Int {
         guard let selectedClubID else { return 0 }
         let base = Double(max(5, clubPrestige(selectedClubID) - 55)) * 20_000
-        return Int((base + Double(reputation) * 1_000) / 5_000) * 5_000
+        let factor = world.coach.contract?.salaryFactor ?? 1.0
+        return Int((base + Double(reputation) * 1_000) * factor / 5_000) * 5_000
     }
 
     /// Salário, manutenção de bens, rendimento de investimentos e royalties de cada dia de jogo.

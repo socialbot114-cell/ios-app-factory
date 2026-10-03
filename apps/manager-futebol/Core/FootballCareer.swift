@@ -774,26 +774,7 @@ struct FootballCareer: Codable, Equatable {
     /// Meta da diretoria pela força do elenco dentro da própria divisão.
     func computeBoardTarget() -> Int {
         guard let selectedClubID else { return 4 }
-        let division = division(of: selectedClubID)
-        let ranking = teamIDs(in: division)
-            .map { teamID -> (Int, Double) in
-                let roster = players.filter { $0.teamID == teamID }
-                let teamFormation = teamID == selectedClubID ? formation : aiFormation(teamID: teamID)
-                let lineup = FootballSeason.bestLineup(roster: roster, formation: teamFormation).compactMap { player($0) }
-                return (teamID, lineup.map { Double($0.overall) }.reduce(0, +) / Double(max(1, lineup.count)))
-            }
-            .sorted { $0.1 > $1.1 }
-        let rank = (ranking.firstIndex { $0.0 == selectedClubID } ?? 5) + 1
-        let safety = FootballSeason.teamsPerDivision - FootballSeason.relegationSpots
-        switch (division, rank) {
-        case (.serieA, 1): return 1
-        case (.serieA, 2...3): return 3
-        case (.serieA, 4...6): return 6
-        case (.serieA, _): return safety
-        case (.serieB, 1...3): return 2
-        case (.serieB, 4...6): return 5
-        case (.serieB, _): return safety
-        }
+        return boardTarget(forClub: selectedClubID)
     }
 
     // MARK: - Tática e escalação
