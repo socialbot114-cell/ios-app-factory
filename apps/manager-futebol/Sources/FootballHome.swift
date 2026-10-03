@@ -1,45 +1,25 @@
 import SwiftUI
 
-enum FootballTab: Int, CaseIterable, Identifiable {
-    case dashboard, squad, table, market, club, world
-
-    var id: Int { rawValue }
-
-    var title: String {
-        switch self {
-        case .dashboard: return "Painel"
-        case .squad: return "Elenco"
-        case .table: return "Liga"
-        case .market: return "Mercado"
-        case .club: return "Clube"
-        case .world: return "Mundo"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .dashboard: return "house.fill"
-        case .squad: return "person.3.fill"
-        case .table: return "list.number"
-        case .market: return "arrow.left.arrow.right"
-        case .club: return "trophy.fill"
-        case .world: return "globe.americas.fill"
-        }
-    }
-}
-
 struct FootballHome: View {
     @State private var career = FootballHome.initialCareer()
     @State private var activeSlot = FootballSaveStore().activeSlot
     @State private var slotSummaries: [SaveSlotSummary?] = []
     @State private var tableSection: FootballTableView.LeagueSection?
-    @State private var selectedTab: FootballTab = .dashboard
+    @State private var openApp: PhoneApp?
     @State private var alertMessage: String?
     @State private var showLiveMatch = false
     @State private var seasonSummary: SeasonRecord?
     @State private var didPrepare = false
     @State private var showPress = false
+    @State private var booting = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
+    @State private var locked = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
+    @State private var showNotifications = false
+    @State private var showSearch = false
+    @State private var searchSeed = ""
+    @State private var searchedPlayer: SearchedPlayer?
     @Environment(\.scenePhase) private var scenePhase
+
+    struct SearchedPlayer: Identifiable { let id: Int }
 
     private var capture: String? { FactoryCapture.screen }
 
@@ -49,8 +29,12 @@ struct FootballHome: View {
                 FootballLiveMatchView(career: $career, staticPreview: true) { }
             } else if let capture, Self.deepCaptures.contains(capture) {
                 NavigationStack { deepCapture(capture).tint(FootballTheme.accent) }
+            } else if booting {
+                PhoneBootView()
+            } else if career.selectedClubID == nil {
+                NavigationStack { FootballClubSelectionView(career: $career, onAlert: showAlert) }
             } else {
-                navigationContent
+                phone
             }
         }
         .tint(FootballTheme.accent)
@@ -63,6 +47,15 @@ struct FootballHome: View {
         .sheet(isPresented: $showPress) {
             FootballPressView(career: $career)
         }
+        .sheet(isPresented: $showNotifications) {
+            PhoneNotificationCenter(career: career) { app in openApp = app }
+        }
+        .sheet(isPresented: $showSearch) {
+            PhoneSpotlight(career: career, initialQuery: searchSeed, onApp: { openApp = $0 }, onPlayer: { searchedPlayer = SearchedPlayer(id: $0) })
+        }
+        .sheet(item: $searchedPlayer) { selection in
+            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: showAlert)
+        }
         .alert("Manager de Futebol", isPresented: Binding(
             get: { alertMessage != nil },
             set: { if !$0 { alertMessage = nil } }
@@ -72,6 +65,11 @@ struct FootballHome: View {
             Text(alertMessage ?? "")
         }
         .onAppear(perform: prepareInitialState)
+        .task {
+            guard booting else { return }
+            try? await Task.sleep(nanoseconds: 1_300_000_000)
+            withAnimation(.easeOut(duration: 0.3)) { booting = false }
+        }
         .onChange(of: career) { _, updatedCareer in
             // Durante a partida ao vivo o save acontece só ao pausar, sair ou fechar o app.
             guard capture == nil, !showLiveMatch else { return }
@@ -95,7 +93,115 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = ["betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "finance", "player", "inbox", "achievements", "staff", "growth"]
+    // MARK: - O celular
+
+    private var phone: some View {
+        ZStack {
+            PhoneHomeScreen(career: career, onOpen: open, onNotifications: { showNotifications = true },
+                            onSearch: { searchSeed = ""; showSearch = true })
+                .accessibilityHidden(openApp != nil || locked)
+            if let app = openApp {
+                appWindow(app)
+                    .transition(.scale(scale: 0.88).combined(with: .opacity))
+                    .zIndex(1)
+            }
+            if locked {
+                PhoneLockScreen(career: career) { withAnimation(.easeOut(duration: 0.3)) { locked = false } }
+                    .transition(.move(edge: .top))
+                    .zIndex(2)
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: openApp)
+    }
+
+    private func open(_ app: PhoneApp) {
+        openApp = app
+    }
+
+    private func closeApp() {
+        openApp = nil
+    }
+
+    private func appWindow(_ app: PhoneApp) -> some View {
+        NavigationStack {
+            appContent(app)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { closeApp() } label: { Label("Início", systemImage: "chevron.left") }
+                            .accessibilityIdentifier("phone-home-top")
+                    }
+                    ToolbarItem(placement: .principal) {
+                        HStack(spacing: 6) {
+                            Image(systemName: app.symbol).foregroundStyle(app.tint)
+                            Text(app.title).font(.headline)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                .navigationBarTitleDisplayMode(.inline)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button { closeApp() } label: {
+                Capsule().fill(Color.primary.opacity(0.35)).frame(width: 140, height: 5)
+                    .frame(maxWidth: .infinity, minHeight: 24)
+                    .contentShape(Rectangle())
+            }
+            .background(FactoryColor.canvas)
+            .accessibilityLabel("Voltar para a tela inicial")
+            .accessibilityIdentifier("phone-home")
+        }
+        .background(FactoryColor.canvas.ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private func appContent(_ app: PhoneApp) -> some View {
+        switch app {
+        case .manager:
+            FootballDashboardView(
+                career: $career,
+                onPlayLive: startLiveMatch,
+                onAlert: showAlert,
+                onSeasonEnded: { seasonSummary = $0 },
+                onNavigate: { openApp = $0 },
+                onShowPress: { showPress = true }
+            )
+        case .squad:
+            FootballSquadView(career: $career, onAlert: showAlert)
+        case .league:
+            FootballTableView(career: career, initialSection: tableSection)
+                .onAppear { career.markTutorialSeen("table") }
+        case .market:
+            FootballMarketView(career: $career, onAlert: showAlert)
+                .onAppear { career.markTutorialSeen("market") }
+        case .club:
+            FootballClubView(
+                career: $career,
+                onAlert: showAlert,
+                onStartChallenge: startChallenge,
+                activeSlot: activeSlot,
+                slotSummaries: slotSummaries,
+                onLoadSlot: loadSlot,
+                onNewCareer: startNewCareer,
+                onDeleteSlot: deleteSlot
+            )
+            .onAppear { career.markTutorialSeen("club") }
+        case .messages: FootballInboxView(career: $career, onAlert: showAlert)
+        case .social: FootballSocialView(career: $career, onAlert: showAlert)
+        case .betting: FootballBettingView(career: $career, onAlert: showAlert)
+        case .fantasy: FootballFantasyView(career: $career, onAlert: showAlert)
+        case .life: FootballCoachLifeView(career: $career, onAlert: showAlert)
+        case .business: FootballBusinessView(career: $career, onAlert: showAlert)
+        case .quests: FootballQuestsView(career: $career)
+        case .trophies: FootballAchievementsView(career: career)
+        case .alerts: FootballEventsView(career: $career)
+        case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
+        case .bank: FootballFinanceView(career: career)
+        case .contacts: FootballContactsView(career: $career, onAlert: showAlert)
+        case .settings: FootballModesView(career: $career, onStartChallenge: startChallenge)
+        }
+    }
+
+    static let deepCaptures: Set<String> = ["betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "finance", "player", "inbox", "achievements", "staff", "growth", "contacts"]
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -112,103 +218,10 @@ struct FootballHome: View {
         case "achievements": FootballAchievementsView(career: career)
         case "staff": FootballStaffView(career: $career, onAlert: showAlert)
         case "growth": FootballGrowthView(career: $career, onAlert: showAlert)
+        case "contacts": FootballContactsView(career: $career, onAlert: showAlert)
         default:
             FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0, onAlert: showAlert)
         }
-    }
-
-    private var navigationContent: some View {
-        NavigationStack {
-            content
-                .safeAreaInset(edge: .bottom) {
-                    if career.selectedClubID != nil && capture != "match" { tabBar }
-                }
-                .toolbar {
-                    if let club = career.selectedClub, capture != "match" {
-                        ToolbarItem(placement: .principal) { toolbarTitle(club) }
-                    }
-                }
-                .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if career.selectedClubID == nil {
-            FootballClubSelectionView(career: $career, onAlert: showAlert)
-        } else {
-            switch selectedTab {
-            case .dashboard:
-                FootballDashboardView(
-                    career: $career,
-                    onPlayLive: startLiveMatch,
-                    onAlert: showAlert,
-                    onSeasonEnded: { seasonSummary = $0 },
-                    onNavigate: { selectedTab = $0 },
-                    onShowPress: { showPress = true }
-                )
-            case .squad:
-                FootballSquadView(career: $career, onAlert: showAlert)
-            case .table:
-                FootballTableView(career: career, initialSection: tableSection)
-                    .onAppear { career.markTutorialSeen("table") }
-            case .market:
-                FootballMarketView(career: $career, onAlert: showAlert)
-                    .onAppear { career.markTutorialSeen("market") }
-            case .world:
-                FootballWorldView(career: $career, onAlert: showAlert)
-            case .club:
-                FootballClubView(
-                    career: $career,
-                    onAlert: showAlert,
-                    onStartChallenge: startChallenge,
-                    activeSlot: activeSlot,
-                    slotSummaries: slotSummaries,
-                    onLoadSlot: loadSlot,
-                    onNewCareer: startNewCareer,
-                    onDeleteSlot: deleteSlot
-                )
-                .onAppear { career.markTutorialSeen("club") }
-            }
-        }
-    }
-
-    private func toolbarTitle(_ club: LeagueTeam) -> some View {
-        HStack(spacing: 6) {
-            ClubCrest(team: club, size: 18)
-            Text(club.name.uppercased())
-            Text("· T\(career.season) · SEM. \(career.currentSlot?.week ?? FootballSeason.calendar.last?.week ?? 1)")
-                .foregroundStyle(.secondary)
-        }
-        .font(.caption.weight(.bold))
-        .tracking(0.8)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var tabBar: some View {
-        HStack(spacing: 2) {
-            ForEach(FootballTab.allCases) { tab in
-                Button { selectedTab = tab } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: tab.symbol).font(.system(size: 16, weight: .semibold))
-                        Text(tab.title).font(.system(size: 10, weight: .semibold))
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 46)
-                    .foregroundStyle(selectedTab == tab ? FootballTheme.accent : .secondary)
-                    .background(selectedTab == tab ? FootballTheme.accent.opacity(0.12) : .clear, in: Capsule())
-                    .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("tab-\(tab.rawValue)")
-                .accessibilityLabel(tab.title)
-                .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
-            }
-        }
-        .padding(6)
-        .background(.regularMaterial, in: Capsule())
-        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 6)
     }
 
     private func showAlert(_ message: String) {
@@ -228,7 +241,7 @@ struct FootballHome: View {
         activeSlot = slot
         FootballSaveStore().activeSlot = slot
         career = FootballCareer(seed: FactoryCapture.isUITesting ? 26 : FootballCareer.randomSeed())
-        selectedTab = .dashboard
+        openApp = nil
         refreshSlots()
     }
 
@@ -239,7 +252,7 @@ struct FootballHome: View {
         activeSlot = target
         store.activeSlot = target
         career = FootballCareer.challenge(scenario)
-        selectedTab = .dashboard
+        openApp = nil
         refreshSlots()
     }
 
@@ -250,7 +263,7 @@ struct FootballHome: View {
         activeSlot = slot
         store.activeSlot = slot
         career = store.load(slot: slot) ?? FootballCareer(seed: FootballCareer.randomSeed())
-        selectedTab = .dashboard
+        openApp = nil
         refreshSlots()
     }
 
@@ -281,7 +294,7 @@ struct FootballHome: View {
             FootballSaveStore().deleteAll()
             activeSlot = 0
             career = FootballCareer(seed: 26)
-            selectedTab = .dashboard
+            openApp = nil
             refreshSlots()
             return
         }
@@ -301,15 +314,20 @@ struct FootballHome: View {
             nil
         ]
         switch capture {
-        case "table": selectedTab = .table
+        case "table": openApp = .league
         case "cup":
             tableSection = .cup
-            selectedTab = .table
-        case "squad": selectedTab = .squad
-        case "market": selectedTab = .market
-        case "club": selectedTab = .club
-        case "world": selectedTab = .world
-        default: selectedTab = .dashboard
+            openApp = .league
+        case "squad": openApp = .squad
+        case "market": openApp = .market
+        case "club": openApp = .club
+        case "world", "phone": openApp = nil
+        case "lock": locked = true
+        case "notifications": showNotifications = true
+        case "spotlight":
+            searchSeed = "Aur"
+            showSearch = true
+        default: openApp = .manager
         }
     }
 

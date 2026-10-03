@@ -38,6 +38,7 @@ extension FootballCareer {
         if player.contract.endSeason != 0 && player.contract.endSeason <= season { factor *= 0.7 }
         if player.age >= 33 { factor *= 0.8 }
         if player.potential - player.overall >= 10 && player.age <= 21 { factor *= 1.15 }
+        factor *= 1 - agentDiscount
         return Int((Double(player.marketValue) * factor * difficulty.priceFactor) / 10_000) * 10_000
     }
 

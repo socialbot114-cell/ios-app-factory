@@ -5,7 +5,7 @@ struct FootballDashboardView: View {
     let onPlayLive: () -> Void
     let onAlert: (String) -> Void
     let onSeasonEnded: (SeasonRecord) -> Void
-    let onNavigate: (FootballTab) -> Void
+    let onNavigate: (PhoneApp) -> Void
     let onShowPress: () -> Void
 
     var body: some View {
@@ -67,13 +67,13 @@ struct FootballDashboardView: View {
                     attentionRow("Coletiva de imprensa aguardando", "mic.fill", .orange, id: "attention-press", action: onShowPress)
                 }
                 if crisis {
-                    attentionRow("Crise de imagem nas redes", "exclamationmark.triangle.fill", .red, id: "attention-crisis") { onNavigate(.world) }
+                    attentionRow("Crise de imagem nas redes", "exclamationmark.triangle.fill", .red, id: "attention-crisis") { onNavigate(.social) }
                 }
                 if events > 0 {
-                    attentionRow("\(events) acontecimento(s) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.world) }
+                    attentionRow("\(events) acontecimento(s) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.alerts) }
                 }
                 if unread > 0 {
-                    attentionRow("\(unread) mensagem(ns) não lida(s)", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.club) }
+                    attentionRow("\(unread) mensagem(ns) não lida(s)", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.messages) }
                 }
                 if invites > 0 {
                     attentionRow("\(invites) convite(s) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
@@ -252,7 +252,7 @@ struct FootballDashboardView: View {
                         }
                     }
                 }
-                Button { onNavigate(.table) } label: {
+                Button { onNavigate(.league) } label: {
                     Label("Ver chaveamento", systemImage: "list.bullet.indent")
                 }
                 .font(.subheadline.weight(.semibold))

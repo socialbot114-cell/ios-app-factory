@@ -519,6 +519,7 @@ extension FootballCareer {
         }
         switch tone {
         case .calm:
+            if relationship(.journalist) >= 60 { fanMood = min(100, fanMood + 1) }
             boardConfidence += result == .loss ? 2 : 1
             if result != .loss { fanMood += 1 }
         case .confident:

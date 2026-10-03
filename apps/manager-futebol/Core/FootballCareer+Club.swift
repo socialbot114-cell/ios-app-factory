@@ -38,6 +38,7 @@ extension FootballCareer {
         ensureTipsters()
         world.growth = GrowthState()
         ensureGrowthOffers(using: &random)
+        ensureContacts()
     }
 
     // MARK: - Estádio e bilheteria

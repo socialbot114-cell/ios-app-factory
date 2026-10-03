@@ -656,10 +656,11 @@ struct WorldState: Codable, Equatable {
     var business = BusinessState()
     var quests = QuestState()
     var growth = GrowthState()
+    var contacts = ContactsState()
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case coach, social, betting, fantasy, events, business, quests, growth }
+    private enum CodingKeys: String, CodingKey { case coach, social, betting, fantasy, events, business, quests, growth, contacts }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -671,5 +672,6 @@ struct WorldState: Codable, Equatable {
         business = try container.decodeIfPresent(BusinessState.self, forKey: .business) ?? BusinessState()
         quests = try container.decodeIfPresent(QuestState.self, forKey: .quests) ?? QuestState()
         growth = try container.decodeIfPresent(GrowthState.self, forKey: .growth) ?? GrowthState()
+        contacts = try container.decodeIfPresent(ContactsState.self, forKey: .contacts) ?? ContactsState()
     }
 }

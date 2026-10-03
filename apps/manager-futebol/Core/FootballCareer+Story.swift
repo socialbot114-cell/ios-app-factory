@@ -23,7 +23,7 @@ extension FootballCareer {
     /// Paciência da diretoria: clubes grandes demitem mais rápido.
     func boardPatienceThreshold(for clubID: Int) -> Int {
         let prestige = clubPrestige(clubID)
-        return (prestige >= 80 ? 32 : (prestige >= 74 ? 26 : 20)) + difficulty.patienceShift - (world.coach.contract?.patienceBonus ?? 0)
+        return (prestige >= 80 ? 32 : (prestige >= 74 ? 26 : 20)) + difficulty.patienceShift - (world.coach.contract?.patienceBonus ?? 0) - presidentPatience
     }
 
     mutating func changeReputation(_ delta: Int) {

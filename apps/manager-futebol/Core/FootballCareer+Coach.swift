@@ -157,6 +157,7 @@ extension FootballCareer {
             world.coach.energy -= activity.energyCost
             if var course = world.coach.course {
                 course.sessionsDone += 1
+                if random.chance(mentorStudyBonusChance) { course.sessionsDone += 1 }
                 if course.sessionsDone >= course.sessionsNeeded {
                     world.coach.licenseLevel = course.targetLicense
                     world.coach.course = nil
