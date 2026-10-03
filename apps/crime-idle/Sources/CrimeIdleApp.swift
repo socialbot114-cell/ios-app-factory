@@ -353,6 +353,27 @@ struct CrimeIdleHome: View {
     private let accent = Color(red: 0.82, green: 0.64, blue: 0.31)
     private let businesses = ["Café Aurora", "Estúdio Nocturno", "Táxi Estelar", "Clube Neblina", "Teatro Eclipse", "Hotel Horizonte"]
     private var capture: String? { FactoryCapture.screen }
+    private var selectedTab: Int {
+        switch capture {
+        case "businesses": return 1
+        case "story", "missions": return 2
+        case "districts": return 3
+        case "projects", "activities", "achievements": return 4
+        default: return activeTab
+        }
+    }
+
+    private var resourceBar: some View {
+        HStack {
+            Label("\(Int(game.cash)) caixa", systemImage: "banknote")
+            Spacer()
+            Label("\(Int(game.reputation)) reputação", systemImage: "star.fill")
+        }
+        .font(.caption.weight(.semibold)).monospacedDigit()
+        .foregroundStyle(accent)
+        .padding(.horizontal, 20).padding(.vertical, 10)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
+    }
 
     var body: some View {
         NavigationStack {
@@ -370,7 +391,10 @@ struct CrimeIdleHome: View {
                         .font(.caption.weight(.bold)).tracking(1.3).foregroundStyle(accent)
                 }
             }
-            .safeAreaInset(edge: .bottom) { navigationBar }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if selectedTab != 0 { resourceBar }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) { navigationBar }
         }
         .tint(accent)
         .preferredColorScheme(.dark)
@@ -441,6 +465,10 @@ struct CrimeIdleHome: View {
                 } else {
                     Text("A campanha principal foi concluída. Amplie sua rede, abra os distritos restantes e conclua projetos.").foregroundStyle(.secondary)
                 }
+                Button(game.totalBusinesses == 0 ? "Abrir Negócios" : "Continuar a história") {
+                    activeTab = game.totalBusinesses == 0 ? 1 : 2
+                }
+                .buttonStyle(.borderedProminent).tint(accent)
             }
         }
         .factoryPage().navigationTitle("Quartel-general").navigationBarTitleDisplayMode(.inline)
@@ -592,9 +620,9 @@ struct CrimeIdleHome: View {
             navButton("Mapa", symbol: "map.fill", index: 3)
             navButton("Projetos", symbol: "sparkles", index: 4)
         }
-        .padding(10)
-        .background(.regularMaterial, in: Capsule())
-        .padding(.horizontal, 10).padding(.bottom, 8)
+        .padding(.horizontal, 8).padding(.vertical, 8)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .overlay(alignment: .top) { Divider() }
     }
 
     private var projectsView: some View {
@@ -604,6 +632,10 @@ struct CrimeIdleHome: View {
             ForEach(projectNames.indices, id: \.self) { index in
                 FactoryPanel(title: projectNames[index], systemImage: ["sun.max.fill", "music.note.house.fill", "sparkles"][index]) {
                     Text(projectDescriptions[index]).foregroundStyle(.secondary)
+                    if !game.completedProjects.contains(index) {
+                        Label(projectRequirements[index], systemImage: game.canCompleteProject(index) ? "checkmark.circle" : "lock")
+                            .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
                     Text("Investimento: \(CrimeEconomy.projectCosts[index].formatted(.number.precision(.fractionLength(0)))) caixa · Retorno: +\(Int(CrimeEconomy.projectCashRewards[index] * game.projectRewardMultiplier)) caixa e +\(Int(CrimeEconomy.projectReputationRewards[index] * (game.unlockedDistricts >= 3 ? 1.2 : 1))) reputação")
                         .font(.caption.weight(.semibold)).foregroundStyle(accent)
                     Button(game.completedProjects.contains(index) ? "Projeto concluído" : "Investir e realizar") {
@@ -664,12 +696,16 @@ struct CrimeIdleHome: View {
 
     private func navButton(_ title: String, symbol: String, index: Int) -> some View {
         Button { activeTab = index } label: {
-            Label(title, systemImage: symbol).font(.caption2.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 42)
-                .foregroundStyle(activeTab == index ? accent : .secondary)
+            VStack(spacing: 5) {
+                Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
+                Text(title).font(.caption2.weight(.semibold))
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .foregroundStyle(selectedTab == index ? accent : .secondary)
         }
         .accessibilityLabel(title)
-        .accessibilityValue(activeTab == index ? "Selecionado" : "")
+        .accessibilityValue(selectedTab == index ? "Selecionado" : "")
         .buttonStyle(.plain)
     }
 
@@ -678,6 +714,11 @@ struct CrimeIdleHome: View {
     }
 
     private let projectNames = ["Noite das Lanternas", "Temporada cultural", "Circuito de festivais"]
+    private let projectRequirements = [
+        "Requer Café Aurora e 35 de caixa",
+        "Requer Estúdio Nocturno, 3 negócios e 125 de caixa",
+        "Requer Rua da Neblina, 5 negócios e 300 de caixa"
+    ]
     private let projectDescriptions = [
         "Lia propõe transformar a inauguração do Café Aurora em um evento para todo o bairro.",
         "Com o Estúdio Nocturno aberto e três negócios na rede, a cidade quer um calendário de atrações.",
