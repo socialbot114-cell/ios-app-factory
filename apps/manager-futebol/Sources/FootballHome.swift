@@ -201,7 +201,7 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = ["betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "finance", "player", "inbox", "achievements", "staff", "growth", "contacts"]
+    static let deepCaptures: Set<String> = ["player", "staff"]
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -322,6 +322,18 @@ struct FootballHome: View {
         case "market": openApp = .market
         case "club": openApp = .club
         case "world", "phone": openApp = nil
+        case "betting": openApp = .betting
+        case "social": openApp = .social
+        case "fantasy": openApp = .fantasy
+        case "lifestyle": openApp = .life
+        case "business": openApp = .business
+        case "quests": openApp = .quests
+        case "events": openApp = .alerts
+        case "finance": openApp = .bank
+        case "inbox": openApp = .messages
+        case "achievements": openApp = .trophies
+        case "growth": openApp = .brand
+        case "contacts": openApp = .contacts
         case "lock": locked = true
         case "notifications": showNotifications = true
         case "spotlight":
