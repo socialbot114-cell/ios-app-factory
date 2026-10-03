@@ -411,9 +411,7 @@ struct FootballClubView: View {
 
     private var managementPanel: some View {
         FactoryPanel(title: "Gestão do clube", systemImage: "briefcase.fill") {
-            link("Caixa de entrada", "tray.full.fill", badge: career.unreadCount, id: "club-inbox") { FootballInboxView(career: $career, onAlert: onAlert) }
-            Divider()
-            link("Finanças", "banknote.fill", id: "club-finance") { FootballFinanceView(career: career) }
+            link("Finanças", "banknote.fill", id: "club-finance") { FootballFinanceView(career: $career, onAlert: onAlert) }
             Divider()
             link("Estrutura e ingressos", "building.2.fill", id: "club-facilities") { FootballFacilitiesView(career: $career, onAlert: onAlert) }
             Divider()

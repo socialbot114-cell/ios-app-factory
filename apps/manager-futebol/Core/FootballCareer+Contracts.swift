@@ -233,6 +233,12 @@ extension FootballCareer {
         }
     }
 
+    mutating func resolveInboxMessage(id: Int) {
+        guard let index = inbox.firstIndex(where: { $0.id == id }) else { return }
+        inbox[index].isResolved = true
+        inbox[index].isRead = true
+    }
+
     mutating func markInboxRead() {
         for index in inbox.indices { inbox[index].isRead = true }
     }

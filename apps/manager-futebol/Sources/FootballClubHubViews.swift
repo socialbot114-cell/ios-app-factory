@@ -5,7 +5,9 @@ import SwiftUI
 struct FootballInboxView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
+    let onOpenApp: (PhoneApp) -> Void
     @State private var selected: Selection?
+    @State private var renewal: Selection?
 
     struct Selection: Identifiable { let id: Int }
 
@@ -26,17 +28,14 @@ struct FootballInboxView: View {
                         Text("T\(message.season) · J\(message.matchDay + 1)").font(.caption2).foregroundStyle(.secondary)
                     }
                     Text(message.body).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    if let playerID = message.playerID, career.player(playerID) != nil, !message.isResolved {
-                        Button("Abrir ficha do atleta") { selected = Selection(id: playerID) }
-                            .buttonStyle(.bordered).font(.caption.weight(.bold))
-                    }
+                    if !message.isResolved { actions(for: message) }
                 }
                 .padding(14)
                 .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
         }
         .factoryPage()
-        .navigationTitle("Caixa de entrada")
+        .navigationTitle("Mensagens")
         .onAppear {
             career.markTutorialSeen("inbox")
             career.markInboxRead()
@@ -44,6 +43,73 @@ struct FootballInboxView: View {
         .sheet(item: $selected) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
         }
+        .sheet(item: $renewal) { selection in
+            FootballRenewalSheet(career: $career, playerID: selection.id)
+        }
+    }
+
+    // MARK: Ações por tipo de mensagem
+
+    @ViewBuilder
+    private func actions(for message: InboxMessage) -> some View {
+        let playerID = message.playerID.flatMap { career.player($0) != nil ? $0 : nil }
+        HStack(spacing: 8) {
+            switch message.kind {
+            case .playerPlayingTime:
+                if let playerID {
+                    action("Prometer 3 jogos", "hand.thumbsup.fill", prominent: true, id: "msg-promise-\(message.id)") { career.promiseStarts(playerID: playerID) }
+                    action("Ignorar", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
+                }
+            case .playerWantsOut:
+                if let playerID {
+                    action("Listar para venda", "tag.fill", prominent: true, id: "msg-list-\(message.id)") {
+                        career.setListed(playerID: playerID, listed: true)
+                        career.resolveMessages(for: playerID, kinds: [.playerWantsOut])
+                    }
+                    action("Convencer a ficar", "hand.thumbsup.fill", id: "msg-stay-\(message.id)") { career.promiseStarts(playerID: playerID, starts: 2) }
+                    action("Ignorar", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
+                }
+            case .playerContract:
+                if let playerID {
+                    action("Renovar", "signature", prominent: true, id: "msg-renew-\(message.id)") { renewal = Selection(id: playerID) }
+                    action("Ver ficha", "person.text.rectangle", id: "msg-sheet-\(message.id)") { selected = Selection(id: playerID) }
+                }
+            case .offer:
+                if let offerID = message.offerID, career.offers.contains(where: { $0.id == offerID }) {
+                    action("Aceitar", "checkmark", prominent: true, id: "msg-accept-\(message.id)") {
+                        if career.acceptOffer(offerID) { career.resolveInboxMessage(id: message.id) } else { onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
+                    }
+                    action("Recusar", "xmark", id: "msg-reject-\(message.id)") {
+                        career.rejectOffer(offerID)
+                        career.resolveInboxMessage(id: message.id)
+                    }
+                } else {
+                    action("Abrir Transfer", "arrow.left.arrow.right", id: "msg-open-\(message.id)") { onOpenApp(.market) }
+                }
+            case .event: link("Decidir", .alerts, message)
+            case .social: link("Abrir Chuteira", .social, message)
+            case .agent: link("Ver propostas", .business, message)
+            case .bet: link("Abrir Palpite+", .betting, message)
+            case .scouting: link("Ver relatórios", .market, message)
+            case .finance: link("Abrir Banco", .bank, message)
+            case .injury: link("Rever escalação", .squad, message)
+            case .board, .staff: link("Abrir Clube", .club, message)
+            default:
+                if let playerID { action("Ver ficha", "person.text.rectangle", id: "msg-sheet-\(message.id)") { selected = Selection(id: playerID) } }
+            }
+        }
+        .font(.caption.weight(.bold))
+    }
+
+    private func action(_ title: String, _ symbol: String, prominent: Bool = false, id: String, _ run: @escaping () -> Void) -> some View {
+        Button(action: run) { Label(title, systemImage: symbol).lineLimit(1).minimumScaleFactor(0.8) }
+            .buttonStyle(.borderedProminent)
+            .tint(prominent ? FootballTheme.accent : Color.gray)
+            .accessibilityIdentifier(id)
+    }
+
+    private func link(_ title: String, _ app: PhoneApp, _ message: InboxMessage) -> some View {
+        action(title, app.symbol, prominent: true, id: "msg-app-\(message.id)") { onOpenApp(app) }
     }
 }
 
@@ -101,7 +167,8 @@ struct FootballPressView: View {
 // MARK: - Finanças
 
 struct FootballFinanceView: View {
-    let career: FootballCareer
+    @Binding var career: FootballCareer
+    let onAlert: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -116,6 +183,19 @@ struct FootballFinanceView: View {
             if career.isInDebt {
                 Label("Clube no vermelho: juros, risco de transfer ban e diretoria preocupada.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.semibold)).foregroundStyle(.red)
+            }
+            FactoryPanel(title: "Aporte do treinador", systemImage: "arrow.down.to.line.circle.fill") {
+                Text("Seu bolso: \(FootballFormat.money(career.world.coach.personalCash)). Emprestar dinheiro ao clube alivia o caixa e, no vermelho, acalma a diretoria.")
+                    .font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    ForEach([100_000, 250_000, 500_000], id: \.self) { amount in
+                        Button("+ \(FootballFormat.money(amount))") {
+                            if !career.lendToClub(amount: amount) { onAlert("Seu caixa pessoal não cobre este aporte.") }
+                        }
+                        .buttonStyle(.bordered).font(.caption.weight(.bold))
+                        .accessibilityIdentifier("lend-\(amount)")
+                    }
+                }
             }
             FactoryPanel(title: "Temporada \(career.season) por categoria", systemImage: "chart.pie.fill") {
                 let cats = FinanceCategory.allCases.map { ($0, career.finance.total(season: career.season, category: $0)) }.filter { $0.1 != 0 }
@@ -382,12 +462,36 @@ struct FootballStoryView: View {
 
 // MARK: - Modos: dificuldade, desafios e tutorial
 
+private func shortcut(_ title: String, _ symbol: String) -> some View {
+    HStack(spacing: 12) {
+        Image(systemName: symbol).frame(width: 28).foregroundStyle(FootballTheme.accent)
+        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+        Spacer()
+        Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+    }
+    .contentShape(Rectangle())
+}
+
 struct FootballModesView: View {
     @Binding var career: FootballCareer
     let onStartChallenge: (ChallengeScenario) -> Void
+    var onAlert: (String) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FactoryPanel(title: "Atalhos do clube", systemImage: "square.grid.2x2.fill") {
+                NavigationLink { FootballFacilitiesView(career: $career, onAlert: onAlert) } label: { shortcut("Estrutura e ingressos", "building.2.fill") }
+                    .accessibilityIdentifier("settings-facilities")
+                Divider()
+                NavigationLink { FootballStaffView(career: $career, onAlert: onAlert) } label: { shortcut("Comissão técnica", "person.2.fill") }
+                    .accessibilityIdentifier("settings-staff")
+                Divider()
+                NavigationLink { FootballSponsorView(career: $career, onAlert: onAlert) } label: { shortcut("Patrocínio master", "megaphone.fill") }
+                    .accessibilityIdentifier("settings-sponsor")
+                Divider()
+                NavigationLink { FootballStoryView(career: $career, onAlert: onAlert) } label: { shortcut("História, recordes e convites", "list.star") }
+                    .accessibilityIdentifier("settings-story")
+            }
             FactoryPanel(title: "Dificuldade", systemImage: "dial.medium.fill") {
                 Picker("Dificuldade", selection: $career.difficulty) {
                     ForEach(Difficulty.allCases) { Text($0.title).tag($0) }

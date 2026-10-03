@@ -69,4 +69,27 @@ final class FootballContactsTests: XCTestCase {
         let decoded = try JSONDecoder().decode(FootballCareer.self, from: data)
         XCTAssertTrue(decoded.world.contacts.contacts.isEmpty)
     }
+
+    func testLendToClubMovesMoneyAndHelpsBoardWhenInDebt() {
+        var career = started()
+        career.world.coach.personalCash = 400_000
+        let club = career.transferBudget
+        XCTAssertFalse(career.lendToClub(amount: 500_000))
+        XCTAssertFalse(career.lendToClub(amount: 10_000))
+        career.transferBudget = -300_000
+        let confidence = career.boardConfidence
+        XCTAssertTrue(career.lendToClub(amount: 200_000))
+        XCTAssertEqual(career.world.coach.personalCash, 200_000)
+        XCTAssertEqual(career.transferBudget, -100_000)
+        XCTAssertGreaterThan(career.boardConfidence, confidence)
+        _ = club
+    }
+
+    func testResolveInboxMessage() {
+        var career = started()
+        career.addInbox(.general, title: "Teste", body: "x")
+        let id = career.inbox.last!.id
+        career.resolveInboxMessage(id: id)
+        XCTAssertTrue(career.inbox.last!.isResolved && career.inbox.last!.isRead)
+    }
 }

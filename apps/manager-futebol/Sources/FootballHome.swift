@@ -185,7 +185,7 @@ struct FootballHome: View {
                 onDeleteSlot: deleteSlot
             )
             .onAppear { career.markTutorialSeen("club") }
-        case .messages: FootballInboxView(career: $career, onAlert: showAlert)
+        case .messages: FootballInboxView(career: $career, onAlert: showAlert, onOpenApp: { openApp = $0 })
         case .social: FootballSocialView(career: $career, onAlert: showAlert)
         case .betting: FootballBettingView(career: $career, onAlert: showAlert)
         case .fantasy: FootballFantasyView(career: $career, onAlert: showAlert)
@@ -195,9 +195,9 @@ struct FootballHome: View {
         case .trophies: FootballAchievementsView(career: career)
         case .alerts: FootballEventsView(career: $career)
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
-        case .bank: FootballFinanceView(career: career)
+        case .bank: FootballFinanceView(career: $career, onAlert: showAlert)
         case .contacts: FootballContactsView(career: $career, onAlert: showAlert)
-        case .settings: FootballModesView(career: $career, onStartChallenge: startChallenge)
+        case .settings: FootballModesView(career: $career, onStartChallenge: startChallenge, onAlert: showAlert)
         }
     }
 
@@ -213,8 +213,6 @@ struct FootballHome: View {
         case "business": FootballBusinessView(career: $career, onAlert: showAlert)
         case "quests": FootballQuestsView(career: $career)
         case "events": FootballEventsView(career: $career)
-        case "finance": FootballFinanceView(career: career)
-        case "inbox": FootballInboxView(career: $career, onAlert: showAlert)
         case "achievements": FootballAchievementsView(career: career)
         case "staff": FootballStaffView(career: $career, onAlert: showAlert)
         case "growth": FootballGrowthView(career: $career, onAlert: showAlert)

@@ -73,6 +73,109 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(newCareer.waitForExistence(timeout: 8))
     }
 
+
+    // MARK: - Teste de fumaça de todos os apps
+
+    private struct AppCheck {
+        let id: String
+        let title: String
+        let dock: Bool
+        let action: (XCUIApplication) -> Void
+    }
+
+    func testEveryAppOpensAndItsMainActionWorks() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Seu primeiro contrato"].waitForExistence(timeout: 10))
+        let offer = app.buttons["choose-offer-0"]
+        tapWhenReady(offer, in: app)
+        if !app.buttons["dock-manager"].waitForExistence(timeout: 6), offer.exists { offer.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.3)).tap() }
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+
+        let checks: [AppCheck] = [
+            AppCheck(id: "manager", title: "Gestor", dock: true) { app in XCTAssertTrue(app.buttons["play-match"].waitForExistence(timeout: 6)) },
+            AppCheck(id: "squad", title: "Tática", dock: false) { app in
+                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "squad-pitch").firstMatch.waitForExistence(timeout: 6))
+                self.tapWhenReady(app.buttons["auto-lineup"], in: app)
+            },
+            AppCheck(id: "league", title: "Liga", dock: false) { app in XCTAssertTrue(app.staticTexts["Classificação"].waitForExistence(timeout: 6)) },
+            AppCheck(id: "market", title: "Transfer", dock: false) { app in
+                let sections = app.segmentedControls["market-section"]
+                XCTAssertTrue(sections.waitForExistence(timeout: 6))
+                sections.buttons["Clubes"].tap()
+                let predicate = NSPredicate(format: "identifier BEGINSWITH %@", "club-player-")
+                XCTAssertTrue(app.descendants(matching: .any).matching(predicate).firstMatch.waitForExistence(timeout: 6))
+            },
+            AppCheck(id: "club", title: "Clube", dock: true) { app in
+                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "new-career").firstMatch.waitForExistence(timeout: 6))
+            },
+            AppCheck(id: "messages", title: "Mensagens", dock: true) { app in
+                XCTAssertTrue(app.staticTexts["Bem-vindo, Treinador"].waitForExistence(timeout: 6))
+            },
+            AppCheck(id: "social", title: "Chuteira", dock: true) { app in
+                self.tapWhenReady(app.buttons["post-motivational"], in: app)
+                XCTAssertTrue(app.alerts.count == 0)
+            },
+            AppCheck(id: "betting", title: "Palpite+", dock: false) { app in
+                self.tapWhenReady(app.buttons["bet-bonus"], in: app)
+                let odds = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "odd-"))
+                XCTAssertTrue(odds.firstMatch.waitForExistence(timeout: 6))
+                // Apostas contra o próprio clube são bloqueadas por integridade: tenta as próximas seleções.
+                for index in 0..<min(odds.count, 8) {
+                    let candidate = odds.element(boundBy: index)
+                    self.scrollUntilHittable(candidate, in: app)
+                    candidate.tap()
+                    if app.alerts.firstMatch.waitForExistence(timeout: 1) { app.alerts.firstMatch.buttons.firstMatch.tap(); continue }
+                    if app.buttons["place-bet"].waitForExistence(timeout: 2) { break }
+                }
+                self.tapWhenReady(app.buttons["place-bet"], in: app)
+            },
+            AppCheck(id: "fantasy", title: "Rodada", dock: false) { app in
+                self.tapWhenReady(app.buttons["fantasy-suggest"], in: app)
+                self.tapWhenReady(app.buttons["fantasy-save"], in: app)
+                XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 4))
+            },
+            AppCheck(id: "life", title: "Vida", dock: false) { app in self.tapWhenReady(app.buttons["activity-rest"], in: app) },
+            AppCheck(id: "business", title: "Negócios", dock: false) { app in self.tapWhenReady(app.buttons["shop-upgrade"], in: app) },
+            AppCheck(id: "quests", title: "Metas", dock: false) { app in XCTAssertTrue(app.staticTexts["Missões concluídas"].waitForExistence(timeout: 6)) },
+            AppCheck(id: "trophies", title: "Troféus", dock: false) { app in XCTAssertTrue(app.staticTexts["Galeria"].waitForExistence(timeout: 6)) },
+            AppCheck(id: "alerts", title: "Alertas", dock: false) { app in XCTAssertTrue(app.staticTexts["Tudo calmo"].exists || app.staticTexts["Histórico"].exists || app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "event-")).firstMatch.exists) },
+            AppCheck(id: "brand", title: "Marca", dock: false) { app in
+                self.tapWhenReady(app.buttons["tv-performance"], in: app)
+                self.tapWhenReady(app.buttons["campaign-localMedia"], in: app)
+            },
+            AppCheck(id: "bank", title: "Banco", dock: false) { app in self.tapWhenReady(app.buttons["lend-100000"], in: app) },
+            AppCheck(id: "contacts", title: "Contatos", dock: false) { app in self.tapWhenReady(app.buttons["contact-family"], in: app) },
+            AppCheck(id: "settings", title: "Ajustes", dock: false) { app in
+                let picker = app.segmentedControls["difficulty-picker"]
+                XCTAssertTrue(picker.waitForExistence(timeout: 6))
+                picker.buttons["Difícil"].tap()
+                self.tapWhenReady(app.buttons["settings-staff"], in: app)
+                XCTAssertTrue(app.staticTexts["Comissão técnica"].waitForExistence(timeout: 6))
+            }
+        ]
+
+        for check in checks {
+            let prefix = check.dock ? "dock-" : "app-"
+            let icon = app.buttons[prefix + check.id]
+            XCTAssertTrue(icon.waitForExistence(timeout: 8), "Ícone ausente: \(check.title)")
+            scrollUntilHittable(icon, in: app)
+            icon.tap()
+            XCTAssertTrue(app.buttons["phone-home"].waitForExistence(timeout: 8), "App não abriu: \(check.title)")
+            check.action(app)
+            dismissAlertIfAny(app)
+            attachScreenshot(app, name: "app-\(check.id)")
+            app.buttons["phone-home"].tap()
+            XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 8), "Não voltou à tela inicial: \(check.title)")
+        }
+    }
+
+    private func dismissAlertIfAny(_ app: XCUIApplication) {
+        let alert = app.alerts.firstMatch
+        if alert.waitForExistence(timeout: 1) { alert.buttons.firstMatch.tap() }
+    }
+
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

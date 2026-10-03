@@ -45,6 +45,7 @@ struct FootballBusinessView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
+                .accessibilityIdentifier("shop-upgrade")
                 Button {
                     if career.launchCollection() { note = "Nova coleção lançada: vendas em alta por alguns jogos." } else { onAlert("Caixa insuficiente ou coleção já ativa.") }
                 } label: {

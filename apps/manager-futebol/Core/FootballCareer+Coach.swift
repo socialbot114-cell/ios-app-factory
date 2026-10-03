@@ -99,6 +99,17 @@ extension FootballCareer {
         return true
     }
 
+    /// Aporte do treinador no caixa do clube: sai do bolso dele e ajuda a diretoria quando o clube está no vermelho.
+    @discardableResult
+    mutating func lendToClub(amount: Int) -> Bool {
+        guard selectedClubID != nil, !isFired, amount >= 50_000, world.coach.personalCash >= amount else { return false }
+        world.coach.personalCash -= amount
+        book(.other, amount, "Aporte do treinador")
+        if isInDebt { boardConfidence = min(100, boardConfidence + 2) }
+        bump("clubLoans")
+        return true
+    }
+
     var investmentsValue: Int { world.coach.investments.reduce(0) { $0 + $1.value } }
 
     var coachNetWorth: Int {
