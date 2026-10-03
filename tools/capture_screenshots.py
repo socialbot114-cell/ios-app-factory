@@ -166,7 +166,8 @@ def main() -> None:
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     records = []
-    for family in ("iphone", "ipad"):
+    families = [item.strip() for item in os.environ.get("CAPTURE_FAMILIES", "iphone").split(",") if item.strip()]
+    for family in families:
         udid, name = find_device(family)
         records.extend(capture_device(udid, name, family, app, app_path, output))
     manifest = {"app": app, "commit": os.environ.get("GITHUB_SHA", "local"),
