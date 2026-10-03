@@ -73,6 +73,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")" = "$BUNDLE"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")" = "$VERSION"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Info.plist")" = "$BUILD"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$app/Info.plist")" = 'AppIcon'
+          /usr/libexec/PlistBuddy -c 'Print :UISupportedInterfaceOrientations' "$app/Info.plist"
           codesign --verify --deep --strict "$app"
       - name: Upload TestFlight
         env:
