@@ -332,6 +332,7 @@ struct FootballHome: View {
         case "achievements": openApp = .trophies
         case "growth": openApp = .brand
         case "contacts": openApp = .contacts
+        case "settings": openApp = .settings
         case "lock": locked = true
         case "notifications": showNotifications = true
         case "spotlight":
