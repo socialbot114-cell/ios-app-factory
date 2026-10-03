@@ -20,6 +20,28 @@ def get(path):
     with urllib.request.urlopen(request) as response:
         return json.load(response)
 
+def send(path, payload, method='POST'):
+    request = urllib.request.Request('https://api.appstoreconnect.apple.com/v1/' + path, data=json.dumps(payload).encode(), method=method, headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(request) as response:
+        return json.load(response) if response.status != 204 else None
+
+if '--internal-testflight' in sys.argv:
+    number = sys.argv[sys.argv.index('--build') + 1] if '--build' in sys.argv else '4'
+    builds = get('builds?filter[app]=6818659764&filter[version]=' + number)['data']
+    build = next(item for item in builds if item['attributes']['processingState'] == 'VALID')
+    send('builds/' + build['id'], {'data': {'type': 'builds', 'id': build['id'], 'attributes': {'usesNonExemptEncryption': False}}}, 'PATCH')
+    groups = get('apps/6818659764/betaGroups')['data']
+    internal = [group for group in groups if group['attributes']['isInternalGroup']]
+    if not internal:
+        group = send('betaGroups', {'data': {'type': 'betaGroups', 'attributes': {'name': 'Equipe interna', 'isInternalGroup': True}, 'relationships': {'app': {'data': {'type': 'apps', 'id': '6818659764'}}}}})['data']
+        internal = [group]
+    for group in internal:
+        send('betaGroups/' + group['id'] + '/relationships/builds', {'data': [{'type': 'builds', 'id': build['id']}]})
+        testers = get('betaGroups/' + group['id'] + '/betaTesters')['data']
+        print(json.dumps({'group': group['attributes']['name'], 'internal': True, 'buildNumber': number, 'testerCount': len(testers)}))
+    print(json.dumps(get('builds/' + build['id'] + '/buildBetaDetail')['data']['attributes']))
+    sys.exit(0)
+
 if '--configure-signing' in sys.argv:
     cert_bytes = base64.b64decode(os.environ['APPLE_DISTRIBUTION_CERT_BASE64'])
     cert = x509.load_der_x509_certificate(cert_bytes)
