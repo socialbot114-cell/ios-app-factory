@@ -37,10 +37,10 @@ final class FootballFlowUITests: XCTestCase {
         app.buttons["phone-home"].tap()
 
         app.buttons["dock-manager"].tap()
-        // O app preserva a rolagem ao alternar: volte ao topo antes de procurar o pré-jogo.
+        // Conteúdo fora da viewport pode não existir ainda na árvore de acessibilidade.
         for _ in 0..<6 {
             if app.buttons["play-match"].exists { break }
-            app.swipeDown()
+            app.swipeUp()
         }
         tapWhenReady(app.buttons["play-match"], in: app)
 
@@ -196,6 +196,10 @@ final class FootballFlowUITests: XCTestCase {
         tapWhenReady(app.buttons["phone-home"], in: app)
         tapWhenReady(app.buttons["dock-manager"], in: app)
         let agenda = app.descendants(matching: .any).matching(identifier: "football-agenda").firstMatch
+        for _ in 0..<6 {
+            if agenda.exists { break }
+            app.swipeUp()
+        }
         XCTAssertTrue(agenda.waitForExistence(timeout: 8))
         attachScreenshot(app, name: "futos-manager-agenda")
     }

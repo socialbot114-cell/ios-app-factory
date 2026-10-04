@@ -15,7 +15,6 @@ struct FootballDashboardView: View {
             if let club = career.selectedClub {
                 ClubHeroCard(club: club, career: career)
                 attentionPanel
-                agendaPanel
                 if !career.promises.isEmpty {
                     FactoryPanel(title: "Compromissos com o elenco", systemImage: "handshake.fill") {
                         ForEach(career.promises) { promise in
@@ -41,6 +40,7 @@ struct FootballDashboardView: View {
                     restDayPanel
                 }
                 cupPanel
+                agendaPanel
                 if !career.offers.isEmpty && !career.isFired {
                     FootballOffersPanel(career: $career, onAlert: onAlert)
                 }
