@@ -17,6 +17,10 @@ struct FootballHome: View {
     @State private var showSearch = false
     @State private var searchSeed = ""
     @State private var searchedPlayer: SearchedPlayer?
+    @State private var focusedContactID: Int?
+    @State private var notifiedMessage: SearchedPlayer?
+    @State private var pendingMessageID: Int?
+    @State private var pendingPlayerID: Int?
     @Environment(\.scenePhase) private var scenePhase
 
     struct SearchedPlayer: Identifiable { let id: Int }
@@ -47,14 +51,35 @@ struct FootballHome: View {
         .sheet(isPresented: $showPress) {
             FootballPressView(career: $career)
         }
-        .sheet(isPresented: $showNotifications) {
-            PhoneNotificationCenter(career: career) { app in openApp = app }
+        .sheet(isPresented: $showNotifications, onDismiss: {
+            if let id = pendingMessageID {
+                pendingMessageID = nil
+                openMessage(id)
+            }
+        }) {
+            PhoneNotificationCenter(career: career, onOpen: { app in openApp = app }, onOpenMessage: { pendingMessageID = $0 })
         }
-        .sheet(isPresented: $showSearch) {
-            PhoneSpotlight(career: career, initialQuery: searchSeed, onApp: { openApp = $0 }, onPlayer: { searchedPlayer = SearchedPlayer(id: $0) })
+        .sheet(isPresented: $showSearch, onDismiss: {
+            if let id = pendingPlayerID {
+                pendingPlayerID = nil
+                searchedPlayer = SearchedPlayer(id: id)
+            }
+        }) {
+            PhoneSpotlight(career: career, initialQuery: searchSeed, onApp: { openApp = $0 }, onPlayer: { pendingPlayerID = $0 }, onContact: { focusedContactID = $0; openApp = .contacts })
         }
         .sheet(item: $searchedPlayer) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: showAlert)
+        }
+        .sheet(item: $notifiedMessage) { selection in
+            NavigationStack {
+                FootballInboxView(career: $career, onAlert: showAlert, onOpenApp: { app in
+                    notifiedMessage = nil
+                    openApp = app
+                }, focusedMessageID: selection.id)
+                .id(selection.id)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { notifiedMessage = nil } } }
+            }
         }
         .alert("Manager de Futebol", isPresented: Binding(
             get: { alertMessage != nil },
@@ -106,7 +131,7 @@ struct FootballHome: View {
                     .zIndex(1)
             }
             if locked {
-                PhoneLockScreen(career: career) { withAnimation(.easeOut(duration: 0.3)) { locked = false } }
+                PhoneLockScreen(career: career, onUnlock: { withAnimation(.easeOut(duration: 0.3)) { locked = false } }, onOpen: { openApp = $0 }, onOpenMessage: openMessage)
                     .transition(.move(edge: .top))
                     .zIndex(2)
             }
@@ -115,7 +140,13 @@ struct FootballHome: View {
     }
 
     private func open(_ app: PhoneApp) {
+        focusedContactID = nil
         openApp = app
+    }
+
+    private func openMessage(_ id: Int) {
+        openApp = .messages
+        notifiedMessage = SearchedPlayer(id: id)
     }
 
     private func closeApp() {
@@ -163,7 +194,8 @@ struct FootballHome: View {
                 onAlert: showAlert,
                 onSeasonEnded: { seasonSummary = $0 },
                 onNavigate: { openApp = $0 },
-                onShowPress: { showPress = true }
+                onShowPress: { showPress = true },
+                onOpenAgenda: openAgendaItem
             )
         case .squad:
             FootballSquadView(career: $career, onAlert: showAlert)
@@ -196,7 +228,7 @@ struct FootballHome: View {
         case .alerts: FootballEventsView(career: $career)
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
         case .bank: FootballFinanceView(career: $career, onAlert: showAlert)
-        case .contacts: FootballContactsView(career: $career, onAlert: showAlert)
+        case .contacts: FootballContactsView(career: $career, onAlert: showAlert, focusedContactID: focusedContactID)
         case .settings: FootballModesView(career: $career, onStartChallenge: startChallenge, onAlert: showAlert)
         }
     }
@@ -224,6 +256,27 @@ struct FootballHome: View {
 
     private func showAlert(_ message: String) {
         alertMessage = message
+    }
+
+    private func openAgendaItem(_ item: FootballAgendaItem) {
+        switch item.kind {
+        case .promise:
+            if let promise = career.promises.first(where: { "promise-\($0.id)" == item.id }) {
+                openApp = .squad
+                searchedPlayer = SearchedPlayer(id: promise.playerID)
+            }
+        case .contract:
+            if let athlete = career.clubRoster.first(where: { "contract-\($0.id)" == item.id }) {
+                openApp = .squad
+                searchedPlayer = SearchedPlayer(id: athlete.id)
+            }
+        case .offer:
+            if let offer = career.offers.first(where: { "offer-\($0.id)" == item.id }),
+               let message = career.inbox.last(where: { $0.offerID == offer.id }) {
+                openMessage(message.id)
+            } else { openApp = .market }
+        case .event: openApp = .alerts
+        }
     }
 
     private func startLiveMatch() {
@@ -333,6 +386,8 @@ struct FootballHome: View {
         case "growth": openApp = .brand
         case "contacts": openApp = .contacts
         case "settings": openApp = .settings
+        case "agenda": openApp = .manager
+        case "commitment": openApp = .messages
         case "lock": locked = true
         case "notifications": showNotifications = true
         case "spotlight":
@@ -359,6 +414,10 @@ struct FootballHome: View {
         preview.claimDailyBonus()
         preview.doActivity(.tvPunditry)
         preview.publishPost(tone: .humor)
+        if let reserve = preview.clubRoster.first(where: { !preview.startingXI.contains($0.id) }) {
+            preview.addInbox(.playerPlayingTime, title: "\(reserve.name) quer jogar mais", body: "Quero uma oportunidade nos próximos jogos. Podemos combinar minha participação?", playerID: reserve.id)
+            _ = preview.promiseStarts(playerID: reserve.id, starts: 2)
+        }
         let suggestion = preview.suggestedFantasyLineup()
         preview.setFantasyLineup(ids: suggestion.ids, captainID: suggestion.captainID)
         if let fixture = preview.bettingFixtures.first,

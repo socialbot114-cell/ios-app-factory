@@ -158,6 +158,9 @@ struct InboxMessage: Codable, Equatable, Identifiable {
     var offerID: Int? = nil
     var isRead = false
     var isResolved = false
+    /// Resposta e origem preservadas no save; opcionais para compatibilidade legada.
+    var coachReply: String? = nil
+    var sourcePromiseID: Int? = nil
 }
 
 /// Promessa feita a um atleta: começar um número de jogos antes de um prazo.

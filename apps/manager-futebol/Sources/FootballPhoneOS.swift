@@ -90,25 +90,29 @@ struct PhoneNotification: Identifiable {
     let detail: String
     let symbol: String
     let app: PhoneApp
+    var priority: Int = 1
+    var deadlineWorldDay: Int? = nil
+    var messageID: Int? = nil
 }
 
 extension FootballCareer {
     var phoneNotifications: [PhoneNotification] {
         var list: [PhoneNotification] = []
         if pendingPress != nil {
-            list.append(PhoneNotification(id: "press", title: "Coletiva de imprensa", detail: "Os jornalistas esperam suas respostas.", symbol: "mic.fill", app: .manager))
+            list.append(PhoneNotification(id: "press", title: "Coletiva de imprensa", detail: "Os jornalistas esperam suas respostas.", symbol: "mic.fill", app: .manager, priority: 3))
         }
         if let crisis = world.social.crisis {
-            list.append(PhoneNotification(id: "crisis", title: "Crise de imagem", detail: crisis.title, symbol: "exclamationmark.triangle.fill", app: .social))
+            list.append(PhoneNotification(id: "crisis", title: "Crise de imagem", detail: crisis.title, symbol: "exclamationmark.triangle.fill", app: .social, priority: 3))
         }
         for event in world.events.pending {
-            list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Decida até o dia \(event.expiresWorldDay).", symbol: "exclamationmark.bubble.fill", app: .alerts))
+            list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Prazo: dia \(event.expiresWorldDay) do jogo.", symbol: "exclamationmark.bubble.fill", app: .alerts, priority: 2, deadlineWorldDay: event.expiresWorldDay))
         }
-        if unreadCount > 0 {
-            list.append(PhoneNotification(id: "inbox", title: "\(unreadCount) mensagem(ns) nova(s)", detail: inbox.last?.title ?? "", symbol: "tray.full.fill", app: .messages))
+        for (index, message) in inbox.filter({ !$0.isRead }).sorted(by: { $0.id > $1.id }).enumerated() {
+            list.append(PhoneNotification(id: index == 0 ? "inbox" : "inbox-\(message.id)", title: message.title, detail: "Mensagem não lida · T\(message.season), J\(message.matchDay + 1)", symbol: "tray.full.fill", app: .messages, messageID: message.id))
         }
         if !offers.isEmpty {
-            list.append(PhoneNotification(id: "offers", title: "\(offers.count) proposta(s) por seus atletas", detail: "Responda antes que expirem.", symbol: "envelope.badge.fill", app: .market))
+            let deadline = offers.map(\.expiresAfterRound).min() ?? matchDayIndex
+            list.append(PhoneNotification(id: "offers", title: "\(offers.count) proposta(s) por seus atletas", detail: "Primeiro vencimento em \(max(0, deadline - matchDayIndex)) dia(s) de jogo.", symbol: "envelope.badge.fill", app: .market, priority: 2, deadlineWorldDay: (season - 1) * FootballSeason.matchDaysPerSeason + deadline))
         }
         if !invitations.isEmpty {
             list.append(PhoneNotification(id: "invites", title: "Convite de outro clube", detail: FootballSeason.teamName(invitations[0].clubID), symbol: "envelope.open.fill", app: .club))
@@ -122,7 +126,17 @@ extension FootballCareer {
         if world.coach.energy < 25 {
             list.append(PhoneNotification(id: "energy", title: "Bateria baixa", detail: "Sua energia está em \(world.coach.energy)%. Descanse na Vida.", symbol: "battery.25percent", app: .life))
         }
-        return list
+        return list.enumerated().sorted { lhs, rhs in
+            // Prazos comparáveis usam o calendário do jogo, nunca o relógio real.
+            let leftDue = lhs.element.deadlineWorldDay.map { $0 <= worldDay + 1 } ?? false
+            let rightDue = rhs.element.deadlineWorldDay.map { $0 <= worldDay + 1 } ?? false
+            if leftDue != rightDue { return leftDue }
+            if lhs.element.priority != rhs.element.priority { return lhs.element.priority > rhs.element.priority }
+            let leftDeadline = lhs.element.deadlineWorldDay ?? Int.max
+            let rightDeadline = rhs.element.deadlineWorldDay ?? Int.max
+            if leftDeadline != rightDeadline { return leftDeadline < rightDeadline }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
     }
 
     func badge(for app: PhoneApp) -> Int {
@@ -192,6 +206,8 @@ struct PhoneStatusBar: View {
 struct PhoneLockScreen: View {
     let career: FootballCareer
     let onUnlock: () -> Void
+    var onOpen: (PhoneApp) -> Void = { _ in }
+    var onOpenMessage: ((Int) -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -207,6 +223,11 @@ struct PhoneLockScreen: View {
                 Text(career.world.coach.name).font(.headline).foregroundStyle(.white.opacity(0.85))
                 VStack(spacing: 8) {
                     ForEach(career.phoneNotifications.prefix(3)) { item in
+                        Button {
+                            onUnlock()
+                            if let id = item.messageID, let onOpenMessage { onOpenMessage(id) }
+                            else { onOpen(item.app) }
+                        } label: {
                         HStack(spacing: 12) {
                             Image(systemName: item.symbol).frame(width: 28).foregroundStyle(item.app.tint)
                             VStack(alignment: .leading, spacing: 1) {
@@ -217,6 +238,9 @@ struct PhoneLockScreen: View {
                         }
                         .padding(12)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lock-notification-\(item.id)")
                     }
                 }
                 .padding(.horizontal, 20)
@@ -376,7 +400,7 @@ struct PhoneHomeScreen: View {
                     if badge > 0 {
                         Text(badge > 9 ? "9+" : "\(badge)").font(.caption2.weight(.heavy)).foregroundStyle(.white)
                             .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color.red, in: Capsule())
+                            .background(app == .quests ? app.tint : Color.red, in: Capsule())
                             .offset(x: 6, y: -6)
                     }
                 }
@@ -385,7 +409,7 @@ struct PhoneHomeScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(app.title + (career.badge(for: app) > 0 ? ", \(career.badge(for: app)) novidade(s)" : ""))
+        .accessibilityLabel(app.title + (career.badge(for: app) > 0 ? ", \(career.badge(for: app)) \(app == .quests ? "tarefa(s) ativa(s)" : "novidade(s)")" : ""))
         .accessibilityIdentifier(id)
     }
 
@@ -405,6 +429,7 @@ struct PhoneHomeScreen: View {
 struct PhoneNotificationCenter: View {
     let career: FootballCareer
     let onOpen: (PhoneApp) -> Void
+    var onOpenMessage: ((Int) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -412,12 +437,13 @@ struct PhoneNotificationCenter: View {
             List {
                 let items = career.phoneNotifications
                 if items.isEmpty {
-                    Text("Nada novo por enquanto.").foregroundStyle(.secondary)
+                    Text("Nada novo por enquanto. Mensagens e acontecimentos da carreira aparecerão aqui conforme o jogo avança.").foregroundStyle(.secondary)
                 }
                 ForEach(items) { item in
                     Button {
                         dismiss()
-                        onOpen(item.app)
+                        if let id = item.messageID, let onOpenMessage { onOpenMessage(id) }
+                        else { onOpen(item.app) }
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: item.symbol).frame(width: 30).foregroundStyle(item.app.tint)
@@ -447,27 +473,38 @@ struct PhoneSpotlight: View {
     let initialQuery: String
     let onApp: (PhoneApp) -> Void
     let onPlayer: (Int) -> Void
+    var onContact: (Int) -> Void = { _ in }
     @State private var query = ""
+    @State private var selectedClub: LeagueTeam?
     @Environment(\.dismiss) private var dismiss
 
-    private var term: String { query.trimmingCharacters(in: .whitespaces).lowercased() }
+    private func normalized(_ text: String) -> String {
+        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "pt_BR"))
+            .split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+    }
 
-    private var apps: [PhoneApp] { term.isEmpty ? [] : PhoneApp.allCases.filter { $0.title.lowercased().contains(term) } }
+    private var term: String { normalized(query) }
+    private func matches(_ text: String) -> Bool {
+        let value = normalized(text)
+        return term.split(separator: " ").allSatisfy { value.contains($0) }
+    }
+
+    private var apps: [PhoneApp] { term.isEmpty ? [] : PhoneApp.allCases.filter { matches($0.title) } }
 
     private var players: [FootballPlayer] {
         guard term.count >= 2 else { return [] }
         return Array(career.players.filter { !$0.isYouth || $0.teamID == career.selectedClubID }
-            .filter { $0.name.lowercased().contains(term) }.sorted { $0.overall > $1.overall }.prefix(8))
+            .filter { matches($0.name) }.sorted { $0.overall == $1.overall ? $0.id < $1.id : $0.overall > $1.overall }.prefix(8))
     }
 
     private var clubs: [LeagueTeam] {
         guard term.count >= 2 else { return [] }
-        return FootballSeason.teams.filter { $0.name.lowercased().contains(term) || $0.city.lowercased().contains(term) }
+        return FootballSeason.teams.filter { matches("\($0.name) \($0.city)") }
     }
 
     private var contacts: [Contact] {
         guard term.count >= 2 else { return [] }
-        return career.world.contacts.contacts.filter { $0.name.lowercased().contains(term) || $0.role.title.lowercased().contains(term) }
+        return career.world.contacts.contacts.filter { matches("\($0.name) \($0.role.title)") }
     }
 
     var body: some View {
@@ -475,6 +512,8 @@ struct PhoneSpotlight: View {
             List {
                 if term.isEmpty {
                     Text("Digite um nome: atleta, clube, contato ou app. Tudo no celular se encontra aqui.").font(.subheadline).foregroundStyle(.secondary)
+                } else if term.count < 2 {
+                    Text("Digite pelo menos dois caracteres para buscar atletas, clubes e contatos.").font(.subheadline).foregroundStyle(.secondary)
                 }
                 if !apps.isEmpty {
                     Section("Apps") {
@@ -503,21 +542,23 @@ struct PhoneSpotlight: View {
                 if !clubs.isEmpty {
                     Section("Clubes") {
                         ForEach(clubs) { team in
-                            Button { dismiss(); onApp(.league) } label: {
+                            Button { selectedClub = team } label: {
                                 HStack { ClubCrest(team: team, size: 22); Text(team.name); Spacer(); Text(team.city).font(.caption).foregroundStyle(.secondary) }
                             }
+                            .accessibilityIdentifier("search-club-\(team.id)")
                         }
                     }
                 }
                 if !contacts.isEmpty {
                     Section("Contatos") {
                         ForEach(contacts) { contact in
-                            Button { dismiss(); onApp(.contacts) } label: { Label("\(contact.name) · \(contact.role.title)", systemImage: contact.role.symbol) }
+                             Button { dismiss(); onContact(contact.id) } label: { Label("\(contact.name) · \(contact.role.title)", systemImage: contact.role.symbol) }
+                                .accessibilityIdentifier("search-contact-\(contact.id)")
                         }
                     }
                 }
-                if !term.isEmpty && apps.isEmpty && players.isEmpty && clubs.isEmpty && contacts.isEmpty {
-                    Text("Nada encontrado para \"\(query)\".").foregroundStyle(.secondary)
+                if term.count >= 2 && apps.isEmpty && players.isEmpty && clubs.isEmpty && contacts.isEmpty {
+                    Text("Nada encontrado para \"\(query)\". Tente parte do nome, a cidade do clube ou o papel do contato; acentos são opcionais.").foregroundStyle(.secondary)
                 }
             }
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Buscar no celular")
@@ -527,6 +568,53 @@ struct PhoneSpotlight: View {
             .onAppear { if query.isEmpty { query = initialQuery } }
         }
         .tint(FootballTheme.accent)
+        .sheet(item: $selectedClub) { team in
+            PhoneClubProfile(career: career, team: team)
+        }
+    }
+}
+
+/// Consulta pública do clube encontrado; não altera a carreira.
+private struct PhoneClubProfile: View {
+    let career: FootballCareer
+    let team: LeagueTeam
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack(spacing: 12) {
+                        ClubCrest(team: team, size: 48)
+                        VStack(alignment: .leading) {
+                            Text(team.name).font(.headline)
+                            Text(team.city).foregroundStyle(.secondary)
+                        }
+                    }
+                    LabeledContent("Divisão", value: career.division(of: team.id).name)
+                    LabeledContent("Estádio", value: team.stadium)
+                    LabeledContent("Força de referência", value: "\(team.strength)")
+                }
+                Section("Elenco da carreira") {
+                    let players = career.players.filter { $0.teamID == team.id && !$0.isYouth }
+                        .sorted { $0.overall == $1.overall ? $0.id < $1.id : $0.overall > $1.overall }
+                    if players.isEmpty { Text("Nenhum atleta registrado neste elenco.").foregroundStyle(.secondary) }
+                    ForEach(players) { player in
+                        HStack {
+                            Text(player.name)
+                            Spacer()
+                            Text(player.position.title).font(.caption).foregroundStyle(.secondary)
+                            RatingBadge(value: player.overall, size: 28)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Ficha do clube")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
+        }
+        .tint(FootballTheme.accent)
+        .accessibilityIdentifier("club-profile-\(team.id)")
     }
 }
 
@@ -536,6 +624,8 @@ struct FootballContactsView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     @State private var note: String?
+    var focusedContactID: Int? = nil
+    @State private var selectedContact: Contact?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -544,7 +634,11 @@ struct FootballContactsView: View {
             if let note {
                 Label(note, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }
-            ForEach(career.world.contacts.contacts) { contact in
+            ForEach(career.world.contacts.contacts.sorted {
+                if $0.id == focusedContactID { return $1.id != focusedContactID }
+                if $1.id == focusedContactID { return false }
+                return $0.id < $1.id
+            }) { contact in
                 FactoryPanel {
                     HStack(spacing: 12) {
                         Image(systemName: contact.role.symbol).font(.title3).foregroundStyle(.white)
@@ -558,6 +652,8 @@ struct FootballContactsView: View {
                     }
                     ConditionBar(value: contact.relationship)
                     Text(contact.role.perk).font(.caption).foregroundStyle(.secondary)
+                    Button("Ver ficha") { selectedContact = contact }
+                        .accessibilityIdentifier("contact-profile-\(contact.id)")
                     let block = career.canContact(contact.role)
                     Button {
                         if let text = career.contactAction(contact.role) { note = text } else { onAlert(block ?? "Indisponível.") }
@@ -572,5 +668,30 @@ struct FootballContactsView: View {
         }
         .factoryPage()
         .navigationTitle("Contatos")
+        .onAppear {
+            selectedContact = career.world.contacts.contacts.first { $0.id == focusedContactID }
+        }
+        .onChange(of: focusedContactID) { _, id in
+            selectedContact = career.world.contacts.contacts.first { $0.id == id }
+        }
+        .sheet(item: $selectedContact) { selection in
+            NavigationStack {
+                List {
+                    if let contact = career.world.contacts.contacts.first(where: { $0.id == selection.id }) {
+                        Section(contact.name) {
+                            Label(contact.role.title, systemImage: contact.role.symbol)
+                            LabeledContent("Relação", value: "\(contact.relationship)/100")
+                            Text(contact.role.perk)
+                            LabeledContent("Última conversa", value: contact.lastContactWorldDay < 0 ? "Ainda não conversaram" : "Dia \(contact.lastContactWorldDay) do jogo")
+                            Text(career.canContact(contact.role) ?? "Conversa disponível no app Contatos.")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .navigationTitle("Ficha do contato")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { selectedContact = nil } } }
+            }
+        }
     }
 }

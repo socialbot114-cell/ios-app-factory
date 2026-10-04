@@ -5,6 +5,8 @@ import SwiftUI
 struct FootballTableView: View {
     let career: FootballCareer
     @State private var section: LeagueSection
+    @State private var serieARound: Int?
+    @State private var serieBRound: Int?
 
     enum LeagueSection: String, CaseIterable, Identifiable {
         case serieA = "Série A"
@@ -74,7 +76,13 @@ struct FootballTableView: View {
                 .foregroundStyle(.secondary)
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     Divider()
-                    standingRow(index: index, row: row, division: division)
+                    NavigationLink {
+                        FootballLeagueClubProfile(career: career, team: row.team)
+                    } label: {
+                        standingRow(index: index, row: row, division: division)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("league-club-\(row.team.id)")
                 }
                 HStack(spacing: 12) {
                     if division == .serieA {
@@ -88,13 +96,36 @@ struct FootballTableView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             }
-            let latestRound = career.fixtures
-                .filter { $0.competition == .league(division) && $0.isPlayed }
-                .map(\.round).max()
-            if let latestRound {
-                FactoryPanel(title: "Resultados · rodada \(latestRound)", systemImage: "checkmark.circle.fill") {
-                    roundList(career.fixtures.filter { $0.competition == .league(division) && $0.round == latestRound })
+            let fixtures = career.fixtures.filter { $0.competition == .league(division) }
+            let rounds = Array(Set(fixtures.map(\.round))).sorted()
+            let defaultRound = fixtures.filter { $0.isPlayed }.map(\.round).max() ?? rounds.first ?? 1
+            let selection = division == .serieA ? $serieARound : $serieBRound
+            let selectedRound = rounds.contains(selection.wrappedValue ?? defaultRound) ? (selection.wrappedValue ?? defaultRound) : defaultRound
+            if !rounds.isEmpty {
+                FactoryPanel(title: "Jogos · rodada \(selectedRound)", systemImage: "calendar") {
+                    HStack {
+                        Button { selection.wrappedValue = rounds.last { $0 < selectedRound } } label: {
+                            Image(systemName: "chevron.left")
+                        }
+                        .disabled(selectedRound == rounds.first)
+                        .accessibilityLabel("Rodada anterior")
+                        Picker("Rodada", selection: Binding(get: { selectedRound }, set: { selection.wrappedValue = $0 })) {
+                            ForEach(rounds, id: \.self) { round in
+                                Text("Rodada \(round)").tag(round)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("league-round-picker")
+                        Button { selection.wrappedValue = rounds.first { $0 > selectedRound } } label: {
+                            Image(systemName: "chevron.right")
+                        }
+                        .disabled(selectedRound == rounds.last)
+                        .accessibilityLabel("Próxima rodada")
+                    }
+                    roundList(fixtures.filter { $0.round == selectedRound })
                 }
+            } else {
+                Text("O calendário desta divisão ainda não está disponível.").font(.subheadline).foregroundStyle(.secondary)
             }
         }
     }
@@ -206,6 +237,9 @@ struct FootballTableView: View {
                 Text("Ninguém marcou ainda nesta temporada.").font(.subheadline).foregroundStyle(.secondary)
             }
             ForEach(Array(scorers.enumerated()), id: \.element.id) { index, player in
+                NavigationLink {
+                    FootballLeaguePlayerProfile(career: career, player: player)
+                } label: {
                 HStack(spacing: 10) {
                     Text("\(index + 1)").font(.caption.weight(.heavy).monospacedDigit()).foregroundStyle(.secondary).frame(width: 20)
                     if let teamID = player.teamID, let team = FootballSeason.team(teamID) {
@@ -223,14 +257,20 @@ struct FootballTableView: View {
                     Text("\(player.goals)").font(.title3.weight(.heavy).monospacedDigit())
                 }
                 .accessibilityElement(children: .combine)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("league-scorer-\(player.id)")
                 if index < scorers.count - 1 { Divider() }
             }
         }
     }
 
-    private func roundList(_ fixtures: [LeagueFixture]) -> some View {
+    fileprivate func roundList(_ fixtures: [LeagueFixture]) -> some View {
         VStack(spacing: 12) {
             ForEach(fixtures) { fixture in
+                NavigationLink {
+                    FootballLeagueMatchDetail(career: career, fixture: fixture)
+                } label: {
                 VStack(spacing: 3) {
                     HStack(spacing: 8) {
                         teamLabel(fixture.home, alignment: .trailing, isWinner: fixture.competition.isCup && fixture.winner == fixture.home)
@@ -255,6 +295,9 @@ struct FootballTableView: View {
                 .background(fixture.involves(career.selectedClubID ?? -1) ? FootballTheme.accent.opacity(0.08) : .clear,
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .accessibilityElement(children: .combine)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("league-match-\(fixture.id)")
             }
         }
     }
@@ -275,6 +318,138 @@ struct FootballTableView: View {
 }
 
 // MARK: - Clube
+
+private struct FootballLeagueMatchDetail: View {
+    let career: FootballCareer
+    let fixture: LeagueFixture
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("\(fixture.competition.name) · rodada \(fixture.round) · dia \(fixture.matchDay + 1)")
+                .font(.subheadline).foregroundStyle(.secondary)
+            FactoryPanel(title: fixture.isPlayed ? "Relatório da partida" : "Partida agendada", systemImage: "soccerball") {
+                FootballMatchReport(fixture: fixture, career: career, showAllEvents: true)
+                if let penalties = fixture.penaltySummary {
+                    Text(penalties).font(.subheadline.weight(.semibold))
+                } else if fixture.wentToExtraTime {
+                    Text("Após prorrogação").font(.subheadline)
+                }
+                if !fixture.isPlayed {
+                    Text("O resultado e os eventos estarão disponíveis após a partida.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if fixture.events.isEmpty && fixture.commentary.isEmpty {
+                    Text("Não há lances detalhados registrados para esta partida.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            FactoryPanel(title: "Clubes", systemImage: "shield") {
+                ForEach([fixture.home, fixture.away], id: \.self) { teamID in
+                    if let team = FootballSeason.team(teamID) {
+                        NavigationLink(team.name) { FootballLeagueClubProfile(career: career, team: team) }
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle(fixture.isPlayed ? "Relatório" : "Pré-jogo")
+    }
+}
+
+private struct FootballLeaguePlayerProfile: View {
+    let career: FootballCareer
+    let player: FootballPlayer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            FactoryHeader(eyebrow: "Ficha de consulta", title: player.name,
+                          subtitle: "\(player.position.rawValue) · \(player.age) anos", accent: FootballTheme.accent)
+            if let teamID = player.teamID, let team = FootballSeason.team(teamID) {
+                NavigationLink { FootballLeagueClubProfile(career: career, team: team) } label: {
+                    HStack { ClubCrest(team: team, size: 32); Text(team.name); Spacer(); Image(systemName: "chevron.right") }
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("Sem clube").foregroundStyle(.secondary)
+            }
+            FactoryPanel(title: "Temporada · todas as competições", systemImage: "soccerball") {
+                LabeledContent("Jogos", value: "\(player.appearances)")
+                LabeledContent("Gols", value: "\(player.goals)")
+                LabeledContent("Assistências", value: "\(player.assists)")
+            }
+            FactoryPanel(title: "Perfil atual", systemImage: "person.fill") {
+                LabeledContent("Geral", value: "\(player.overall)")
+                LabeledContent("Condição", value: "\(player.condition)%")
+                LabeledContent("Moral", value: "\(player.morale)%")
+                LabeledContent("Valor de mercado", value: FootballFormat.money(player.marketValue))
+                if player.isInjured { Text("Lesionado · \(player.injuryRounds) jogo(s)").foregroundStyle(.red) }
+                if player.isSuspended { Text("Suspenso").foregroundStyle(.red) }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Atleta")
+    }
+}
+
+private struct FootballLeagueClubProfile: View {
+    let career: FootballCareer
+    let team: LeagueTeam
+
+    private var fixtures: [LeagueFixture] {
+        career.fixtures.filter { $0.involves(team.id) }
+            .sorted { $0.matchDay == $1.matchDay ? $0.id < $1.id : $0.matchDay < $1.matchDay }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                ClubCrest(team: team, size: 56)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(team.name).font(.title2.bold())
+                    Text("\(team.city) · \(career.division(of: team.id).name)").font(.subheadline).foregroundStyle(.secondary)
+                    Text(team.stadium).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if let row = career.standings(for: career.division(of: team.id)).first(where: { $0.team.id == team.id }) {
+                FactoryPanel(title: "Forma na liga", systemImage: "chart.line.uptrend.xyaxis") {
+                    Text("\(row.points) pontos · \(row.played) jogos · saldo \(FootballFormat.signed(row.goalDifference))")
+                    if row.form.isEmpty { Text("Ainda sem resultados na liga.").foregroundStyle(.secondary) }
+                    FormBadges(results: row.form)
+                }
+            }
+            FactoryPanel(title: "Elenco", systemImage: "person.3.fill") {
+                let players = career.players.filter { $0.teamID == team.id }.sorted {
+                    $0.overall == $1.overall ? $0.id < $1.id : $0.overall > $1.overall
+                }
+                if players.isEmpty { Text("Nenhum atleta registrado neste clube.").foregroundStyle(.secondary) }
+                ForEach(players) { player in
+                    NavigationLink { FootballLeaguePlayerProfile(career: career, player: player) } label: {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(player.name).font(.subheadline.weight(.semibold))
+                                Text("\(player.position.rawValue) · \(player.age) anos").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text("GER \(player.overall)").font(.caption.bold())
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            FactoryPanel(title: "Calendário da temporada", systemImage: "calendar") {
+                if fixtures.isEmpty { Text("Nenhuma partida agendada.").foregroundStyle(.secondary) }
+                ForEach(fixtures) { fixture in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(fixture.competition.name) · rodada \(fixture.round) · dia \(fixture.matchDay + 1) · \(fixture.isPlayed ? "Disputada" : "Agendada")")
+                            .font(.caption).foregroundStyle(.secondary)
+                        FootballTableView(career: career).roundList([fixture])
+                    }
+                }
+            }
+        }
+        .factoryPage()
+        .navigationTitle("Ficha do clube")
+    }
+}
 
 struct FootballClubView: View {
     @Binding var career: FootballCareer

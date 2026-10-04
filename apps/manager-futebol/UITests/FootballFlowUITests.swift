@@ -176,6 +176,25 @@ final class FootballFlowUITests: XCTestCase {
         if alert.waitForExistence(timeout: 1) { alert.buttons.firstMatch.tap() }
     }
 
+    func testFutOSNotificationOpensTheActualMessageAndAgenda() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tapWhenReady(app.buttons["choose-offer-0"], in: app)
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+        tapWhenReady(app.buttons["phone-notifications"], in: app)
+        tapWhenReady(app.buttons["notification-inbox"], in: app)
+        XCTAssertTrue(app.staticTexts["Bem-vindo, Treinador"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Fechar"].waitForExistence(timeout: 5))
+        attachScreenshot(app, name: "futos-contextual-message")
+        app.buttons["Fechar"].tap()
+        tapWhenReady(app.buttons["phone-home"], in: app)
+        tapWhenReady(app.buttons["dock-manager"], in: app)
+        let agenda = app.descendants(matching: .any).matching(identifier: "football-agenda").firstMatch
+        XCTAssertTrue(agenda.waitForExistence(timeout: 8))
+        attachScreenshot(app, name: "futos-manager-agenda")
+    }
+
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

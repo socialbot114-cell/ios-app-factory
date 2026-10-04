@@ -135,7 +135,7 @@ extension FootballCareer {
         if !leaders.isEmpty, result == .win {
             for index in squadIDs { players[index].morale = min(100, players[index].morale + 1) }
         }
-        evaluatePromises(started: started)
+        evaluatePromises(started: teamPlayed ? started : [])
     }
 
     // MARK: - Promessas
@@ -143,17 +143,21 @@ extension FootballCareer {
     mutating func evaluatePromises(started: Set<Int>) {
         var remaining: [PlayerPromise] = []
         for var promise in promises {
-            if started.contains(promise.playerID) { promise.startsDone += 1 }
+            if promise.season == season && started.contains(promise.playerID) { promise.startsDone += 1 }
             if let index = players.firstIndex(where: { $0.id == promise.playerID }) {
-                if promise.startsDone >= promise.requiredStarts {
-                    players[index].morale = min(100, players[index].morale + 8)
-                    addInbox(.general, title: "Promessa cumprida", body: "\(players[index].name) ficou satisfeito por ter jogado como prometido.", playerID: promise.playerID)
+                guard players[index].teamID == selectedClubID else {
+                    addPromiseOutcome(promise, title: "Compromisso encerrado", body: "O atleta deixou o elenco; a promessa de minutos foi encerrada.")
                     continue
                 }
-                if matchDayIndex >= promise.deadlineMatchDay {
+                if promise.startsDone >= promise.requiredStarts {
+                    players[index].morale = min(100, players[index].morale + 8)
+                    addPromiseOutcome(promise, title: "Promessa cumprida", body: "\(players[index].name) começou \(promise.startsDone) jogo(s), como combinado. Moral +8.")
+                    continue
+                }
+                if promise.season < season || matchDayIndex >= promise.deadlineMatchDay {
                     players[index].morale = max(0, players[index].morale - 18)
                     boardConfidence = max(0, boardConfidence - 1)
-                    addInbox(.general, title: "Promessa quebrada", body: "\(players[index].name) não gostou de não ter jogado como prometido.", playerID: promise.playerID)
+                    addPromiseOutcome(promise, title: "Promessa quebrada", body: "\(players[index].name) começou \(promise.startsDone) de \(promise.requiredStarts) jogos combinados. Moral -18; confiança da diretoria -1.")
                     continue
                 }
             } else {
@@ -167,21 +171,43 @@ extension FootballCareer {
     /// Responde ao pedido de um atleta para jogar mais: promete começar alguns jogos.
     @discardableResult
     mutating func promiseStarts(playerID: Int, starts: Int = 3) -> Bool {
-        guard let index = players.firstIndex(where: { $0.id == playerID }), players[index].teamID == selectedClubID else { return false }
-        promises.removeAll { $0.playerID == playerID }
+        guard selectedClubID != nil, !isFired, liveMatch == nil, (1...5).contains(starts),
+              !promises.contains(where: { $0.playerID == playerID }),
+              let index = players.firstIndex(where: { $0.id == playerID }), players[index].teamID == selectedClubID else { return false }
         promises.append(PlayerPromise(id: nextPromiseID, playerID: playerID, requiredStarts: starts, startsDone: 0,
                                       deadlineMatchDay: matchDayIndex + starts + 2, season: season))
         nextPromiseID += 1
         players[index].morale = min(100, players[index].morale + 10)
         players[index].benchStreak = 0
-        resolveMessages(for: playerID, kinds: [.playerPlayingTime])
+        recordPlayerReply(playerID: playerID, text: "Vou te dar \(starts) jogo(s) como titular até o dia de jogo \(matchDayIndex + starts + 3).", kinds: [.playerPlayingTime, .playerWantsOut])
         return true
     }
 
     mutating func dismissRequest(playerID: Int) {
-        guard let index = players.firstIndex(where: { $0.id == playerID }) else { return }
+        guard selectedClubID != nil, !isFired, liveMatch == nil,
+              hasOpenMessage(.playerPlayingTime, playerID: playerID) || hasOpenMessage(.playerWantsOut, playerID: playerID),
+              let index = players.firstIndex(where: { $0.id == playerID }), players[index].teamID == selectedClubID else { return }
         players[index].morale = max(0, players[index].morale - 6)
-        resolveMessages(for: playerID, kinds: [.playerPlayingTime, .playerWantsOut])
+        recordPlayerReply(playerID: playerID, text: "Não posso garantir titularidade. Você precisa conquistar seu espaço. Moral -6.", kinds: [.playerPlayingTime, .playerWantsOut])
+    }
+
+    mutating func recordPlayerReply(playerID: Int, text: String, kinds: [InboxKind]) {
+        for index in inbox.indices where inbox[index].playerID == playerID && kinds.contains(inbox[index].kind) && !inbox[index].isResolved {
+            inbox[index].coachReply = text
+            inbox[index].isResolved = true
+            inbox[index].isRead = true
+        }
+    }
+
+    private mutating func addPromiseOutcome(_ promise: PlayerPromise, title: String, body: String) {
+        guard !inbox.contains(where: { $0.sourcePromiseID == promise.id }) else { return }
+        addInbox(.general, title: title, body: body, playerID: promise.playerID)
+        inbox[inbox.count - 1].sourcePromiseID = promise.id
+    }
+
+    mutating func markMessageRead(id: Int) {
+        guard let index = inbox.firstIndex(where: { $0.id == id }) else { return }
+        inbox[index].isRead = true
     }
 
     // MARK: - Pedidos dos atletas

@@ -7,12 +7,28 @@ struct FootballDashboardView: View {
     let onSeasonEnded: (SeasonRecord) -> Void
     let onNavigate: (PhoneApp) -> Void
     let onShowPress: () -> Void
+    var onOpenAgenda: ((FootballAgendaItem) -> Void)? = nil
+    @State private var confirmsQuickSimulation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             if let club = career.selectedClub {
                 ClubHeroCard(club: club, career: career)
                 attentionPanel
+                agendaPanel
+                if !career.promises.isEmpty {
+                    FactoryPanel(title: "Compromissos com o elenco", systemImage: "handshake.fill") {
+                        ForEach(career.promises) { promise in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(career.player(promise.playerID)?.name ?? "Atleta").font(.subheadline.weight(.bold))
+                                ProgressView(value: Double(promise.startsDone), total: Double(promise.requiredStarts))
+                                Text("\(promise.startsDone)/\(promise.requiredStarts) como titular · prazo J\(promise.deadlineMatchDay + 1)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        Button("Preparar escalação") { onNavigate(.squad) }.buttonStyle(.bordered)
+                    }
+                }
                 if career.isFired {
                     jobOffersPanel
                 } else if career.liveMatch != nil {
@@ -50,6 +66,62 @@ struct FootballDashboardView: View {
         .factoryPage()
         .navigationTitle("Painel do treinador")
         .onAppear { career.markTutorialSeen("dashboard") }
+        .confirmationDialog("Avançar e avaliar estes prazos?", isPresented: $confirmsQuickSimulation, titleVisibility: .visible) {
+            Button("Simular e avançar o calendário") { runQuickSimulation() }
+            Button("Rever prioridades", role: .cancel) {}
+        } message: {
+            Text(career.agendaExpiringOnNextAdvance.map { "\($0.title): \($0.detail)" }.joined(separator: "\n\n"))
+        }
+    }
+
+    private var agendaPanel: some View {
+        FactoryPanel(title: "Agenda do Gestor", systemImage: "calendar.badge.clock") {
+            Text("Cada avanço simula um dia do calendário, inclusive datas sem jogo do seu clube. Titularidades contam antes da avaliação das promessas; contratos são avaliados ao encerrar a temporada.")
+                .font(.caption).foregroundStyle(.secondary)
+            if career.agenda.isEmpty {
+                Label("Nenhuma pendência com prazo", systemImage: "checkmark.circle")
+                    .font(.subheadline)
+            }
+            ForEach(career.agenda) { item in
+                Button {
+                    if let onOpenAgenda { onOpenAgenda(item) }
+                    else { openAgenda(item.destination) }
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.title).font(.subheadline.weight(.bold))
+                        Text(item.deadlineText).font(.caption.weight(.semibold))
+                            .foregroundStyle(item.expiresOnNextAdvance ? Color.orange : Color.secondary)
+                        Text(item.detail).font(.caption).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("agenda-\(item.id)")
+            }
+        }
+        .accessibilityIdentifier("football-agenda")
+    }
+
+    private func openAgenda(_ destination: FootballAgendaDestination) {
+        switch destination {
+        case .squad, .contracts: onNavigate(.squad)
+        case .market: onNavigate(.market)
+        case .alerts: onNavigate(.alerts)
+        }
+    }
+
+    private func requestQuickSimulation() {
+        if career.agendaExpiringOnNextAdvance.isEmpty { runQuickSimulation() }
+        else { confirmsQuickSimulation = true }
+    }
+
+    private func runQuickSimulation() {
+        let previousDay = career.worldDay
+        if !career.simulateNextMatchDay() {
+            onAlert("Não foi possível avançar. Confira a escalação e tente novamente.")
+            return
+        }
+        let priority = career.agenda.first.map { " Próxima prioridade: \($0.title) · \($0.deadlineText)." } ?? " Agenda sem pendências com prazo."
+        onAlert("\(career.worldDay - previousDay) dia(s) de calendário simulado(s). Resultados, treino e prazos atualizados." + priority)
     }
 
     // MARK: - Atenção do treinador
@@ -191,9 +263,7 @@ struct FootballDashboardView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    if !career.simulateNextRound() {
-                        onAlert("Não foi possível simular a rodada. Confira a escalação e tente novamente.")
-                    }
+                    requestQuickSimulation()
                 } label: {
                     Label("Simulação rápida", systemImage: "forward.fill").frame(maxWidth: .infinity)
                 }
@@ -206,7 +276,7 @@ struct FootballDashboardView: View {
             }
             .font(.subheadline.weight(.semibold))
             Button {
-                let result = career.simulateUntilDecision()
+                let result = career.simulateUntilAgendaDecision()
                 onAlert("\(result.days) dia(s) simulado(s). \(result.reason)")
             } label: {
                 Label("Simular até a próxima decisão", systemImage: "forward.end.alt.fill").frame(maxWidth: .infinity)
@@ -224,9 +294,7 @@ struct FootballDashboardView: View {
                  : "Seu clube não entra em campo nesta fase. Aproveite para recuperar o elenco antes da próxima rodada.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button {
-                if !career.simulateNextMatchDay() {
-                    onAlert("Não foi possível avançar o calendário.")
-                }
+                requestQuickSimulation()
             } label: {
                 Label("Avançar para o próximo jogo", systemImage: "forward.fill")
             }

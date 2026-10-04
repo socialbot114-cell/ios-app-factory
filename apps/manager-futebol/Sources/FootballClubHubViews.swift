@@ -6,6 +6,7 @@ struct FootballInboxView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     let onOpenApp: (PhoneApp) -> Void
+    var focusedMessageID: Int? = nil
     @State private var selected: Selection?
     @State private var renewal: Selection?
 
@@ -18,7 +19,12 @@ struct FootballInboxView: View {
                     Text("Atletas, diretoria, olheiros e mercado vão escrever para você aqui.").font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-            ForEach(career.inbox.reversed().prefix(60)) { message in
+            let focused = focusedMessageID.flatMap { id in career.inbox.first { $0.id == id } }
+            if focusedMessageID != nil && focused == nil {
+                Text("Esta mensagem não está mais na caixa de entrada.").font(.subheadline).foregroundStyle(.secondary)
+            }
+            let visible = focused.map { [$0] } ?? Array(career.inbox.reversed().prefix(60))
+            ForEach(visible) { message in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
                         Image(systemName: message.kind.symbol).foregroundStyle(message.isRead ? Color.secondary : FootballTheme.accent)
@@ -28,6 +34,20 @@ struct FootballInboxView: View {
                         Text("T\(message.season) · J\(message.matchDay + 1)").font(.caption2).foregroundStyle(.secondary)
                     }
                     Text(message.body).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    if let reply = message.coachReply {
+                        Label(reply, systemImage: "arrowshape.turn.up.left.fill")
+                            .font(.subheadline).foregroundStyle(FootballTheme.accent)
+                    }
+                    if let playerID = message.playerID {
+                        ForEach(career.promises.filter { $0.playerID == playerID }) { promise in
+                            Text("Compromisso: \(promise.startsDone)/\(promise.requiredStarts) titularidades · prazo J\(promise.deadlineMatchDay + 1)")
+                                .font(.caption.weight(.semibold))
+                        }
+                    }
+                    if !message.isRead {
+                        Button("Marcar como lida") { career.markMessageRead(id: message.id) }
+                            .font(.caption).accessibilityIdentifier("msg-read-\(message.id)")
+                    }
                     if !message.isResolved { actions(for: message) }
                 }
                 .padding(14)
@@ -38,7 +58,7 @@ struct FootballInboxView: View {
         .navigationTitle("Mensagens")
         .onAppear {
             career.markTutorialSeen("inbox")
-            career.markInboxRead()
+            if let focusedMessageID { career.markMessageRead(id: focusedMessageID) }
         }
         .sheet(item: $selected) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
@@ -57,8 +77,11 @@ struct FootballInboxView: View {
             switch message.kind {
             case .playerPlayingTime:
                 if let playerID {
-                    action("Prometer 3 jogos", "hand.thumbsup.fill", prominent: true, id: "msg-promise-\(message.id)") { career.promiseStarts(playerID: playerID) }
-                    action("Ignorar", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
+                    action("Prometer 3 jogos", "hand.thumbsup.fill", prominent: true, id: "msg-promise-\(message.id)") {
+                        if !career.promiseStarts(playerID: playerID) { onAlert("Já existe um compromisso ou a conversa não está disponível agora.") }
+                    }
+                    action("Sem garantia", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
+                    action("Ver atleta", "person.text.rectangle", id: "msg-sheet-\(message.id)") { selected = Selection(id: playerID) }
                 }
             case .playerWantsOut:
                 if let playerID {

@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 10
+    static let schemaVersion = 11
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
