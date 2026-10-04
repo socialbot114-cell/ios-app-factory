@@ -220,7 +220,11 @@ final class FootballFlowUITests: XCTestCase {
     }
 
     private func tapWhenReady(_ element: XCUIElement, in app: XCUIApplication) {
-        XCTAssertTrue(element.waitForExistence(timeout: 10))
+        guard element.waitForExistence(timeout: 10) else {
+            attachScreenshot(app, name: "missing-element")
+            XCTFail("Elemento ausente: \(element). Hierarquia:\n\(app.debugDescription)")
+            return
+        }
         scrollUntilHittable(element, in: app)
         element.tap()
     }

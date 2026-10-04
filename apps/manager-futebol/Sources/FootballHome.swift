@@ -156,6 +156,8 @@ struct FootballHome: View {
     private func appWindow(_ app: PhoneApp) -> some View {
         NavigationStack {
             appContent(app)
+                // Cada app possui identidade própria: não reutilizar viewport/navegação de outro app.
+                .id(app)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button { closeApp() } label: { Label("Início", systemImage: "chevron.left") }
@@ -171,6 +173,7 @@ struct FootballHome: View {
                 }
                 .navigationBarTitleDisplayMode(.inline)
         }
+        .id(app)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button { closeApp() } label: {
                 Capsule().fill(Color.primary.opacity(0.35)).frame(width: 140, height: 5)

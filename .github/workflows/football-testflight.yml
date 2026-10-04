@@ -28,6 +28,10 @@ jobs:
       - run: brew list xcodegen || brew install xcodegen
       - run: python3 tools/validate_factory.py
       - run: xcodegen generate --spec project.yml
+      - name: Validate live match navigation first
+        run: |
+          simulator=$(python3 tools/select_simulator.py iphone)
+          xcodebuild test -project IOSAppFactory.xcodeproj -scheme ManagerFutebol -destination "id=$simulator" -only-testing:ManagerFutebolUITests/FootballFlowUITests/testPlayLiveMatchAndReadLeague -resultBundlePath "$RUNNER_TEMP/navigation.xcresult" CODE_SIGNING_ALLOWED=NO
       - name: Test iPhone and iPad
         run: |
           set -euo pipefail
