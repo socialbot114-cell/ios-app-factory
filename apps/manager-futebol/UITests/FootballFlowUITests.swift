@@ -37,6 +37,11 @@ final class FootballFlowUITests: XCTestCase {
         app.buttons["phone-home"].tap()
 
         app.buttons["dock-manager"].tap()
+        // O app preserva a rolagem ao alternar: volte ao topo antes de procurar o pré-jogo.
+        for _ in 0..<6 {
+            if app.buttons["play-match"].exists { break }
+            app.swipeDown()
+        }
         tapWhenReady(app.buttons["play-match"], in: app)
 
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "live-scoreboard").firstMatch.waitForExistence(timeout: 10))
