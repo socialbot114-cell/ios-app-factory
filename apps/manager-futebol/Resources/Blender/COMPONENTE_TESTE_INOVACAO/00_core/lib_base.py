@@ -258,6 +258,22 @@ def membro(name, a, b, r1, r2, material, vertices=16):
     return o
 
 
+def fundir(objs, nome):
+    """Converte (aplica modificadores/curvas/texto) e junta tudo em UM objeto de malha com origem em (0,0,0)."""
+    objs = [o for o in objs if o.name in bpy.data.objects]
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in objs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]
+    bpy.ops.object.convert(target="MESH")
+    bpy.ops.object.join()
+    o = bpy.context.object
+    o.name = nome
+    bpy.context.scene.cursor.location = (0, 0, 0)
+    bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+    return o
+
+
 def stroke(name, points, material=None, radius=0.02, fechar=False):
     c = bpy.data.curves.new(name, "CURVE")
     c.dimensions = "3D"
@@ -327,42 +343,71 @@ def texto_3d(name, label, location, size, material=None, rot=(math.pi / 2, 0, 0)
 
 
 # ---------------------------------------------------- malhas em lote (bmesh)
+_CUBO_V = [(-.5, -.5, -.5), (.5, -.5, -.5), (.5, .5, -.5), (-.5, .5, -.5),
+           (-.5, -.5, .5), (.5, -.5, .5), (.5, .5, .5), (-.5, .5, .5)]
+_CUBO_F = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+
+
+def _esfera_tpl(seg=8, ane=5):
+    v = [(0, 0, 1)]
+    for j in range(1, ane):
+        th = math.pi * j / ane
+        for i in range(seg):
+            ph = math.tau * i / seg
+            v.append((math.sin(th) * math.cos(ph), math.sin(th) * math.sin(ph), math.cos(th)))
+    v.append((0, 0, -1))
+    f = []
+    for i in range(seg):
+        f.append((0, 1 + i, 1 + (i + 1) % seg))
+    for j in range(ane - 2):
+        for i in range(seg):
+            a0, a1 = 1 + j * seg + i, 1 + j * seg + (i + 1) % seg
+            b0, b1 = a0 + seg, a1 + seg
+            f.append((a0, b0, b1, a1))
+    last = len(v) - 1
+    base = 1 + (ane - 2) * seg
+    for i in range(seg):
+        f.append((base + i, last, base + (i + 1) % seg))
+    return v, f
+
+
+_ESF = _esfera_tpl()
+
+
 class Lote:
-    """Acumula milhares de cubos/esferas coloridos em UM objeto com N materiais."""
+    """Acumula milhares de cubos/esferas coloridos em UM objeto com N materiais (geometria bruta, rapido)."""
 
     def __init__(self, nome, materiais):
         self.nome = nome
-        self.bm = bmesh.new()
         self.mats = materiais
+        self.V, self.F, self.M = [], [], []
+
+    def _add(self, verts, faces, mi):
+        o = len(self.V)
+        self.V.extend(verts)
+        self.F.extend(tuple(i + o for i in f) for f in faces)
+        self.M.extend([mi] * len(faces))
 
     def cubo(self, centro, dim, mi=0, rotz=0.0):
-        r = bmesh.ops.create_cube(self.bm, size=1.0)
-        verts = r["verts"]
-        c = Vector(centro)
-        for v in verts:
-            p = Vector((v.co.x * dim[0], v.co.y * dim[1], v.co.z * dim[2]))
-            if rotz:
-                p = Matrix.Rotation(rotz, 3, "Z") @ p
-            v.co = p + c
-        faces = {f for v in verts for f in v.link_faces}
-        for f in faces:
-            f.material_index = mi
-            f.smooth = False
+        cx, cy, cz = centro
+        c, s = (math.cos(rotz), math.sin(rotz)) if rotz else (1.0, 0.0)
+        vs = []
+        for x, y, z in _CUBO_V:
+            x, y, z = x * dim[0], y * dim[1], z * dim[2]
+            vs.append((cx + x * c - y * s, cy + x * s + y * c, cz + z))
+        self._add(vs, _CUBO_F, mi)
 
     def esfera(self, centro, raio, mi=0, esc=(1, 1, 1)):
-        r = bmesh.ops.create_uvsphere(self.bm, u_segments=10, v_segments=6, radius=1.0)
-        c = Vector(centro)
-        for v in r["verts"]:
-            v.co = Vector((v.co.x * raio * esc[0], v.co.y * raio * esc[1],
-                           v.co.z * raio * esc[2])) + c
-        for f in {f for v in r["verts"] for f in v.link_faces}:
-            f.material_index = mi
-            f.smooth = True
+        cx, cy, cz = centro
+        vs = [(cx + x * raio * esc[0], cy + y * raio * esc[1], cz + z * raio * esc[2]) for x, y, z in _ESF[0]]
+        self._add(vs, _ESF[1], mi)
 
     def criar(self):
         me = bpy.data.meshes.new(self.nome)
-        self.bm.to_mesh(me)
-        self.bm.free()
+        me.from_pydata(self.V, [], self.F)
+        me.update()
+        me.polygons.foreach_set("material_index", self.M)
+        me.polygons.foreach_set("use_smooth", [False] * len(self.F))
         for m in self.mats:
             me.materials.append(m)
         o = bpy.data.objects.new(self.nome, me)
@@ -454,12 +499,12 @@ def spot(nome, loc, alvo, energia, cor=(1, 0.95, 0.85), angulo=70, blend=0.5):
     return l
 
 
-def chao_sombra(tamanho=60, z=0.0):
-    """Plano 'shadow catcher': recebe a sombra do componente sem aparecer."""
+def chao_sombra(tamanho=80, z=0.0, cor=(0.50, 0.58, 0.64)):
+    """Chao de estudio: recebe sombras; mesma cor do fundo => horizonte invisivel."""
     bpy.ops.mesh.primitive_plane_add(size=tamanho, location=(0, 0, z))
     p = bpy.context.object
     p.name = "ChaoSombra"
-    p.is_shadow_catcher = True
+    p.data.materials.append(mat("Chao estudio", cor, 0.9))
     return p
 
 
@@ -480,36 +525,49 @@ def camera_iso(location=(14.8, -19.0, 21.5), ortho_scale=23.0, alvo=(0, 0, 1.0),
 
 
 def camera_orbita(alvo, dist, azimute, elevacao, ortho_scale=None, lente=70):
-    """Camera em coordenadas esfericas (azimute 0 = frente -Y). ortho_scale=None => perspectiva."""
+    """Camera em coordenadas esfericas (azimute 0 = olhando de -Y). ortho_scale=None => perspectiva."""
     az, el = math.radians(azimute), math.radians(elevacao)
     t = Vector(alvo)
     pos = t + Vector((dist * math.sin(az) * math.cos(el),
                       -dist * math.cos(az) * math.cos(el), dist * math.sin(el)))
-    return camera_iso(tuple(pos), ortho_scale or 1, alvo, perspectiva=ortho_scale is None, lente=lente) \
-        if ortho_scale is None else camera_iso(tuple(pos), ortho_scale, alvo)
+    if ortho_scale is None:
+        return camera_iso(tuple(pos), 1, alvo, perspectiva=True, lente=lente)
+    return camera_iso(tuple(pos), ortho_scale, alvo)
 
 
 # ----------------------------------------------------------------- render
-def render(path, res_x=1200, res_y=900, samples=96, transparente=False, motor="CYCLES"):
-    """Cycles (CPU) com denoise OIDN. transparente=True => PNG com alpha (sombra mantida)."""
+def render(path, res_x=1200, res_y=900, samples=64, transparente=False, motor="EEVEE"):
+    """motor 'EEVEE' (rapido, raytracing+sombras suaves) ou 'CYCLES' (final, lento em CPU)."""
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     sc = bpy.context.scene
-    sc.render.engine = motor
     if motor == "CYCLES":
+        sc.render.engine = "CYCLES"
         sc.cycles.device = "CPU"
         sc.cycles.samples = samples
         sc.cycles.use_denoising = True
-        try:
-            sc.cycles.denoiser = "OPENIMAGEDENOISE"
-        except TypeError:
-            pass
-        sc.cycles.max_bounces = 6
-        sc.cycles.diffuse_bounces = 3
-        sc.cycles.glossy_bounces = 3
-        sc.cycles.transmission_bounces = 4
-        sc.cycles.caustics_reflective = False
-        sc.cycles.caustics_refractive = False
+        sc.cycles.max_bounces = 5
         sc.cycles.sample_clamp_indirect = 8
+    else:
+        try:
+            sc.render.engine = "BLENDER_EEVEE_NEXT"
+        except TypeError:
+            sc.render.engine = "BLENDER_EEVEE"
+        e = sc.eevee
+        for attr, val in (("taa_render_samples", samples), ("use_shadows", True),
+                          ("use_raytracing", True), ("shadow_ray_count", 2),
+                          ("shadow_step_count", 8), ("use_shadow_jitter_viewport", False),
+                          ("fast_gi_method", "GLOBAL_ILLUMINATION"), ("gtao_distance", 0.4)):
+            try:
+                setattr(e, attr, val)
+            except (AttributeError, TypeError):
+                pass
+        for l in bpy.data.lights:
+            try:
+                l.use_shadow = True
+                if l.type == "SUN":
+                    l.use_contact_shadow = True
+            except AttributeError:
+                pass
     sc.render.resolution_x = res_x
     sc.render.resolution_y = res_y
     sc.render.resolution_percentage = 100
@@ -518,7 +576,7 @@ def render(path, res_x=1200, res_y=900, samples=96, transparente=False, motor="C
     sc.render.film_transparent = transparente
     try:
         sc.view_settings.view_transform = "AgX"
-        sc.view_settings.look = "AgX - Medium High Contrast"
+        sc.view_settings.look = "AgX - Punchy"
     except TypeError:
         sc.view_settings.view_transform = "Standard"
     sc.render.filepath = path

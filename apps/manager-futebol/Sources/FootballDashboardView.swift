@@ -600,6 +600,11 @@ struct MatchEventRow: View {
         case .penaltyAwarded: return "exclamationmark.circle.fill"
         case .stoppage: return "plus.circle.fill"
         case .pressure: return "flame.fill"
+        case .offside: return "flag.fill"
+        case .tackle: return "shield.lefthalf.filled"
+        case .dribble: return "figure.run"
+        case .cross: return "arrow.up.right"
+        case .woodwork: return "square.dashed"
         }
     }
 

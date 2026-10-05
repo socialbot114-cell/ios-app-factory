@@ -511,4 +511,38 @@ final class FootballLiveMatchTests: XCTestCase {
         XCTAssertEqual(career.boardConfidence, boardBefore)
         XCTAssertFalse(PressTopic.star.hint(for: .calm).isEmpty)
     }
+    // MARK: - Variedade e coordenação
+
+    func testSeedsProduceDifferentMatchFlavorsAndManyActionKinds() throws {
+        let (_, base, players) = template()
+        var titles = Set<String>()
+        var kinds = Set<MatchEvent.Kind>()
+        var tempoSum = 0.0
+        for seed in 1...200 {
+            let sim = run(base, seed: UInt64(seed) &* 7_001, players: players)
+            titles.insert(sim.flavor.title)
+            tempoSum += sim.flavor.tempo
+            kinds.formUnion(sim.events.map(\.kind))
+        }
+        XCTAssertGreaterThanOrEqual(titles.count, 4, "Seeds diferentes geram perfis de jogo diferentes")
+        XCTAssertEqual(tempoSum / 200, 1.0, accuracy: 0.03, "O perfil não desloca a média de gols")
+        for kind in [MatchEvent.Kind.offside, .tackle, .dribble, .cross, .woodwork] {
+            XCTAssertTrue(kinds.contains(kind), "Evento \(kind) nunca apareceu")
+        }
+    }
+
+    func testBuildUpChoosesCoherentPlayersAndKeepsAssistsBelowGoals() throws {
+        let (_, base, players) = template()
+        var goals = 0, assists = 0
+        for seed in 1...150 {
+            let sim = run(base, seed: UInt64(seed) &* 911, players: players)
+            for side in [MatchTeamSide.home, .away] {
+                goals += sim[side].goals
+                assists += sim[side].assistIDs.count
+                XCTAssertLessThanOrEqual(sim[side].assistIDs.count, sim[side].goals)
+            }
+        }
+        XCTAssertGreaterThan(Double(assists) / Double(max(1, goals)), 0.55)
+        XCTAssertLessThan(Double(assists) / Double(max(1, goals)), 0.85)
+    }
 }

@@ -312,7 +312,7 @@ final class PitchEngine {
                 if queue.count < 3 { queue.append(Plan(home: isHome, shooterID: event.playerID ?? -1, outcome: .goal, penalty: event.text.contains("pênalti"))) }
             case .save:
                 if queue.count < 2 { queue.append(Plan(home: isHome, shooterID: event.playerID ?? -1, outcome: .save, penalty: event.text.contains("pênalti"))) }
-            case .chance:
+            case .chance, .woodwork:
                 if event.x != nil, queue.count < 2 { queue.append(Plan(home: isHome, shooterID: event.playerID ?? -1, outcome: .miss, penalty: false)) }
             case .yellowCard, .redCard:
                 if let id = event.playerID, let i = index(of: id) {

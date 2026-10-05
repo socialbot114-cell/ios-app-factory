@@ -72,33 +72,36 @@ extension MatchSimulation {
         guard !finished else { return }
         minute += 1
         let eventsBefore = events.count
-        var random = FootballRandom(seed: seed &+ UInt64(minute) &* 0xD6E8FEB86659FD93)
+        var random = FootballRandom(seed: Self.mix(seed, UInt64(minute), 7))
+        let flavor = self.flavor
 
         applyFatigue(players: players)
         if needsRecompute || minute % (detailed ? 5 : 15) == 1 { recomputeStrengths(players: players) }
 
         // Posse de bola com variação lenta ao longo da partida.
         var blockRandom = FootballRandom(seed: seed ^ UInt64(minute / 15 + 1) &* 0xA24BAED4963EE407)
-        let noise = Double(blockRandom.int(in: -3...3)) / 100
+        let swing = flavor.volatility
+        let noise = Double(blockRandom.int(in: -swing...swing)) / 100
         possessionShare = min(0.7, max(0.3, 0.5 + (home.cachedControl - away.cachedControl) * 0.015 + noise))
         home.possessionAccumulator += possessionShare
         away.possessionAccumulator += 1 - possessionShare
 
         let periodFactor = inExtraTime ? 0.55 : (minute > 90 ? 0.6 : 1.0)
-        let homeRate = FootballMatchEngine.expectedGoals(attack: home.cachedAttack, defense: away.cachedDefense, possessionShare: possessionShare) / 45 * periodFactor
-        let awayRate = FootballMatchEngine.expectedGoals(attack: away.cachedAttack, defense: home.cachedDefense, possessionShare: 1 - possessionShare) / 45 * periodFactor
+        let homeRate = FootballMatchEngine.expectedGoals(attack: home.cachedAttack, defense: away.cachedDefense, possessionShare: possessionShare) / 45 * periodFactor * flavor.tempo
+        let awayRate = FootballMatchEngine.expectedGoals(attack: away.cachedAttack, defense: home.cachedDefense, possessionShare: 1 - possessionShare) / 45 * periodFactor * flavor.tempo
         home.expectedGoals += homeRate
         away.expectedGoals += awayRate
         momentum.append(Int(((homeRate - awayRate) / max(0.0001, homeRate + awayRate) * 100).rounded()))
 
         for side in [MatchTeamSide.home, .away] {
-            shotPhase(side: side, rate: side == .home ? homeRate : awayRate, players: players, random: &random)
+            shotPhase(side: side, rate: side == .home ? homeRate : awayRate, flavor: flavor, players: players, random: &random)
             penaltyPhase(side: side, attack: self[side].cachedAttack, rivalDefense: self[side.other].cachedDefense, players: players, random: &random)
-            foulPhase(side: side, players: players, random: &random)
+            foulPhase(side: side, flavor: flavor, players: players, random: &random)
             injuryPhase(side: side, players: players, random: &random)
         }
         for side in [MatchTeamSide.home, .away] where detailed {
             touchPhase(side: side, players: players, random: &random)
+            actionPhase(side: side, players: players)
             for id in self[side].onPitch { self[side].stats[id, default: PlayerMatchStats(playerID: id)].minutes += 1 }
         }
 
@@ -241,6 +244,7 @@ extension MatchSimulation {
     private func typeWeights(side: MatchTeamSide, players: [Int: FootballPlayer]) -> [Double] {
         let state = self[side]
         var weights = ShotType.allCases.map(\.baseWeight)
+        weights[ShotType.header.rawValue] *= flavor.aerial
         if state.style == .counter { weights[ShotType.counter.rawValue] *= 1.8 }
         if state.style == .possession { weights[ShotType.longRange.rawValue] *= 0.7 }
         if state.instructions.width == .high { weights[ShotType.header.rawValue] *= 1.3 }
@@ -249,16 +253,16 @@ extension MatchSimulation {
         return weights.map { $0 / total }
     }
 
-    private mutating func shotPhase(side: MatchTeamSide, rate: Double, players: [Int: FootballPlayer], random: inout FootballRandom) {
+    private mutating func shotPhase(side: MatchTeamSide, rate: Double, flavor: MatchFlavor, players: [Int: FootballPlayer], random: inout FootballRandom) {
         let chance = min(0.55, rate / max(0.02, self[side].cachedShotMean))
         guard random.chance(chance) else { return }
         let weights = self[side].cachedTypeWeights
         guard let typeIndex = random.weightedIndex(weights.map { Int($0 * 1000) }) else { return }
         let type = ShotType.allCases[typeIndex]
-        takeShot(side: side, type: type, players: players, random: &random)
+        takeShot(side: side, type: type, flavor: flavor, players: players, random: &random)
     }
 
-    private func pickShooter(side: MatchTeamSide, type: ShotType, players: [Int: FootballPlayer], random: inout FootballRandom) -> FootballPlayer? {
+    private func pickShooter(side: MatchTeamSide, type: ShotType, buildUp: BuildUp, players: [Int: FootballPlayer], random: inout FootballRandom) -> FootballPlayer? {
         let state = self[side]
         let rival = self[side.other]
         let candidates = state.onPitch.compactMap { players[$0] }.filter { $0.position != .goalkeeper }
@@ -273,6 +277,7 @@ extension MatchSimulation {
             default: weight *= Double(player.attributes[.finishing] + 2)
             }
             weight *= state.roles[player.id]?.shotWeight ?? 1.0
+            weight *= buildUp.shooterAffinity(player)
             if player.has(.naturalFinisher) { weight *= 1.35 }
             if rival.markTargetID == player.id { weight *= 0.5 }
             return max(1, Int(weight))
@@ -281,9 +286,12 @@ extension MatchSimulation {
         return candidates[index]
     }
 
-    private func pickAssister(side: MatchTeamSide, excluding shooterID: Int, players: [Int: FootballPlayer], random: inout FootballRandom) -> FootballPlayer? {
+    private func pickAssister(side: MatchTeamSide, excluding shooterID: Int, buildUp: BuildUp, players: [Int: FootballPlayer], random: inout FootballRandom) -> FootballPlayer? {
         let mates = self[side].onPitch.compactMap { players[$0] }.filter { $0.id != shooterID && $0.position != .goalkeeper }
-        let weights = mates.map { max(1, $0.position.assistWeight * ($0.attributes[.passing] * 3 + $0.attributes[.vision] * 2 + $0.overall / 2 - 40) / 4) }
+        let weights = mates.map { mate -> Int in
+            let base = Double(mate.position.assistWeight * (mate.attributes[.passing] * 3 + mate.attributes[.vision] * 2 + mate.overall / 2 - 40) / 4)
+            return max(1, Int(base * buildUp.assistAffinity(mate, role: self[side].roles[mate.id])))
+        }
         guard let index = random.weightedIndex(weights) else { return nil }
         return mates[index]
     }
@@ -292,8 +300,12 @@ extension MatchSimulation {
         self[side].onPitch.compactMap { players[$0] }.first { $0.position == .goalkeeper }
     }
 
-    private mutating func takeShot(side: MatchTeamSide, type: ShotType, players: [Int: FootballPlayer], random: inout FootballRandom) {
-        guard let shooter = pickShooter(side: side, type: type, players: players, random: &random) else { return }
+    private mutating func takeShot(side: MatchTeamSide, type: ShotType, flavor: MatchFlavor, players: [Int: FootballPlayer], random: inout FootballRandom) {
+        let buildWeights = BuildUp.weights(for: type, flavor: flavor, style: self[side].style).map { Int($0 * 1000) }
+        let buildUp = BuildUp.allCases[random.weightedIndex(buildWeights) ?? 0]
+        guard let shooter = pickShooter(side: side, type: type, buildUp: buildUp, players: players, random: &random) else { return }
+        // Fluxo próprio para textos e personagens de apoio: o fluxo principal só decide placar e estatísticas.
+        var chain = FootballRandom(seed: Self.mix(seed, UInt64(minute), side == .home ? 0xB1 : 0xB2))
         let rivalKeeper = keeper(of: side.other, players: players)
         let xg = type.meanXG * (0.7 + 0.6 * random.unit()) * (type == .setPiece ? 1 + self[side].setPieceBoost : 1)
         var finishing = Double(type == .header ? shooter.attributes[.heading] : shooter.attributes[.finishing])
@@ -328,7 +340,7 @@ extension MatchSimulation {
             self[side].stats[shooter.id, default: PlayerMatchStats(playerID: shooter.id)].goals += 1
             var assistName: String?
             var assistID: Int?
-            if random.chance(type.assistChance), let assister = pickAssister(side: side, excluding: shooter.id, players: players, random: &random) {
+            if random.chance(buildUp.assistChance), let assister = pickAssister(side: side, excluding: shooter.id, buildUp: buildUp, players: players, random: &random) {
                 assistID = assister.id
                 assistName = assister.name
                 self[side].assistIDs.append(assister.id)
@@ -337,7 +349,11 @@ extension MatchSimulation {
             if detailed {
                 let teamName = FootballSeason.teamName(teamID)
                 var text = "GOL! \(shooter.name) \(Self.goalPhrase(type, random: &random)) para o \(teamName)"
-                if let assistName { text += ", após passe de \(assistName)." } else { text += "." }
+                text += buildUp.goalClause(assister: assistName)
+                if assistID != nil, [BuildUp.throughBall, .oneTwo, .longBall, .recycled].contains(buildUp),
+                   let starter = chain.pick(self[side].onPitch.compactMap { players[$0] }.filter { $0.id != shooter.id && $0.id != assistID && $0.position != .goalkeeper }) {
+                    text += " A jogada começou com \(starter.name)."
+                }
                 text += " \(scoreLineAfterGoal)"
                 events.append(MatchEvent(minute: minute, kind: .goal, teamID: teamID, text: text, playerID: shooter.id,
                                          relatedPlayerID: assistID, xg: (xg * 100).rounded() / 100, x: x, y: y))
@@ -364,7 +380,18 @@ extension MatchSimulation {
             return
         }
         let keeperName = rivalKeeper?.name ?? "o goleiro"
-        let text = Self.missText(type: type, onTarget: onTarget, shooter: shooter.name, keeper: keeperName, random: &random)
+        if !onTarget, chain.chance(0.08) {
+            let post = chain.chance(0.5) ? "na trave" : "no travessão"
+            events.append(MatchEvent(minute: minute, kind: .woodwork, teamID: teamID, text: "NA TRAVE! \(shooter.name) acerta a bola \(post)!",
+                                     playerID: shooter.id, xg: (xg * 100).rounded() / 100, x: x, y: y))
+            return
+        }
+        var text = Self.missText(type: type, onTarget: onTarget, shooter: shooter.name, keeper: keeperName, random: &random)
+        if chain.chance(0.6),
+           let passer = chain.pick(self[side].onPitch.compactMap { players[$0] }.filter { $0.id != shooter.id && $0.position != .goalkeeper }),
+           let lead = buildUp.missLead(passer.name) {
+            text = lead + " " + text
+        }
         events.append(MatchEvent(minute: minute, kind: onTarget ? .save : .chance, teamID: teamID, text: text, playerID: shooter.id,
                                  relatedPlayerID: onTarget ? rivalKeeper?.id : nil, xg: (xg * 100).rounded() / 100, x: x, y: y))
     }
@@ -466,7 +493,7 @@ extension MatchSimulation {
 
     // MARK: - Faltas e cartões
 
-    private mutating func foulPhase(side: MatchTeamSide, players: [Int: FootballPlayer], random: inout FootballRandom) {
+    private mutating func foulPhase(side: MatchTeamSide, flavor: MatchFlavor, players: [Int: FootballPlayer], random: inout FootballRandom) {
         let state = self[side]
         var factor = state.instructions.foulFactor
         switch state.style {
@@ -475,7 +502,7 @@ extension MatchSimulation {
         case .possession: factor *= 0.9
         default: break
         }
-        guard random.chance(Self.foulsPerMinute * factor) else { return }
+        guard random.chance(Self.foulsPerMinute * factor * flavor.strictness) else { return }
         let candidates = state.onPitch.compactMap { players[$0] }
         let weights = candidates.map { player -> Int in
             let base: Double
@@ -495,7 +522,7 @@ extension MatchSimulation {
         self[side].stats[fouler.id, default: PlayerMatchStats(playerID: fouler.id)].fouls += 1
         let teamID = state.teamID
         let redChance = 0.0012
-        let yellowChance = 0.175 + (state.style == .highPress ? 0.03 : 0) + (state.instructions.timeWasting ? 0.02 : 0)
+        let yellowChance = 0.175 * flavor.strictness + (state.style == .highPress ? 0.03 : 0) + (state.instructions.timeWasting ? 0.02 : 0)
         if random.chance(redChance) {
             sendOff(side: side, playerID: fouler.id, second: false, players: players)
         } else if random.chance(yellowChance) {

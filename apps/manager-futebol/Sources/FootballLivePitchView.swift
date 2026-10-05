@@ -71,7 +71,7 @@ struct FootballLivePitchView: View {
         let awayKeeperKit = PitchKit.keeper(avoiding: [homeKit.shirt, awayKit.shirt, homeKeeperKit.shirt])
         let input = PitchInput(slots: slots(), homeShare: sim.possessionShare, pressure: pressure, events: sim.events,
                                homeTeamID: sim.home.teamID, finished: sim.finished)
-        if FactoryCapture.screen?.hasPrefix("match") == true, !engine.isWarmed { engine.warmUpForCapture(input: input) }
+        if FactoryCapture.screen?.hasPrefix("match") == true, !engine.isWarmed, sim.minute > 0 { engine.warmUpForCapture(input: input) }
         let eventCount = sim.events.count
         let busy = engine.isBusy(eventCount: eventCount)
         let rates: [Int: Double] = [1: 1.0, 2: 1.5, 4: 2.2]

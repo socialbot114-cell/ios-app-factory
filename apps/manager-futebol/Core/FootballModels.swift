@@ -627,6 +627,7 @@ struct MatchEvent: Codable, Equatable {
     enum Kind: String, Codable {
         case kickoff, goal, chance, save, halfTime, tactic, substitution, fullTime, injury, extraTime, penalties
         case yellowCard, redCard, penaltyAwarded, stoppage, pressure
+        case offside, tackle, dribble, cross, woodwork
     }
 
     let minute: Int
