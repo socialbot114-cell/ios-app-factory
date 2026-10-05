@@ -362,6 +362,7 @@ struct FootballHome: View {
             return
         }
         career = Self.previewCareer(liveMatch: capture.hasPrefix("match"))
+        if capture == "agenda" { career.simulateNextMatchDay() }
         if capture == "press" {
             var guardCount = 0
             while career.pendingPress == nil, guardCount < 8 {

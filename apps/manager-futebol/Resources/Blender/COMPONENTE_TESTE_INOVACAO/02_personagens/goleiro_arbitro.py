@@ -97,6 +97,6 @@ if __name__ == "__main__":
     out = args[0] if len(args) > 0 else "/tmp/goleiro_teste.png"
     qual = (args[1] if len(args) > 1 else "C").upper()
     {"A": variacao_a, "B": variacao_b}.get(qual, variacao_c)()
-    LB.camera_iso(ortho_scale=8.0, alvo=(0, 0, 1.0))
+    LB.camera_iso(ortho_scale=4.0, alvo=(0, 0, 1.0))
     LB.luz_estudio()
     LB.render_transparente(out, res_x=800, res_y=800)

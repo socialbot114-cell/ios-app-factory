@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COMPONENTE TESTE INOVACAO — Catálogo com prints</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
+  header { padding: 24px; background: #1e293b; position: sticky; top: 0; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 6px 0 0; color: #94a3b8; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; padding: 20px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow: hidden; }
+  .card img { width: 100%; display: block; background: #fff; }
+  .card .body { padding: 12px 14px; }
+  .card h2 { margin: 0 0 4px; font-size: 15px; }
+  .card p { margin: 0; font-size: 12.5px; color: #94a3b8; }
+  .tag { display: inline-block; font-size: 11px; background: #0ea5e9; color: #04121f; font-weight: 700; border-radius: 20px; padding: 2px 10px; margin-bottom: 8px; }
+  .tag.inov { background: #f2b705; }
+  footer { padding: 16px 20px; color: #64748b; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>COMPONENTE TESTE INOVACAO — prints por variação</h1>
+  <p>11 prints com render real Blender 4.2 EEVEE (fundo transparente). Pasta: Resources/Blender/COMPONENTE_TESTE_INOVACAO/exports/png/</p>
+</header>
+<div class="grid">
+  <div class="card"><img src="png/cena_inovacao.png" alt="Cena inovação"><div class="body"><span class="tag inov">CENA FINAL</span><h2>Cena Inovação — tudo junto</h2><p>04_cenas_teste/cena_inovacao.py — gramado C + bowl + 2 jogadores + goleiro neon + bola neon.</p></div></div>
+  <div class="card"><img src="png/gramado_C.png" alt="Gramado C"><div class="body"><span class="tag inov">01 ESTADIO</span><h2>Gramado C — premium + LED</h2><p>01_estadio/gramado.py :: variacao_c_premium()</p></div></div>
+  <div class="card"><img src="png/gramado_A.png" alt="Gramado A"><div class="body"><span class="tag">01 ESTADIO</span><h2>Gramado A — várzea simples</h2><p>01_estadio/gramado.py :: variacao_a_varzea()</p></div></div>
+  <div class="card"><img src="png/arquibancada_C.png" alt="Arquibancada C"><div class="body"><span class="tag inov">01 ESTADIO</span><h2>Arquibancada C — bowl 4 lados + VIP</h2><p>arquibancada_modular.py :: fileiras=6, 4 lados</p></div></div>
+  <div class="card"><img src="png/arquibancada_A.png" alt="Arquibancada A"><div class="body"><span class="tag">01 ESTADIO</span><h2>Arquibancada A — 1 lado em pé</h2><p>arquibancada_modular.py :: lados=(norte,), sem cadeiras</p></div></div>
+  <div class="card"><img src="png/cobertura_C.png" alt="Cobertura C"><div class="body"><span class="tag inov">01 ESTADIO</span><h2>Cobertura C — arena + telão + LED</h2><p>cobertura_placar.py :: 4 coberturas + placar 2:1 + refletores</p></div></div>
+  <div class="card"><img src="png/jogador_C.png" alt="Jogador C"><div class="body"><span class="tag inov">02 PERSONAGENS</span><h2>Jogador C — estrela 10</h2><p>02_personagens/jogador.py :: faixa lateral + bota vermelha</p></div></div>
+  <div class="card"><img src="png/goleiro_B.png" alt="Goleiro B"><div class="body"><span class="tag inov">02 PERSONAGENS</span><h2>Goleiro B — rosa + luvas GG</h2><p>goleiro_arbitro.py :: criar_goleiro(luvas_grandes=True)</p></div></div>
+  <div class="card"><img src="png/arbitro_tecnico.png" alt="Arbitro tecnico"><div class="body"><span class="tag">02 PERSONAGENS</span><h2>Árbitro + Técnico</h2><p>goleiro_arbitro.py :: criar_arbitro_tecnico() + cartão vermelho</p></div></div>
+  <div class="card"><img src="png/bola_trave_C.png" alt="Bola trave"><div class="body"><span class="tag inov">03 PROPS</span><h2>Bola + Trave C — neon + base LED</h2><p>03_props/bola_trave.py :: neon + rede densa + premium</p></div></div>
+  <div class="card"><img src="png/extras_treino.png" alt="Extras"><div class="body"><span class="tag">03 PROPS</span><h2>Extras — treino</h2><p>extras.py :: cones + banco reservas + bandeira escanteio</p></div></div>
+</div>
+<footer>Render real Blender 4.2.1 EEVEE em 05/10/2026 — para re-renderizar: blender --background --python &lt;script&gt; -- exports/png/&lt;nome&gt;.png</footer>
+</body>
+</html>

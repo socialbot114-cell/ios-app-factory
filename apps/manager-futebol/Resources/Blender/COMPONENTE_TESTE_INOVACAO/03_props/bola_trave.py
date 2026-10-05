@@ -59,6 +59,6 @@ if __name__ == "__main__":
     out = args[0] if len(args) > 0 else "/tmp/prop_teste.png"
     qual = (args[1] if len(args) > 1 else "C").upper()
     {"A": variacao_a, "B": variacao_b}.get(qual, variacao_c)()
-    LB.camera_iso(location=(6, -7, 6), ortho_scale=6.0, alvo=(2.5, 0, 0.4))
+    LB.camera_iso(location=(6, -7, 6), ortho_scale=3.5, alvo=(2.5, 0, 0.4))
     LB.luz_estudio()
     LB.render_transparente(out, res_x=800, res_y=800)
