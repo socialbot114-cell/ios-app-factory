@@ -2,7 +2,7 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) em tentativa de envio ao TestFlight (5 de outubro de 2026). Veja a seção "Atualização — 5 de outubro" abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) enviado ao TestFlight em 5 de outubro de 2026 (run 37323855519). Veja a seção "Atualização — 5 de outubro" abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
 
 ## Atualização — 5 de outubro de 2026
 
@@ -19,7 +19,7 @@ Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) em
 |---|---|---|
 | 1 | `37309095531` | **Barrada pelo gate de testes**; nada foi enviado. `testPlayLiveMatchAndReadLeague` passou isolado e falhou na suíte completa: o botão `live-finish` demorou mais de 20 s. |
 | 2 | `37315165659` | Teste da partida **passou**; barrada por um UITest novo (`testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate`) que procura a ficha do clube numa `UINavigationBar` que o FutOS não usa. Correção anterior mantida: prévia de repercussão fora da thread principal (`Task.detached`). |
-| 3 | a registrar | Teste de LIG-01..03 pulado com motivo explícito (reescrever com `staticTexts`/identificadores); LIG-01..03 seguem abertos. |
+| 3 | `37323855519` | **Aprovada: gate de testes verde (iPhone e iPad), assinatura, upload e ativação no TestFlight interno concluídos.** Build **1.1 (6)** enviado. O teste de LIG-01..03 está pulado com motivo explícito (reescrever com `staticTexts`/identificadores); LIG-01..03 seguem abertos. |
 
 Causa da tentativa 1 é **provável, não provada** (não há UITest local). Antes disso, o mesmo fluxo falhou por outro motivo: toque no dock durante a animação de saída do app (corrigido nos testes). Se a tentativa 2 falhar, abrir o `xcresult` do run, ver a tela do momento da falha e corrigir; não reenviar sem o gate verde.
 
