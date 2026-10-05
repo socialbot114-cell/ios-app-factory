@@ -226,7 +226,7 @@ struct FootballHome: View {
         case .fantasy: FootballFantasyView(career: $career, onAlert: showAlert)
         case .life: FootballCoachLifeView(career: $career, onAlert: showAlert)
         case .business: FootballBusinessView(career: $career, onAlert: showAlert)
-        case .quests: FootballQuestsView(career: $career)
+        case .quests: FootballQuestsView(career: $career, onOpenApp: { openApp = PhoneApp(rawValue: $0) })
         case .trophies: FootballAchievementsView(career: career)
         case .alerts: FootballEventsView(career: $career)
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
@@ -236,12 +236,15 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = ["player", "staff", "press"]
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
         switch name {
         case "press": FootballPressView(career: $career)
+        case _ where FootballF4Captures.names.contains(name): FootballF4CaptureView(name: name, career: $career, onAlert: showAlert)
+        case _ where FootballF5Captures.names.contains(name): FootballF5CaptureView(name: name, career: $career, onAlert: showAlert)
+        case "renewal": FootballRenewalSheet(career: $career, playerID: career.clubRoster.first?.id ?? 0)
         case "betting": FootballBettingView(career: $career, onAlert: showAlert)
         case "social": FootballSocialView(career: $career, onAlert: showAlert)
         case "fantasy": FootballFantasyView(career: $career, onAlert: showAlert)
@@ -365,7 +368,15 @@ struct FootballHome: View {
             return
         }
         career = Self.previewCareer(liveMatch: capture.hasPrefix("match"))
+        FootballF4Captures.prepare(capture, career: &career)
+        FootballF5Captures.prepare(capture, career: &career)
         if capture == "agenda" || capture == "commitment" { career.simulateNextMatchDay() }
+        if capture == "inbox-followup", let athlete = career.clubRoster.first(where: { !career.startingXI.contains($0.id) && !$0.isYouth }) {
+            // Promessa quebrada: veredito, conversa de acompanhamento e memória do atleta.
+            _ = career.promiseStarts(playerID: athlete.id)
+            career.matchDayIndex += 20
+            career.evaluatePromises(started: [])
+        }
         if capture == "press" {
             var guardCount = 0
             while career.pendingPress == nil, guardCount < 8 {
@@ -402,7 +413,7 @@ struct FootballHome: View {
         case "contacts": openApp = .contacts
         case "settings": openApp = .settings
         case "agenda": openApp = .manager
-        case "commitment": openApp = .messages
+        case "commitment", "inbox-followup": openApp = .messages
         case "lock": locked = true
         case "notifications": showNotifications = true
         case "spotlight":

@@ -5,6 +5,8 @@ import SwiftUI
 struct FootballBettingView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
+    /// Captura: briefing e justificativa abertos, sem os painéis de cima.
+    var captureFocus = false
 
     @State private var legs: [BetLeg] = []
     @State private var stake = 50
@@ -19,7 +21,7 @@ struct FootballBettingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            walletPanel
+            if !captureFocus { walletPanel }
             if let note {
                 Label(note, systemImage: "ticket.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }
@@ -31,16 +33,22 @@ struct FootballBettingView: View {
             }
             fixturesPanel
             if !legs.isEmpty { slipPanel }
-            outrightsPanel
+            if !captureFocus { outrightsPanel }
             ticketsPanel
-            tipstersPanel
-            responsiblePanel
+            if !captureFocus {
+                tipstersPanel
+                responsiblePanel
+            }
         }
         .factoryPage()
         .navigationTitle("Palpite+")
         .onAppear {
             guard !didLoadDraft else { return }
             didLoadDraft = true
+            if captureFocus {
+                expanded = career.bettingFixtures.first?.id
+                detailBetID = career.world.betting.bets.first?.id
+            }
             let restored = career.restoredBettingDraft()
             if let draft = restored.draft { legs = draft.legs; stake = draft.stake }
             if restored.dropped > 0 { note = "\(restored.dropped) seleção(ões) do rascunho saíram: o mercado fechou." }

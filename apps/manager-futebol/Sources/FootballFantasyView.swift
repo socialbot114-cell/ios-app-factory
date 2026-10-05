@@ -5,6 +5,8 @@ import SwiftUI
 struct FootballFantasyView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
+    /// Captura: só os painéis novos, no topo.
+    var captureFocus = false
 
     @State private var lineup: [Int] = []
     @State private var captainID: Int?
@@ -25,11 +27,13 @@ struct FootballFantasyView: View {
                 FactoryMetric(label: "Títulos", value: "\(fantasy.titles)", symbol: "trophy.fill", tint: .green)
             }
             roundPanel
-            lineupPanel
+            if !captureFocus { lineupPanel }
             captainPanel
             marketPanel
-            standingsPanel
-            historyPanel
+            if !captureFocus {
+                standingsPanel
+                historyPanel
+            }
         }
         .factoryPage()
         .navigationTitle("Rodada Mágica")

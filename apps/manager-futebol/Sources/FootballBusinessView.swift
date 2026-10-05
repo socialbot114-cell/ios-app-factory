@@ -21,6 +21,7 @@ struct FootballBusinessView: View {
             shopPanel
             FootballCollectionProjectPanel(career: $career, onAlert: onAlert)
             FootballCommercialDelegationPanel(career: $career)
+            FootballProjectLedgerPanel(career: career)
             namingPanel
             programsPanel
             friendliesPanel
@@ -38,7 +39,7 @@ struct FootballBusinessView: View {
                 ForEach(ShopPrice.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
-            Text("Preço alto rende mais por camisa, mas vende menos. Promoção enche a loja.").font(.caption).foregroundStyle(.secondary)
+            Text(business.shopPrice.moodNote).font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button {
                     if career.upgradeShop() { note = "Loja ampliada." } else { onAlert("Sem caixa ou a loja já está no nível máximo.") }

@@ -103,9 +103,13 @@ extension FootballCareer {
     @discardableResult
     mutating func lendToClub(amount: Int) -> Bool {
         guard selectedClubID != nil, !isFired, amount >= 50_000, world.coach.personalCash >= amount else { return false }
+        let earnsBonus = loanEarnsBoardBonus(amount: amount)
         world.coach.personalCash -= amount
         book(.other, amount, "Aporte do treinador")
-        if isInDebt { boardConfidence = min(100, boardConfidence + 2) }
+        if earnsBonus {
+            boardConfidence = min(100, boardConfidence + 2)
+            world.projects.lastLoanBonusWorldDay = worldDay
+        }
         bump("clubLoans")
         return true
     }
@@ -231,6 +235,7 @@ extension FootballCareer {
             text = "Comercial gravado: \(FootballFormat.money(cash)) no bolso."
         }
         world.coach.energy = min(100, max(0, world.coach.energy))
+        world.coach.stress = min(100, max(0, world.coach.stress + activity.stressCost))
         world.coach.personalCash += cash
         world.social.coachFollowers = max(0, world.social.coachFollowers + followers)
         bump("activities")

@@ -21,7 +21,11 @@ extension FootballCareer {
     mutating func upgradeShop() -> Bool {
         guard let cost = shopUpgradeCost(), transferBudget >= cost else { return false }
         book(.merchandise, -cost, "Ampliação da loja do clube")
+        let previous = world.business.shopLevel
         world.business.shopLevel += 1
+        openLedger(.shopUpgrade, key: Self.shopUpgradeKey(level: world.business.shopLevel), title: "Ampliação da loja (nível \(world.business.shopLevel))",
+                   unit: .money, invested: cost, forecastPerDay: Double(shopUpliftToday(fromLevel: previous, toLevel: world.business.shopLevel)),
+                   horizonDays: FootballSeason.matchDaysPerSeason)
         return true
     }
 
@@ -68,6 +72,9 @@ extension FootballCareer {
         world.business.naming = NamingRightsDeal(sponsor: offer.sponsor, stadiumName: offer.stadiumName, perSeason: offer.perSeason, endSeason: season + offer.seasons - 1)
         world.business.namingOffers = []
         fanMood = max(0, fanMood - 2)
+        openLedger(.naming, key: "naming", title: "Naming rights \(offer.sponsor)", unit: .money,
+                   forecastPerDay: Double(offer.perSeason / FootballSeason.matchDaysPerSeason),
+                   horizonDays: offer.seasons * FootballSeason.matchDaysPerSeason)
         return true
     }
 
@@ -84,10 +91,20 @@ extension FootballCareer {
     mutating func toggle(_ program: CommunityProgram) -> Bool {
         if let index = world.business.programs.firstIndex(of: program) {
             world.business.programs.remove(at: index)
+            closeLedger(key: program.rawValue)
             return true
         }
         guard canToggle(program) == nil else { return false }
         world.business.programs.append(program)
+        let promise: (ProjectLedgerUnit, Double) = {
+            switch program {
+            case .schoolProject: return (.fans, Double(fanBase) * 0.0006)
+            case .fanClubs: return (.fans, Double(fanBase) * 0.0012)
+            case .footballAcademy: return (.talents, 0.02)
+            case .hospitalVisits: return (.reputation, 0.08)
+            }
+        }()
+        openLedger(.program, key: program.rawValue, title: program.title, unit: promise.0, forecastPerDay: promise.1)
         bump("community")
         return true
     }
@@ -208,24 +225,43 @@ extension FootballCareer {
     mutating func tickBusiness(using random: inout FootballRandom) {
         guard selectedClubID != nil, !isFired else { return }
         book(.merchandise, baseMerchRevenuePerMatchDay, "Vendas da loja do clube")
+        applyShopPriceMood()
         progressCollections()
         runCommercialDelegation()
-        if let deal = world.business.naming { book(.naming, deal.perSeason / FootballSeason.matchDaysPerSeason, "Naming rights \(deal.sponsor)") }
+        if let deal = world.business.naming {
+            book(.naming, deal.perSeason / FootballSeason.matchDaysPerSeason, "Naming rights \(deal.sponsor)")
+            recordLedger(key: "naming", Double(deal.perSeason / FootballSeason.matchDaysPerSeason))
+        }
+        for entry in world.commercial.ledger where entry.kind == .shopUpgrade && !entry.closed && entry.clubID == selectedClubID {
+            let level = Int(entry.key.dropFirst("shop-".count)) ?? world.business.shopLevel
+            recordLedger(key: entry.key, Double(shopUpliftToday(fromLevel: level - 1, toLevel: level)))
+        }
         for program in world.business.programs {
             book(.community, -(program.costPerSeason / FootballSeason.matchDaysPerSeason), program.title)
             switch program {
             case .schoolProject:
-                fanBase += Int(Double(fanBase) * 0.0006)
+                let gained = Int(Double(fanBase) * 0.0006)
+                fanBase += gained
+                recordLedger(key: program.rawValue, Double(gained))
                 if random.chance(0.2) { fanMood = min(100, fanMood + 1) }
             case .footballAcademy:
-                if random.chance(0.02) { apply(.discoverYouth, playerID: nil, using: &random) }
+                if random.chance(0.02) {
+                    apply(.discoverYouth, playerID: nil, using: &random)
+                    recordLedger(key: program.rawValue, 1)
+                }
             case .hospitalVisits:
-                if random.chance(0.08) { changeReputation(1) }
+                if random.chance(0.08) {
+                    changeReputation(1)
+                    recordLedger(key: program.rawValue, 1)
+                }
                 if random.chance(0.15) { fanMood = min(100, fanMood + 1) }
             case .fanClubs:
-                fanBase += Int(Double(fanBase) * 0.0012)
+                let gained = Int(Double(fanBase) * 0.0012)
+                fanBase += gained
+                recordLedger(key: program.rawValue, Double(gained))
             }
         }
+        advanceLedgerDay()
         generateAgentOffers(using: &random)
         progressBoardMeetings()
         runPersonalPlan()
@@ -235,7 +271,10 @@ extension FootballCareer {
         closeBoardSeason()
         closePersonalPlanSeason()
         world.business.friendliesThisSeason = 0
-        if let deal = world.business.naming, deal.endSeason <= season { world.business.naming = nil }
+        if let deal = world.business.naming, deal.endSeason <= season {
+            world.business.naming = nil
+            closeLedger(key: "naming")
+        }
         refreshNamingOffers(using: &random)
         world.business.agentOffers = []
     }

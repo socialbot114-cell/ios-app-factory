@@ -75,10 +75,12 @@ struct ProjectsState: Codable, Equatable {
     /// Agenda pessoal do treinador (F4-04).
     var personalPlan: [PlannedActivity] = []
     var nextPlanID = 1
+    /// Último dia em que um aporte do treinador rendeu confiança (F4-06).
+    var lastLoanBonusWorldDay = -1
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID }
+    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -86,6 +88,7 @@ struct ProjectsState: Codable, Equatable {
         nextMeetingID = try container.decodeIfPresent(Int.self, forKey: .nextMeetingID) ?? 1
         personalPlan = try container.decodeIfPresent([PlannedActivity].self, forKey: .personalPlan) ?? []
         nextPlanID = try container.decodeIfPresent(Int.self, forKey: .nextPlanID) ?? 1
+        lastLoanBonusWorldDay = try container.decodeIfPresent(Int.self, forKey: .lastLoanBonusWorldDay) ?? -1
     }
 }
 

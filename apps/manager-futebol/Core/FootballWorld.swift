@@ -515,7 +515,7 @@ enum ShopPrice: Int, Codable, CaseIterable, Identifiable {
 
     var margin: Double {
         switch self {
-        case .low: return 0.8
+        case .low: return 0.72
         case .normal: return 1.0
         case .high: return 1.35
         }

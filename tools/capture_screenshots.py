@@ -16,7 +16,7 @@ CAPTURES = {
     "atelie-colorir": ["home", "editor", "saved"],
     "crime-idle": ["home", "operations", "heists", "crew", "territory"],
     "detetive-na-testa": ["home", "game", "result"],
-    "manager-futebol": ["select", "home", "match", "squad", "table", "cup", "market", "club", "phone", "lock", "notifications", "spotlight", "contacts", "betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "player", "inbox", "finance", "achievements", "growth", "settings", "match-watch", "match-goal", "match-narration", "match-final", "press", "agenda", "commitment"],
+    "manager-futebol": ["select", "home", "match", "squad", "table", "cup", "market", "club", "phone", "lock", "notifications", "spotlight", "contacts", "betting", "social", "fantasy", "lifestyle", "business", "quests", "events", "player", "inbox", "finance", "achievements", "growth", "settings", "match-watch", "match-goal", "match-narration", "match-final", "press", "renewal", "inbox-followup", "cash-projection", "board-meeting", "collection-project", "personal-plan", "commercial-delegation", "league-insight", "fantasy-insight", "betting-insight", "goals-origin", "agenda", "commitment"],
     "meu-qr-pix": ["form", "qr", "history"],
     "leitor-pdf-bolso": ["library", "reader", "search"],
     "brasilia-politica-contexto": ["home", "article", "saved"],

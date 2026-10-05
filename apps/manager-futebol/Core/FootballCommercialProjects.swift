@@ -94,16 +94,21 @@ struct CommercialState: Codable, Equatable {
     var nextID = 1
     /// Gerente comercial que lança coleções sozinho (F4-05).
     var delegation: CommercialDelegation? = nil
+    /// Previsto × realizado dos demais projetos (NEG-06).
+    var ledger: [ProjectLedgerEntry] = []
+    var ledgerNextID = 1
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case collections, nextID, delegation }
+    private enum CodingKeys: String, CodingKey { case collections, nextID, delegation, ledger, ledgerNextID }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         collections = try container.decodeIfPresent([CollectionProject].self, forKey: .collections) ?? []
         nextID = try container.decodeIfPresent(Int.self, forKey: .nextID) ?? 1
         delegation = try container.decodeIfPresent(CommercialDelegation.self, forKey: .delegation)
+        ledger = try container.decodeIfPresent([ProjectLedgerEntry].self, forKey: .ledger) ?? []
+        ledgerNextID = try container.decodeIfPresent(Int.self, forKey: .ledgerNextID) ?? 1
     }
 }
 

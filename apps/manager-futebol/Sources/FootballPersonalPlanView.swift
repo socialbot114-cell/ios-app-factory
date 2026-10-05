@@ -4,6 +4,8 @@ import SwiftUI
 struct FootballPersonalPlanPanel: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
+    /// Dia e atividade já abertos no editor (usado nas capturas para mostrar um conflito).
+    var initialSelection: (day: Int, activity: CoachActivity)? = nil
     @State private var selectedDay: Int?
     @State private var activity: CoachActivity = .rest
 
@@ -37,6 +39,12 @@ struct FootballPersonalPlanPanel: View {
             }
         }
         .accessibilityIdentifier("personal-plan")
+        .onAppear {
+            if let initialSelection, selectedDay == nil {
+                selectedDay = initialSelection.day
+                activity = initialSelection.activity
+            }
+        }
     }
 
     private func dayRow(_ day: PersonalPlanDay) -> some View {
@@ -80,7 +88,7 @@ struct FootballPersonalPlanPanel: View {
                 ForEach(CoachActivity.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
             }
             .pickerStyle(.menu)
-            Text(activity.summary + (activity.isInPerson ? " Presencial." : " Pode ser feito à distância."))
+            Text(activity.summary + (activity.isInPerson ? " Presencial." : " Pode ser feito à distância.") + (activity.stressCost == 0 ? "" : " Estresse \(activity.stressCost > 0 ? "+" : "")\(activity.stressCost)."))
                 .font(.caption).foregroundStyle(.secondary)
             ForEach(Array(conflicts.enumerated()), id: \.offset) { _, conflict in
                 Label(conflict.text, systemImage: conflict.severity == .blocking ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")

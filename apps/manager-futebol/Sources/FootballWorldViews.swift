@@ -231,15 +231,18 @@ struct FootballEventsView: View {
 
 struct FootballQuestsView: View {
     @Binding var career: FootballCareer
+    var onOpenApp: ((String) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryMetric(label: "Missões concluídas", value: "\(career.world.quests.completedCount)", symbol: "checkmark.seal.fill", tint: .blue)
-            let weekly = career.world.quests.active.filter { !$0.seasonal && !$0.completed }
-            let seasonal = career.world.quests.active.filter { $0.seasonal && !$0.completed }
+            FootballGoalsPlannerPanel(career: $career, onOpenApp: onOpenApp)
+            let weekly = career.world.quests.active.filter { !$0.seasonal && !$0.completed && $0.origin != .player }
+            let seasonal = career.world.quests.active.filter { $0.seasonal && !$0.completed && $0.origin != .player }
             questPanel("Missões rápidas", "bolt.fill", weekly)
             questPanel("Missões de temporada", "calendar", seasonal)
-            Text("As recompensas caem sozinhas quando a meta é batida.").font(.caption).foregroundStyle(.secondary)
+            FootballGoalsHistoryPanel(career: career)
+            Text("As recompensas caem sozinhas, uma única vez, quando a meta é batida.").font(.caption).foregroundStyle(.secondary)
         }
         .factoryPage()
         .navigationTitle("Missões")
@@ -250,16 +253,7 @@ struct FootballQuestsView: View {
         FactoryPanel(title: title, systemImage: symbol) {
             if quests.isEmpty { Text("Nenhuma missão ativa agora.").font(.subheadline).foregroundStyle(.secondary) }
             ForEach(quests) { quest in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(quest.title).font(.subheadline.weight(.bold))
-                        Spacer()
-                        Text("\(career.progress(of: quest))/\(quest.target)").font(.caption.weight(.bold).monospacedDigit())
-                    }
-                    Text(quest.detail).font(.caption).foregroundStyle(.secondary)
-                    ProgressView(value: Double(career.progress(of: quest)), total: Double(max(1, quest.target))).tint(.blue)
-                    Label(quest.reward.text, systemImage: "gift.fill").font(.caption).foregroundStyle(FootballTheme.gold)
-                }
+                FootballGoalRow(career: career, quest: quest, onOpenApp: onOpenApp)
                 if quest.id != quests.last?.id { Divider() }
             }
         }
