@@ -2,7 +2,39 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual: **roadmap quase completo; build 1.1 (6) enviado ao TestFlight em 5 de outubro de 2026 (veja `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`)**.
+Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) em tentativa de envio ao TestFlight (5 de outubro de 2026). Veja a seção "Atualização — 5 de outubro" abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+
+## Atualização — 5 de outubro de 2026
+
+### Onde estamos
+
+- Branch `manager-futebol/phases-2-7`, trabalho integrado em 11 lotes por uma sessão orquestradora (`docs/ORQUESTRACAO.md`); quatro sessões trabalharam em paralelo (motor e orquestração, negócios e mercado, apps de acompanhamento e FutOS, arte).
+- **Testes de domínio:** 378, zero falhas (Docker `swift:5.9`). Inclui carreiras de 10 temporadas em 3 sementes (`FootballLongCareerTests`), saves de referência (`FootballReferenceSavesTests`) e calibração do motor.
+- **Build iOS e capturas:** aprovados no GitHub Actions; 59 estados em `screenshots-review/futos-cafa572/` e run mais recente com as rotas corrigidas (`match-prep`, `season-end`).
+- **Itens marcados:** a maior parte das fases F0 a F4, F6-01 a F6-04 e as categorias GES, TAC, MSG, CHU, TRF, CON, VID, MAR, CLB, BAN, NEG, PAL, ROD, MET, TRO, OS e AJU, cada uma com a evidência na própria linha.
+
+### TestFlight 1.1 (build 6) — registro
+
+| Tentativa | Run | Resultado |
+|---|---|---|
+| 1 | `37309095531` | **Barrada pelo gate de testes**; nada foi enviado. `testPlayLiveMatchAndReadLeague` passou isolado e falhou na suíte completa: o botão `live-finish` demorou mais de 20 s. |
+| 2 | `37315165659` | Em andamento. Correção: a prévia de repercussão da partida passou a rodar fora da thread principal (`Task.detached`). |
+
+Causa da tentativa 1 é **provável, não provada** (não há UITest local). Antes disso, o mesmo fluxo falhou por outro motivo: toque no dock durante a animação de saída do app (corrigido nos testes). Se a tentativa 2 falhar, abrir o `xcresult` do run, ver a tela do momento da falha e corrigir; não reenviar sem o gate verde.
+
+### O que ainda falta
+
+- **Validação final:** F5-01 (revisar os 18 apps contra os critérios de aceite), F6-05 (jornadas de UI no iPhone **e no iPad**, ainda não validado nesta rodada), F6-06 (playtest manual no aparelho) e F6-07 (corrigir o que o playtest achar).
+- **Em aberto por categoria:** LIG-01/02/03 (UITest escrito, falta ele rodar verde), ROD-04/05/06, OS-05 (só a aba da Liga é preservada)/OS-08/OS-09, AJU-01 (saves em Ajustes) e CLB-06 (legado e convites).
+- **Acesso:** cadastrar o tester no grupo "Equipe interna" do App Store Connect (`testerCount: 0` na última checagem) para instalar no iPhone.
+
+### Próxima prioridade
+
+1. Ver o resultado do run `37315165659`; se verde, aguardar o processamento da Apple e instalar **1.1 (6)**.
+2. Playtest manual no iPhone (bloqueio → início → notificações → Mensagens → Tática → Gestor → partida em Narração e em Ver jogo → pós-jogo → coletiva → Liga) e registrar bugs com passos de reprodução.
+3. Rodar iPad nos layouts alterados (Elenco, Gestor, Chuteira, Clube).
+4. Fechar os itens em aberto acima, na ordem: OS-08/09 e LIG, ROD-04..06, AJU-01, CLB-06.
+5. Atualizar este roadmap e o baseline com o que o playtest mostrar.
 
 ## Atualização — 4 de outubro de 2026
 
