@@ -161,6 +161,10 @@ struct InboxMessage: Codable, Equatable, Identifiable {
     /// Resposta e origem preservadas no save; opcionais para compatibilidade legada.
     var coachReply: String? = nil
     var sourcePromiseID: Int? = nil
+    /// Fato do mundo que originou a mensagem (mesmo ID em Mensagens, Notificações e Chuteira).
+    var sourceFactID: String? = nil
+    /// Dispensada sem ter sido resolvida; opcional para saves antigos.
+    var isDismissed: Bool? = nil
 }
 
 /// Promessa feita a um atleta: começar um número de jogos antes de um prazo.

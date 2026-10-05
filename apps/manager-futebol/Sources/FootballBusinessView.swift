@@ -19,6 +19,7 @@ struct FootballBusinessView: View {
                 Label(note, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }
             shopPanel
+            FootballCollectionProjectPanel(career: $career, onAlert: onAlert)
             namingPanel
             programsPanel
             friendliesPanel
@@ -46,14 +47,6 @@ struct FootballBusinessView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("shop-upgrade")
-                Button {
-                    if career.launchCollection() { note = "Nova coleção lançada: vendas em alta por alguns jogos." } else { onAlert("Caixa insuficiente ou coleção já ativa.") }
-                } label: {
-                    Label(career.collectionActive ? "Coleção ativa" : "Coleção · \(FootballFormat.money(career.collectionCost()))", systemImage: "tshirt.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(career.collectionActive)
             }
             .font(.subheadline.weight(.semibold))
         }

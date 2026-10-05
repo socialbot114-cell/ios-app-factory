@@ -418,6 +418,7 @@ extension FootballCareer {
         settlePendingPayments()
         generatePlayerRequests()
         escalateIgnoredRequests()
+        processDueItems()
         progressScouting(using: &postRandom)
         marketCalendarEvents()
         if matchDayIndex == Self.youthCupMatchDay { runYouthCup(using: &postRandom) }

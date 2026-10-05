@@ -279,6 +279,8 @@ struct SocialPost: Codable, Equatable, Identifiable {
     var isUser = false
     var tag: String? = nil
     var viral = false
+    var sourceFactID: String? = nil
+    var reliability: String? = nil
 }
 
 struct BrandDeal: Codable, Equatable, Identifiable {
@@ -448,6 +450,8 @@ struct FantasyState: Codable, Equatable {
     var managers: [FantasyManager] = []
     var lastScoredRound = 0
     var titles = 0
+    /// Rascunho da escalação da próxima rodada (ROD-03); optional para saves antigos.
+    var draft: FantasyDraft? = nil
 }
 
 // MARK: - Acontecimentos (eventos com decisões)
@@ -657,10 +661,12 @@ struct WorldState: Codable, Equatable {
     var quests = QuestState()
     var growth = GrowthState()
     var contacts = ContactsState()
+    var projects = ProjectsState()
+    var commercial = CommercialState()
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case coach, social, betting, fantasy, events, business, quests, growth, contacts }
+    private enum CodingKeys: String, CodingKey { case coach, social, betting, fantasy, events, business, quests, growth, contacts, projects, commercial }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -673,5 +679,7 @@ struct WorldState: Codable, Equatable {
         quests = try container.decodeIfPresent(QuestState.self, forKey: .quests) ?? QuestState()
         growth = try container.decodeIfPresent(GrowthState.self, forKey: .growth) ?? GrowthState()
         contacts = try container.decodeIfPresent(ContactsState.self, forKey: .contacts) ?? ContactsState()
+        projects = try container.decodeIfPresent(ProjectsState.self, forKey: .projects) ?? ProjectsState()
+        commercial = try container.decodeIfPresent(CommercialState.self, forKey: .commercial) ?? CommercialState()
     }
 }

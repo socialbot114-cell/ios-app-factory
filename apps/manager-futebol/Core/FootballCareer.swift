@@ -48,6 +48,12 @@ struct FootballCareer: Codable, Equatable {
         case rivalMotivation
         case fanMood
         case clubHype
+        case factStore
+        case commitments
+        case nextCommitmentID
+        case playerMemories
+        case talks
+        case nextTalkID
         case pendingPress
         case transferLog
         case nextTransferID
@@ -135,6 +141,12 @@ struct FootballCareer: Codable, Equatable {
     var fanMood = 60
     /// Embalo da torcida (0 a 100): mais público e mais camisas depois de bons jogos.
     var clubHype = 0
+    var factStore = FactStore()
+    var commitments: [Commitment] = []
+    var nextCommitmentID = 1
+    var playerMemories: [PlayerMemory] = []
+    var talks: [RenewalTalk] = []
+    var nextTalkID = 1
     var pendingPress: PressConference? = nil
     var transferLog: [TransferRecord] = []
     var nextTransferID = 1
@@ -276,6 +288,12 @@ struct FootballCareer: Codable, Equatable {
         rivalMotivation = try container.decodeIfPresent([Int: Double].self, forKey: .rivalMotivation) ?? [:]
         fanMood = try container.decodeIfPresent(Int.self, forKey: .fanMood) ?? 60
         clubHype = try container.decodeIfPresent(Int.self, forKey: .clubHype) ?? 0
+        factStore = try container.decodeIfPresent(FactStore.self, forKey: .factStore) ?? FactStore()
+        commitments = try container.decodeIfPresent([Commitment].self, forKey: .commitments) ?? []
+        nextCommitmentID = try container.decodeIfPresent(Int.self, forKey: .nextCommitmentID) ?? 1
+        playerMemories = try container.decodeIfPresent([PlayerMemory].self, forKey: .playerMemories) ?? []
+        talks = try container.decodeIfPresent([RenewalTalk].self, forKey: .talks) ?? []
+        nextTalkID = try container.decodeIfPresent(Int.self, forKey: .nextTalkID) ?? 1
         pendingPress = try container.decodeIfPresent(PressConference.self, forKey: .pendingPress)
         transferLog = try container.decodeIfPresent([TransferRecord].self, forKey: .transferLog) ?? []
         nextTransferID = try container.decodeIfPresent(Int.self, forKey: .nextTransferID) ?? 1
@@ -364,6 +382,12 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(rivalMotivation, forKey: .rivalMotivation)
         try container.encode(fanMood, forKey: .fanMood)
         try container.encode(clubHype, forKey: .clubHype)
+        try container.encode(factStore, forKey: .factStore)
+        try container.encode(commitments, forKey: .commitments)
+        try container.encode(nextCommitmentID, forKey: .nextCommitmentID)
+        try container.encode(playerMemories, forKey: .playerMemories)
+        try container.encode(talks, forKey: .talks)
+        try container.encode(nextTalkID, forKey: .nextTalkID)
         try container.encodeIfPresent(pendingPress, forKey: .pendingPress)
         try container.encode(transferLog, forKey: .transferLog)
         try container.encode(nextTransferID, forKey: .nextTransferID)

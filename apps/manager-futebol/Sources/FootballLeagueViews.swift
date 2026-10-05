@@ -96,6 +96,7 @@ struct FootballTableView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             }
+            FootballLeagueInsightPanel(career: career, division: division)
             let fixtures = career.fixtures.filter { $0.competition == .league(division) }
             let rounds = Array(Set(fixtures.map(\.round))).sorted()
             let defaultRound = fixtures.filter { $0.isPlayed }.map(\.round).max() ?? rounds.first ?? 1
@@ -539,6 +540,7 @@ struct FootballClubView: View {
                     Text("Vitórias acima do esperado e clássicos vencidos aumentam a confiança. Terminar abaixo da meta com confiança baixa leva à demissão.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                FootballBoardMeetingPanel(career: $career, onAlert: onAlert)
                 FactoryPanel(title: "Histórico do treinador", systemImage: "clock.arrow.circlepath") {
                     if career.history.isEmpty {
                         Text("Sua primeira temporada ainda está em andamento.").font(.subheadline).foregroundStyle(.secondary)

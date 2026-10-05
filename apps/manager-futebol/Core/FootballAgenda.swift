@@ -6,7 +6,7 @@ enum FootballAgendaDestination: String, Equatable {
 }
 
 struct FootballAgendaItem: Identifiable, Equatable {
-    enum Kind: Int { case promise, offer, event, contract }
+    enum Kind: Int { case promise, offer, event, contract, commitment }
     let id: String
     let kind: Kind
     let title: String
@@ -17,6 +17,9 @@ struct FootballAgendaItem: Identifiable, Equatable {
     let daysRemaining: Int
     /// Contratos só são processados ao encerrar a temporada explicitamente.
     let expiresOnCalendarAdvance: Bool
+    /// Atleta (ou outra entidade) a que o item se refere, para abrir a tela certa (F1-05).
+    var entityID: Int? = nil
+    var section: String? = nil
 
     var expiresOnNextAdvance: Bool { expiresOnCalendarAdvance && daysRemaining <= 1 }
     var deadlineText: String {
@@ -39,14 +42,16 @@ extension FootballCareer {
             items.append(FootballAgendaItem(id: "promise-\(promise.id)", kind: .promise,
                 title: "Promessa a \(athlete.name)",
                 detail: "\(promise.startsDone)/\(promise.requiredStarts) titularidades. A última partida ainda conta; sem cumprir, moral -18 e confiança -1.",
-                destination: .squad, deadlineWorldDay: deadline, daysRemaining: max(0, deadline - worldDay), expiresOnCalendarAdvance: true))
+                destination: .squad, deadlineWorldDay: deadline, daysRemaining: max(0, deadline - worldDay), expiresOnCalendarAdvance: true,
+                entityID: promise.playerID, section: "lineup"))
         }
         for offer in offers {
             let deadline = seasonStart + offer.expiresAfterRound
             items.append(FootballAgendaItem(id: "offer-\(offer.id)", kind: .offer,
                 title: "Oferta por \(player(offer.playerID)?.name ?? "atleta")",
                 detail: "\(FootballSeason.teamName(offer.clubID)) · \(FootballFormat.money(offer.amount)). Sem resposta, a proposta é retirada.",
-                destination: .market, deadlineWorldDay: deadline, daysRemaining: max(0, deadline - worldDay), expiresOnCalendarAdvance: true))
+                destination: .market, deadlineWorldDay: deadline, daysRemaining: max(0, deadline - worldDay), expiresOnCalendarAdvance: true,
+                entityID: offer.playerID, section: "offers"))
         }
         for event in pendingEvents {
             items.append(FootballAgendaItem(id: "event-\(event.id)", kind: .event, title: event.title,
@@ -58,7 +63,15 @@ extension FootballCareer {
             let deadline = athlete.contract.endSeason * FootballSeason.matchDaysPerSeason
             items.append(FootballAgendaItem(id: "contract-\(athlete.id)", kind: .contract,
                 title: "Renovar com \(athlete.name)", detail: "Contrato até a temporada \(athlete.contract.endSeason). Renove antes de encerrar para evitar a saída sem transferência.",
-                destination: .contracts, deadlineWorldDay: deadline, daysRemaining: max(0, deadline - worldDay), expiresOnCalendarAdvance: false))
+                destination: .contracts, deadlineWorldDay: deadline, daysRemaining: max(0, deadline - worldDay), expiresOnCalendarAdvance: false,
+                entityID: athlete.id, section: "renewal"))
+        }
+        for item in openCommitments {
+            let isTalk = item.kind == .negotiationCounter
+            items.append(FootballAgendaItem(id: "commitment-\(item.id)", kind: .commitment, title: item.title, detail: item.detail,
+                destination: isTalk ? .contracts : .squad, deadlineWorldDay: item.deadlineWorldDay,
+                daysRemaining: max(0, item.deadlineWorldDay - worldDay), expiresOnCalendarAdvance: true,
+                entityID: item.playerID, section: isTalk ? "talk" : "meeting"))
         }
         return items.sorted {
             if $0.deadlineWorldDay != $1.deadlineWorldDay { return $0.deadlineWorldDay < $1.deadlineWorldDay }

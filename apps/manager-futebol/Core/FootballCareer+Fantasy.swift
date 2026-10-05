@@ -37,6 +37,7 @@ extension FootballCareer {
         guard fantasyBlockReason(ids: ids, captainID: captainID) == nil else { return false }
         world.fantasy.lineup = ids
         world.fantasy.captainID = captainID
+        world.fantasy.draft = nil
         bump("fantasyLineups")
         return true
     }

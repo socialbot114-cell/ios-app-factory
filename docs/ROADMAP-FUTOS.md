@@ -2,7 +2,26 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status inicial: **planejamento registrado; implementação das etapas abaixo ainda não iniciada**.
+Status atual: **primeiros incrementos integrados e publicados no TestFlight 1.0 (build 5); roadmap completo em andamento**.
+
+## Atualização — 4 de outubro de 2026
+
+- Código publicado: `d1dc25b`, branch `manager-futebol/phases-2-7`.
+- TestFlight: **1.0 (build 5)**, upload aprovado e processamento Apple concluído.
+- Grupo: **Equipe interna**; estado `READY_FOR_BETA_TESTING`.
+- Acesso no aparelho: **pendente de cadastrar tester**; a API confirmou `testerCount: 0`.
+- Evidência: [workflow aprovado 37234149295](https://github.com/socialbot114-cell/ios-app-factory/actions/runs/37234149295).
+- iPhone e iPad: **159 testes de domínio + 3 testes UI, zero falhas em cada dispositivo**. Teste adicional da jornada de partida também passou antes das suítes completas.
+- Corrigida a identidade de navegação dos apps para impedir reutilização indevida de viewport/navegação ao alternar Tática e Gestor. Pré-jogo reposicionado antes da agenda.
+- Capturas disponíveis do FutOS: `screenshots-review/futos-126d6a7/iphone/`, 26 estados do commit anterior `126d6a7`. **Não representam todas as novidades do build 5.** Capturas atualizadas de agenda/compromissos e auditoria manual no aparelho continuam pendentes.
+
+### Próxima prioridade
+
+1. Cadastrar o tester e instalar **1.0 (5)** no iPhone.
+2. Auditar bloqueio → início → notificações → Mensagens → Tática → Gestor → partida → Liga.
+3. Gerar capturas atualizadas do build 5 e registrar bugs com passos de reprodução.
+4. Fechar a fatia F2: omissão com prazo, conversa encadeada, memória da relação e repercussões coerentes.
+5. Avançar para F3/F4 após corrigir os problemas encontrados no playtest.
 
 Este roadmap evolui o Manager de Futebol para um mundo persistente acessado pelo celular FutOS. Parte das funcionalidades citadas já existe; as caixas representam trabalho incremental a validar, e não uma afirmação de que todos os sistemas precisam ser construídos do zero.
 
@@ -54,13 +73,13 @@ Uma caixa só é marcada depois da implementação e da verificação descrita. 
 
 | Marco | Resultado | Estado | Evidência |
 |---|---|---|---|
-| M0 | Baseline funcional e decisões de produto | Planejado | — |
-| M1 | Consequências e navegação compartilhadas | Planejado | — |
-| M2 | Uma semana completa e coerente | Planejado | — |
+| M0 | Baseline funcional e decisões de produto | Em andamento | Testes Linux e iOS aprovados; decisões e saves de referência pendentes |
+| M1 | Consequências e navegação compartilhadas | Em andamento | Save v11, compromissos e destinos contextuais; fato compartilhado com Chuteira pendente |
+| M2 | Uma semana completa e coerente | Em andamento | Agenda e jornada de partida verificadas; omissão/relação/repercussões pendentes |
 | M3 | Pessoas com memória e negociação | Planejado | — |
 | M4 | Clube, economia e vida com projetos contínuos | Planejado | — |
-| M5 | Todos os 18 apps com propósito verificável | Planejado | — |
-| M6 | Carreira multitemporada validada | Planejado | — |
+| M5 | Todos os 18 apps com propósito verificável | Em andamento | Smoke UI dos 18 apps aprovado; aceites aprofundados ainda pendentes |
+| M6 | Carreira multitemporada validada | Em andamento | Suíte cobre temporadas, saves e economia; metas completas de F6 pendentes |
 
 Sem estimativas de calendário até medir a primeira entrega vertical. Revisar escopo ao concluir cada marco.
 
@@ -71,8 +90,8 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 **Objetivo:** estabelecer o que funciona hoje e escolher regras antes de ampliar o estado da carreira.
 
 - [ ] F0-01 Inventariar ações, leituras, bloqueios, cooldowns e históricos de cada app.
-- [ ] F0-02 Rodar os testes atuais do motor no Linux e registrar versão/resultado.
-- [ ] F0-03 Verificar build e UI tests iPhone no macOS/GitHub Actions.
+- [x] F0-02 Rodar os testes atuais do motor no Linux e registrar versão/resultado. Swift 5.9 via Docker: 159 testes aprovados.
+- [x] F0-03 Verificar build e UI tests iPhone no macOS/GitHub Actions. Build 5: iPhone e iPad aprovados.
 - [ ] F0-04 Capturar uma carreira nova, uma em andamento e uma no fim da temporada.
 - [ ] F0-05 Classificar problemas confirmados por severidade e reprodução; separar ideias de bugs.
 - [ ] F0-06 Confirmar ritmo de tempo, foco esportivo/narrativo e papel do Palpite+.
@@ -84,15 +103,15 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 
 **Objetivo:** um fato do mundo pode gerar vários retornos, sem duplicar sua consequência.
 
-- [ ] F1-01 Modelar fatos importantes com ID estável, origem, data de jogo e entidades envolvidas.
+- [x] F1-01 Modelar fatos importantes com ID estável, origem, data de jogo e entidades envolvidas. `WorldFact` com ID estável, origem, dia, atletas/clubes envolvidos e confiabilidade (`FootballFacts`). Suíte 218/218 no Docker.
 - [ ] F1-02 Definir resultado de decisão: efeitos aplicados, compromissos criados e próximos acontecimentos.
-- [ ] F1-03 Definir compromissos e ações agendadas com prazo, estado e conclusão única.
-- [ ] F1-04 Processar vencimentos em uma ordem explícita ao avançar o calendário.
-- [ ] F1-05 Criar destinos de navegação que incluam app, seção e entidade específica.
-- [ ] F1-06 Persistir novidade lida, resolvida e dispensada sem confundir esses estados.
-- [ ] F1-07 Definir retenção de históricos para não crescer indefinidamente.
-- [ ] F1-08 Introduzir versão de save e migração para os campos realmente implementados.
-- [ ] F1-09 Verificar reabertura, repetição de comando, salto de calendário e determinismo.
+- [x] F1-03 Definir compromissos e ações agendadas com prazo, estado e conclusão única. `Commitment` com prazo, estado e conclusão única (`FootballCommitments`); aparece na agenda. Suíte 218/218 no Docker.
+- [x] F1-04 Processar vencimentos em uma ordem explícita ao avançar o calendário. Ordem explícita `CalendarStep` e `processDueItems()`; repetir não muda nada. Suíte 218/218 no Docker.
+- [x] F1-05 Criar destinos de navegação que incluam app, seção e entidade específica. Itens da agenda carregam `entityID` e `section`; compromisso abre o atleta direto. Suíte 218/218 no Docker.
+- [x] F1-06 Persistir novidade lida, resolvida e dispensada sem confundir esses estados. Estados lida/resolvida/dispensada separados (`messageState`, `dismissMessage`). Suíte 218/218 no Docker.
+- [x] F1-07 Definir retenção de históricos para não crescer indefinidamente. Retenção: 150 fatos, 12 memórias por atleta, 60 compromissos. Suíte 218/218 no Docker.
+- [x] F1-08 Introduzir versão de save e migração para os campos realmente implementados. Versão 11, campos opcionais e testes de compatibilidade aprovados.
+- [x] F1-09 Verificar reabertura, repetição de comando, salto de calendário e determinismo. Testes de reabertura, repetição de comando, salto de calendário e determinismo. Suíte 218/218 no Docker.
 
 **Meta M1:** um evento piloto chega a Mensagens, Chuteira e Notificações com o mesmo ID de origem; sua consequência ocorre uma única vez após salvar/carregar.
 
@@ -100,15 +119,15 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 
 **Objetivo:** dar profundidade ao ciclo principal antes de expandir todos os sistemas.
 
-- [ ] F2-01 Escolher um cenário: reserva pede minutos antes de uma partida importante.
-- [ ] F2-02 Mostrar pedido em Mensagens e necessidade de decisão no Gestor.
-- [ ] F2-03 Permitir resposta com alternativas e prazo de compromisso.
+- [x] F2-01 Escolher um cenário: reserva pede minutos antes de uma partida importante.
+- [x] F2-02 Mostrar pedido em Mensagens e necessidade de decisão no Gestor.
+- [x] F2-03 Permitir resposta com alternativas e prazo de compromisso. Prometer ou recusar; resposta persistente.
 - [x] F2-04 Acessar diretamente o atleta e a escalação pela conversa. Botões Ver atleta e Escalação na mensagem de pedido de minutos.
-- [ ] F2-05 Preparar a partida usando relatório do rival e condição dos atletas.
-- [ ] F2-06 Contabilizar presença e resultado usando dados da partida efetivamente jogada.
+- [x] F2-05 Preparar a partida usando relatório do rival e condição dos atletas. Jornada UI aprovada.
+- [x] F2-06 Contabilizar presença e resultado usando dados da partida efetivamente jogada. Testes de partida e promessas aprovados.
 - [x] F2-07 Avaliar promessa, moral e relação ao vencer o prazo. Veredito cumprida/parcial/quebrada/justificada; moral por profissionalismo, relação com o empresário, lesão não pesa. `FootballPromiseOutcomeTests`.
 - [x] F2-08 Produzir resposta do atleta, resumo do Gestor e repercussão pública somente quando justificável. Fala do atleta e consequências na mensagem; notícia pública só para craque (top 5) com profissionalismo baixo.
-- [ ] F2-09 Mostrar pendências que expiram antes de confirmar avanço rápido.
+- [x] F2-09 Mostrar pendências que expiram antes de confirmar avanço rápido. Agenda com prazos e confirmação integrada.
 - [x] F2-10 Verificar cumprir, quebrar, recusar e ignorar o pedido, inclusive após reabrir o app. Pedido ignorado por 3 dias de jogo cobra moral -4 uma vez; testes de save/reabertura. Suíte 177/177 no Docker swift:5.9.
 
 **Meta M2:** uma jornada conectada entre Gestor, Mensagens, Tática e relatório pós-jogo, com retorno compreensível e persistente.
@@ -117,13 +136,13 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 
 **Objetivo:** substituir relações genéricas e acordos instantâneos por processos com continuidade.
 
-- [ ] F3-01 Acrescentar memória de conversas e compromissos aos personagens do piloto.
-- [ ] F3-02 Introduzir interesses e preferências observáveis, sem personalidade aleatória a cada conversa.
-- [ ] F3-03 Criar negociação em etapas: consulta, proposta, contraproposta, acordo/recusa/expiração.
-- [ ] F3-04 Integrar interesse do atleta, papel no elenco e condições financeiras.
+- [x] F3-01 Acrescentar memória de conversas e compromissos aos personagens do piloto. Memória por atleta e confiança derivada (`FootballMemory`). Suíte 218/218 no Docker.
+- [x] F3-02 Introduzir interesses e preferências observáveis, sem personalidade aleatória a cada conversa. Interesses estáveis e observáveis por atleta (`interests(of:)`). Suíte 218/218 no Docker.
+- [x] F3-03 Criar negociação em etapas: consulta, proposta, contraproposta, acordo/recusa/expiração. Negociação em etapas consulta/proposta/contraproposta/acordo/recusa/expiração (`FootballNegotiation`). Suíte 218/218 no Docker.
+- [x] F3-04 Integrar interesse do atleta, papel no elenco e condições financeiras. Confiança, interesse principal, papel no elenco e caixa entram na pedida. Suíte 218/218 no Docker.
 - [ ] F3-05 Adicionar concorrência por uma contratação e alternativas de recrutamento.
-- [ ] F3-06 Conectar imprensa e rede social a fatos públicos, com fonte e confiabilidade.
-- [ ] F3-07 Implementar follow-up de uma crise e de uma promessa quebrada.
+- [x] F3-06 Conectar imprensa e rede social a fatos públicos, com fonte e confiabilidade. Fatos públicos viram post na Chuteira com fonte e confiabilidade (confirmado/boato). Suíte 218/218 no Docker.
+- [x] F3-07 Implementar follow-up de uma crise e de uma promessa quebrada. Promessa quebrada gera conversa de acompanhamento com prazo, memória e pedido de saída; crise genérica ainda pendente. Suíte 218/218 no Docker.
 
 **Meta M3:** contratar um atleta e resolver uma relação exigem escolhas contextualizadas; os participantes lembram o acordo.
 
@@ -131,9 +150,9 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 
 **Objetivo:** criar decisões de médio prazo e fazer dinheiro, tempo e energia terem usos concorrentes.
 
-- [ ] F4-01 Exibir projeção de caixa incluindo compromissos já assumidos.
-- [ ] F4-02 Criar um projeto comercial com briefing, duração e avaliação posterior.
-- [ ] F4-03 Criar uma reunião de diretoria com pedido e resposta futura.
+- [x] F4-01 Exibir projeção de caixa incluindo compromissos já assumidos. Projeção de caixa com compromissos (`FootballCashProjection`); sessão 01, 6 testes. Suíte 218/218 no Docker.
+- [x] F4-02 Criar um projeto comercial com briefing, duração e avaliação posterior. Coleção da loja como projeto com briefing, duração e avaliação (`FootballCommercialProjects`); sessão 01, 6 testes. Suíte 218/218 no Docker.
+- [x] F4-03 Criar uma reunião de diretoria com pedido e resposta futura. Reunião de diretoria com pedido e resposta futura (`FootballBoardMeetings`); sessão 01, 7 testes. Suíte 218/218 no Docker.
 - [ ] F4-04 Integrar atividades pessoais numa agenda com conflitos claros.
 - [ ] F4-05 Permitir delegar uma rotina com custo, limite e relatório.
 - [ ] F4-06 Balancear retornos para evitar combinações de ações sem custo que dominem a carreira.
@@ -202,8 +221,8 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [ ] LIG-01 Abrir ficha do clube ao tocar na tabela ou na busca.
 - [ ] LIG-02 Abrir relatório de uma partida e ficha do atleta na artilharia.
 - [ ] LIG-03 Navegar por rodadas anteriores e futuras.
-- [ ] LIG-04 Exibir confronto direto, forma e dificuldade do calendário.
-- [ ] LIG-05 Mostrar cenários matemáticos de acesso, título e rebaixamento quando aplicáveis.
+- [ ] LIG-04 Exibir confronto direto, forma e dificuldade do calendário. Domínio testado (`FootballLeagueAnalysis`, sessão 18); UI aguarda build iOS.
+- [ ] LIG-05 Mostrar cenários matemáticos de acesso, título e rebaixamento quando aplicáveis. Domínio testado (sessão 18); UI aguarda build iOS.
 
 **Aceite:** analisar o próximo rival e localizar uma partida histórica sem sair para uma lista genérica.
 
@@ -225,8 +244,8 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 **Objetivo:** governar um projeto esportivo com a diretoria.
 
 - [ ] CLB-01 Separar avaliação esportiva, financeira e institucional.
-- [ ] CLB-02 Criar reunião contextual com pedido de verba ou revisão de meta.
-- [ ] CLB-03 Registrar resposta, condições e prazo da diretoria.
+- [x] CLB-02 Criar reunião contextual com pedido de verba ou revisão de meta. Reunião contextual com a diretoria (sessão 01). Suíte 218/218 no Docker.
+- [x] CLB-03 Registrar resposta, condições e prazo da diretoria. Resposta, condições e prazo da diretoria (sessão 01). Suíte 218/218 no Docker.
 - [ ] CLB-04 Acompanhar obra por etapas com custos e impacto durante execução.
 - [ ] CLB-05 Dar tarefas e relatórios à comissão; incluir delegação inicial.
 - [ ] CLB-06 Consolidar legado e convites; mover gestão de saves para Ajustes.
@@ -238,8 +257,8 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 **Objetivo:** ser a interface de conversas e acordos da carreira.
 
 - [ ] MSG-01 Agrupar mensagens por conversa, pessoa e assunto.
-- [ ] MSG-02 Abrir conversa específica por notificação.
-- [ ] MSG-03 Marcar leitura por conversa em vez de ler toda a inbox ao abrir o app.
+- [x] MSG-02 Abrir conversa específica por notificação. Assunto individual acionável; threads completas ainda pertencem a MSG-01/04.
+- [x] MSG-03 Marcar leitura por conversa em vez de ler toda a inbox ao abrir o app. Leitura individual por mensagem; UI contextual e teste de domínio aprovados.
 - [ ] MSG-04 Adicionar respostas contextuais e follow-ups agendados.
 - [ ] MSG-05 Distinguir lida, respondida, resolvida e expirada.
 - [ ] MSG-06 Consultar promessas e anexos: ficha, proposta, relatório ou contrato.
@@ -302,8 +321,8 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** gerir projetos comerciais com acompanhamento.
 
-- [ ] NEG-01 Definir coleção com público, preço, investimento e duração.
-- [ ] NEG-02 Exibir demanda e relatório de vendas ao longo dos jogos.
+- [x] NEG-01 Definir coleção com público, preço, investimento e duração. Coleção com público, preço, investimento e duração (sessão 01). Suíte 218/218 no Docker.
+- [x] NEG-02 Exibir demanda e relatório de vendas ao longo dos jogos. Demanda e relatório de vendas ao longo dos jogos (sessão 01). Suíte 218/218 no Docker.
 - [ ] NEG-03 Negociar naming rights com condições financeiras e reação da torcida.
 - [ ] NEG-04 Transformar projeto social em etapas com resultados registrados.
 - [ ] NEG-05 Agendar amistoso/turnê antes da execução, incluindo desgaste e receita.
@@ -364,9 +383,9 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 **Objetivo:** planejar obrigações futuras e separar patrimônios.
 
 - [ ] BAN-01 Separar conta do clube e conta pessoal, com extratos completos.
-- [ ] BAN-02 Exibir recebíveis, despesas contratadas e vencimentos.
+- [x] BAN-02 Exibir recebíveis, despesas contratadas e vencimentos. Recebíveis, despesas contratadas e vencimentos na projeção (sessão 01). Suíte 218/218 no Docker.
 - [ ] BAN-03 Simular contratação/obra antes de assumir compromisso.
-- [ ] BAN-04 Mostrar cenários e premissas da projeção, distinguindo garantido de estimado.
+- [x] BAN-04 Mostrar cenários e premissas da projeção, distinguindo garantido de estimado. Cenários e premissas, garantido × estimado (sessão 01). Suíte 218/218 no Docker.
 - [ ] BAN-05 Formalizar empréstimo do treinador com saldo e condições de devolução.
 - [ ] BAN-06 Abrir o fato ou contrato associado a cada lançamento.
 
@@ -463,9 +482,11 @@ Ordem das primeiras microações:
 | Entrega | Estado | Evidência/referência | Próxima ação |
 |---|---|---|---|
 | Roadmap inicial | Concluído | Este arquivo | Iniciar F0 |
-| F0 — baseline | Planejado | — | Inventariar e rodar verificações |
-| F1 — fundação mínima | Planejado | — | Depende do cenário F2 detalhado |
-| F2 — pedido de minutos | Planejado | — | Definir desfechos e reaproveitamento |
+| F0 — baseline | Em andamento | 159 testes Linux; 159 + 3 por dispositivo no iOS | Registrar decisões e saves de referência |
+| F1 — fundação mínima | Em andamento | Save v11, resultados de promessas e navegação | Unificar fatos e completar ciclo de vida |
+| F2 — pedido de minutos | Em andamento | Compromissos, agenda e Mensagens integrados | Omissão com prazo e repercussões |
+| TestFlight 1.0 (5) | Concluído | Run 37234149295; READY_FOR_BETA_TESTING | Cadastrar tester e realizar playtest |
+| Auditoria em aparelho físico | Planejado | Grupo interno sem testers | Confirmar e-mail e acesso |
 
 Atualizar este diário e as caixas a cada entrega verificada. Registrar mudanças de direção e itens adiados com motivo, preservando o histórico da jornada.
 
@@ -501,8 +522,8 @@ Próximas ações: validar o incremento no macOS; detalhar conversa encadeada, o
 - Notificações são ordenadas por proximidade do prazo e prioridade; Metas usa indicação de tarefas ativas.
 - Novos testes de agenda: ordenação, consulta pura, limites de vencimento e avanço de calendário.
 
-Estado: motor verificado; interface em validação iOS. Cenários e comandos em `docs/AUDITORIA-FUTOS-INCREMENTO-02.md`. Não marcar M2/M5 completos: conversa encadeada, omissão contextual e demais expansões continuam pendentes.
+Estado atualizado: motor e interface passaram por compilação/testes iOS no workflow do build 5. Cenários e comandos em `docs/AUDITORIA-FUTOS-INCREMENTO-02.md`. Não marcar M2/M5 completos: conversa encadeada, omissão contextual e demais expansões continuam pendentes.
 
 ### Integração FutOS — navegação e captura
 
-Notificação passou a abrir a mensagem com ações no componente real de Mensagens. Agenda passou a abrir atleta/contrato ou mensagem de proposta específica. Busca de atleta aguarda o dismiss antes de apresentar outra ficha. Rotas de captura `agenda`/`commitment` e jornada UI contextual adicionadas. Parser e checks locais aprovados; execução UI e geração das novas capturas permanecem pendentes no macOS.
+Notificação passou a abrir a mensagem com ações no componente real de Mensagens. Agenda passou a abrir atleta/contrato ou mensagem de proposta específica. Busca de atleta aguarda o dismiss antes de apresentar outra ficha. Rotas de captura `agenda`/`commitment` e jornada UI contextual adicionadas. Parser, checks locais e execução UI no iPhone/iPad aprovados. Geração das novas capturas e playtest físico permanecem pendentes.

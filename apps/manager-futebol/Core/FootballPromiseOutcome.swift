@@ -71,16 +71,30 @@ extension FootballCareer {
             title = "Promessa quebrada"
             summary = "\(name) começou \(promise.startsDone) de \(promise.requiredStarts) jogos combinados. Moral \(verdict.moraleChange); confiança da diretoria \(verdict.boardChange); relação com o empresário \(verdict.agentRelationChange)."
         }
+        let memoryKind: MemoryKind?
+        switch verdict.kind {
+        case .fulfilled: memoryKind = .promiseKept
+        case .partial: memoryKind = .promisePartial
+        case .broken: memoryKind = .promiseBroken
+        case .excused: memoryKind = nil
+        }
+        if let memoryKind { recordMemory(playerID: promise.playerID, kind: memoryKind, id: "promise-\(promise.id)") }
         if verdict.isPublic {
             fanMood = min(100, max(0, fanMood - 1))
-            addInbox(.news, title: "Bastidores: \(name) reclama de promessa", body: "Fontes ligadas ao jogador dizem que o treinador não cumpriu a palavra sobre minutos. A torcida comenta o caso.",
-                     playerID: promise.playerID)
+            let leakID = "promise-\(promise.id)-leak"
+            recordFact(WorldFact(id: leakID, source: .promise, worldDay: worldDay, title: "Bastidores: \(name) reclama de promessa",
+                                 detail: "Fontes ligadas ao jogador dizem que o treinador não cumpriu a palavra sobre minutos. A torcida comenta o caso.",
+                                 playerIDs: [promise.playerID], reliability: .confirmed, isPublic: true))
+            deliverFact(leakID, inbox: .news, social: true)
             inbox[inbox.count - 1].sourcePromiseID = promise.id
         }
         summary += "\n\n“\(verdict.quote)”"
+        let factID = "promise-\(promise.id)"
+        recordFact(WorldFact(id: factID, source: .promise, worldDay: worldDay, title: title, detail: summary, playerIDs: [promise.playerID], isPublic: false))
+        if verdict.kind == .broken { openBrokenPromiseFollowUp(promiseID: promise.id, playerID: promise.playerID) }
         addInbox(.general, title: title, body: summary, playerID: promise.playerID)
         inbox[inbox.count - 1].sourcePromiseID = promise.id
-
+        inbox[inbox.count - 1].sourceFactID = factID
     }
 
     mutating func adjustRelationship(_ role: ContactRole, by delta: Int) {
@@ -101,6 +115,7 @@ extension FootballCareer {
                   (season - message.season) * FootballSeason.matchDaysPerSeason + matchDayIndex - message.matchDay >= 3 else { continue }
             players[athleteIndex].morale = max(0, players[athleteIndex].morale - 4)
             adjustRelationship(.agent, by: -1)
+            recordMemory(playerID: playerID, kind: .requestIgnored, id: "ignored-\(message.id)")
             inbox[index].coachReply = "Sem resposta do treinador: \(players[athleteIndex].name) ficou sem retorno por 3 dias de jogo. Moral -4."
         }
     }

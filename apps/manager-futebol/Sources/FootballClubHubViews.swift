@@ -208,6 +208,7 @@ struct FootballFinanceView: View {
                 Label("Clube no vermelho: juros, risco de transfer ban e diretoria preocupada.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.semibold)).foregroundStyle(.red)
             }
+            FootballCashProjectionPanel(career: career)
             FactoryPanel(title: "Aporte do treinador", systemImage: "arrow.down.to.line.circle.fill") {
                 Text("Seu bolso: \(FootballFormat.money(career.world.coach.personalCash)). Emprestar dinheiro ao clube alivia o caixa e, no vermelho, acalma a diretoria.")
                     .font(.caption).foregroundStyle(.secondary)

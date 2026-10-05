@@ -280,6 +280,9 @@ struct FootballHome: View {
                 openMessage(message.id)
             } else { openApp = .market }
         case .event: openApp = .alerts
+        case .commitment:
+            openApp = .squad
+            if let entity = item.entityID { searchedPlayer = SearchedPlayer(id: entity) }
         }
     }
 

@@ -123,12 +123,9 @@ extension FootballCareer {
     }
 
     /// Caixa estimado no fim da temporada, com base no fluxo recorrente dos dias de jogo já disputados.
+    /// Caixa esperado no fim da temporada: contratos, parcelas já assumidas e estimativas atuais (ver `cashProjection`).
     var projectedSeasonEndCash: Int {
-        let recurring: Set<FinanceCategory> = [.gate, .members, .tv, .sponsor, .wages, .staff, .facilities, .interest]
-        let played = max(1, matchDayIndex)
-        let net = finance.entries(season: season).filter { recurring.contains($0.category) }.reduce(0) { $0 + $1.amount }
-        let remaining = max(0, FootballSeason.matchDaysPerSeason - matchDayIndex)
-        return transferBudget + net / played * remaining
+        cashProjection(horizon: FootballSeason.matchDaysPerSeason).endingExpected
     }
 
     // MARK: - Patrocínio

@@ -10,7 +10,7 @@ extension FootballCareer {
         [0.0, 1.0, 1.4, 1.9, 2.5][min(max(world.business.shopLevel, 1), 4)]
     }
 
-    var collectionActive: Bool { world.business.collectionUntilWorldDay >= worldDay }
+    var collectionActive: Bool { world.business.collectionUntilWorldDay >= worldDay || activeCollection != nil }
 
     func shopUpgradeCost() -> Int? {
         guard world.business.shopLevel < 4, let club = selectedClub else { return nil }
@@ -27,12 +27,10 @@ extension FootballCareer {
 
     func collectionCost() -> Int { 40_000 * world.business.shopLevel }
 
+    /// Atalho com o briefing mais simples; o projeto completo fica em `launchCollection(_:)`.
     @discardableResult
     mutating func launchCollection() -> Bool {
-        guard !collectionActive, transferBudget >= collectionCost() else { return false }
-        book(.merchandise, -collectionCost(), "Lançamento de coleção")
-        world.business.collectionUntilWorldDay = worldDay + 6
-        return true
+        launchCollection(CollectionBrief(audience: .traditional, size: .capsule))
     }
 
     mutating func setShopPrice(_ price: ShopPrice) {
@@ -41,9 +39,7 @@ extension FootballCareer {
 
     /// Vendas da loja a cada dia de jogo.
     var merchRevenuePerMatchDay: Int {
-        let mood = (0.7 + 0.006 * Double(fanMood)) * hypeMerchFactor
-        let base = Double(fanBase) * 0.30 * shopRevenueFactor * world.business.shopPrice.demand * world.business.shopPrice.margin * mood
-        return Int(base * (collectionActive ? 1.3 : 1.0) / 100) * 100
+        baseMerchRevenuePerMatchDay + (activeCollection.map { collectionExtra($0.brief) } ?? 0)
     }
 
     // MARK: - Naming rights
@@ -211,7 +207,8 @@ extension FootballCareer {
 
     mutating func tickBusiness(using random: inout FootballRandom) {
         guard selectedClubID != nil, !isFired else { return }
-        book(.merchandise, merchRevenuePerMatchDay, "Vendas da loja do clube")
+        book(.merchandise, baseMerchRevenuePerMatchDay, "Vendas da loja do clube")
+        progressCollections()
         if let deal = world.business.naming { book(.naming, deal.perSeason / FootballSeason.matchDaysPerSeason, "Naming rights \(deal.sponsor)") }
         for program in world.business.programs {
             book(.community, -(program.costPerSeason / FootballSeason.matchDaysPerSeason), program.title)
@@ -229,9 +226,11 @@ extension FootballCareer {
             }
         }
         generateAgentOffers(using: &random)
+        progressBoardMeetings()
     }
 
     mutating func closeBusinessSeason(using random: inout FootballRandom) {
+        closeBoardSeason()
         world.business.friendliesThisSeason = 0
         if let deal = world.business.naming, deal.endSeason <= season { world.business.naming = nil }
         refreshNamingOffers(using: &random)

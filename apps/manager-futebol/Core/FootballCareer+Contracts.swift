@@ -61,6 +61,14 @@ extension FootballCareer {
         let status = expectedStatus(of: player)
         wage *= status.wageFactor
         if player.age >= 33 { wage *= 0.9 }
+        // Confiança no treinador, interesse principal e saúde financeira do clube entram na pedida.
+        wage *= 1 - 0.0008 * Double(trust(of: playerID))
+        switch topInterest(of: player) {
+        case .money: wage *= 1.05
+        case .loyalty: wage *= 0.97
+        default: break
+        }
+        if transferBudget < 0 { wage *= 1.04 }
         let years = player.age <= 24 ? 4 : (player.age <= 29 ? 3 : (player.age <= 32 ? 2 : 1))
         return ContractAsk(wage: Int((wage / 5_000).rounded()) * 5_000, years: years, status: status)
     }
@@ -68,6 +76,17 @@ extension FootballCareer {
     func canRenew(playerID: Int) -> Bool {
         guard let player = player(playerID), player.teamID == selectedClubID, !isFired else { return false }
         return !player.onLoan
+    }
+
+    /// Assina a renovação: contrato novo, moral e mensagem de conclusão.
+    mutating func applyRenewal(playerID: Int, wage: Int, years: Int, status: SquadStatus) {
+        guard let index = players.firstIndex(where: { $0.id == playerID }) else { return }
+        let player = players[index]
+        let base = max(player.contract.endSeason, season)
+        players[index].contract = PlayerContract(wage: wage, endSeason: base + years, status: status)
+        players[index].morale = min(100, player.morale + 8)
+        addInbox(.general, title: "Renovação concluída", body: "\(player.name) assinou por mais \(years) temporada(s).", playerID: playerID)
+        resolveMessages(for: playerID, kinds: [.playerContract])
     }
 
     /// Renovação com negociação: aceita, contraproposta ou recusa.
@@ -82,11 +101,7 @@ extension FootballCareer {
 
         let effectiveAsk = Double(ask.wage) * (status >= ask.status ? 1.0 : 1.1)
         if Double(wage) >= effectiveAsk {
-            let base = max(player.contract.endSeason, season)
-            players[index].contract = PlayerContract(wage: wage, endSeason: base + years, status: status)
-            players[index].morale = min(100, player.morale + 8)
-            addInbox(.general, title: "Renovação concluída", body: "\(player.name) assinou por mais \(years) temporada(s).", playerID: playerID)
-            resolveMessages(for: playerID, kinds: [.playerContract])
+            applyRenewal(playerID: playerID, wage: wage, years: years, status: status)
             return .accepted
         }
         if Double(wage) >= effectiveAsk * 0.88 {
@@ -182,6 +197,7 @@ extension FootballCareer {
               hasOpenMessage(.playerPlayingTime, playerID: playerID) || hasOpenMessage(.playerWantsOut, playerID: playerID),
               let index = players.firstIndex(where: { $0.id == playerID }), players[index].teamID == selectedClubID else { return }
         players[index].morale = max(0, players[index].morale - 6)
+        recordMemory(playerID: playerID, kind: .requestRefused, id: "refused-\(playerID)-\(worldDay)")
         recordPlayerReply(playerID: playerID, text: "Não posso garantir titularidade. Você precisa conquistar seu espaço. Moral -6.", kinds: [.playerPlayingTime, .playerWantsOut])
     }
 

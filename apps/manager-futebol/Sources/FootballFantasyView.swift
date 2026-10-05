@@ -10,6 +10,10 @@ struct FootballFantasyView: View {
     @State private var captainID: Int?
     @State private var position: FootballPosition = .goalkeeper
     @State private var didLoad = false
+    @State private var filter = FantasyFilter(maxRisk: .doubt)
+    @State private var maxPriceEnabled = false
+    @State private var maxPrice = 8.0
+    @State private var formOnly = false
 
     private var fantasy: FantasyState { career.world.fantasy }
     private var cost: Double { career.fantasyLineupCost(lineup) }
@@ -20,7 +24,9 @@ struct FootballFantasyView: View {
                 FactoryMetric(label: "Pontos na temporada", value: String(format: "%.1f", fantasy.seasonPoints), symbol: "star.fill", tint: FootballTheme.gold)
                 FactoryMetric(label: "Títulos", value: "\(fantasy.titles)", symbol: "trophy.fill", tint: .green)
             }
+            roundPanel
             lineupPanel
+            captainPanel
             marketPanel
             standingsPanel
             historyPanel
@@ -30,9 +36,74 @@ struct FootballFantasyView: View {
         .onAppear {
             guard !didLoad else { return }
             didLoad = true
-            lineup = fantasy.lineup
-            captainID = fantasy.captainID
+            let working = career.fantasyWorkingLineup
+            lineup = working.lineup
+            captainID = working.captainID
         }
+        .onChange(of: lineup) { _, _ in persistDraft() }
+        .onChange(of: captainID) { _, _ in persistDraft() }
+    }
+
+    private func persistDraft() {
+        guard didLoad else { return }
+        if lineup == fantasy.lineup && captainID == fantasy.captainID { career.saveFantasyDraft(ids: [], captainID: nil) }
+        else { career.saveFantasyDraft(ids: lineup, captainID: captainID) }
+    }
+
+    // MARK: Rodada
+
+    private var roundPanel: some View {
+        FactoryPanel(title: "Próxima rodada", systemImage: "clock.badge.exclamationmark") {
+            if let text = career.fantasyDeadlineText {
+                Text(text).font(.subheadline.weight(.semibold)).accessibilityIdentifier("fantasy-deadline")
+            } else {
+                Text("Temporada encerrada: a escalação volta a abrir na próxima.").font(.subheadline).foregroundStyle(.secondary)
+            }
+            let risky = lineup.compactMap { career.player($0) }.map { career.fantasyOutlook(for: $0) }.filter { $0.risk != .none }
+            ForEach(risky) { outlook in
+                Label("\(career.player(outlook.playerID)?.name ?? "") · \(outlook.riskReason ?? outlook.risk.label)",
+                      systemImage: outlook.risk == .out ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(outlook.risk == .out ? .red : .orange)
+            }
+            if lineup != fantasy.lineup || captainID != fantasy.captainID {
+                Text("Rascunho guardado. Salve o time para valer na rodada.").font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("fantasy-draft-note")
+            }
+        }
+    }
+
+    private var captainPanel: some View {
+        let rows = career.fantasyCaptainComparison(ids: lineup)
+        return Group {
+            if !rows.isEmpty {
+                FactoryPanel(title: "Comparar capitães", systemImage: "c.circle") {
+                    ForEach(rows.prefix(5)) { outlook in
+                        Button { captainID = outlook.playerID } label: {
+                            HStack {
+                                Image(systemName: captainID == outlook.playerID ? "c.circle.fill" : "c.circle")
+                                    .foregroundStyle(captainID == outlook.playerID ? FootballTheme.gold : Color.secondary)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(career.player(outlook.playerID)?.name ?? "").font(.subheadline)
+                                    Text(outlookLine(outlook)).font(.caption2).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(String(format: "forma %.1f", outlook.form)).font(.caption.monospacedDigit())
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("fantasy-captain-\(outlook.playerID)")
+                    }
+                    Text("Forma é a média de pontos nas últimas \(FootballCareer.fantasyFormWindow) rodadas. O capitão pontua 1,5×.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func outlookLine(_ outlook: FantasyOutlook) -> String {
+        let opponent = outlook.opponentID.flatMap { FootballSeason.team($0)?.shortName }
+            .map { (outlook.isHome ? "vs " : "@ ") + $0 } ?? "sem jogo"
+        return [opponent, outlook.riskReason ?? outlook.risk.label].joined(separator: " · ")
     }
 
     // MARK: Escalação
@@ -77,7 +148,7 @@ struct FootballFantasyView: View {
                 .accessibilityIdentifier("fantasy-suggest")
                 Button {
                     if career.setFantasyLineup(ids: lineup, captainID: captainID) {
-                        onAlert("Escalação salva! O capitão pontua em dobro.")
+                        onAlert("Escalação salva! O capitão pontua 1,5×.")
                     } else {
                         onAlert(career.fantasyBlockReason(ids: lineup, captainID: captainID) ?? "Escalação inválida.")
                     }
@@ -96,20 +167,32 @@ struct FootballFantasyView: View {
     private var marketPanel: some View {
         let limit = FootballCareer.fantasyFormation[position] ?? 0
         let chosen = lineup.compactMap { career.player($0) }.filter { $0.position == position }.count
-        let pool = career.fantasyPool.filter { $0.position == position && !lineup.contains($0.id) }
-            .sorted { $0.overall > $1.overall }.prefix(14)
+        var activeFilter = filter
+        activeFilter.maxPrice = maxPriceEnabled ? maxPrice : nil
+        activeFilter.minForm = formOnly ? 3 : nil
+        let pool = career.fantasyFilteredPool(position: position, filter: activeFilter, excluding: Set(lineup)).prefix(14)
         return FactoryPanel(title: "Mercado de atletas", systemImage: "person.crop.circle.badge.plus") {
             Picker("Posição", selection: $position) {
                 ForEach(FootballPosition.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
             Text("\(chosen)/\(limit) escalados nesta posição").font(.caption).foregroundStyle(.secondary)
-            ForEach(Array(pool)) { athlete in
+            Toggle("Esconder dúvidas e ausências", isOn: Binding(get: { filter.maxRisk == .none },
+                                                                set: { filter.maxRisk = $0 ? .none : .doubt }))
+                .font(.caption).accessibilityIdentifier("fantasy-filter-risk")
+            Toggle("Só quem pontuou em média 3+", isOn: $formOnly).font(.caption).accessibilityIdentifier("fantasy-filter-form")
+            Toggle("Preço máximo \(String(format: "%.1f", maxPrice))", isOn: $maxPriceEnabled).font(.caption)
+                .accessibilityIdentifier("fantasy-filter-price")
+            if maxPriceEnabled { Slider(value: $maxPrice, in: 3...20, step: 0.5) }
+            if pool.isEmpty { Text("Nenhum atleta atende aos filtros.").font(.caption).foregroundStyle(.secondary) }
+            ForEach(Array(pool)) { outlook in
+                let athlete = career.player(outlook.playerID)!
                 HStack(spacing: 10) {
                     RatingBadge(value: athlete.overall, size: 30)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(athlete.name).font(.subheadline).lineLimit(1)
-                        Text(athlete.teamID.flatMap { FootballSeason.team($0)?.name } ?? "").font(.caption2).foregroundStyle(.secondary)
+                        Text(([athlete.teamID.flatMap { FootballSeason.team($0)?.shortName } ?? "", outlookLine(outlook)]).joined(separator: " · "))
+                            .font(.caption2).foregroundStyle(outlook.risk == .none ? Color.secondary : Color.orange)
                     }
                     Spacer()
                     Text(String(format: "%.1f", career.fantasyPrice(athlete))).font(.caption.weight(.bold).monospacedDigit())
