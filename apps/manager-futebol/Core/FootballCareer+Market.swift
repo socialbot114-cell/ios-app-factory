@@ -424,6 +424,7 @@ extension FootballCareer {
 
     /// Eventos de mercado que dependem do calendário: início e último dia das janelas.
     mutating func marketCalendarEvents() {
+        progressTransferRaces()
         guard let window = transferWindow else { return }
         guard matchDayIndex == window.startDay || window.isLastDay else { return }
         var random = FootballRandom(seed: matchSeed(stream: .transfers, id: 900 + matchDayIndex))

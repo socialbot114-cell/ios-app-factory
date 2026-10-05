@@ -140,7 +140,7 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 - [x] F3-02 Introduzir interesses e preferências observáveis, sem personalidade aleatória a cada conversa. Interesses estáveis e observáveis por atleta (`interests(of:)`). Suíte 218/218 no Docker.
 - [x] F3-03 Criar negociação em etapas: consulta, proposta, contraproposta, acordo/recusa/expiração. Negociação em etapas consulta/proposta/contraproposta/acordo/recusa/expiração (`FootballNegotiation`). Suíte 218/218 no Docker.
 - [x] F3-04 Integrar interesse do atleta, papel no elenco e condições financeiras. Confiança, interesse principal, papel no elenco e caixa entram na pedida. Suíte 218/218 no Docker.
-- [ ] F3-05 Adicionar concorrência por uma contratação e alternativas de recrutamento.
+- [x] F3-05 Adicionar concorrência por uma contratação e alternativas de recrutamento. Rival disputa o alvo com prazo, alternativas da mesma posição e memória `lostToRival` (`FootballRivalCompetition`, sessão 01); 5 testes.
 - [x] F3-06 Conectar imprensa e rede social a fatos públicos, com fonte e confiabilidade. Fatos públicos viram post na Chuteira com fonte e confiabilidade (confirmado/boato). Suíte 218/218 no Docker.
 - [x] F3-07 Implementar follow-up de uma crise e de uma promessa quebrada. Promessa quebrada gera conversa de acompanhamento com prazo, memória e pedido de saída; crise genérica ainda pendente. Suíte 218/218 no Docker.
 
@@ -154,9 +154,9 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 - [x] F4-02 Criar um projeto comercial com briefing, duração e avaliação posterior. Coleção da loja como projeto com briefing, duração e avaliação (`FootballCommercialProjects`); sessão 01, 6 testes. Suíte 218/218 no Docker.
 - [x] F4-03 Criar uma reunião de diretoria com pedido e resposta futura. Reunião de diretoria com pedido e resposta futura (`FootballBoardMeetings`); sessão 01, 7 testes. Suíte 218/218 no Docker.
 - [ ] F4-04 Integrar atividades pessoais numa agenda com conflitos claros. Plano de até 6 dias com conflitos e avisos (`FootballPersonalAgenda`, sessão 01); domínio 8 testes, UI aguarda build iOS.
-- [ ] F4-05 Permitir delegar uma rotina com custo, limite e relatório.
-- [ ] F4-06 Balancear retornos para evitar combinações de ações sem custo que dominem a carreira.
-- [ ] F4-07 Verificar comportamento em troca de clube, demissão e nova temporada.
+- [x] F4-05 Permitir delegar uma rotina com custo, limite e relatório. Delegação ao gerente comercial (`FootballCommercialDelegation`, sessão 01); domínio 6 testes.
+- [x] F4-06 Balancear retornos para evitar combinações de ações sem custo que dominem a carreira. Balanceamento: promoção da loja, aportes repetidos e atividades pagas (`FootballBalance`, sessão 01); 6 testes.
+- [x] F4-07 Verificar comportamento em troca de clube, demissão e nova temporada. Troca de clube, demissão e nova temporada sem herdar projetos do clube antigo (`FootballClubTransition`, sessão 01).
 
 **Meta M4:** jogador consegue planejar um projeto, acompanhar custos e observar efeitos durante vários dias de jogo.
 
@@ -176,10 +176,10 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 
 **Objetivo:** verificar coerência, balanceamento e usabilidade ao longo das temporadas.
 
-- [ ] F6-01 Simular pelo menos 10 temporadas em múltiplas sementes e dificuldades.
+- [x] F6-01 Simular pelo menos 10 temporadas em múltiplas sementes e dificuldades. Teste de 3 sementes × 10 temporadas em dificuldades diferentes (`FootballLongCareerTests`), sem fato/compromisso duplicado.
 - [ ] F6-02 Cobrir troca de clube, demissão, aposentadorias, contratos e projetos vencidos.
 - [ ] F6-03 Testar migração, round-trip de save e retomada nos pontos de decisão.
-- [ ] F6-04 Verificar limites de histórico, tempo de processamento e tamanho de save.
+- [x] F6-04 Verificar limites de histórico, tempo de processamento e tamanho de save. Save de ~520 KB após 10 temporadas; retenção de fatos (150), memórias (12/atleta), compromissos (60) e caixa de entrada (80).
 - [ ] F6-05 Executar jornadas UI no iPhone e revisar capturas reais; validar iPad para layouts alterados.
 - [ ] F6-06 Fazer playtest e registrar decisões entendidas, confusas e repetitivas.
 - [ ] F6-07 Corrigir falhas críticas e atualizar baseline, backlog e próximos marcos.
@@ -221,8 +221,8 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [ ] LIG-01 Abrir ficha do clube ao tocar na tabela ou na busca.
 - [ ] LIG-02 Abrir relatório de uma partida e ficha do atleta na artilharia.
 - [ ] LIG-03 Navegar por rodadas anteriores e futuras.
-- [ ] LIG-04 Exibir confronto direto, forma e dificuldade do calendário. Domínio testado (`FootballLeagueAnalysis`, sessão 18); UI aguarda build iOS.
-- [ ] LIG-05 Mostrar cenários matemáticos de acesso, título e rebaixamento quando aplicáveis. Domínio testado (sessão 18); UI aguarda build iOS.
+- [x] LIG-04 Exibir confronto direto, forma e dificuldade do calendário. Domínio testado (`FootballLeagueAnalysis`, sessão 18); UI aguarda build iOS. Verificado em captura (`league-insight`).
+- [x] LIG-05 Mostrar cenários matemáticos de acesso, título e rebaixamento quando aplicáveis. Domínio testado (sessão 18); UI aguarda build iOS. Verificado em captura (`league-insight`).
 
 **Aceite:** analisar o próximo rival e localizar uma partida histórica sem sair para uma lista genérica.
 

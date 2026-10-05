@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Compromissos e ações agendadas (F1-03/F1-04)
 
 enum CommitmentKind: String, Codable, Equatable {
-    case playerMinutes, negotiationCounter, followUp, boardRequest
+    case playerMinutes, negotiationCounter, followUp, boardRequest, transferRace, transferTalk
 }
 
 enum CommitmentState: String, Codable, Equatable {

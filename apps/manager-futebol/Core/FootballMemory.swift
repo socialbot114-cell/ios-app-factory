@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Memória e interesses dos atletas (F3-01/F3-02)
 
 enum MemoryKind: String, Codable, Equatable {
-    case promiseKept, promisePartial, promiseBroken, requestRefused, requestIgnored, renewalAgreed, negotiationBroke, meetingHeld
+    case promiseKept, promisePartial, promiseBroken, requestRefused, requestIgnored, renewalAgreed, negotiationBroke, meetingHeld, lostToRival
 
     var weight: Int {
         switch self {
@@ -15,6 +15,7 @@ enum MemoryKind: String, Codable, Equatable {
         case .renewalAgreed: return 10
         case .negotiationBroke: return -8
         case .meetingHeld: return 6
+        case .lostToRival: return -3
         }
     }
 
@@ -28,6 +29,7 @@ enum MemoryKind: String, Codable, Equatable {
         case .renewalAgreed: return "Fechou uma renovação"
         case .negotiationBroke: return "Rompeu uma negociação"
         case .meetingHeld: return "Conversou depois de um problema"
+        case .lostToRival: return "Foi sondado, mas o clube não fechou a tempo"
         }
     }
 }

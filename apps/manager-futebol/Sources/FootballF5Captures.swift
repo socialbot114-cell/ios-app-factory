@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Rotas de captura da F5: a tela nova já no topo, sem rolar.
 enum FootballF5Captures {
-    static let names: Set<String> = ["league-insight", "fantasy-insight", "betting-insight", "goals-origin"]
+    static let names: Set<String> = ["league-insight", "fantasy-insight", "betting-insight", "goals-origin", "trophy-legacy"]
 
     static func prepare(_ name: String, career: inout FootballCareer) {
         switch name {
@@ -26,6 +26,15 @@ enum FootballF5Captures {
             career.bump("wins")
             var random = FootballRandom(seed: 5)
             career.refreshQuests(using: &random)
+        case "trophy-legacy":
+            var fixture = LeagueFixture(id: 9_501, matchDay: career.matchDayIndex, round: 3, competition: .league(career.userDivision ?? .serieA),
+                                        home: career.selectedClubID ?? 0, away: (career.selectedClubID ?? 0) == 1 ? 2 : 1)
+            fixture.homeGoals = 3
+            fixture.awayGoals = 0
+            career.counters["wins"] = 1
+            career.records.longestWinStreak = 4
+            career.checkAchievements(fixture: fixture)
+            career.setHighlight(.firstWin, on: true)
         default:
             break
         }
@@ -49,6 +58,8 @@ struct FootballF5CaptureView: View {
             FootballFantasyView(career: $career, onAlert: onAlert, captureFocus: true)
         case "betting-insight":
             FootballBettingView(career: $career, onAlert: onAlert, captureFocus: true)
+        case "trophy-legacy":
+            FootballAchievementsView(career: $career)
         default:
             VStack(alignment: .leading, spacing: 18) {
                 FootballGoalsPlannerPanel(career: $career)

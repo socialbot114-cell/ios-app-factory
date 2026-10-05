@@ -262,6 +262,8 @@ extension FootballCareer {
             }
         }
         advanceLedgerDay()
+        repayCoachLoans()
+        progressContactRequests()
         generateAgentOffers(using: &random)
         progressBoardMeetings()
         runPersonalPlan()

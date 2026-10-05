@@ -17,6 +17,10 @@ extension FootballCareer {
             world.commercial.collections[index].verdict = .below
         }
         world.commercial.delegation = nil
+        settleCoachLoansOnDeparture()
+        cancelTransferRaces()
+        cancelTransferTalks()
+        transitionContactsToNewClub()
         for index in world.commercial.ledger.indices { world.commercial.ledger[index].closed = true }
 
         for index in world.projects.meetings.indices where world.projects.meetings[index].isOpen {

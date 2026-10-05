@@ -155,6 +155,7 @@ extension FootballCareer {
         settleBrandDeals()
         evaluateChallenge(after: record)
         checkAchievements(record: record)
+        cancelOrphanedCommitments()
         return record
     }
 

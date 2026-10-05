@@ -44,6 +44,8 @@ struct FootballMarketView: View {
                         .font(.caption.weight(.semibold)).foregroundStyle(.red)
                 }
                 if !career.offers.isEmpty { FootballOffersPanel(career: $career, onAlert: onAlert) }
+                FootballTransferRacePanel(career: $career) { selected = PlayerSelection(id: $0) }
+                FootballRecruitmentHub(career: $career, onAlert: onAlert) { selected = PlayerSelection(id: $0) }
                 Picker("Seção", selection: $section) {
                     ForEach(MarketSection.allCases) { Text($0.rawValue).tag($0) }
                 }

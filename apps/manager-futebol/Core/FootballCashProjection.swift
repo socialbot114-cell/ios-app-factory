@@ -113,6 +113,8 @@ extension FootballCareer {
         }
 
         var days: [CashProjectionDay] = []
+        let seasonStart = (season - 1) * perSeason
+        var loanLeft: [Int: Int] = [:]
         var contractedBalance = transferBudget
         var expectedBalance = transferBudget
         for offset in 0..<count {
@@ -141,6 +143,15 @@ extension FootballCareer {
                 let interest = -Int(Double(-beforeInterest) * 0.02)
                 estimated += interest
                 add(.interest, "Juros da dívida", .estimated, interest)
+            }
+            // Devolução dos aportes do treinador: começa depois da carência, no tickBusiness do dia.
+            for loan in activeCoachLoans where matchDay + seasonStart + 1 >= loan.firstPaymentWorldDay {
+                let left = loanLeft[loan.id, default: loan.outstanding]
+                let payment = min(loan.installment, left)
+                guard payment > 0 else { continue }
+                loanLeft[loan.id] = left - payment
+                contracted -= payment
+                add(.other, "Devolução do aporte ao treinador", .contracted, -payment)
             }
             // Parcelas: o índice avança antes do acerto, então este dia quita o que vence até matchDay + 1.
             for payment in pendingPayments {

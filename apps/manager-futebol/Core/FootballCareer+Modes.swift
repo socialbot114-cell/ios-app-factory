@@ -109,6 +109,7 @@ extension FootballCareer {
         var unlocked: [Achievement] = []
         for achievement in Achievement.allCases where !isUnlocked(achievement) && isAchieved(achievement, fixture: fixture, record: record) {
             achievements[achievement.rawValue] = season
+            recordTrophy(achievement, fixture: fixture, record: record)
             unlocked.append(achievement)
             addInbox(.general, title: "Conquista: \(achievement.title)", body: achievement.detail)
         }

@@ -224,6 +224,7 @@ extension FootballCareer {
     /// Eventos, ofertas, promessas e contratos já são tratados antes, no próprio dia de jogo; aqui entram compromissos e conversas.
     @discardableResult
     mutating func processDueItems() -> [CalendarStep] {
+        cancelOrphanedCommitments()
         var ran: [CalendarStep] = []
         for step in Self.calendarProcessingOrder {
             switch step {
@@ -238,5 +239,21 @@ extension FootballCareer {
             }
         }
         return ran
+    }
+}
+
+extension FootballCareer {
+    /// Atleta vendido, emprestado, dispensado, aposentado ou de contrato encerrado, ou troca de clube: as conversas e os
+    /// compromissos pessoais dele deixam de fazer sentido e são cancelados sem cobrança (F6: nada de compromisso órfão).
+    mutating func cancelOrphanedCommitments() {
+        let clubID = selectedClubID
+        for index in talks.indices where talks[index].stage.isOpen && player(talks[index].playerID)?.teamID != clubID {
+            talks[index].stage = .expired
+            if let commitment = talks[index].commitmentID { resolveCommitment(id: commitment, as: .cancelled) }
+        }
+        for item in commitments where item.state == .open && (item.kind == .followUp || item.kind == .negotiationCounter) {
+            guard let id = item.playerID, player(id)?.teamID != clubID else { continue }
+            resolveCommitment(id: item.id, as: .cancelled)
+        }
     }
 }

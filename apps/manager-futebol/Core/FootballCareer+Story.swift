@@ -43,6 +43,7 @@ extension FootballCareer {
         offers = []
         promises = []
         inbox = []
+        cancelOrphanedCommitments()
         invitations = []
         playerRoles = [:]
         rivalMotivation = [:]

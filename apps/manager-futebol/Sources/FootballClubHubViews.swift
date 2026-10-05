@@ -209,6 +209,7 @@ struct FootballFinanceView: View {
                     .font(.caption.weight(.semibold)).foregroundStyle(.red)
             }
             FootballCashProjectionPanel(career: career)
+            FootballCoachLoanPanel(career: $career)
             FactoryPanel(title: "Aporte do treinador", systemImage: "arrow.down.to.line.circle.fill") {
                 Text("Seu bolso: \(FootballFormat.money(career.world.coach.personalCash)). Emprestar dinheiro ao clube alivia o caixa e, no vermelho, acalma a diretoria.")
                     .font(.caption).foregroundStyle(.secondary)

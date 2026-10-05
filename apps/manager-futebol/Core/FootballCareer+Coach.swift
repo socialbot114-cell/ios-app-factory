@@ -106,6 +106,7 @@ extension FootballCareer {
         let earnsBonus = loanEarnsBoardBonus(amount: amount)
         world.coach.personalCash -= amount
         book(.other, amount, "Aporte do treinador")
+        registerCoachLoan(amount: amount)
         if earnsBonus {
             boardConfidence = min(100, boardConfidence + 2)
             world.projects.lastLoanBonusWorldDay = worldDay

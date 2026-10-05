@@ -77,10 +77,23 @@ struct ProjectsState: Codable, Equatable {
     var nextPlanID = 1
     /// Último dia em que um aporte do treinador rendeu confiança (F4-06).
     var lastLoanBonusWorldDay = -1
+    /// Aportes do treinador com devolução (BAN-05).
+    var coachLoans: [CoachLoan] = []
+    var nextLoanID = 1
+    /// Disputas com clubes rivais por atletas observados (F3-05).
+    var transferRaces: [TransferRace] = []
+    var nextRaceID = 1
+    /// Briefings, listas comparativas e relatórios (TRF-01/02/03).
+    var recruitment = RecruitmentState()
+    /// Negociações de contratação por etapas (TRF-04/05/06).
+    var transferTalks: [TransferTalk] = []
+    var nextTalkID = 1
+    /// Histórico, pedidos e promessas dos contatos (CON-02…06).
+    var contactRelations = ContactRelationsState()
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay }
+    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -89,6 +102,14 @@ struct ProjectsState: Codable, Equatable {
         personalPlan = try container.decodeIfPresent([PlannedActivity].self, forKey: .personalPlan) ?? []
         nextPlanID = try container.decodeIfPresent(Int.self, forKey: .nextPlanID) ?? 1
         lastLoanBonusWorldDay = try container.decodeIfPresent(Int.self, forKey: .lastLoanBonusWorldDay) ?? -1
+        coachLoans = try container.decodeIfPresent([CoachLoan].self, forKey: .coachLoans) ?? []
+        nextLoanID = try container.decodeIfPresent(Int.self, forKey: .nextLoanID) ?? 1
+        transferRaces = try container.decodeIfPresent([TransferRace].self, forKey: .transferRaces) ?? []
+        nextRaceID = try container.decodeIfPresent(Int.self, forKey: .nextRaceID) ?? 1
+        recruitment = try container.decodeIfPresent(RecruitmentState.self, forKey: .recruitment) ?? RecruitmentState()
+        transferTalks = try container.decodeIfPresent([TransferTalk].self, forKey: .transferTalks) ?? []
+        nextTalkID = try container.decodeIfPresent(Int.self, forKey: .nextTalkID) ?? 1
+        contactRelations = try container.decodeIfPresent(ContactRelationsState.self, forKey: .contactRelations) ?? ContactRelationsState()
     }
 }
 
@@ -150,6 +171,7 @@ extension FootballCareer {
         let projection = cashProjection()
         if projection.firstContractedShortfall != nil { score -= 15 } else if projection.endingExpected > transferBudget { score += 8 }
         score += Double(reputation - 50) / 5
+        score += Double(presidentBoardWeight) // relação com o presidente (CON-05)
         let earlier = world.projects.meetings.filter { $0.clubID == selectedClubID && $0.season == season }.count
         score -= Double(earlier) * 8
         if kind == .targetReview { score -= 5 }
