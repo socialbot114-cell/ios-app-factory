@@ -103,6 +103,7 @@ extension FootballCareer {
     @discardableResult
     mutating func openRumorArc(playerID: Int, truth: Bool) -> StoryArc? {
         guard let athlete = player(playerID), athlete.teamID == selectedClubID else { return nil }
+        ensureProfiles()
         let id = nextArcID
         nextArcID += 1
         let reporter = Self.journalistNames[hash("arc-\(id)") % Self.journalistNames.count]
@@ -236,6 +237,8 @@ extension FootballCareer {
         arc.steps.append(ArcStep(id: arc.steps.count, worldDay: worldDay, kind: .outcome, text: "Efeitos: " + effects.joined(separator: ", ") + "."))
         arcs[index] = arc
         if let commitment = arc.commitmentID { resolveCommitment(id: commitment, as: omitted ? .expired : .fulfilled) }
+        let reporter = arc.participants.dropFirst().first.map { String($0.split(separator: "(").first ?? "").trimmingCharacters(in: .whitespaces) }
+        settleRumor(factID: "arc-\(arc.id)-open", wasTrue: arc.truth, reporter: reporter)
         let factID = "arc-\(arc.id)-closed"
         recordFact(WorldFact(id: factID, source: .press, worldDay: worldDay, title: "Desfecho: \(arc.title)", detail: narration, playerIDs: [athleteID],
                              reliability: .confirmed, isPublic: false, effects: effects))

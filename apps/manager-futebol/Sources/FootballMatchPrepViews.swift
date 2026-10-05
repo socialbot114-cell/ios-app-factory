@@ -3,13 +3,38 @@ import SwiftUI
 /// Tática: comparativo com o rival, rotação pelo calendário e bolas paradas (TAC-02 / TAC-03 / TAC-04).
 struct FootballMatchPrepHub: View {
     @Binding var career: FootballCareer
+    /// Recolhido por padrão: o Elenco abre leve e o conteúdo só é montado quando o jogador pede.
+    @State private var expanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        FactoryPanel(title: "Preparação para o próximo jogo", systemImage: "list.bullet.clipboard") {
+            Button {
+                withAnimation(.snappy) { expanded.toggle() }
+            } label: {
+                HStack {
+                    Text(summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                    Spacer()
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.caption.weight(.bold))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("match-prep-toggle")
+        }
+        if expanded {
             FootballMatchupPanel(career: career)
             FootballRotationPanel(career: $career)
             FootballSetPiecePanel(career: $career)
         }
+    }
+
+    /// Resumo barato: só o próximo adversário, sem cálculos.
+    private var summary: String {
+        guard let clubID = career.selectedClubID, let fixture = career.nextUserFixture ?? career.upcomingUserFixtures.first else {
+            return "Comparativo com o rival, rotação e bolas paradas."
+        }
+        let rival = FootballSeason.teamName(fixture.home == clubID ? fixture.away : fixture.home)
+        return "Contra o \(rival): comparativo, rotação dos próximos jogos e bolas paradas."
     }
 }
 

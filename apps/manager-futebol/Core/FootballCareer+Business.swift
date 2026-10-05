@@ -269,6 +269,9 @@ extension FootballCareer {
         progressLife()
         progressBrandCampaign()
         progressImageContract()
+        progressSocialProject()
+        runScheduledFriendlies()
+        progressStaffTasks()
         // Depois da agenda pessoal: a folga prometida do dia já foi executada (ou não) ao conferir.
         progressContactRequests()
         reconcilePersonalLedger()
@@ -284,5 +287,6 @@ extension FootballCareer {
         }
         refreshNamingOffers(using: &random)
         world.business.agentOffers = []
+        runScheduledTour()
     }
 }

@@ -85,6 +85,7 @@ extension FootballCareer {
                                   text: "\(fact.title) · \(fact.reliability.label). \(fact.detail)", likes: 150 + hash % 600, shares: 20 + hash % 80,
                                   replies: 10 + hash % 60, sentiment: fact.reliability == .confirmed ? -1 : 0)
             post.sourceFactID = factID
+            post.profileID = profileID(forName: name)
             post.reliability = fact.reliability.rawValue
             world.social.nextPostID += 1
             world.social.posts.insert(post, at: 0)

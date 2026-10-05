@@ -55,6 +55,10 @@ struct FootballCareer: Codable, Equatable {
         case talks
         case tacticalPlans
         case arcs
+        case profiles
+        case postReplies
+        case nextReplyID
+        case publicMemory
         case nextArcID
         case nextTalkID
         case pendingPress
@@ -151,6 +155,10 @@ struct FootballCareer: Codable, Equatable {
     var talks: [RenewalTalk] = []
     var tacticalPlans: [TacticalPlan] = []
     var arcs: [StoryArc] = []
+    var profiles: [PublicProfile] = []
+    var postReplies: [PostReply] = []
+    var nextReplyID = 1
+    var publicMemory: [PublicMemoryEntry] = []
     var nextArcID = 1
     var nextTalkID = 1
     var pendingPress: PressConference? = nil
@@ -301,6 +309,10 @@ struct FootballCareer: Codable, Equatable {
         talks = try container.decodeIfPresent([RenewalTalk].self, forKey: .talks) ?? []
         tacticalPlans = try container.decodeIfPresent([TacticalPlan].self, forKey: .tacticalPlans) ?? []
         arcs = try container.decodeIfPresent([StoryArc].self, forKey: .arcs) ?? []
+        profiles = try container.decodeIfPresent([PublicProfile].self, forKey: .profiles) ?? []
+        postReplies = try container.decodeIfPresent([PostReply].self, forKey: .postReplies) ?? []
+        nextReplyID = try container.decodeIfPresent(Int.self, forKey: .nextReplyID) ?? 1
+        publicMemory = try container.decodeIfPresent([PublicMemoryEntry].self, forKey: .publicMemory) ?? []
         nextArcID = try container.decodeIfPresent(Int.self, forKey: .nextArcID) ?? 1
         nextTalkID = try container.decodeIfPresent(Int.self, forKey: .nextTalkID) ?? 1
         pendingPress = try container.decodeIfPresent(PressConference.self, forKey: .pendingPress)
@@ -398,6 +410,10 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(talks, forKey: .talks)
         try container.encode(tacticalPlans, forKey: .tacticalPlans)
         try container.encode(arcs, forKey: .arcs)
+        try container.encode(profiles, forKey: .profiles)
+        try container.encode(postReplies, forKey: .postReplies)
+        try container.encode(nextReplyID, forKey: .nextReplyID)
+        try container.encode(publicMemory, forKey: .publicMemory)
         try container.encode(nextArcID, forKey: .nextArcID)
         try container.encode(nextTalkID, forKey: .nextTalkID)
         try container.encodeIfPresent(pendingPress, forKey: .pendingPress)

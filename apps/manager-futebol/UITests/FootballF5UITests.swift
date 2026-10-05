@@ -15,6 +15,29 @@ final class FootballF5UITests: XCTestCase {
         XCTAssertTrue(reveal(element("league-head-to-head", in: app), in: app))
     }
 
+    /// LIG-01..03: tabela abre a ficha do clube, rodadas navegam, jogo abre o relatório/pré-jogo.
+    func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() {
+        let app = openApp("app-league")
+        let clubRow = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "league-club-")).firstMatch
+        XCTAssertTrue(clubRow.waitForExistence(timeout: 8))
+        clubRow.tap()
+        XCTAssertTrue(app.navigationBars["Ficha do clube"].waitForExistence(timeout: 5), "A linha da tabela deve abrir a ficha do clube")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let next = app.buttons["Próxima rodada"]
+        XCTAssertTrue(reveal(next, in: app))
+        let before = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Jogos · rodada")).firstMatch.label
+        next.tap()
+        let after = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Jogos · rodada")).firstMatch
+        XCTAssertTrue(after.waitForExistence(timeout: 4))
+        XCTAssertNotEqual(before, after.label, "Navegar para a próxima rodada deve trocar a rodada exibida")
+
+        let match = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "league-match-")).firstMatch
+        XCTAssertTrue(reveal(match, in: app))
+        match.tap()
+        XCTAssertTrue(app.navigationBars["Pré-jogo"].waitForExistence(timeout: 5) || app.navigationBars["Relatório"].exists)
+    }
+
     func testFantasyShowsDeadlineAndFilters() {
         let app = openApp("app-fantasy")
         XCTAssertTrue(element("fantasy-deadline", in: app).waitForExistence(timeout: 8))

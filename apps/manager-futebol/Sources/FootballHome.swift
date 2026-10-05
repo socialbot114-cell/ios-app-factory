@@ -241,7 +241,7 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -249,6 +249,20 @@ struct FootballHome: View {
         case "press": FootballPressView(career: $career)
         case _ where FootballF4Captures.names.contains(name): FootballF4CaptureView(name: name, career: $career, onAlert: showAlert)
         case _ where FootballF5Captures.names.contains(name): FootballF5CaptureView(name: name, career: $career, onAlert: showAlert)
+        case "public-sphere":
+            ScrollView {
+                VStack(spacing: 16) {
+                    FootballComposeDraftPanel(career: $career, onAlert: showAlert) { _ in }
+                    if let post = career.world.social.posts.first(where: \.isUser) {
+                        FactoryPanel(title: "Sua publicação", systemImage: "bubble.left.and.text.bubble.right.fill") {
+                            Text(post.text).font(.subheadline)
+                            FootballPostThread(career: $career, post: post)
+                        }
+                    }
+                    FootballPublicSpherePanel(career: career)
+                }
+                .padding(20)
+            }
         case "story-arc":
             ScrollView { FootballStoryArcPanel(career: $career).padding(20) }
         case "tactical-plans":
@@ -390,6 +404,14 @@ struct FootballHome: View {
             _ = career.promiseStarts(playerID: athlete.id)
             career.matchDayIndex += 20
             career.evaluatePromises(started: [])
+        }
+        if capture == "public-sphere" {
+            career.matchDayIndex = max(career.matchDayIndex, 6)
+            career.ensureProfiles()
+            _ = career.publishPost(draft: PostDraft(tone: .provocative, subject: .rival(2)))
+            career.matchDayIndex += 1
+            career.advancePublicSphere()
+            career.recordPublicMemory(id: "demo-praise", kind: .praise, text: "Elogio público ao grupo depois da vitória.", weight: 1)
         }
         if capture == "story-arc", let star = career.clubRoster.max(by: { $0.overall < $1.overall }) {
             career.matchDayIndex = max(career.matchDayIndex, 6)

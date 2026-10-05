@@ -124,8 +124,12 @@ extension FootballCareer {
            let star = clubRoster.filter({ $0.overall >= 76 && !$0.onLoan }).randomElement(using: &random),
            let suitor = random.pick(FootballSeason.teams.filter { $0.id != selectedClubID }) {
             let journalist = Self.journalistNames[random.int(in: 0...(Self.journalistNames.count - 1))]
-            _ = addPost(author: .journalist, name: journalist, text: "Fontes: \(suitor.name) monitora \(star.name), do \(clubName), e prepara proposta.",
-                        sentiment: -1, audience: 90_000, tag: "#rumor", using: &random)
+            let rumorPost = addPost(author: .journalist, name: journalist, text: "Fontes: \(suitor.name) monitora \(star.name), do \(clubName), e prepara proposta.",
+                                    sentiment: -1, audience: 90_000, tag: "#rumor", using: &random)
+            let rumorFact = "market-rumor-\(rumorPost.id)"
+            recordFact(WorldFact(id: rumorFact, source: .market, worldDay: worldDay, title: "Boato de mercado: \(star.name)",
+                                 detail: "\(journalist) cita o \(suitor.name) como interessado em \(star.name).", playerIDs: [star.id], clubIDs: [suitor.id], reliability: .rumor, isPublic: true))
+            attachFact(toPost: rumorPost.id, factID: rumorFact, reliability: .rumor)
             if let index = players.firstIndex(where: { $0.id == star.id }), players[index].morale > 60 {
                 players[index].morale -= 2
             }
@@ -240,8 +244,12 @@ extension FootballCareer {
         }
         world.social.coachFollowers = max(500, world.social.coachFollowers + Int(followerGain))
         bump("posts")
+        stageEngagement(postID: post.id, tone: tone)
+        if tone == .sponsored, world.social.sponsoredStreak > 3 {
+            recordPublicMemory(id: "sponsored-\(post.id)", kind: .sponsored, text: "Excesso de publis seguidas cansou os seguidores.", weight: 1, postID: post.id)
+        }
         maybeTriggerCrisis(using: &random)
-        return post
+        return world.social.posts.first { $0.id == post.id } ?? post
     }
 
     @discardableResult
@@ -265,7 +273,12 @@ extension FootballCareer {
             (.oldPost, "Publicação antiga", "Um post de anos atrás voltou e está sendo cobrado pela torcida."),
             (.fakeNews, "Notícia falsa", "Um perfil espalhou que você teria brigado com um atleta do elenco.")
         ]
-        guard let picked = random.pick(kinds) else { return }
+        guard var picked = random.pick(kinds) else { return }
+        // Um post polêmico antigo da memória pública pode voltar de verdade.
+        if picked.0 == .oldPost, let old = resurfacingPost {
+            picked.2 = "Um post seu de \(max(1, worldDay - old.worldDay)) dias atrás voltou: “\(old.text)”. A torcida cobra."
+            recordPublicMemory(id: "resurfaced-\(old.id)-\(worldDay)", kind: .crisis, text: "Post antigo voltou: \(old.text)", weight: 2, postID: old.postID)
+        }
         world.social.crisis = SocialCrisis(kind: picked.0, title: picked.1, body: picked.2, matchDay: matchDayIndex)
         addInbox(.social, title: "Crise de imagem: \(picked.1)", body: picked.2)
     }
@@ -298,6 +311,7 @@ extension FootballCareer {
                 text = "A medida saiu pela culatra e virou assunto nas redes."
             }
         }
+        recordPublicMemory(id: "crisis-\(worldDay)-\(response.rawValue)", kind: .crisis, text: "Crise \"\(world.social.crisis?.title ?? "de imagem")\": \(text)", weight: response == .ignore ? 2 : 1)
         world.social.crisis = nil
         bump("crises")
         return text
@@ -315,7 +329,7 @@ extension FootballCareer {
         for (minimum, level) in tiers where followers >= minimum {
             let brand = Self.brands[random.int(in: 0...(Self.brands.count - 1))]
             guard !world.social.brandDeals.contains(where: { $0.brand == brand }), !world.social.brandOffers.contains(where: { $0.brand == brand }) else { continue }
-            world.social.brandOffers.append(BrandDeal(id: world.social.nextPostID * 100 + level, brand: brand, payPerPost: 2_000 * level * level + followers / 200,
+            world.social.brandOffers.append(BrandDeal(id: world.social.nextPostID * 100 + level, brand: brand, payPerPost: Int(Double(2_000 * level * level + followers / 200) * brandOfferFactor),
                                                       postsRequired: 3 + level, postsDone: 0, endSeason: season + 1, minFollowers: minimum))
         }
     }

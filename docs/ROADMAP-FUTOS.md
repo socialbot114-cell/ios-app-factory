@@ -247,7 +247,7 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [x] CLB-02 Criar reunião contextual com pedido de verba ou revisão de meta. Reunião contextual com a diretoria (sessão 01). Suíte 218/218 no Docker.
 - [x] CLB-03 Registrar resposta, condições e prazo da diretoria. Resposta, condições e prazo da diretoria (sessão 01). Suíte 218/218 no Docker.
 - [x] CLB-04 Acompanhar obra por etapas com custos e impacto durante execução. Clube/Banco (sessão 01): testes de domínio e build iOS.
-- [ ] CLB-05 Dar tarefas e relatórios à comissão; incluir delegação inicial.
+- [x] CLB-05 Dar tarefas e relatórios à comissão; incluir delegação inicial. Tarefas e relatórios da comissão técnica (`FootballStaffTasks`, sessão 01); testes de domínio.
 - [ ] CLB-06 Consolidar legado e convites; mover gestão de saves para Ajustes.
 
 **Aceite:** uma promessa à diretoria é acompanhada e avaliada, inclusive ao trocar de temporada.
@@ -269,12 +269,12 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** simular uma esfera pública que reage ao mundo.
 
-- [ ] CHU-01 Criar perfis persistentes de personagens e clubes.
-- [ ] CHU-02 Associar postagens a fatos, rumores e fontes.
-- [ ] CHU-03 Compor publicação escolhendo assunto, alvo e tom com prévia.
-- [ ] CHU-04 Implementar respostas em thread e reações persistentes.
-- [ ] CHU-05 Atualizar engajamento por etapas, sem sortear novamente ao abrir a tela.
-- [ ] CHU-06 Conectar crises e publis a consequências futuras e memória pública.
+- [x] CHU-01 Criar perfis persistentes de personagens e clubes. Perfis persistentes de clubes, jornalistas, comentaristas, torcida e craques (`FootballPublicSphere`).
+- [x] CHU-02 Associar postagens a fatos, rumores e fontes. Posts ligados a fatos com fonte e confiabilidade (confirmado, boato, desmentido); credibilidade do veículo muda com o desfecho.
+- [x] CHU-03 Compor publicação escolhendo assunto, alvo e tom com prévia. Compor por assunto, alvo e tom com prévia determinística de texto, alcance, risco e efeitos.
+- [x] CHU-04 Implementar respostas em thread e reações persistentes. Comentários em thread e resposta do treinador (calma ou rebater) persistidos.
+- [x] CHU-05 Atualizar engajamento por etapas, sem sortear novamente ao abrir a tela. Engajamento por etapas (inicial, parcial, final) sem novo sorteio ao abrir a tela.
+- [x] CHU-06 Conectar crises e publis a consequências futuras e memória pública. Memória pública: post polêmico antigo pode voltar numa crise; excesso de publis reduz propostas de marca.
 
 **Aceite:** uma fala repercute de forma coerente em público, diretoria ou elenco; não há resposta repetível para farmar bônus.
 
@@ -323,9 +323,9 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 - [x] NEG-01 Definir coleção com público, preço, investimento e duração. Coleção com público, preço, investimento e duração (sessão 01). Suíte 218/218 no Docker.
 - [x] NEG-02 Exibir demanda e relatório de vendas ao longo dos jogos. Demanda e relatório de vendas ao longo dos jogos (sessão 01). Suíte 218/218 no Docker.
-- [ ] NEG-03 Negociar naming rights com condições financeiras e reação da torcida.
-- [ ] NEG-04 Transformar projeto social em etapas com resultados registrados.
-- [ ] NEG-05 Agendar amistoso/turnê antes da execução, incluindo desgaste e receita.
+- [x] NEG-03 Negociar naming rights com condições financeiras e reação da torcida. Naming rights negociado (sessão 01, `FootballBusinessDeals`); testes de domínio.
+- [x] NEG-04 Transformar projeto social em etapas com resultados registrados. Projeto social em etapas com balanço (sessão 01); testes de domínio.
+- [x] NEG-05 Agendar amistoso/turnê antes da execução, incluindo desgaste e receita. Amistoso e excursão agendados com receita e desgaste previstos (sessão 01); testes de domínio.
 - [x] NEG-06 Mostrar retorno realizado versus previsto de cada projeto. Verificado em captura (`personal-plan`, `project-ledger`).
 
 **Aceite:** pelo menos um projeto exige planejamento, acompanhamento e avaliação final; receita não é bônus instantâneo sem contexto.

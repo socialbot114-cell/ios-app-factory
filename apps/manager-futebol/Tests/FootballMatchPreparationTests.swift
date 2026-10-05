@@ -61,4 +61,26 @@ final class FootballMatchPreparationTests: XCTestCase {
         XCTAssertTrue(row.advice.contains("promessa"))
         XCTAssertTrue(plan.reasons.contains { $0.contains("promessas") })
     }
+    /// O que a tela de preparação calcula, com a mesma carreira de prévia das capturas: rápido e sem falhas.
+    func testPrepIsFastAndSafeOnThePreviewCareer() throws {
+        var preview = FootballCareer(seed: 26)
+        _ = preview.chooseClub(0)
+        for _ in 0..<FootballSeason.matchDaysPerSeason { preview.simulateNextMatchDay() }
+        preview.startNextSeason()
+        if preview.isFired, let job = preview.jobOffers.first { preview.acceptJob(job.id) }
+        for _ in 0..<8 { preview.simulateNextMatchDay() }
+        if let reserve = preview.clubRoster.first(where: { !preview.startingXI.contains($0.id) }) { _ = preview.promiseStarts(playerID: reserve.id, starts: 2) }
+        let start = Date()
+        let report = preview.matchupReport()
+        let plan = preview.rotationPlan()
+        let advice = preview.setPieceAdvice()
+        _ = preview.setPieceRoutine
+        _ = preview.starters
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 0.1, "Cálculo da tela abaixo de 100 ms")
+        XCTAssertNotNil(report)
+        let rows = try XCTUnwrap(plan).rows
+        XCTAssertEqual(Set(rows.map(\.id)).count, rows.count, "Linhas com IDs únicos para o ForEach")
+        XCTAssertFalse(advice.isEmpty)
+    }
 }

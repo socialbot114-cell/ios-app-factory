@@ -298,7 +298,7 @@ extension FootballCareer {
     }
 
     /// Risco de lesão nas partidas: o preparador físico reduz.
-    var injuryRiskFactor: Double { min(1.15, max(0.75, 1 - 0.02 * Double(fitnessAbilityValue - 10))) }
+    var injuryRiskFactor: Double { min(1.15, max(0.75, 1 - 0.02 * Double(fitnessAbilityValue - 10))) * staffInjuryFactor }
 
     /// Chance de o auxiliar ler o estilo do rival de forma errada.
     var assistantMisreadProbability: Double { max(0, min(0.5, (14 - Double(assistantAbilityValue)) / 28)) }
@@ -313,7 +313,8 @@ extension FootballCareer {
     func scoutedOpponentStyle(for fixture: LeagueFixture) -> (style: FootballPlayStyle, isCorrect: Bool) {
         let truth = trueOpponentStyle(for: fixture)
         var random = FootballRandom(seed: matchSeed(stream: .match, id: fixture.id) ^ 0xA5515)
-        guard random.chance(assistantMisreadProbability) else { return (truth, true) }
+        // Estudo do auxiliar (CLB-05) corta o erro pela metade; o sorteio é o mesmo.
+        guard random.chance(assistantMisreadProbability * (rivalStudied(fixture) ? 0.5 : 1)) else { return (truth, true) }
         let others = FootballPlayStyle.allCases.filter { $0 != truth }
         return (random.pick(others) ?? truth, false)
     }

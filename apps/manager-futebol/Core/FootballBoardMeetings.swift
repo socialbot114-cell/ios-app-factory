@@ -100,10 +100,14 @@ struct ProjectsState: Codable, Equatable {
     var personalLedger = PersonalLedgerState()
     /// Rotina de bola parada escolhida na Tática (TAC-04).
     var setPieces: SetPieceRoutine? = nil
+    /// Naming negociado, projeto social em etapas, amistosos e turnê agendados (NEG-03/04/05).
+    var deals = BusinessDealsState()
+    /// Tarefas e relatórios da comissão técnica (CLB-05).
+    var staffTasks = StaffTasksState()
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations, life, brand, construction, personalLedger, setPieces }
+    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations, life, brand, construction, personalLedger, setPieces, deals, staffTasks }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -125,6 +129,8 @@ struct ProjectsState: Codable, Equatable {
         construction = try container.decodeIfPresent(ConstructionPlan.self, forKey: .construction)
         personalLedger = try container.decodeIfPresent(PersonalLedgerState.self, forKey: .personalLedger) ?? PersonalLedgerState()
         setPieces = try container.decodeIfPresent(SetPieceRoutine.self, forKey: .setPieces)
+        deals = try container.decodeIfPresent(BusinessDealsState.self, forKey: .deals) ?? BusinessDealsState()
+        staffTasks = try container.decodeIfPresent(StaffTasksState.self, forKey: .staffTasks) ?? StaffTasksState()
     }
 }
 

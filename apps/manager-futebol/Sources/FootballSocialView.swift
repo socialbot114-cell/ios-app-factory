@@ -20,9 +20,10 @@ struct FootballSocialView: View {
             if let lastNote {
                 Label(lastNote, systemImage: "bubble.left.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }
-            composePanel
+            FootballComposeDraftPanel(career: $career, onAlert: onAlert) { lastNote = $0 }
             brandPanel
             feedPanel
+            FootballPublicSpherePanel(career: career)
         }
         .factoryPage()
         .navigationTitle("Chuteira")
@@ -151,6 +152,7 @@ struct FootballSocialView: View {
                         }
                     }
                     .font(.caption).foregroundStyle(.secondary)
+                    FootballPostThread(career: $career, post: post)
                 }
                 .accessibilityElement(children: .contain)
                 if post.id != social.posts.prefix(25).last?.id { Divider() }

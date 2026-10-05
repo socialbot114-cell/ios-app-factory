@@ -171,7 +171,9 @@ struct FootballF4CaptureView: View {
             case "brand-hub":
                 FootballBrandHub(career: $career, onAlert: onAlert)
             case "match-prep":
-                FootballMatchPrepHub(career: $career)
+                FootballMatchupPanel(career: career)
+                FootballRotationPanel(career: $career)
+                FootballSetPiecePanel(career: $career)
             case "life-projects":
                 FootballLifeContinuityPanel(career: $career, onAlert: onAlert)
             default:

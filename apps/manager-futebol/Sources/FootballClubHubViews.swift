@@ -421,6 +421,7 @@ struct FootballStaffView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballStaffTasksPanel(career: $career, onAlert: onAlert)
             ForEach(StaffRole.allCases) { role in
                 FactoryPanel(title: role.title, systemImage: role.symbol) {
                     Text(role.effect).font(.caption).foregroundStyle(.secondary)

@@ -230,6 +230,7 @@ extension FootballCareer {
             switch step {
             case .commitments:
                 advanceArcs()
+                advancePublicSphere()
                 expireDueCommitments()
                 maybeStartRumorArc()
                 ran.append(step)

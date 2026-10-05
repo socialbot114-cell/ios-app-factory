@@ -129,7 +129,7 @@ final class FootballFlowUITests: XCTestCase {
                 XCTAssertTrue(app.staticTexts["Bem-vindo, Treinador"].waitForExistence(timeout: 6))
             },
             AppCheck(id: "social", title: "Chuteira", dock: true) { app in
-                self.tapWhenReady(app.buttons["post-motivational"], in: app)
+                self.tapWhenReady(app.buttons["post-publish"], in: app)
                 XCTAssertTrue(app.alerts.count == 0)
             },
             AppCheck(id: "betting", title: "Palpite+", dock: false) { app in

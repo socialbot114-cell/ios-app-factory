@@ -281,6 +281,15 @@ struct SocialPost: Codable, Equatable, Identifiable {
     var viral = false
     var sourceFactID: String? = nil
     var reliability: String? = nil
+    /// Perfil de quem publicou, para a Chuteira ligar o post à pessoa ou ao clube.
+    var profileID: String? = nil
+    /// Engajamento final e etapa atual: o resto chega nos dias seguintes, sem novo sorteio.
+    var finalLikes: Int? = nil
+    var finalShares: Int? = nil
+    var finalReplies: Int? = nil
+    var stage: Int? = nil
+    var tone: String? = nil
+    var targetID: String? = nil
 }
 
 struct BrandDeal: Codable, Equatable, Identifiable {
