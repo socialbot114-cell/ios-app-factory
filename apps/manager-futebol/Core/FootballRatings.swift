@@ -28,7 +28,7 @@ enum FootballRatings {
         var rating = 6.0
         if goalsFor > goalsAgainst { rating += 0.45 } else if goalsFor < goalsAgainst { rating -= 0.35 }
         rating += Double(stats.goals) * 1.1 + Double(stats.assists) * 0.7
-        rating += Double(stats.tackles) * 0.08 + Double(stats.shotsOnTarget) * 0.12
+        rating += Double(stats.tackles) * 0.05 + Double(stats.shotsOnTarget) * 0.12
 
         switch player.position {
         case .goalkeeper:

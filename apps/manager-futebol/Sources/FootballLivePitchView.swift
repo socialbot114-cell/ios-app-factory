@@ -82,7 +82,7 @@ struct FootballLivePitchView: View {
         let celebrating = stageEngine.celebratingHome
 
         return VStack(spacing: 6) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !(running || busy))) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: FactoryCapture.screen != nil || !(running || busy))) { timeline in
                 let time = timeline.date.timeIntervalSinceReferenceDate
                 Canvas { context, size in
                     stageEngine.advance(now: time, speed: rate, input: input)

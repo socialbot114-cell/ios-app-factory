@@ -259,19 +259,21 @@ def membro(name, a, b, r1, r2, material, vertices=16):
 
 
 def fundir(objs, nome):
-    """Converte (aplica modificadores/curvas/texto) e junta tudo em UM objeto de malha com origem em (0,0,0)."""
+    """Converte (aplica modificadores/curvas/texto) e junta tudo em UM objeto de malha.
+    O destino e um objeto novo, sem rotacao, na origem (evita herdar a rotacao de uma peca)."""
     objs = [o for o in objs if o.name in bpy.data.objects]
     bpy.ops.object.select_all(action="DESELECT")
     for o in objs:
         o.select_set(True)
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.object.convert(target="MESH")
+    alvo = bpy.data.objects.new(nome + "_fusao", bpy.data.meshes.new(nome))
+    bpy.context.collection.objects.link(alvo)
+    alvo.select_set(True)
+    bpy.context.view_layer.objects.active = alvo
     bpy.ops.object.join()
-    o = bpy.context.object
-    o.name = nome
-    bpy.context.scene.cursor.location = (0, 0, 0)
-    bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
-    return o
+    alvo.name = nome
+    return alvo
 
 
 def stroke(name, points, material=None, radius=0.02, fechar=False):

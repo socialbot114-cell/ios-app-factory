@@ -101,8 +101,12 @@ extension MatchSimulation {
         }
         for side in [MatchTeamSide.home, .away] where detailed {
             touchPhase(side: side, players: players, random: &random)
-            actionPhase(side: side, players: players)
             for id in self[side].onPitch { self[side].stats[id, default: PlayerMatchStats(playerID: id)].minutes += 1 }
+        }
+
+        // Alterna quem narra primeiro para nenhum lado ter prioridade fixa.
+        for side in (minute % 2 == 0 ? [MatchTeamSide.home, .away] : [.away, .home]) where detailed {
+            actionPhase(side: side, flavor: flavor, players: players)
         }
 
         for side in [MatchTeamSide.home, .away] where !self[side].isUserControlled {

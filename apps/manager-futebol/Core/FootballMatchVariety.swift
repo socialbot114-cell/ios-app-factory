@@ -19,14 +19,28 @@ struct MatchFlavor: Equatable {
         strictness = 0.85 + 0.3 * random.unit()
         aerial = 0.8 + 0.4 * random.unit()
         wide = 0.8 + 0.4 * random.unit()
+        // Cada traço normalizado pela própria amplitude (−1…1) para nenhum dominar o título.
         let traits: [(Double, String)] = [
-            (tempo - 1, "Jogo aberto e rápido"),
-            (1 - tempo, "Jogo truncado e estudado"),
-            (strictness - 1, "Jogo físico e faltoso"),
-            (aerial - 1, "Jogo de bolas aéreas"),
-            (wide - 1, "Jogo pelas pontas")
+            ((tempo - 1) / 0.08, "Jogo aberto e rápido"),
+            ((1 - tempo) / 0.08, "Jogo truncado e estudado"),
+            ((strictness - 1) / 0.15, "Jogo físico e faltoso"),
+            ((aerial - 1) / 0.2, "Jogo de bolas aéreas"),
+            ((wide - 1) / 0.2, "Jogo pelas pontas")
         ]
-        title = traits.max { $0.0 < $1.0 }?.1 ?? "Jogo equilibrado"
+        let strongest = traits.max { $0.0 < $1.0 }
+        title = strongest.map { $0.0 >= 0.45 ? $0.1 : "Jogo equilibrado" } ?? "Jogo equilibrado"
+    }
+
+    /// Frase do narrador na saída de bola.
+    var preview: String {
+        switch title {
+        case "Jogo aberto e rápido": return "Os dois times prometem um jogo de ritmo alto."
+        case "Jogo truncado e estudado": return "Expectativa de um jogo travado, de muita cautela."
+        case "Jogo físico e faltoso": return "O árbitro promete ser rigoroso nas divididas."
+        case "Jogo de bolas aéreas": return "Muita bola na área deve decidir este jogo."
+        case "Jogo pelas pontas": return "Os pontas devem ser os protagonistas da partida."
+        default: return "Duelo equilibrado no papel."
+        }
     }
 }
 
@@ -173,85 +187,109 @@ extension MatchSimulation {
     var flavor: MatchFlavor { MatchFlavor(seed: seed) }
 
     /// Desarmes, dribles, cruzamentos e impedimentos. Usa fluxo próprio: não altera placar nem estatísticas de gol.
-    mutating func actionPhase(side: MatchTeamSide, players: [Int: FootballPlayer]) {
+    /// Narra no máximo um lance por minuto e nunca por cima de gol, chance, cartão ou lesão.
+    mutating func actionPhase(side: MatchTeamSide, flavor: MatchFlavor, players: [Int: FootballPlayer]) {
         var random = FootballRandom(seed: Self.mix(seed, UInt64(minute), side == .home ? 0xA1 : 0xA2))
         let state = self[side]
         let rival = self[side.other]
-        let mates = state.onPitch.compactMap { players[$0] }
-        let rivals = rival.onPitch.compactMap { players[$0] }
+        let mates = state.onPitch.compactMap { players[$0] }.filter { $0.position != .goalkeeper }
+        let rivals = rival.onPitch.compactMap { players[$0] }.filter { $0.position != .goalkeeper }
         guard !mates.isEmpty, !rivals.isEmpty else { return }
         let share = side == .home ? possessionShare : 1 - possessionShare
         let teamID = state.teamID
         let teamName = FootballSeason.teamName(teamID)
-        let tempo = flavor.tempo
+        var canNarrate = !events.contains { $0.minute == minute && $0.kind != .tactic && $0.kind != .substitution }
 
-        // Impedimento: ataque no limite da linha alta do rival.
-        let offsideChance = 0.045 * (0.6 + share) * tempo * (state.style == .counter ? 1.4 : 1) * (rival.instructions.lineHeight == .high ? 1.5 : 1)
-        if random.chance(offsideChance) {
-            let runners = mates.filter { $0.position == .forward || $0.detail == .attackingMid }
-            if let runner = random.pick(runners) {
-                let lines = ["A bandeira sobe: \(runner.name) estava impedido.",
-                             "\(runner.name) parte na frente da defesa, mas o assistente marca impedimento.",
-                             "Impedimento de \(runner.name) anula a jogada do \(teamName)."]
-                events.append(MatchEvent(minute: minute, kind: .offside, teamID: teamID, text: lines[random.int(in: 0...(lines.count - 1))], playerID: runner.id))
+        func narrate(_ kind: MatchEvent.Kind, team: Int, _ lines: [String], player: Int, related: Int?, odds: Double) {
+            guard canNarrate, random.chance(odds), let text = random.pick(lines) else { return }
+            events.append(MatchEvent(minute: minute, kind: kind, teamID: team, text: text, playerID: player, relatedPlayerID: related))
+            canNarrate = false
+        }
+
+        func weighted(_ pool: [FootballPlayer], _ weight: (FootballPlayer) -> Double) -> FootballPlayer? {
+            guard let index = random.weightedIndex(pool.map { max(1, Int(weight($0) * 10)) }) else { return nil }
+            return pool[index]
+        }
+
+        // Impedimento: atacantes velozes contra linha alta caem mais na armadilha.
+        let offsideChance = 0.03 * (0.6 + share) * flavor.tempo * (state.style == .counter ? 1.4 : 1) * (rival.instructions.lineHeight == .high ? 1.6 : 1)
+        if random.chance(offsideChance),
+           let runner = weighted(mates.filter { $0.position == .forward || $0.detail == .attackingMid || $0.detail == .winger }, {
+               Double($0.attributes[.pace] + 4) * ($0.detail == .striker ? 1.6 : 1) * (state.roles[$0.id] == .poacher ? 1.3 : 1)
+           }) {
+            narrate(.offside, team: teamID, [
+                "A bandeira sobe: \(runner.name) estava impedido.",
+                "\(runner.name) parte na frente da zaga, mas o assistente marca impedimento.",
+                "Impedimento de \(runner.name) anula a jogada do \(teamName).",
+                "A linha do rival sobe na hora certa e deixa \(runner.name) em impedimento."
+            ], player: runner.id, related: nil, odds: 0.6)
+        }
+
+        // Desarme: o time sem a bola recupera a posse; volantes destruidores aparecem mais.
+        if random.chance(0.11 * (1.6 - share) * (state.instructions.pressing == .high ? 1.2 : 1)),
+           let tackler = weighted(mates, { player in
+               let base = player.position == .forward ? 1.0 : 3.0
+               return base * Double(player.attributes[.tackling] + 3) * (state.roles[player.id] == .destroyer ? 1.4 : 1)
+           }),
+           let victim = weighted(rivals, { $0.position == .defender ? 0.6 : 1.0 }) {
+            self[side].stats[tackler.id, default: PlayerMatchStats(playerID: tackler.id)].tackles += 1
+            narrate(.tackle, team: teamID, [
+                "\(tackler.name) chega firme e desarma \(victim.name).",
+                "Bela recuperação de \(tackler.name), que tira a bola de \(victim.name).",
+                "\(tackler.name) corta o avanço de \(victim.name) no tempo certo.",
+                "Carrinho limpo de \(tackler.name) em \(victim.name), e a torcida aplaude."
+            ], player: tackler.id, related: victim.id, odds: 0.18)
+        }
+
+        // Drible: duelo de habilidade contra marcação; quem perde entrega um desarme ao rival.
+        if random.chance(0.05 * (0.6 + share) * flavor.tempo),
+           let dribbler = weighted(mates.filter { $0.position != .defender || state.roles[$0.id] == .fullbackAttacking }, {
+               let role = state.roles[$0.id]
+               let detail = $0.detail == .winger || $0.detail == .attackingMid ? 2.0 : 0.7
+               return detail * Double($0.attributes[.dribbling] + 2) * (role == .dribblingWinger ? 1.5 : 1)
+           }),
+           let marker = weighted(rivals.filter { $0.position != .forward }, { Double($0.attributes[.marking] + 2) }) {
+            let skill = Double(dribbler.attributes[.dribbling] + dribbler.attributes[.pace]) / 2
+            let marking = Double(marker.attributes[.marking] + marker.attributes[.tackling]) / 2
+            if random.chance(min(0.8, max(0.25, 0.5 + (skill - marking) * 0.03))) {
+                let flank = Self.flank(of: dribbler)
+                narrate(.dribble, team: teamID, [
+                    "\(dribbler.name) dribla \(marker.name) e ganha espaço pela \(flank).",
+                    "Drible desconcertante de \(dribbler.name) em cima de \(marker.name).",
+                    "\(dribbler.name) deixa \(marker.name) para trás e avança com a bola.",
+                    "Caneta de \(dribbler.name) em \(marker.name)! A torcida vai ao delírio."
+                ], player: dribbler.id, related: marker.id, odds: 0.5)
+            } else {
+                self[side.other].stats[marker.id, default: PlayerMatchStats(playerID: marker.id)].tackles += 1
+                narrate(.tackle, team: rival.teamID, [
+                    "\(marker.name) lê o drible de \(dribbler.name) e rouba a bola.",
+                    "\(dribbler.name) tenta o drible, mas \(marker.name) não cai na finta."
+                ], player: marker.id, related: dribbler.id, odds: 0.3)
             }
         }
 
-        // Desarme: o time sem a bola recupera a posse.
-        if random.chance(0.075 * (1.6 - share)) {
-            let weights = mates.map { player -> Int in
-                let base: Double = player.position == .defender ? 3 : (player.position == .midfielder ? 3 : (player.position == .forward ? 1 : 0.2))
-                return max(1, Int(base * Double(player.attributes[.tackling] + 3) * (state.roles[player.id] == .destroyer ? 1.4 : 1)))
-            }
-            if let index = random.weightedIndex(weights) {
-                let tackler = mates[index]
-                self[side].stats[tackler.id, default: PlayerMatchStats(playerID: tackler.id)].tackles += 1
-                if random.chance(0.4), let victim = random.pick(rivals.filter { $0.position != .goalkeeper }) {
-                    let lines = ["\(tackler.name) chega firme e desarma \(victim.name).",
-                                 "Bela recuperação de \(tackler.name), que tira a bola de \(victim.name).",
-                                 "\(tackler.name) corta o avanço de \(victim.name) no tempo certo."]
-                    events.append(MatchEvent(minute: minute, kind: .tackle, teamID: teamID, text: lines[random.int(in: 0...(lines.count - 1))],
-                                             playerID: tackler.id, relatedPlayerID: victim.id))
-                }
-            }
+        // Cruzamento afastado: quem cruza vem das pontas, quem corta é o zagueiro bom de cabeça.
+        if random.chance(0.045 * (0.6 + share) * flavor.wide * (state.instructions.width == .high ? 1.3 : 1)),
+           let crosser = weighted(mates.filter { $0.detail == .winger || $0.detail == .rightBack || $0.detail == .leftBack }, {
+               Double($0.attributes[.passing] + 2) * (state.roles[$0.id] == .fullbackAttacking ? 1.4 : 1)
+           }),
+           let clearer = weighted(rivals.filter { $0.position == .defender }, { Double($0.attributes[.heading] + 2) }) {
+            let flank = Self.flank(of: crosser)
+            narrate(.cross, team: teamID, [
+                "\(crosser.name) levanta da \(flank), mas \(clearer.name) afasta de cabeça.",
+                "Cruzamento perigoso de \(crosser.name) e \(clearer.name) tira antes do atacante.",
+                "\(clearer.name) se antecipa e corta o cruzamento de \(crosser.name).",
+                "\(crosser.name) cruza rasteiro pela \(flank) e \(clearer.name) afasta o perigo."
+            ], player: crosser.id, related: clearer.id, odds: 0.4)
         }
+    }
 
-        // Drible: ponta ou meia ofensivo encara o marcador.
-        if random.chance(0.05 * (0.6 + share) * tempo) {
-            let dribblers = mates.filter { $0.detail == .winger || $0.detail == .attackingMid || ($0.detail == .striker && random.chance(0.3)) }
-            let defenders = rivals.filter { $0.position == .defender || $0.position == .midfielder }
-            if let dribbler = random.pick(dribblers), let marker = random.pick(defenders) {
-                let skill = Double(dribbler.attributes[.dribbling] + dribbler.attributes[.pace]) / 2
-                let marking = Double(marker.attributes[.marking] + marker.attributes[.tackling]) / 2
-                let wins = random.chance(min(0.8, max(0.25, 0.5 + (skill - marking) * 0.03)))
-                if wins {
-                    let lines = ["\(dribbler.name) dribla \(marker.name) e ganha espaço pela \(random.chance(0.5) ? "direita" : "esquerda").",
-                                 "Drible desconcertante de \(dribbler.name) em cima de \(marker.name).",
-                                 "\(dribbler.name) deixa \(marker.name) sentado e avança com a bola."]
-                    events.append(MatchEvent(minute: minute, kind: .dribble, teamID: teamID, text: lines[random.int(in: 0...(lines.count - 1))],
-                                             playerID: dribbler.id, relatedPlayerID: marker.id))
-                } else {
-                    self[side.other].stats[marker.id, default: PlayerMatchStats(playerID: marker.id)].tackles += 1
-                    if random.chance(0.35) {
-                        events.append(MatchEvent(minute: minute, kind: .tackle, teamID: rival.teamID,
-                                                 text: "\(marker.name) lê o drible de \(dribbler.name) e rouba a bola.",
-                                                 playerID: marker.id, relatedPlayerID: dribbler.id))
-                    }
-                }
-            }
-        }
-
-        // Cruzamento afastado pela defesa.
-        if random.chance(0.05 * (0.6 + share) * flavor.wide) {
-            let crossers = mates.filter { $0.detail == .winger || $0.detail == .rightBack || $0.detail == .leftBack }
-            let clearers = rivals.filter { $0.position == .defender }
-            if let crosser = random.pick(crossers), let clearer = random.pick(clearers) {
-                let lines = ["\(crosser.name) levanta na área, mas \(clearer.name) afasta de cabeça.",
-                             "Cruzamento perigoso de \(crosser.name) e \(clearer.name) tira antes do atacante.",
-                             "\(clearer.name) se antecipa e corta o cruzamento de \(crosser.name)."]
-                events.append(MatchEvent(minute: minute, kind: .cross, teamID: teamID, text: lines[random.int(in: 0...(lines.count - 1))],
-                                         playerID: crosser.id, relatedPlayerID: clearer.id))
-            }
+    /// Lado do campo em que o atleta costuma atuar.
+    static func flank(of player: FootballPlayer) -> String {
+        switch player.detail {
+        case .rightBack: return "direita"
+        case .leftBack: return "esquerda"
+        default: return player.id % 2 == 0 ? "direita" : "esquerda"
         }
     }
 }

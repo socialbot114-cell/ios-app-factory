@@ -93,6 +93,7 @@ CAMS = {
     "tv":    dict(persp=((-1, -20, 10.5), (0.5, 0.5, 0.2), 38)),
     "campo": dict(persp=((7.5, -8.0, 1.5), (3.4, 0.4, 0.55), 36)),
     "topo":  dict(persp=((0, -3.5, 24.0), (0, 0, 0), 38)),
+    "zoom":  dict(location=(10.5, -10.5, 9.0), ortho_scale=9.0, alvo=(3.3, 0.3, 0.5)),
     "gol":   dict(persp=((-3.4, -3.8, 1.05), (4.9, 0.4, 0.6), 40)),
 }
 
@@ -111,10 +112,15 @@ if __name__ == "__main__":
     noturno = "--noturno" in a
     cam = a[a.index("--cam") + 1] if "--cam" in a else "iso"
     refl = montar_cena(noturno)
+    if "--debug" in a:
+        import bpy as _b
+        for o in _b.data.objects:
+            if o.name.startswith(('Casa 10','Fora 9','Bola')): print('DBG', o.name, o.type, tuple(round(v,2) for v in o.location), len(o.data.polygons) if o.type=='MESH' else 0, o.hide_render, [m.name for m in o.data.materials][:3] if o.type=='MESH' else '')
     camera(cam)
     fundo = ((0.03, 0.05, 0.11), (0.01, 0.02, 0.05)) if noturno else ((0.62, 0.78, 0.95), (0.88, 0.93, 0.98))
     LB.luz_estudio(noturno=noturno, fundo=fundo)
     if noturno:
         COB.luzes_refletores(refl, energia=5500)
     motor = "CYCLES" if "--cycles" in a else "EEVEE"
-    LB.render(out, 1600, 1100, samples=96 if motor == "CYCLES" else 96, motor=motor)
+    rapido = "--rapido" in a
+    LB.render(out, 800 if rapido else 1600, 550 if rapido else 1100, samples=16 if rapido else 96, motor=motor)

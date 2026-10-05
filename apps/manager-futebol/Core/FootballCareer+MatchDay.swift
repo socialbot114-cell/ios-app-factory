@@ -135,6 +135,7 @@ extension FootballCareer {
         var kickoff = "Bola rolando no \(stadium): \(FootballSeason.teamName(fixture.home)) × \(FootballSeason.teamName(fixture.away)) pela \(fixture.competition.name)"
         if let round = fixture.competition.cupRound { kickoff += " (\(round.name.lowercased()))" }
         kickoff += FootballSeason.isDerby(fixture.home, fixture.away) ? ". É clássico!" : "."
+        kickoff += " " + sim.flavor.preview
         sim.events.append(MatchEvent(minute: 0, kind: .kickoff, teamID: nil, text: kickoff))
 
         liveMatch = LiveMatchState(sim: sim, matchDay: matchDayIndex, userIsHome: fixture.home == selectedClubID,
