@@ -2,7 +2,7 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual: **primeiros incrementos integrados e publicados no TestFlight 1.0 (build 5); roadmap completo em andamento**.
+Status atual: **roadmap quase completo; build 1.1 (6) enviado ao TestFlight em 5 de outubro de 2026 (veja `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`)**.
 
 ## Atualização — 4 de outubro de 2026
 
@@ -89,13 +89,13 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 
 **Objetivo:** estabelecer o que funciona hoje e escolher regras antes de ampliar o estado da carreira.
 
-- [ ] F0-01 Inventariar ações, leituras, bloqueios, cooldowns e históricos de cada app.
+- [x] F0-01 Inventariar ações, leituras, bloqueios, cooldowns e históricos de cada app. Inventário por app em `docs/BASELINE-FUTOS.md`.
 - [x] F0-02 Rodar os testes atuais do motor no Linux e registrar versão/resultado. Swift 5.9 via Docker: 159 testes aprovados.
 - [x] F0-03 Verificar build e UI tests iPhone no macOS/GitHub Actions. Build 5: iPhone e iPad aprovados.
-- [ ] F0-04 Capturar uma carreira nova, uma em andamento e uma no fim da temporada.
-- [ ] F0-05 Classificar problemas confirmados por severidade e reprodução; separar ideias de bugs.
-- [ ] F0-06 Confirmar ritmo de tempo, foco esportivo/narrativo e papel do Palpite+.
-- [ ] F0-07 Selecionar saves de referência para testar migração e retomada.
+- [x] F0-04 Capturar uma carreira nova, uma em andamento e uma no fim da temporada. Rotas `select`, `home` e `season-end` cobrem carreira nova, em andamento e fim de temporada.
+- [x] F0-05 Classificar problemas confirmados por severidade e reprodução; separar ideias de bugs. Problemas classificados por severidade em `docs/BASELINE-FUTOS.md`.
+- [x] F0-06 Confirmar ritmo de tempo, foco esportivo/narrativo e papel do Palpite+. Decisões de ritmo, foco, Palpite+ e delegação registradas em `docs/BASELINE-FUTOS.md`.
+- [x] F0-07 Selecionar saves de referência para testar migração e retomada. Seis saves de referência e um save legado testados (`FootballReferenceSavesTests`).
 
 **Meta M0:** baseline reproduzível, decisões registradas e nenhuma falha crítica conhecida sem encaminhamento.
 

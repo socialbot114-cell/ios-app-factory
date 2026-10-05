@@ -30,7 +30,7 @@ struct FootballHome: View {
 
     var body: some View {
         Group {
-            if capture?.hasPrefix("match") == true, career.liveMatch != nil {
+            if let capture, Self.liveMatchCaptures.contains(capture), career.liveMatch != nil {
                 FootballLiveMatchView(career: $career, staticPreview: true) { }
             } else if let capture, Self.deepCaptures.contains(capture) {
                 NavigationStack { deepCapture(capture).tint(FootballTheme.accent) }
@@ -241,6 +241,9 @@ struct FootballHome: View {
         }
     }
 
+    /// Rotas de captura que abrem a partida ao vivo (nome exato, para não confundir com rotas como `match-prep`).
+    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final"]
+
     static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
@@ -395,9 +398,17 @@ struct FootballHome: View {
             career = FootballCareer(seed: 26)
             return
         }
-        career = Self.previewCareer(liveMatch: capture.hasPrefix("match"))
+        career = Self.previewCareer(liveMatch: Self.liveMatchCaptures.contains(capture))
         FootballF4Captures.prepare(capture, career: &career)
         FootballF5Captures.prepare(capture, career: &career)
+        if capture == "season-end" {
+            // Fim de temporada: todas as rodadas jogadas, antes de abrir a próxima.
+            var guardDays = 0
+            while !career.isSeasonComplete, guardDays < FootballSeason.matchDaysPerSeason + 4 {
+                guardDays += 1
+                if career.canPlay || career.canAdvanceWithoutPlaying { career.simulateNextMatchDay(); career.skipPress() } else { break }
+            }
+        }
         if capture == "agenda" || capture == "commitment" { career.simulateNextMatchDay() }
         if capture == "inbox-followup", let athlete = career.clubRoster.first(where: { !career.startingXI.contains($0.id) && !$0.isYouth }) {
             // Promessa quebrada: veredito, conversa de acompanhamento e memória do atleta.
@@ -464,7 +475,7 @@ struct FootballHome: View {
         case "growth": openApp = .brand
         case "contacts": openApp = .contacts
         case "settings": openApp = .settings
-        case "agenda": openApp = .manager
+        case "agenda", "season-end": openApp = .manager
         case "commitment", "inbox-followup": openApp = .messages
         case "lock": locked = true
         case "notifications": showNotifications = true
