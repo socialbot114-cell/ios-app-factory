@@ -4,7 +4,7 @@ import SwiftUI
 enum FootballF4Captures {
     static let names: Set<String> = ["cash-projection", "board-meeting", "collection-project", "personal-plan", "commercial-delegation",
                                      "transfer-talks", "recruitment-briefs", "coach-loans", "project-ledger", "contact-requests", "contact-dossier",
-                                     "brand-hub", "life-projects"]
+                                     "brand-hub", "life-projects", "match-prep"]
 
     /// Monta o estado de demonstração sobre a carreira de prévia.
     static func prepare(_ name: String, career: inout FootballCareer) {
@@ -74,6 +74,11 @@ enum FootballF4Captures {
             _ = career.toggle(.fanClubs)
             _ = career.toggle(.footballAcademy)
             for _ in 0..<4 { _ = career.simulateNextMatchDay() }
+        case "match-prep":
+            career.setOpponentPrep(true)
+            career.setSetPieceRoutine(SetPieceRoutine(corner: .farPost, freeKick: .direct,
+                                                      cornerTakerID: career.starters.max { $0.attributes[.passing] < $1.attributes[.passing] }?.id,
+                                                      freeKickTakerID: career.starters.max { $0.attributes[.finishing] < $1.attributes[.finishing] }?.id))
         case "brand-hub":
             career.transferBudget = max(career.transferBudget, 5_000_000)
             career.reputation = max(career.reputation, 55)
@@ -165,6 +170,8 @@ struct FootballF4CaptureView: View {
                 FootballProjectLedgerPanel(career: career)
             case "brand-hub":
                 FootballBrandHub(career: $career, onAlert: onAlert)
+            case "match-prep":
+                FootballMatchPrepHub(career: $career)
             case "life-projects":
                 FootballLifeContinuityPanel(career: $career, onAlert: onAlert)
             default:
@@ -189,6 +196,7 @@ struct FootballF4CaptureView: View {
         case "transfer-talks", "recruitment-briefs": return "Mercado"
         case "coach-loans": return "Banco"
         case "brand-hub": return "Marca"
+        case "match-prep": return "Tática"
         default: return "Vida"
         }
     }

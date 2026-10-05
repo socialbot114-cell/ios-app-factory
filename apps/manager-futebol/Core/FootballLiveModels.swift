@@ -161,6 +161,8 @@ struct MatchSideState: Codable, Equatable {
     var defenseBoost = 0.0
     var injuryFactor = 1.0
     var setPieceBoost = 0.0
+    /// Rotina de bola parada do usuário (TAC-04); nil para a IA. Opcional: partidas salvas antigas continuam abrindo.
+    var setPieceRoutine: SetPieceRoutine? = nil
     var matchCondition: [Int: Double]
     var stats: [Int: PlayerMatchStats] = [:]
     /// Atletas que já levaram amarelo na partida.

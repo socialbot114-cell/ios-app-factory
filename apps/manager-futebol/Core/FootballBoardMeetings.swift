@@ -98,10 +98,12 @@ struct ProjectsState: Codable, Equatable {
     var construction: ConstructionPlan? = nil
     /// Extrato da conta pessoal do treinador (BAN-01).
     var personalLedger = PersonalLedgerState()
+    /// Rotina de bola parada escolhida na Tática (TAC-04).
+    var setPieces: SetPieceRoutine? = nil
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations, life, brand, construction, personalLedger }
+    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations, life, brand, construction, personalLedger, setPieces }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -122,6 +124,7 @@ struct ProjectsState: Codable, Equatable {
         brand = try container.decodeIfPresent(BrandState.self, forKey: .brand) ?? BrandState()
         construction = try container.decodeIfPresent(ConstructionPlan.self, forKey: .construction)
         personalLedger = try container.decodeIfPresent(PersonalLedgerState.self, forKey: .personalLedger) ?? PersonalLedgerState()
+        setPieces = try container.decodeIfPresent(SetPieceRoutine.self, forKey: .setPieces)
     }
 }
 

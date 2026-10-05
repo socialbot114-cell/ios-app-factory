@@ -151,6 +151,7 @@ struct FootballInboxView: View {
         case .lineup, .commitment: onOpenApp(.squad)
         case .offer: onOpenApp(.market)
         case .contract(let id): renewal = Selection(id: id)
+        case .contact: onOpenApp(.contacts)
         case .fact: break
         }
     }
@@ -168,6 +169,9 @@ struct FootballInboxView: View {
                         if !career.promiseStarts(playerID: playerID) { onAlert("Já existe um compromisso ou a conversa não está disponível agora.") }
                     }
                     action("Sem garantia", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
+                    action("Conversar em 2 dias", "calendar.badge.plus", id: "msg-schedule-\(message.id)") {
+                        if career.replyWithMeeting(playerID: playerID) == nil { onAlert("Já há uma conversa marcada com este atleta ou o pedido não está mais aberto.") }
+                    }
                     action("Ver atleta", "person.text.rectangle", id: "msg-sheet-\(message.id)") { selected = Selection(id: playerID) }
                     action("Escalação", "list.number", id: "msg-lineup-\(message.id)") { onOpenApp(.squad) }
                 }
@@ -206,6 +210,11 @@ struct FootballInboxView: View {
             case .injury: link("Rever escalação", .squad, message)
             case .board, .staff: link("Abrir Clube", .club, message)
             default:
+                if let meeting = career.openMeetingCommitment(for: message) {
+                    action("Ter a conversa", "bubble.left.and.bubble.right.fill", prominent: true, id: "msg-meeting-\(message.id)") {
+                        if career.holdMeeting(commitmentID: meeting.id) { career.resolveInboxMessage(id: message.id) }
+                    }
+                }
                 if let playerID { action("Ver ficha", "person.text.rectangle", id: "msg-sheet-\(message.id)") { selected = Selection(id: playerID) } }
             }
         }

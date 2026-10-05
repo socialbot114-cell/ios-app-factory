@@ -282,6 +282,8 @@ extension MatchSimulation {
             }
             weight *= state.roles[player.id]?.shotWeight ?? 1.0
             weight *= buildUp.shooterAffinity(player)
+            // Rotina de bola parada do usuário (TAC-04): só muda pesos, não o número de sorteios.
+            if let routine = state.setPieceRoutine { weight *= routine.shooterWeight(player, buildUp: buildUp) }
             if player.has(.naturalFinisher) { weight *= 1.35 }
             if rival.markTargetID == player.id { weight *= 0.5 }
             return max(1, Int(weight))
@@ -294,7 +296,8 @@ extension MatchSimulation {
         let mates = self[side].onPitch.compactMap { players[$0] }.filter { $0.id != shooterID && $0.position != .goalkeeper }
         let weights = mates.map { mate -> Int in
             let base = Double(mate.position.assistWeight * (mate.attributes[.passing] * 3 + mate.attributes[.vision] * 2 + mate.overall / 2 - 40) / 4)
-            return max(1, Int(base * buildUp.assistAffinity(mate, role: self[side].roles[mate.id])))
+            let routine = self[side].setPieceRoutine?.assistWeight(mate, buildUp: buildUp) ?? 1
+            return max(1, Int(base * buildUp.assistAffinity(mate, role: self[side].roles[mate.id]) * routine))
         }
         guard let index = random.weightedIndex(weights) else { return nil }
         return mates[index]
@@ -312,6 +315,7 @@ extension MatchSimulation {
         var chain = FootballRandom(seed: Self.mix(seed, UInt64(minute), side == .home ? 0xB1 : 0xB2))
         let rivalKeeper = keeper(of: side.other, players: players)
         let xg = type.meanXG * (0.7 + 0.6 * random.unit()) * (type == .setPiece ? 1 + self[side].setPieceBoost : 1)
+            * (self[side].setPieceRoutine?.xgFactor(for: buildUp) ?? 1)
         var finishing = Double(type == .header ? shooter.attributes[.heading] : shooter.attributes[.finishing])
         if type == .setPiece || type == .longRange { finishing = Double(shooter.attributes[.passing] + shooter.attributes[.finishing]) / 2 }
         var shooterFactor = min(1.35, max(0.7, 1 + (finishing - 10) * 0.03))

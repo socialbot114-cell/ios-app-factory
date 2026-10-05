@@ -9,6 +9,7 @@ struct FootballDashboardView: View {
     let onShowPress: () -> Void
     var onOpenAgenda: ((FootballAgendaItem) -> Void)? = nil
     @State private var confirmsQuickSimulation = false
+    @State private var agendaSort: AgendaSort = .deadline
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -41,6 +42,7 @@ struct FootballDashboardView: View {
                 }
                 cupPanel
                 agendaPanel
+                preparationPanel
                 if !career.offers.isEmpty && !career.isFired {
                     FootballOffersPanel(career: $career, onAlert: onAlert)
                 }
@@ -83,13 +85,25 @@ struct FootballDashboardView: View {
                 Label("Nenhuma pendência com prazo", systemImage: "checkmark.circle")
                     .font(.subheadline)
             }
-            ForEach(career.agenda) { item in
+            if career.agenda.count > 1 {
+                Picker("Ordenar", selection: $agendaSort) {
+                    ForEach(AgendaSort.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("agenda-sort")
+            }
+            ForEach(career.sortedAgenda(by: agendaSort)) { item in
                 Button {
                     if let onOpenAgenda { onOpenAgenda(item) }
                     else { openAgenda(item.destination) }
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(item.title).font(.subheadline.weight(.bold))
+                        HStack(spacing: 6) {
+                            Text(item.title).font(.subheadline.weight(.bold))
+                            Spacer(minLength: 4)
+                            PillLabel(text: item.owner.title.uppercased(), tint: .gray)
+                            if item.importance >= 3 { PillLabel(text: "ALTA", tint: .red) }
+                        }
                         Text(item.deadlineText).font(.caption.weight(.semibold))
                             .foregroundStyle(item.expiresOnNextAdvance ? Color.orange : Color.secondary)
                         Text(item.detail).font(.caption).foregroundStyle(.secondary)
@@ -100,6 +114,31 @@ struct FootballDashboardView: View {
             }
         }
         .accessibilityIdentifier("football-agenda")
+    }
+
+    /// Preparação do próximo jogo: o que já está pronto e o que falta.
+    @ViewBuilder
+    private var preparationPanel: some View {
+        let items = career.matchPreparation()
+        if !items.isEmpty {
+            FactoryPanel(title: "Preparação do próximo jogo · \(items.filter(\.done).count)/\(items.count)", systemImage: "checklist") {
+                ForEach(items) { item in
+                    Button { openAgenda(item.destination) } label: {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: item.done ? "checkmark.circle.fill" : "circle").foregroundStyle(item.done ? Color.green : Color.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.title).font(.subheadline.weight(.semibold))
+                                Text(item.detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("prep-\(item.id)")
+                }
+            }
+            .accessibilityIdentifier("match-preparation")
+        }
     }
 
     private func openAgenda(_ destination: FootballAgendaDestination) {

@@ -153,7 +153,7 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 - [x] F4-01 Exibir projeção de caixa incluindo compromissos já assumidos. Projeção de caixa com compromissos (`FootballCashProjection`); sessão 01, 6 testes. Suíte 218/218 no Docker.
 - [x] F4-02 Criar um projeto comercial com briefing, duração e avaliação posterior. Coleção da loja como projeto com briefing, duração e avaliação (`FootballCommercialProjects`); sessão 01, 6 testes. Suíte 218/218 no Docker.
 - [x] F4-03 Criar uma reunião de diretoria com pedido e resposta futura. Reunião de diretoria com pedido e resposta futura (`FootballBoardMeetings`); sessão 01, 7 testes. Suíte 218/218 no Docker.
-- [ ] F4-04 Integrar atividades pessoais numa agenda com conflitos claros. Plano de até 6 dias com conflitos e avisos (`FootballPersonalAgenda`, sessão 01); domínio 8 testes, UI aguarda build iOS.
+- [x] F4-04 Integrar atividades pessoais numa agenda com conflitos claros. Plano de até 6 dias com conflitos e avisos (`FootballPersonalAgenda`, sessão 01); domínio 8 testes, UI aguarda build iOS. Verificado em captura (`personal-plan`, `project-ledger`).
 - [x] F4-05 Permitir delegar uma rotina com custo, limite e relatório. Delegação ao gerente comercial (`FootballCommercialDelegation`, sessão 01); domínio 6 testes.
 - [x] F4-06 Balancear retornos para evitar combinações de ações sem custo que dominem a carreira. Balanceamento: promoção da loja, aportes repetidos e atividades pagas (`FootballBalance`, sessão 01); 6 testes.
 - [x] F4-07 Verificar comportamento em troca de clube, demissão e nova temporada. Troca de clube, demissão e nova temporada sem herdar projetos do clube antigo (`FootballClubTransition`, sessão 01).
@@ -194,9 +194,9 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** ajudar o treinador a priorizar a semana.
 
-- [ ] GES-01 Organizar pendências por prazo, importância e responsável.
-- [ ] GES-02 Exibir compromissos e preparação do próximo jogo numa agenda.
-- [ ] GES-03 Mostrar o que vence antes do próximo avanço de calendário.
+- [x] GES-01 Organizar pendências por prazo, importância e responsável. Agenda ordenável por prazo, importância e responsável (`FootballManagerBoard`); testes de domínio.
+- [x] GES-02 Exibir compromissos e preparação do próximo jogo numa agenda. Preparação do próximo jogo com checklist (rival, escalação, condição, estilo, promessas, coletiva).
+- [x] GES-03 Mostrar o que vence antes do próximo avanço de calendário. Itens que vencem antes do próximo avanço, do mais importante ao menos.
 - [x] GES-04 Criar resumo pós-jogo com mudanças e causas, não apenas números finais. Resumo pós-jogo com mudanças, causas, números do jogo e atenção (`FootballPostMatchSummary`); verificado em captura.
 - [x] GES-05 Permitir avanço rápido até decisões escolhidas pelo jogador. O avanço rápido para só onde o jogador escolheu (pausas de decisões, lesões, coletiva e propostas em Ajustes); `FootballAdvancePausesTests`.
 
@@ -207,9 +207,9 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 **Objetivo:** preparar, executar e avaliar um plano de jogo.
 
 - [x] TAC-01 Salvar planos A/B com escalação e instruções. Planos A/B salvos, aplicados antes do jogo e trocados ao vivo (`FootballTacticalPlans`); verificado em captura.
-- [ ] TAC-02 Comparar preparo físico, funções e ameaças observadas do rival.
-- [ ] TAC-03 Relacionar treino e rotação ao calendário e às promessas aos atletas.
-- [ ] TAC-04 Implementar um conjunto inicial de bolas paradas com efeito no motor.
+- [x] TAC-02 Comparar preparo físico, funções e ameaças observadas do rival. Comparativo do rival com ameaças observadas ou estimadas (`FootballMatchPreparation`, sessão 01).
+- [x] TAC-03 Relacionar treino e rotação ao calendário e às promessas aos atletas. Desgaste projetado, promessas com prazo e foco de treino sugerido (sessão 01).
+- [x] TAC-04 Implementar um conjunto inicial de bolas paradas com efeito no motor. Rotinas de bola parada com efeito no motor, calibração preservada (`FootballSetPieces`, sessão 01); 5 testes.
 - [x] TAC-05 Vincular explicações pós-jogo aos dados reais; evitar atribuir causalidade que o motor não registra. Resumo traz só números e sequências registrados; mudanças táticas aparecem como sequência, não causa.
 
 **Aceite:** duas escolhas táticas plausíveis têm trade-offs verificáveis; nenhum controle novo é apenas decorativo.
@@ -259,7 +259,7 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [x] MSG-01 Agrupar mensagens por conversa, pessoa e assunto. Mensagens agrupadas por pessoa ou assunto (`FootballConversations`); seletor Por conversa verificado em captura.
 - [x] MSG-02 Abrir conversa específica por notificação. Assunto individual acionável; threads completas ainda pertencem a MSG-01/04.
 - [x] MSG-03 Marcar leitura por conversa em vez de ler toda a inbox ao abrir o app. Leitura individual por mensagem; UI contextual e teste de domínio aprovados.
-- [ ] MSG-04 Adicionar respostas contextuais e follow-ups agendados.
+- [x] MSG-04 Adicionar respostas contextuais e follow-ups agendados. Responder pedido marcando conversa (compromisso na agenda, cobrança se esquecida) e botão Ter a conversa.
 - [x] MSG-05 Distinguir lida, respondida, resolvida e expirada. Estados nova, lida, respondida, resolvida, sem resposta e dispensada.
 - [x] MSG-06 Consultar promessas e anexos: ficha, proposta, relatório ou contrato. Anexos de ficha, escalação, proposta, contrato, compromisso e origem; verificado em captura.
 
@@ -282,12 +282,12 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** oferecer prognósticos opcionais com análise e acompanhamento.
 
-- [ ] PAL-01 Confirmar papel do app antes de ampliar suas regras.
-- [ ] PAL-02 Exibir dados públicos de forma, desfalques e confrontos.
-- [ ] PAL-03 Persistir rascunho do bilhete e mostrar fechamento do mercado.
-- [ ] PAL-04 Abrir detalhe do bilhete com partidas e justificativa da liquidação.
-- [ ] PAL-05 Criar perfis de palpiteiros e histórico comparável de acertos.
-- [ ] PAL-06 Preservar separação entre fichas, dinheiro pessoal e caixa do clube.
+- [x] PAL-01 Confirmar papel do app antes de ampliar suas regras. Palpite+ (sessão 18, `FootballBettingInsight`): domínio testado e tela capturada (`betting-insight`).
+- [x] PAL-02 Exibir dados públicos de forma, desfalques e confrontos. Palpite+ (sessão 18, `FootballBettingInsight`): domínio testado e tela capturada (`betting-insight`).
+- [x] PAL-03 Persistir rascunho do bilhete e mostrar fechamento do mercado. Palpite+ (sessão 18, `FootballBettingInsight`): domínio testado e tela capturada (`betting-insight`).
+- [x] PAL-04 Abrir detalhe do bilhete com partidas e justificativa da liquidação. Palpite+ (sessão 18, `FootballBettingInsight`): domínio testado e tela capturada (`betting-insight`).
+- [x] PAL-05 Criar perfis de palpiteiros e histórico comparável de acertos. Palpite+ (sessão 18, `FootballBettingInsight`): domínio testado e tela capturada (`betting-insight`).
+- [x] PAL-06 Preservar separação entre fichas, dinheiro pessoal e caixa do clube. Palpite+ (sessão 18, `FootballBettingInsight`): domínio testado e tela capturada (`betting-insight`).
 
 **Aceite:** cada resultado é rastreável ao jogo real da carreira e liquidado uma vez; participação é opcional.
 
@@ -295,9 +295,9 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** montar uma estratégia fantasy a cada rodada.
 
-- [ ] ROD-01 Mostrar prazo de fechamento, jogos e disponibilidade dos atletas.
-- [ ] ROD-02 Filtrar por preço, forma, confronto e risco de ausência.
-- [ ] ROD-03 Persistir rascunho e permitir comparar escolhas de capitão.
+- [x] ROD-01 Mostrar prazo de fechamento, jogos e disponibilidade dos atletas. Rodada (sessão 18, `FootballFantasyInsight`): domínio testado e tela capturada (`fantasy-insight`).
+- [x] ROD-02 Filtrar por preço, forma, confronto e risco de ausência. Rodada (sessão 18, `FootballFantasyInsight`): domínio testado e tela capturada (`fantasy-insight`).
+- [x] ROD-03 Persistir rascunho e permitir comparar escolhas de capitão. Rodada (sessão 18, `FootballFantasyInsight`): domínio testado e tela capturada (`fantasy-insight`).
 - [ ] ROD-04 Exibir pontuação por atleta e componente após a rodada.
 - [ ] ROD-05 Criar liga privada fictícia com personagens recorrentes.
 - [ ] ROD-06 Compartilhar resultado no Chuteira sem duplicar recompensas.
@@ -326,7 +326,7 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [ ] NEG-03 Negociar naming rights com condições financeiras e reação da torcida.
 - [ ] NEG-04 Transformar projeto social em etapas com resultados registrados.
 - [ ] NEG-05 Agendar amistoso/turnê antes da execução, incluindo desgaste e receita.
-- [ ] NEG-06 Mostrar retorno realizado versus previsto de cada projeto.
+- [x] NEG-06 Mostrar retorno realizado versus previsto de cada projeto. Verificado em captura (`personal-plan`, `project-ledger`).
 
 **Aceite:** pelo menos um projeto exige planejamento, acompanhamento e avaliação final; receita não é bônus instantâneo sem contexto.
 
@@ -334,11 +334,11 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** apoiar prioridades escolhidas e compromissos do mundo.
 
-- [ ] MET-01 Identificar origem: jogador, diretoria, atleta ou personagem.
-- [ ] MET-02 Permitir escolher e acompanhar um conjunto limitado de metas pessoais.
-- [ ] MET-03 Abrir a ação contextual que ajuda a cumprir cada meta.
-- [ ] MET-04 Exibir eventos que contribuíram para o progresso.
-- [ ] MET-05 Registrar conclusão, falha e substituição sem perder histórico.
+- [x] MET-01 Identificar origem: jogador, diretoria, atleta ou personagem. Metas (sessão 18, `FootballGoals`): domínio testado e tela capturada (`goals-origin`).
+- [x] MET-02 Permitir escolher e acompanhar um conjunto limitado de metas pessoais. Metas (sessão 18, `FootballGoals`): domínio testado e tela capturada (`goals-origin`).
+- [x] MET-03 Abrir a ação contextual que ajuda a cumprir cada meta. Metas (sessão 18, `FootballGoals`): domínio testado e tela capturada (`goals-origin`).
+- [x] MET-04 Exibir eventos que contribuíram para o progresso. Metas (sessão 18, `FootballGoals`): domínio testado e tela capturada (`goals-origin`).
+- [x] MET-05 Registrar conclusão, falha e substituição sem perder histórico. Metas (sessão 18, `FootballGoals`): domínio testado e tela capturada (`goals-origin`).
 
 **Aceite:** progresso corresponde a ações reais; recompensas são únicas e metas não incentivam cliques sem propósito.
 
@@ -346,11 +346,11 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** preservar memória afetiva e legado.
 
-- [ ] TRO-01 Registrar data, clube, partida e participantes do desbloqueio.
-- [ ] TRO-02 Abrir o contexto histórico da conquista.
-- [ ] TRO-03 Exibir progresso verificável de conquistas em andamento.
-- [ ] TRO-04 Criar linha do tempo de títulos, recordes e temporadas.
-- [ ] TRO-05 Permitir escolher destaques do perfil e compartilhar um marco.
+- [x] TRO-01 Registrar data, clube, partida e participantes do desbloqueio. Troféus (sessão 18, `FootballLegacy`): domínio testado e tela capturada (`trophy-legacy`).
+- [x] TRO-02 Abrir o contexto histórico da conquista. Troféus (sessão 18, `FootballLegacy`): domínio testado e tela capturada (`trophy-legacy`).
+- [x] TRO-03 Exibir progresso verificável de conquistas em andamento. Troféus (sessão 18, `FootballLegacy`): domínio testado e tela capturada (`trophy-legacy`).
+- [x] TRO-04 Criar linha do tempo de títulos, recordes e temporadas. Troféus (sessão 18, `FootballLegacy`): domínio testado e tela capturada (`trophy-legacy`).
+- [x] TRO-05 Permitir escolher destaques do perfil e compartilhar um marco. Troféus (sessão 18, `FootballLegacy`): domínio testado e tela capturada (`trophy-legacy`).
 
 **Aceite:** uma conquista pode ser revisitada com seu contexto original mesmo após mudança de clube.
 
@@ -395,7 +395,7 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** construir relações recíprocas com pessoas persistentes.
 
-- [ ] CON-01 Abrir ficha específica pela busca e por mensagens.
+- [x] CON-01 Abrir ficha específica pela busca e por mensagens. Mensagens do empresário abrem o cartão de contato; ficha por busca já existia.
 - [x] CON-02 Registrar temas, histórico, interesses e promessas. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
 - [x] CON-03 Oferecer conversa contextual em vez de uma única ação genérica por papel. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
 - [x] CON-04 Permitir que o contato proponha oportunidade ou peça ajuda. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
@@ -409,23 +409,23 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 **Objetivo:** controlar a experiência do FutOS e da simulação.
 
 - [ ] AJU-01 Centralizar saves, nova carreira, importação/exportação se incluídas no escopo.
-- [ ] AJU-02 Configurar notificações por prioridade e tipo.
-- [ ] AJU-03 Configurar pausas do avanço rápido e níveis de delegação.
-- [ ] AJU-04 Adicionar preferências de acessibilidade e reduzir movimento.
-- [ ] AJU-05 Separar ferramentas de configuração de tarefas de gestão do clube.
-- [ ] AJU-06 Mostrar regras ativas dos desafios e mudanças de dificuldade.
+- [x] AJU-02 Configurar notificações por prioridade e tipo. Ajustes (sessão 18): preferências testadas e tela capturada (`settings-phone`).
+- [x] AJU-03 Configurar pausas do avanço rápido e níveis de delegação. Ajustes (sessão 18): preferências testadas e tela capturada (`settings-phone`).
+- [x] AJU-04 Adicionar preferências de acessibilidade e reduzir movimento. Ajustes (sessão 18): preferências testadas e tela capturada (`settings-phone`).
+- [x] AJU-05 Separar ferramentas de configuração de tarefas de gestão do clube. Ajustes (sessão 18): preferências testadas e tela capturada (`settings-phone`).
+- [x] AJU-06 Mostrar regras ativas dos desafios e mudanças de dificuldade. Ajustes (sessão 18): preferências testadas e tela capturada (`settings-phone`).
 
 **Aceite:** preferências sobrevivem à reabertura e não alteram silenciosamente as regras de um desafio.
 
 ## 5. FutOS — integração transversal
 
-- [ ] OS-01 Permitir abrir o destino específico ao tocar em aviso da tela de bloqueio.
-- [ ] OS-02 Ordenar notificações por prioridade e vencimento reais.
-- [ ] OS-03 Fazer busca abrir clube, contato, atleta e seção exatos.
-- [ ] OS-04 Distinguir selos de novidade de contadores de tarefas ativas.
+- [x] OS-01 Permitir abrir o destino específico ao tocar em aviso da tela de bloqueio. FutOS (sessão 18): estado persistente testado e telas conferidas; UITests F5 passando no iPhone.
+- [x] OS-02 Ordenar notificações por prioridade e vencimento reais. FutOS (sessão 18): estado persistente testado e telas conferidas; UITests F5 passando no iPhone.
+- [x] OS-03 Fazer busca abrir clube, contato, atleta e seção exatos. FutOS (sessão 18): estado persistente testado e telas conferidas; UITests F5 passando no iPhone.
+- [x] OS-04 Distinguir selos de novidade de contadores de tarefas ativas. FutOS (sessão 18): estado persistente testado e telas conferidas; UITests F5 passando no iPhone.
 - [ ] OS-05 Preservar aba, rolagem e rascunho ao alternar apps quando relevante.
-- [ ] OS-06 Oferecer feedback contextual de ação e histórico persistente do resultado.
-- [ ] OS-07 Explicar bateria/energia e sinal/humor com acessibilidade equivalente.
+- [x] OS-06 Oferecer feedback contextual de ação e histórico persistente do resultado. FutOS (sessão 18): estado persistente testado e telas conferidas; UITests F5 passando no iPhone.
+- [x] OS-07 Explicar bateria/energia e sinal/humor com acessibilidade equivalente. FutOS (sessão 18): estado persistente testado e telas conferidas; UITests F5 passando no iPhone.
 - [ ] OS-08 Verificar retorno de sheets, partida ao vivo e destinos aninhados.
 - [ ] OS-09 Padronizar estados vazios úteis: informar quando e como haverá conteúdo.
 

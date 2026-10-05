@@ -84,6 +84,7 @@ extension FootballCareer {
             if atHome { state.attackBoost += stadiumAtmosphere }
             let sessions = ([trainingFocus] + [secondaryTrainingFocus].compactMap { $0 }).filter { $0 == .setPieces }.count
             state.setPieceBoost = 0.06 * Double(sessions)
+            state.setPieceRoutine = matchSetPieceRoutine(lineup: lineupIDs)
             if opponentPrep, let fixture = fixtures.first(where: { $0.matchDay == matchDayIndex && $0.involves(teamID) && !$0.isPlayed }) {
                 if scoutedOpponentStyle(for: fixture).isCorrect {
                     state.attackBoost += 1.5

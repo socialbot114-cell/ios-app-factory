@@ -96,4 +96,44 @@ final class FootballConversationsTests: XCTestCase {
         XCTAssertEqual(Set(attachments.map(\.id)).count, attachments.count)
         XCTAssertFalse(MessageAttachment.fact("x").symbol.isEmpty)
     }
+
+    // MARK: - MSG-04 e CON-01
+
+    func testScheduledMeetingAnswersTheRequestAndIsChargedIfForgotten() throws {
+        var career = makeCareer()
+        let athlete = try benched(career)
+        career.inbox = []
+        career.addInbox(.playerPlayingTime, title: "Quer jogar", body: "x", playerID: athlete.id)
+        let moral = career.player(athlete.id)?.morale ?? 0
+        let meeting = try XCTUnwrap(career.replyWithMeeting(playerID: athlete.id))
+        XCTAssertEqual(meeting.kind, .followUp)
+        XCTAssertEqual(career.player(athlete.id)?.morale, min(100, moral + 2))
+        let request = try XCTUnwrap(career.inbox.first { $0.title == "Quer jogar" })
+        XCTAssertEqual(career.messageState(request), .answered)
+        XCTAssertTrue(career.agenda.contains { $0.id == "commitment-\(meeting.id)" }, "A conversa entra na agenda")
+        XCTAssertNil(career.replyWithMeeting(playerID: athlete.id), "Uma conversa marcada por atleta")
+
+        // A mensagem de origem oferece o botão e a conversa resolve o compromisso.
+        let notice = try XCTUnwrap(career.inbox.first { $0.sourceFactID == meeting.factID })
+        XCTAssertEqual(career.openMeetingCommitment(for: notice)?.id, meeting.id)
+        var held = career
+        XCTAssertTrue(held.holdMeeting(commitmentID: meeting.id))
+        XCTAssertNil(held.openMeetingCommitment(for: notice))
+        XCTAssertEqual(held.commitments.first { $0.id == meeting.id }?.state, .fulfilled)
+
+        // Esquecida: o atleta se irrita no prazo.
+        career.matchDayIndex += 5
+        career.processDueItems()
+        XCTAssertEqual(career.commitments.first { $0.id == meeting.id }?.state, .expired)
+        XCTAssertLessThan(career.player(athlete.id)?.morale ?? 100, min(100, moral + 2))
+    }
+
+    func testAgentMessagesPointToTheContactCard() throws {
+        var career = makeCareer()
+        career.inbox = []
+        career.addInbox(.agent, title: "Empresário", body: "Tem proposta")
+        let attachments = career.attachments(for: try XCTUnwrap(career.inbox.last))
+        XCTAssertEqual(attachments, [.contact(.agent)])
+        XCTAssertEqual(MessageAttachment.contact(.agent).id, "contact-agent")
+    }
 }

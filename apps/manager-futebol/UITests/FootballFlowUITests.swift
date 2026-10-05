@@ -37,8 +37,13 @@ final class FootballFlowUITests: XCTestCase {
         app.buttons["phone-home"].tap()
 
         app.buttons["dock-manager"].tap()
-        // Conteúdo fora da viewport pode não existir ainda na árvore de acessibilidade.
-        for _ in 0..<6 {
+        // Conteúdo fora da viewport pode não existir ainda na árvore de acessibilidade. A rolagem do Gestor é preservada,
+        // então volta ao topo antes de procurar para baixo (o painel de partida fica no começo da tela).
+        for _ in 0..<5 {
+            if app.buttons["play-match"].exists { break }
+            app.swipeDown()
+        }
+        for _ in 0..<8 {
             if app.buttons["play-match"].exists { break }
             app.swipeUp()
         }

@@ -52,6 +52,7 @@ struct FootballSquadView: View {
                     }
                 }
                 FootballTacticalPlansPanel(career: $career)
+                FootballMatchPrepHub(career: $career)
                 instructionsPanel
                 rolesPanel
                 trainingPanel
