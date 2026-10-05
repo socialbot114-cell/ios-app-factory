@@ -461,16 +461,17 @@ struct FootballLiveMatchView: View {
     private func pitchPanel(_ live: LiveMatchState) -> some View {
         FactoryPanel(title: "Mapa de finalizações", systemImage: "scope") {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Prévia ilustrativa · jogadores 3D", systemImage: "figure.soccer")
+                Label("Ambiente da partida", systemImage: "figure.soccer")
                     .font(.caption.weight(.heavy))
                     .foregroundStyle(FootballTheme.accent)
-                Image("MatchScenePilot")
+                Image(matchSceneName(live))
                     .resizable()
                     .interpolation(.high)
-                    .scaledToFit()
+                    .scaledToFill()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 210)
-                    .accessibilityLabel("Cena isométrica de seis jogadores low-poly disputando a bola")
+                    .frame(height: 170)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .accessibilityLabel("Ilustração do estádio durante a partida")
             }
             FootballShotMap(sim: live.sim)
             Text("Cada bolinha é uma finalização; as maiores têm mais chance de gol. O anel marca os gols.")
@@ -479,6 +480,12 @@ struct FootballLiveMatchView: View {
             Text("Mapa de calor do seu time").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
             FootballHeatMap(heat: teamHeat(live.userSide), color: career.selectedClub?.primaryColor ?? FootballTheme.accent)
         }
+    }
+
+    /// Copa vai para a transmissão, rodadas ímpares à noite e as demais de dia.
+    private func matchSceneName(_ live: LiveMatchState) -> String {
+        if career.fixtures.first(where: { $0.id == live.fixtureID })?.competition.isCup == true { return "MatchSceneTv" }
+        return live.matchDay % 2 == 1 ? "MatchSceneNoite" : "MatchSceneDia"
     }
 
     private func teamHeat(_ side: MatchSideState) -> [Int] {

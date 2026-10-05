@@ -162,7 +162,7 @@ def mat_gramado(name="Gramado", a=None, b=None, faixa=1.0, padrao="listras", xad
     else:
         fonte = fl
     md = nt.nodes.new("ShaderNodeMath")
-    md.operation = "MODULO"
+    md.operation = "FLOORED_MODULO"
     md.inputs[1].default_value = 2.0
     nt.links.new(fonte.outputs[0], md.inputs[0])
     # fibra
@@ -182,7 +182,7 @@ def mat_gramado(name="Gramado", a=None, b=None, faixa=1.0, padrao="listras", xad
     var.inputs[7].default_value = (a[0] * 0.5, a[1] * 0.55, a[2] * 0.5, 1)
     nm = nt.nodes.new("ShaderNodeMath")
     nm.operation = "MULTIPLY"
-    nm.inputs[1].default_value = 0.35
+    nm.inputs[1].default_value = 0.55
     nt.links.new(n.outputs["Fac"], nm.inputs[0])
     nt.links.new(nm.outputs[0], var.inputs["Factor"])
     nt.links.new(var.outputs[2], bs.inputs["Base Color"])
@@ -404,6 +404,34 @@ class Lote:
         vs = [(cx + x * raio * esc[0], cy + y * raio * esc[1], cz + z * raio * esc[2]) for x, y, z in _ESF[0]]
         self._add(vs, _ESF[1], mi)
 
+    def telhado(self, centro, dim, mi=0, eixo="x"):
+        """Telhado de duas aguas (prisma). dim=(comprimento, largura, altura); cumeeira no eixo `eixo`."""
+        cx, cy, cz = centro
+        a, b, h = dim[0] / 2, dim[1] / 2, dim[2]
+        if eixo == "x":
+            v = [(cx - a, cy - b, cz), (cx + a, cy - b, cz), (cx + a, cy + b, cz), (cx - a, cy + b, cz),
+                 (cx - a, cy, cz + h), (cx + a, cy, cz + h)]
+            f = [(0, 3, 2, 1), (0, 1, 5, 4), (2, 3, 4, 5), (0, 4, 3), (1, 2, 5)]
+        else:
+            v = [(cx - b, cy - a, cz), (cx + b, cy - a, cz), (cx + b, cy + a, cz), (cx - b, cy + a, cz),
+                 (cx, cy - a, cz + h), (cx, cy + a, cz + h)]
+            f = [(0, 3, 2, 1), (0, 1, 4), (1, 2, 5, 4), (2, 3, 5), (3, 0, 4, 5)]
+            f = [(0, 3, 2, 1), (0, 1, 4), (1, 2, 5, 4), (2, 3, 5), (3, 0, 4, 5)]
+        self._add(v, f, mi)
+
+    def cilindro(self, centro, raio, altura, mi=0, seg=8):
+        cx, cy, cz = centro
+        v = []
+        for z in (0, altura):
+            for i in range(seg):
+                a = math.tau * i / seg
+                v.append((cx + raio * math.cos(a), cy + raio * math.sin(a), cz + z))
+        f = [tuple(range(seg - 1, -1, -1)), tuple(range(seg, 2 * seg))]
+        for i in range(seg):
+            j = (i + 1) % seg
+            f.append((i, j, seg + j, seg + i))
+        self._add(v, f, mi)
+
     def criar(self):
         me = bpy.data.meshes.new(self.nome)
         me.from_pydata(self.V, [], self.F)
@@ -582,6 +610,11 @@ def render(path, res_x=1200, res_y=900, samples=64, transparente=False, motor="E
     except TypeError:
         sc.view_settings.view_transform = "Standard"
     sc.render.filepath = path
+    if "--so-glb" in sys.argv:       # 2o passe: nao renderiza, so exporta GLB
+        glb = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))), "glb",
+                           os.path.splitext(os.path.basename(path))[0] + ".glb")
+        exportar_glb(glb)
+        return
     bpy.ops.render.render(write_still=True)
     print("Render OK:", path)
 

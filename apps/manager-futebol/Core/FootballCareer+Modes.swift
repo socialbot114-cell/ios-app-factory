@@ -192,6 +192,7 @@ extension FootballCareer {
 
     mutating func bump(_ counter: String, by amount: Int = 1) {
         counters[counter, default: 0] += amount
+        logQuestContribution(counter: counter, amount: amount)
     }
 
     // MARK: - Tutorial

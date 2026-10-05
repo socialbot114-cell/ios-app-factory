@@ -72,15 +72,20 @@ struct BoardMeeting: Codable, Equatable, Identifiable {
 struct ProjectsState: Codable, Equatable {
     var meetings: [BoardMeeting] = []
     var nextMeetingID = 1
+    /// Agenda pessoal do treinador (F4-04).
+    var personalPlan: [PlannedActivity] = []
+    var nextPlanID = 1
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID }
+    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         meetings = try container.decodeIfPresent([BoardMeeting].self, forKey: .meetings) ?? []
         nextMeetingID = try container.decodeIfPresent(Int.self, forKey: .nextMeetingID) ?? 1
+        personalPlan = try container.decodeIfPresent([PlannedActivity].self, forKey: .personalPlan) ?? []
+        nextPlanID = try container.decodeIfPresent(Int.self, forKey: .nextPlanID) ?? 1
     }
 }
 

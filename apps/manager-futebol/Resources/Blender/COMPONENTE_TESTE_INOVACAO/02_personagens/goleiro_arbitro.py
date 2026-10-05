@@ -52,6 +52,10 @@ if __name__ == "__main__":
     CENAS[q]()
     LB.chao_sombra()
     al, d, az, el = CAMERAS[q]
+    import bpy
+    vs = [o.matrix_world @ v.co for o in bpy.data.objects if o.type == "MESH" and o.name != "ChaoSombra" for v in o.data.vertices]
+    if vs:  # centra a camera no conjunto
+        al = (sum(v.x for v in vs) / len(vs), sum(v.y for v in vs) / len(vs), al[2])
     LB.camera_orbita(al, d, az, el, lente=65)
     LB.luz_estudio(fundo=((0.80, 0.86, 0.92), (0.45, 0.55, 0.62)))
     LB.render(out, 900, 900 if q != "C" else 700)

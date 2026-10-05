@@ -1,5 +1,5 @@
-"""04_cenas_teste / catalogo_teste.py — lista o que renderizar para avaliar qualidade.
-Sem Blender instalado aqui, este script valida a sintaxe e gera o guia.
+"""04_cenas_teste / catalogo_teste.py — valida a sintaxe de todos os componentes.
+Para renderizar tudo e gerar o catalogo: render_tudo.py + gerar_catalogo.py.
 
 Para renderizar (com Blender instalado):
   blender --background --python 01_estadio/gramado.py -- exports/png/gramado_C.png C
@@ -20,6 +20,7 @@ ALVOS = [
     "01_estadio/gramado.py",
     "01_estadio/arquibancada_modular.py",
     "01_estadio/cobertura_placar.py",
+    "02_personagens/humano.py",
     "02_personagens/jogador.py",
     "02_personagens/goleiro_arbitro.py",
     "03_props/bola_trave.py",

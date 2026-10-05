@@ -40,7 +40,7 @@ POSES = {
     "defesa": dict(lean=0.32, hl=(0.65, 0.35), hr=(0.65, 0.35), kl=1.0, kr=1.0,
                    al=(1.15, 0.55), ar=(1.15, 0.55), el=0.45, er=0.45),
     "mergulho": dict(lean=0.0, hl=(0.1, 0.1), hr=(-0.2, 0.2), kl=0.2, kr=0.6,
-                     al=(3.0, 0.1), ar=(3.0, 0.1), el=0.0, er=0.0, roll=1.25, elev=0.55),
+                     al=(2.55, 0.45), ar=(2.55, 0.45), el=0.0, er=0.0, roll=1.25, elev=0.55),
     "apito": dict(lean=0.05, hl=(0.1, 0.07), hr=(-0.1, 0.07), kl=0.1, kr=0.15,
                   al=(0.05, 0.2), ar=(2.15, 0.15), el=0.2, er=2.2),
     "cartao": dict(lean=0.0, hl=(0.1, 0.07), hr=(-0.1, 0.07), kl=0.1, kr=0.15,
@@ -59,6 +59,7 @@ BRACO, ANTEBRACO = 0.14, 0.135
 TRONCO = 0.30
 Z_QUADRIL = 0.43
 RAIO_CABECA = 0.175
+Z_CHAO = 0.0   # altura do piso onde os pes pousam (a cena de estadio usa 0.06)
 
 
 def _dir(flex, abd, lado):
@@ -96,7 +97,7 @@ def criar_humano(nome, x=0.0, y=0.0, yaw=0.0, olhar_para=None, papel="jogador", 
                  detalhe=LB.PAL["ouro"], bota=(0.03, 0.03, 0.035), numero=None,
                  pele="morena", cabelo="curto", cor_cabelo=(0.05, 0.035, 0.03),
                  capitao=False, escala=1.0, cartao=None, luvas=(0.92, 0.92, 0.9),
-                 gola=True, listra_meia=True):
+                 gola=True, listra_meia=True, acessorio=None):
     """Cria um personagem e devolve o root (Empty). Todos os filhos ficam sob ele."""
     antes = set(bpy.data.objects)
     p = dict(POSES[pose] if isinstance(pose, str) else pose)
@@ -252,6 +253,9 @@ def criar_humano(nome, x=0.0, y=0.0, yaw=0.0, olhar_para=None, papel="jogador", 
         LB.box(f"{nome} prancheta", sk["hand_l"] + Vector((0, 0.04, 0.0)), (0.11, 0.012, 0.15),
                LB.mat(f"{nome}|prancheta", (0.9, 0.9, 0.85), 0.5), 0.004, rot=(0.3, 0, 0))
 
+    if acessorio:   # gancho: acessorio(ctx) cria pecas extras (bandeja, bone, caixa...) antes da fusao
+        acessorio(dict(sk=sk, neck=neck, up=up, head=H, centro=centro, nome=nome, pele=m_pele, camisa=m_camisa, detalhe=m_det))
+
     # ---------------- funde tudo em UMA malha (aplica bisel/curvas/texto) e posiciona
     novos = [o for o in bpy.data.objects if o not in antes]
     root = LB.fundir(novos, nome)
@@ -263,7 +267,7 @@ def criar_humano(nome, x=0.0, y=0.0, yaw=0.0, olhar_para=None, papel="jogador", 
     if roll:  # centraliza o corpo deitado sobre (x, y)
         from mathutils import Euler
         off = Euler((0, roll, yaw), "XYZ").to_matrix() @ Vector((0, 0, 0.5 * escala))
-    root.location = (x - off.x, y - off.y, 0)
+    root.location = (x - off.x, y - off.y, Z_CHAO)
     root.rotation_euler = (0, roll, yaw)
     root.scale = (escala,) * 3
     return root

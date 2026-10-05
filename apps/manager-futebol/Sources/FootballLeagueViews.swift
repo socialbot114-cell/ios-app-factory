@@ -456,6 +456,16 @@ private struct FootballLeagueClubProfile: View {
 }
 
 struct FootballClubView: View {
+    /// O estádio muda de ilustração conforme a capacidade: pequeno, médio, grande e grande à noite.
+    static func stadiumImageName(capacity: Int) -> String {
+        switch capacity {
+        case ..<30_000: return "StadiumPequeno"
+        case ..<42_000: return "StadiumMedio"
+        case ..<50_000: return "StadiumGrande"
+        default: return "StadiumGrandeNoite"
+        }
+    }
+
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     let onStartChallenge: (ChallengeScenario) -> Void
@@ -501,13 +511,14 @@ struct FootballClubView: View {
                     }
                 }
                 FactoryPanel(title: "Estádio", systemImage: "sportscourt.fill") {
-                    Image("StadiumPilot")
+                    Image(Self.stadiumImageName(capacity: career.stadiumCapacity))
                         .resizable()
                         .interpolation(.high)
-                        .scaledToFit()
+                        .scaledToFill()
                         .frame(maxWidth: .infinity)
                         .frame(height: 190)
-                        .accessibilityLabel("Ilustração isométrica de um estádio de futebol")
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .accessibilityLabel("Ilustração do estádio do clube")
                     HStack {
                         Label(career.stadiumDisplayName, systemImage: "mappin.and.ellipse")
                             .font(.subheadline.weight(.semibold))

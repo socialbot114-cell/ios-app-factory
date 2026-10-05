@@ -92,15 +92,18 @@ struct CollectionProject: Codable, Equatable, Identifiable {
 struct CommercialState: Codable, Equatable {
     var collections: [CollectionProject] = []
     var nextID = 1
+    /// Gerente comercial que lança coleções sozinho (F4-05).
+    var delegation: CommercialDelegation? = nil
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case collections, nextID }
+    private enum CodingKeys: String, CodingKey { case collections, nextID, delegation }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         collections = try container.decodeIfPresent([CollectionProject].self, forKey: .collections) ?? []
         nextID = try container.decodeIfPresent(Int.self, forKey: .nextID) ?? 1
+        delegation = try container.decodeIfPresent(CommercialDelegation.self, forKey: .delegation)
     }
 }
 

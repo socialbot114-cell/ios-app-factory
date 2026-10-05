@@ -33,6 +33,7 @@ FACE = math.pi
 
 def montar_cena(noturno=False, torcida=True):
     LB.limpar_cena()
+    H.Z_CHAO = 0.06
     # --- estrutura
     G.variacao_c_premium()                       # campo + base + calcada + LED
     LB.colecao("Arquibancada")
@@ -44,7 +45,7 @@ def montar_cena(noturno=False, torcida=True):
     ARQ.criar_camarote_vip("norte", fileiras=6)
     COB.criar_cobertura(("norte", "oeste"), fileiras=6)
     COB.criar_placar("CASA 2 : 1 FORA", lado="oeste", fileiras=6)
-    refl = COB.criar_refletores(altura=5.6)
+    refl = COB.criar_refletores(altura=5.6, so_norte=True)
     COB.criar_publicidade(pular_sul=(-4.6, 4.6))
     # --- traves
     BT.criar_trave(x0=HL, lado=1, rede_densa=True, premium=True, nome="Trave D")
@@ -84,7 +85,7 @@ def montar_cena(noturno=False, torcida=True):
     H.arbitro("Bandeirinha", 0.6, -HW - 0.45, pose="parado", olhar_para=(0.6, 0), pele="morena", cabelo="curto")
     H.tecnico("Tecnico casa", -3.9, -HW - 0.62, yaw=0, pele="parda")
     H.tecnico("Tecnico fora", 3.9, -HW - 0.62, yaw=0, pele="clara")
-    BT.criar_bola(*bola, estilo="neon" if noturno else "classica", z=0.14)
+    BT.criar_bola(*bola, estilo="neon" if noturno else "classica", z=0.20)
     return refl
 
 
@@ -117,7 +118,7 @@ if __name__ == "__main__":
         for o in _b.data.objects:
             if o.name.startswith(('Casa 10','Fora 9','Bola')): print('DBG', o.name, o.type, tuple(round(v,2) for v in o.location), len(o.data.polygons) if o.type=='MESH' else 0, o.hide_render, [m.name for m in o.data.materials][:3] if o.type=='MESH' else '')
     camera(cam)
-    fundo = ((0.03, 0.05, 0.11), (0.01, 0.02, 0.05)) if noturno else ((0.62, 0.78, 0.95), (0.88, 0.93, 0.98))
+    fundo = ((0.015, 0.03, 0.07), (0.005, 0.01, 0.03)) if noturno else ((0.05, 0.30, 0.32), (0.55, 0.78, 0.76))
     LB.luz_estudio(noturno=noturno, fundo=fundo)
     if noturno:
         COB.luzes_refletores(refl, energia=5500)

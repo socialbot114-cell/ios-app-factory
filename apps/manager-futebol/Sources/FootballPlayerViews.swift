@@ -345,6 +345,8 @@ struct FootballRenewalSheet: View {
     @State private var message: String?
     @State private var didLoad = false
 
+    private var talk: RenewalTalk? { career.openTalk(for: playerID) }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -354,26 +356,49 @@ struct FootballRenewalSheet: View {
                             .font(.subheadline)
                         Text("Folga na folha salarial: \(FootballFormat.money(career.wageHeadroom))").font(.caption).foregroundStyle(.secondary)
                     }
-                    Section("Sua oferta") {
-                        Stepper("Salário: \(FootballFormat.money(wage))", value: $wage, in: 20_000...3_000_000, step: 5_000)
-                        Stepper("Duração: \(years) temporada(s)", value: $years, in: 1...5)
-                        Picker("Papel prometido", selection: $status) {
-                            ForEach(SquadStatus.allCases, id: \.self) { Text($0.title).tag($0) }
+                    Section("Conversa") {
+                        if let talk {
+                            Label(talk.stage.title, systemImage: "bubble.left.and.bubble.right.fill")
+                                .font(.subheadline.weight(.semibold))
+                                .accessibilityIdentifier("renewal-stage")
+                            Text("\(player.name) valoriza \(talk.topInterest.label). Confiança no treinador: \(career.trust(of: playerID)).")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Text("Rodadas: \(talk.rounds)/\(FootballCareer.maxProposalRounds) · responda até o dia \(talk.expiresWorldDay + 1) da carreira.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        } else if let reason = career.talkBlockReason(playerID: playerID) {
+                            Text(reason).font(.subheadline)
                         }
                     }
-                    if let message { Section { Text(message).font(.subheadline) } }
-                    Section {
-                        Button("Fazer oferta") { submit() }.accessibilityIdentifier("renewal-submit")
-                    }
-                    .onAppear {
-                        guard !didLoad else { return }
-                        didLoad = true
-                        wage = ask.wage
-                        years = ask.years
-                        status = ask.status
+                    if let talk {
+                        if talk.stage == .counter, let counter = talk.counterWage {
+                            Section("Contraproposta") {
+                                Text("\(player.name) aceita \(FootballFormat.money(counter)) por temporada.").font(.subheadline)
+                                Button("Aceitar contraproposta") { acceptCounter(talk.id) }
+                                    .accessibilityIdentifier("renewal-accept-counter")
+                            }
+                        }
+                        Section("Sua oferta") {
+                            Stepper("Salário: \(FootballFormat.money(wage))", value: $wage, in: 20_000...3_000_000, step: 5_000)
+                            Stepper("Duração: \(years) temporada(s)", value: $years, in: 1...5)
+                            Picker("Papel prometido", selection: $status) {
+                                ForEach(SquadStatus.allCases, id: \.self) { Text($0.title).tag($0) }
+                            }
+                        }
+                        if let message { Section { Text(message).font(.subheadline) } }
+                        Section {
+                            Button("Fazer oferta") { submit(talk.id) }.accessibilityIdentifier("renewal-submit")
+                            Button("Desistir da conversa", role: .destructive) {
+                                career.walkAwayFromTalk(talkID: talk.id)
+                                dismiss()
+                            }
+                            .accessibilityIdentifier("renewal-walk-away")
+                        }
+                    } else if let message {
+                        Section { Text(message).font(.subheadline) }
                     }
                 }
             }
+            .onAppear(perform: load)
             .navigationTitle("Renovação")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
@@ -381,15 +406,34 @@ struct FootballRenewalSheet: View {
         .tint(FootballTheme.accent)
     }
 
-    private func submit() {
-        switch career.offerRenewal(playerID: playerID, wage: wage, years: years, status: status) {
+    /// Abre a conversa (etapa de consulta) sozinha, quando o atleta aceita conversar, e carrega o pedido como ponto de partida.
+    private func load() {
+        guard !didLoad else { return }
+        didLoad = true
+        if career.openTalk(for: playerID) == nil, career.talkBlockReason(playerID: playerID) == nil {
+            career.startRenewalTalk(playerID: playerID)
+        }
+        if let ask = career.contractAsk(playerID: playerID) {
+            wage = ask.wage
+            years = ask.years
+            status = ask.status
+        }
+    }
+
+    private func submit(_ talkID: Int) {
+        switch career.proposeInTalk(talkID: talkID, wage: wage, years: years, status: status) {
         case .accepted: dismiss()
         case .counter(let counter):
-            wage = counter
-            message = "Contraproposta: \(FootballFormat.money(counter)) por temporada. Ajustei o valor para você aceitar."
-        case .refused(let text), .notAllowed(let text): message = text
+            message = "Contraproposta: \(FootballFormat.money(counter)) por temporada. Aceite abaixo ou ajuste a oferta antes do prazo."
+        case .refused(let text), .notAllowed(let text):
+            message = text
+            if talk == nil { message = (message ?? "") + " A conversa foi encerrada." }
         case .overWageCap: message = "A folha salarial passaria do teto definido pela diretoria."
         }
+    }
+
+    private func acceptCounter(_ talkID: Int) {
+        if career.acceptCounter(talkID: talkID) { dismiss() } else { message = "Não foi possível aceitar: confira o teto da folha salarial e o prazo." }
     }
 }
 

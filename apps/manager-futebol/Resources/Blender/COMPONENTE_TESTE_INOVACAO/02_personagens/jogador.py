@@ -56,7 +56,7 @@ def variacao_elenco():
 
 CENAS = {"A": variacao_a, "B": variacao_b, "C": variacao_c, "E": variacao_elenco}
 CAMERAS = {"A": ((0, 0, 0.55), 3.4, 28, 16), "B": ((0, 0, 0.55), 3.4, 28, 16),
-           "C": ((0, 0, 0.55), 3.4, 28, 16), "E": ((0, 0, 0.5), 6.5, 18, 14)}
+           "C": ((0, 0, 0.55), 3.4, 28, 16), "E": ((0, 0, 0.5), 8.2, 18, 14)}
 
 if __name__ == "__main__":
     a = LB.args_cli()

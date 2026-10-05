@@ -85,7 +85,8 @@ def criar_placar(texto="CASA 2 : 1 FORA", lado="oeste", fileiras=6, tamanho=(4.6
     LB.texto_3d("Placar sub", sub, (x + nx * 0.13, 0, z - 0.40), 0.17, cian, rot=(math.pi / 2, 0, rz), extrude=0.008)
 
 
-def criar_refletores(altura=5.0, afastamento=(HL + 3.3, HW + 2.9), cor_lampada=(1.0, 0.93, 0.75)):
+def criar_refletores(altura=5.0, afastamento=(HL + 3.3, HW + 2.9), cor_lampada=(1.0, 0.93, 0.75), so_norte=False):
+    """so_norte=True: modela so os mastros do fundo (nao tampam a camera), mas devolve os 4 pontos de luz."""
     LB.colecao("Refletores")
     mastro = LB.mat("Ref|mastro", (0.78, 0.78, 0.75), 0.35, metallic=0.7)
     caixa = LB.mat("Ref|caixa", (0.08, 0.08, 0.1), 0.4, metallic=0.6)
@@ -94,6 +95,9 @@ def criar_refletores(altura=5.0, afastamento=(HL + 3.3, HW + 2.9), cor_lampada=(
     for sx in (-1, 1):
         for sy in (-1, 1):
             x, y = sx * afastamento[0], sy * afastamento[1]
+            if so_norte and sy < 0:
+                pos.append(((x, y, altura + 0.2), (0, 0, 0)))
+                continue
             LB.rod("Mastro", (x, y, 0), (x, y, altura), 0.07, mastro, 12, radius2=0.045)
             LB.box("Base mastro", (x, y, 0.06), (0.3, 0.3, 0.12), mastro, 0.03)
             # painel orientado para o centro
@@ -179,7 +183,9 @@ if __name__ == "__main__":
     out = a[0] if a else "/tmp/cobertura.png"
     q = (a[1] if len(a) > 1 else "C").upper()
     CENAS[q]()
-    LB.box("Chao", (0, 0, -0.03), (26, 20, 0.06), LB.mat_ruido("Chao", (0.38, 0.40, 0.40), 0.9, 10, 0.5, 0.2), 0.0)
-    LB.camera_iso(ortho_scale={"A": 14.0, "B": 24.0, "C": 24.0}[q], alvo=(0, 0, 1.5))
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gramado
+    gramado.montar_c()
+    LB.camera_iso(ortho_scale={"A": 13.0, "B": 24.0, "C": 24.0}[q], alvo={"A": (0, 5.0, 1.2)}.get(q, (0, 0, 1.5)))
     LB.luz_estudio(fundo=((0.80, 0.86, 0.92), (0.45, 0.55, 0.62)))
     LB.render(out, 1200, 800)

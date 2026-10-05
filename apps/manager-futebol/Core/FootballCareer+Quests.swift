@@ -37,9 +37,12 @@ extension FootballCareer {
 
     mutating func refreshQuests(using random: inout FootballRandom) {
         let today = worldDay
+        for quest in world.quests.active where !quest.completed && quest.expiresWorldDay < today {
+            recordQuest(quest, outcome: .failed)
+        }
         world.quests.active.removeAll { $0.completed || $0.expiresWorldDay < today }
         let activeIDs = Set(world.quests.active.map(\.templateID))
-        var pool = Self.questTemplates.filter { template in !template.seasonal && !activeIDs.contains(template.id) }
+        var pool = Self.questTemplates.filter { template in !template.seasonal && !activeIDs.contains(template.id) && !Self.questOptInIDs.contains(template.id) }
         while world.quests.active.filter({ !$0.seasonal }).count < 3, !pool.isEmpty {
             let template = pool.remove(at: random.int(in: 0...(pool.count - 1)))
             addQuest(template)
@@ -47,7 +50,7 @@ extension FootballCareer {
         let seasonalCount = world.quests.active.filter(\.seasonal).count
         if seasonalCount < 2 {
             let seasonalIDs = Set(world.quests.active.map(\.templateID))
-            var seasonalPool = Self.questTemplates.filter { template in template.seasonal && !seasonalIDs.contains(template.id) }
+            var seasonalPool = Self.questTemplates.filter { template in template.seasonal && !seasonalIDs.contains(template.id) && !Self.questOptInIDs.contains(template.id) }
             for _ in 0..<(2 - seasonalCount) where !seasonalPool.isEmpty {
                 addQuest(seasonalPool.remove(at: random.int(in: 0...(seasonalPool.count - 1))))
             }
@@ -55,11 +58,13 @@ extension FootballCareer {
         world.quests.lastRefreshWorldDay = worldDay
     }
 
-    private mutating func addQuest(_ template: QuestTemplate) {
+    mutating func addQuest(_ template: QuestTemplate, adopted: Bool = false) {
         let expiry = worldDay + (template.seasonal ? FootballSeason.matchDaysPerSeason - matchDayIndex : 6)
         world.quests.active.append(Quest(id: world.quests.nextQuestID, templateID: template.id, title: template.title, detail: template.detail,
                                          counter: template.counter, baseline: counters[template.counter] ?? 0, target: template.target,
-                                         reward: template.reward, expiresWorldDay: expiry, seasonal: template.seasonal))
+                                         reward: template.reward, expiresWorldDay: expiry, seasonal: template.seasonal,
+                                         origin: adopted ? .player : Self.questOrigin(for: template.id).origin,
+                                         sourceName: adopted ? "Você" : Self.questOrigin(for: template.id).source))
         world.quests.nextQuestID += 1
     }
 
@@ -69,6 +74,7 @@ extension FootballCareer {
             let quest = world.quests.active[index]
             guard progress(of: quest) >= quest.target else { continue }
             world.quests.active[index].completed = true
+            recordQuest(world.quests.active[index], outcome: .completed)
             world.quests.completedCount += 1
             world.betting.fichas += quest.reward.fichas
             world.coach.personalCash += quest.reward.cash

@@ -1,36 +1,32 @@
-# COMPONENTE TESTE INOVACAO
+# COMPONENTE TESTE INOVACAO (v2)
 
 Pasta isolada para testar ideias **sem mexer** nos `stadium_*.py` / `match_scene_*.py` originais.
+Veja o resultado em `exports/catalogo.html`.
 
 ## Estrutura
 
-- `00_core/lib_base.py` — `mat, box, sphere, rod, stroke, texto_3d, camera_iso, luz_estudio, render_transparente, limpar_cena`
-- `01_estadio/` — `gramado.py (A/B/C)`, `arquibancada_modular.py (A/B/C)`, `cobertura_placar.py (A/B/C)`
-- `02_personagens/` — `jogador.py (simples/rig/estrela)`, `goleiro_arbitro.py (classico/neon/arbitro+tecnico)`
-- `03_props/` — `bola_trave.py`, `extras.py (bandeira, banco, cones, trofeu)`
-- `04_cenas_teste/` — `cena_inovacao.py`, `catalogo_teste.py`
-- `exports/png|glb|blends/` — saidas
+- `00_core/lib_base.py` — materiais PBR/procedurais (`mat`, `mat_ruido`, `mat_gramado`), primitivas (`box`, `sphere`, `rod`, `membro`, `fita`, `stroke`, `texto_3d`), `Lote` (milhares de pecas em 1 objeto), `fundir`, luzes (`luz_estudio`, `spot`), cameras, `render` (EEVEE/Cycles) e `exportar_glb`.
+- `01_estadio/` — `gramado.py`, `arquibancada_modular.py` (com torcida e camarote VIP), `cobertura_placar.py` (cobertura, telao, refletores, publicidade LED)
+- `02_personagens/` — `humano.py` (esqueleto + 11 poses + papeis), `jogador.py`, `goleiro_arbitro.py`
+- `03_props/` — `bola_trave.py` (bola icosaedro truncado + rede de malha), `extras.py` (bandeira, banco, cones, barreira, saco de bolas, trofeu, confete)
+- `04_cenas_teste/` — `cena_inovacao.py` (estadio completo, dia/noite, varias cameras), `render_tudo.py`, `gerar_catalogo.py`
+- `exports/png|glb` — saidas; `exports/v1_antigo` — renders da v1 para comparacao
 
-## Variações criadas (12+)
+## Convencoes
 
-| Categoria | A simples | B media | C inovacao |
-|---|---|---|---|
-| Gramado | varzea terra | municipal listrado | premium + borda LED |
-| Arquibancada | 1 lado em pe | 2 lados cadeiras | bowl 4 lados + VIP |
-| Cobertura | 1 + placar | 2 + refletores + pubs | arena 4 + telão + LED |
-| Jogador | basico | rig+numero | estrela faixa+bota vermelha |
-| Goleiro | amarelo | rosa luvas GG | arbitro+tecnico |
-| Bola/Trave | simples | rede densa | neon noturna + base LED |
-| Extras | treino (cones+banco) | trofeu | — |
-| Cena final | `cena_inovacao.py` junta tudo | `--noturno` testa luz noite | — |
+- Campo 12 x 7.6 (`LB.L`, `LB.W`); personagem ~1.05 de altura, olha para +Y; `yaw` gira em Z.
+- Pecas sao criadas em coordenadas LOCAIS (a v1 somava o offset duas vezes).
+- Cada componente tem `variacao_a/b/c()` e uma API reutilizavel (`criar_*`).
+- Todo script aceita `-- saida.png [variacao]`; passe `--so-glb` para exportar GLB sem renderizar.
 
-## Como testar qualidade (precisa Blender)
+## Renderizar
 
 ```bash
-cd "apps/manager-futebol/Resources/Blender/COMPONENTE_TESTE_INOVACAO"
-blender --background --python 04_cenas_teste/cena_inovacao.py -- exports/png/cena_inovacao.png
-blender --background --python 04_cenas_teste/cena_inovacao.py -- exports/png/cena_noturna.png --noturno
-python3 04_cenas_teste/catalogo_teste.py
+export BLENDER=/caminho/blender      # testado com 4.2.1
+python3 04_cenas_teste/render_tudo.py            # todos os PNGs
+python3 04_cenas_teste/render_tudo.py --so cena  # so a cena
+blender -b --python 04_cenas_teste/cena_inovacao.py -- out.png --noturno --cam tv [--cycles] [--rapido]
+python3 04_cenas_teste/gerar_catalogo.py         # reconstroi o catalogo
 ```
 
-Sem Blender instalado nesta maquina: os scripts foram validados com `py_compile`, prontos para rodar onde houver Blender.
+Cameras da cena: `iso`, `tv`, `zoom`, `campo`, `topo`, `gol`.

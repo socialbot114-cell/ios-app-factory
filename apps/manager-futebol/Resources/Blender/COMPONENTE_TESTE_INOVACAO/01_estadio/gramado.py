@@ -62,9 +62,8 @@ def _calcada(cor, margem=MARGEM, h=0.05, bevel=0.06, nome="Calcada", rug=0.85):
     return LB.box(nome, (0, 0, h / 2 - 0.02), (L + 2 * margem, W + 2 * margem, h + 0.04), m, bevel)
 
 
-def variacao_a_varzea():
+def montar_a():
     """A) Varzea: terra batida e giz."""
-    LB.limpar_cena()
     LB.colecao("Gramado")
     terra = LB.mat_ruido("Terra batida", (0.42, 0.28, 0.15), 0.95, escala=14, forca=1.0, bump=0.8)
     LB.box("Base terra", (0, 0, 0.0), (L + 2.6, W + 2.6, 0.12), terra, 0.1)
@@ -89,9 +88,8 @@ def variacao_a_varzea():
         LB.rod("Corrimao", (-5.8, sy * (HW + 0.85), 0.3), (5.8, sy * (HW + 0.85), 0.3), 0.022, mad, 8)
 
 
-def variacao_b_municipal():
+def montar_b():
     """B) Municipal: listras, calcada de concreto, alambrado."""
-    LB.limpar_cena()
     LB.colecao("Gramado")
     _calcada(LB.PAL["concreto"], nome="Calcada concreto")
     _gramado("Gramado municipal", LB.PAL["grama"], LB.PAL["grama_cl"], faixa=1.2)
@@ -105,9 +103,8 @@ def variacao_b_municipal():
         LB.rod("Barra alambrado b", (-6, sy * (HW + 1.0), 0.12), (6, sy * (HW + 1.0), 0.12), 0.015, ferro, 8)
 
 
-def variacao_c_premium():
+def montar_c():
     """C) Premium: xadrez hibrido + base teal + borda LED."""
-    LB.limpar_cena()
     LB.colecao("Gramado")
     base = LB.mat("Base premium", LB.PAL["teal"], 0.55, verniz=0.4)
     LB.box("Base premium", (0, 0, -0.1), (L + 2.8, W + 2.8, 0.26), base, 0.13)
@@ -123,6 +120,18 @@ def variacao_c_premium():
         LB.box("Borda LED", (sx * (HL + 0.12), 0, 0.035), (0.04, W + 0.24, 0.03), led, 0.01)
     LB.box("Ouro borda", (0, 0, 0.002), (L + 2.34, W + 2.34, 0.01), ouro, 0.0)
 
+
+def _com_limpeza(f):
+    def g():
+        LB.limpar_cena()
+        f()
+    g.__doc__ = f.__doc__
+    return g
+
+
+variacao_a_varzea = _com_limpeza(montar_a)
+variacao_b_municipal = _com_limpeza(montar_b)
+variacao_c_premium = _com_limpeza(montar_c)
 
 CENAS = {"A": variacao_a_varzea, "B": variacao_b_municipal, "C": variacao_c_premium}
 

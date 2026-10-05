@@ -152,8 +152,14 @@ extension FootballCareer {
     @discardableResult
     mutating func doActivity(_ activity: CoachActivity) -> ActivityResult? {
         guard canDo(activity) == nil else { return nil }
-        var random = FootballRandom(seed: matchSeed(stream: .world, id: worldDay * 10 + (CoachActivity.allCases.firstIndex(of: activity) ?? 0)))
-        world.coach.lastActivityWorldDay = worldDay
+        return performActivity(activity, onWorldDay: worldDay)
+    }
+
+    /// Executa a atividade sem checar disponibilidade; usada pela ação manual e pela agenda pessoal.
+    @discardableResult
+    mutating func performActivity(_ activity: CoachActivity, onWorldDay day: Int) -> ActivityResult {
+        var random = FootballRandom(seed: matchSeed(stream: .world, id: day * 10 + (CoachActivity.allCases.firstIndex(of: activity) ?? 0)))
+        world.coach.lastActivityWorldDay = day
         var text = ""
         var cash = 0
         var followers = 0

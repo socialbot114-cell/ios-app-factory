@@ -20,6 +20,7 @@ struct FootballBusinessView: View {
             }
             shopPanel
             FootballCollectionProjectPanel(career: $career, onAlert: onAlert)
+            FootballCommercialDelegationPanel(career: $career)
             namingPanel
             programsPanel
             friendliesPanel

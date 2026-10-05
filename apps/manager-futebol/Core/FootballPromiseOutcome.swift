@@ -90,8 +90,18 @@ extension FootballCareer {
         }
         summary += "\n\n“\(verdict.quote)”"
         let factID = "promise-\(promise.id)"
-        recordFact(WorldFact(id: factID, source: .promise, worldDay: worldDay, title: title, detail: summary, playerIDs: [promise.playerID], isPublic: false))
-        if verdict.kind == .broken { openBrokenPromiseFollowUp(promiseID: promise.id, playerID: promise.playerID) }
+        var effects = ["Moral \(verdict.moraleChange)"]
+        if verdict.boardChange != 0 { effects.append("Diretoria \(verdict.boardChange)") }
+        if verdict.agentRelationChange != 0 { effects.append("Empresário \(verdict.agentRelationChange)") }
+        var commitmentIDs: [Int] = []
+        var nextEvents: [String] = []
+        if verdict.kind == .broken, let followUp = openBrokenPromiseFollowUp(promiseID: promise.id, playerID: promise.playerID) {
+            commitmentIDs.append(followUp.id)
+            nextEvents.append("\(name) espera uma conversa em até \(Self.followUpDays) dias de jogo; sem ela, o clima piora.")
+        }
+        if verdict.isPublic { nextEvents.append("A imprensa já comenta o caso.") }
+        recordFact(WorldFact(id: factID, source: .promise, worldDay: worldDay, title: title, detail: summary, playerIDs: [promise.playerID], isPublic: false,
+                             effects: effects, commitmentIDs: commitmentIDs.isEmpty ? nil : commitmentIDs, nextEvents: nextEvents.isEmpty ? nil : nextEvents))
         addInbox(.general, title: title, body: summary, playerID: promise.playerID)
         inbox[inbox.count - 1].sourcePromiseID = promise.id
         inbox[inbox.count - 1].sourceFactID = factID

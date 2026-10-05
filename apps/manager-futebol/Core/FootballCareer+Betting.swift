@@ -354,6 +354,7 @@ extension FootballCareer {
             let swing = (tipster.skill - 0.52) * 260 + (random.unit() - 0.5) * 420
             world.betting.tipsters[index].profit += Int(swing)
         }
+        recordTipsterPicks()
     }
 
     /// Posição do usuário no ranking de lucro da temporada (1 é o melhor).

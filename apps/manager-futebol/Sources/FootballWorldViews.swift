@@ -55,6 +55,7 @@ struct FootballCoachLifeView: View {
                     if activity != CoachActivity.allCases.last { Divider() }
                 }
             }
+            FootballPersonalPlanPanel(career: $career, onAlert: onAlert)
             licensePanel
             assetsPanel
             investmentsPanel

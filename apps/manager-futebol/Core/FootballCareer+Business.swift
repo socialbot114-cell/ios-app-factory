@@ -209,6 +209,7 @@ extension FootballCareer {
         guard selectedClubID != nil, !isFired else { return }
         book(.merchandise, baseMerchRevenuePerMatchDay, "Vendas da loja do clube")
         progressCollections()
+        runCommercialDelegation()
         if let deal = world.business.naming { book(.naming, deal.perSeason / FootballSeason.matchDaysPerSeason, "Naming rights \(deal.sponsor)") }
         for program in world.business.programs {
             book(.community, -(program.costPerSeason / FootballSeason.matchDaysPerSeason), program.title)
@@ -227,10 +228,12 @@ extension FootballCareer {
         }
         generateAgentOffers(using: &random)
         progressBoardMeetings()
+        runPersonalPlan()
     }
 
     mutating func closeBusinessSeason(using random: inout FootballRandom) {
         closeBoardSeason()
+        closePersonalPlanSeason()
         world.business.friendliesThisSeason = 0
         if let deal = world.business.naming, deal.endSeason <= season { world.business.naming = nil }
         refreshNamingOffers(using: &random)

@@ -12,6 +12,8 @@ struct FootballBettingView: View {
     @State private var note: String?
     @State private var outrightMarket: OutrightMarket = .leagueWinner
     @State private var outrightStake = 100
+    @State private var didLoadDraft = false
+    @State private var detailBetID: Int?
 
     private var betting: BettingState { career.world.betting }
 
@@ -36,6 +38,20 @@ struct FootballBettingView: View {
         }
         .factoryPage()
         .navigationTitle("Palpite+")
+        .onAppear {
+            guard !didLoadDraft else { return }
+            didLoadDraft = true
+            let restored = career.restoredBettingDraft()
+            if let draft = restored.draft { legs = draft.legs; stake = draft.stake }
+            if restored.dropped > 0 { note = "\(restored.dropped) seleção(ões) do rascunho saíram: o mercado fechou." }
+        }
+        .onChange(of: legs) { _, _ in saveDraft() }
+        .onChange(of: stake) { _, _ in saveDraft() }
+    }
+
+    private func saveDraft() {
+        guard didLoadDraft else { return }
+        career.saveBettingDraft(legs: legs, stake: stake)
     }
 
     // MARK: Carteira
@@ -66,8 +82,9 @@ struct FootballBettingView: View {
                 }
             }
             .font(.subheadline.weight(.semibold))
-            Text("Fichas fictícias, sem valor real e sem compra. O jogo é só diversão dentro do app.")
+            Text(FootballCareer.bettingRoleText)
                 .font(.caption).foregroundStyle(.secondary)
+                .accessibilityIdentifier("bet-role")
         }
     }
 
@@ -87,6 +104,8 @@ struct FootballBettingView: View {
                         Spacer()
                         Text(fixture.competition.isCup ? "Copa" : (fixture.competition.division?.name ?? "")).font(.caption2).foregroundStyle(.secondary)
                     }
+                    Text(career.bettingClosingText(for: fixture)).font(.caption2).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("bet-closing-\(fixture.id)")
                     let options = career.options(for: fixture)
                     HStack(spacing: 8) {
                         ForEach(options.filter { [.homeWin, .draw, .awayWin].contains($0.leg.market) }) { option in oddsButton(option) }
@@ -96,6 +115,7 @@ struct FootballBettingView: View {
                             .font(.caption.weight(.bold))
                     }
                     if expanded == fixture.id {
+                        briefingView(career.fixtureBriefing(fixture))
                         ForEach(options.filter { ![.homeWin, .draw, .awayWin].contains($0.leg.market) }) { option in
                             HStack {
                                 Text(option.leg.description).font(.caption)
@@ -108,6 +128,24 @@ struct FootballBettingView: View {
                 if fixture.id != fixtures.last?.id { Divider() }
             }
         }
+    }
+
+    private func briefingView(_ briefing: FixtureBriefing) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach([briefing.home, briefing.away], id: \.teamID) { side in
+                HStack(spacing: 6) {
+                    Text(FootballSeason.team(side.teamID)?.shortName ?? "").font(.caption.weight(.bold))
+                    if side.form.isEmpty { Text("sem jogos na liga").font(.caption2).foregroundStyle(.secondary) } else { FormBadges(results: side.form) }
+                }
+                if !side.absences.isEmpty {
+                    Text("Desfalques: " + side.absences.joined(separator: ", ")).font(.caption2).foregroundStyle(.orange)
+                }
+            }
+            Text(briefing.headToHead.meetings == 0 ? "Sem confronto direto na temporada."
+                 : "Confronto direto: \(briefing.headToHead.wins)V \(briefing.headToHead.draws)E \(briefing.headToHead.losses)D (do mandante)")
+                .font(.caption2).foregroundStyle(.secondary)
+        }
+        .accessibilityIdentifier("bet-briefing")
     }
 
     private func oddsButton(_ option: BetOption, compact: Bool = false) -> some View {
@@ -259,6 +297,16 @@ struct FootballBettingView: View {
                         }
                     }
                     if bet.status == .won { Text("Pagou \(bet.payout) fichas").font(.caption.weight(.bold)).foregroundStyle(.green) }
+                    Button { detailBetID = detailBetID == bet.id ? nil : bet.id } label: {
+                        Label(detailBetID == bet.id ? "Ocultar justificativa" : "Ver partidas e justificativa", systemImage: "doc.text.magnifyingglass")
+                            .font(.caption.weight(.bold))
+                    }
+                    .accessibilityIdentifier("bet-detail-\(bet.id)")
+                    if detailBetID == bet.id {
+                        ForEach(bet.legs) { leg in
+                            Text(career.settlementNote(for: leg)).font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 if bet.id != betting.bets.prefix(12).last?.id { Divider() }
             }
@@ -278,16 +326,20 @@ struct FootballBettingView: View {
 
     private var tipstersPanel: some View {
         FactoryPanel(title: "Ranking de palpiteiros", systemImage: "list.number") {
-            let rows = (betting.tipsters.map { (name: $0.name, profit: $0.profit, isUser: false) }
-                        + [(name: "Você", profit: betting.seasonProfit, isUser: true)]).sorted { $0.profit > $1.profit }
+            let rows = career.tipsterProfiles
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 HStack {
                     Text("\(index + 1)").font(.caption.weight(.heavy)).frame(width: 20)
-                    Text(row.name).font(.subheadline.weight(row.isUser ? .heavy : .regular)).foregroundStyle(row.isUser ? FootballTheme.accent : .primary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(row.name).font(.subheadline.weight(row.isUser ? .heavy : .regular)).foregroundStyle(row.isUser ? FootballTheme.accent : .primary)
+                        Text(row.hitRate.map { "\(Int(($0 * 100).rounded()))% de acerto · \(row.hits)/\(row.picks)" } ?? "sem palpites liquidados")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
                     Spacer()
                     Text(FootballFormat.signed(row.profit)).font(.subheadline.monospacedDigit()).foregroundStyle(row.profit >= 0 ? .green : .red)
                 }
             }
+            Text("Os palpiteiros são simulados; seu histórico vem dos seus bilhetes liquidados.").font(.caption2).foregroundStyle(.secondary)
         }
     }
 

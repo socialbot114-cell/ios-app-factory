@@ -104,7 +104,7 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 **Objetivo:** um fato do mundo pode gerar vários retornos, sem duplicar sua consequência.
 
 - [x] F1-01 Modelar fatos importantes com ID estável, origem, data de jogo e entidades envolvidas. `WorldFact` com ID estável, origem, dia, atletas/clubes envolvidos e confiabilidade (`FootballFacts`). Suíte 218/218 no Docker.
-- [ ] F1-02 Definir resultado de decisão: efeitos aplicados, compromissos criados e próximos acontecimentos.
+- [x] F1-02 Definir resultado de decisão: efeitos aplicados, compromissos criados e próximos acontecimentos. `WorldFact` guarda efeitos, compromissos criados e próximos acontecimentos; usado em promessas. Suíte 235/235 no Docker.
 - [x] F1-03 Definir compromissos e ações agendadas com prazo, estado e conclusão única. `Commitment` com prazo, estado e conclusão única (`FootballCommitments`); aparece na agenda. Suíte 218/218 no Docker.
 - [x] F1-04 Processar vencimentos em uma ordem explícita ao avançar o calendário. Ordem explícita `CalendarStep` e `processDueItems()`; repetir não muda nada. Suíte 218/218 no Docker.
 - [x] F1-05 Criar destinos de navegação que incluam app, seção e entidade específica. Itens da agenda carregam `entityID` e `section`; compromisso abre o atleta direto. Suíte 218/218 no Docker.
@@ -153,7 +153,7 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 - [x] F4-01 Exibir projeção de caixa incluindo compromissos já assumidos. Projeção de caixa com compromissos (`FootballCashProjection`); sessão 01, 6 testes. Suíte 218/218 no Docker.
 - [x] F4-02 Criar um projeto comercial com briefing, duração e avaliação posterior. Coleção da loja como projeto com briefing, duração e avaliação (`FootballCommercialProjects`); sessão 01, 6 testes. Suíte 218/218 no Docker.
 - [x] F4-03 Criar uma reunião de diretoria com pedido e resposta futura. Reunião de diretoria com pedido e resposta futura (`FootballBoardMeetings`); sessão 01, 7 testes. Suíte 218/218 no Docker.
-- [ ] F4-04 Integrar atividades pessoais numa agenda com conflitos claros.
+- [ ] F4-04 Integrar atividades pessoais numa agenda com conflitos claros. Plano de até 6 dias com conflitos e avisos (`FootballPersonalAgenda`, sessão 01); domínio 8 testes, UI aguarda build iOS.
 - [ ] F4-05 Permitir delegar uma rotina com custo, limite e relatório.
 - [ ] F4-06 Balancear retornos para evitar combinações de ações sem custo que dominem a carreira.
 - [ ] F4-07 Verificar comportamento em troca de clube, demissão e nova temporada.

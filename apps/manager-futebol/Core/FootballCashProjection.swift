@@ -94,6 +94,9 @@ extension FootballCareer {
         for deal in world.growth.slotDeals {
             recurring.append((.sponsor, "Cota \(deal.slot.title): \(deal.sponsor)", .contracted, projectedAmount(.sponsor, deal.perSeason / perSeason)))
         }
+        if let delegation = world.commercial.delegation, delegation.clubID == selectedClubID {
+            recurring.append((.marketing, "Gerente comercial", .contracted, -delegationFeePerMatchDay))
+        }
         for program in world.business.programs {
             recurring.append((.community, program.title, .contracted, -(program.costPerSeason / perSeason)))
         }

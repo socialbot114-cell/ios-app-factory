@@ -45,16 +45,37 @@ def _geom_lado(lado, fileiras, correr=CORRER, subir=SUBIR):
     return longo, sinal, d0, comp
 
 
+def _indice_cor(estilo, c, f, fileiras):
+    """Qual das 3 cores da cadeira usar (c = coluna, f = fileira)."""
+    if estilo == "unicolor":
+        return 0
+    if estilo == "listras":
+        return (c // 4) % 2
+    if estilo == "xadrez":
+        return (c + f) % 2
+    if estilo == "degrade":
+        return min(2, f * 3 // max(1, fileiras))
+    return ((c // 3) + f) % 3        # mosaico
+
+
 def criar_arquibancada(lados=("norte",), fileiras=4, com_cadeiras=True, torcida=True,
-                       lotacao=0.82, seed=7, mosaico=True, muro_fundo=True, nome="Arq"):
+                       lotacao=0.82, seed=7, mosaico=True, muro_fundo=True, nome="Arq",
+                       estilo="mosaico", cores=None, tubular=False, bandeiras=False, vendedores=0):
+    """estilo: mosaico | listras | xadrez | degrade | unicolor ; cores: 3 cores rgb (cadeiras);
+    tubular: estrutura de tubos de aco + tabuas (em vez de concreto); bandeiras: torcida organizada;
+    vendedores: n ambulantes andando nos corredores."""
     rng = random.Random(seed)
+    cores = cores or (LB.PAL["teal_cl"], LB.PAL["ouro"], LB.PAL["branco"])
     LB.colecao("Arquibancada")
     pedra = LB.mat_ruido("Arq|concreto", LB.PAL["concreto"], 0.85, escala=16, forca=0.7, bump=0.25)
     degr = LB.mat_ruido("Arq|degrau claro", (0.72, 0.71, 0.66), 0.8, escala=18, forca=0.5, bump=0.2)
     escada = LB.mat("Arq|escada", (0.86, 0.85, 0.80), 0.7)
-    cad = [LB.mat("Cad|teal", LB.PAL["teal_cl"], 0.45, verniz=0.4),
-           LB.mat("Cad|ouro", LB.PAL["ouro"], 0.45, verniz=0.4),
-           LB.mat("Cad|branca", LB.PAL["branco"], 0.5, verniz=0.4)]
+    cad = [LB.mat(f"Cad|cor{i}", c, 0.45, verniz=0.4) for i, c in enumerate(cores)]
+    aco = LB.mat("Arq|aco", (0.62, 0.64, 0.67), 0.35, metallic=0.9)
+    tabua = LB.mat("Arq|tabua", (0.55, 0.38, 0.2), 0.65)
+    bandeira_cores = [LB.mat(f"Bandeira|{i}", c, 0.6, sheen=0.4) for i, c in enumerate(list(cores) + [LB.PAL["vermelho"], LB.PAL["branco"]])]
+    L_band = LB.Lote(f"{nome} bandeiras", bandeira_cores + [aco])
+    corredores = []
     pessoas = [LB.mat(f"Torc|{i}", c, 0.75, sheen=0.3) for i, c in enumerate(_paleta_torcida())]
     peles = [LB.mat(f"Pele|{i}", c, 0.55) for i, c in enumerate(PELE)]
     cabelos = [LB.mat("Cabelo|esc", (0.05, 0.035, 0.03), 0.6), LB.mat("Cabelo|cast", (0.3, 0.18, 0.08), 0.6),
@@ -75,18 +96,34 @@ def criar_arquibancada(lados=("norte",), fileiras=4, com_cadeiras=True, torcida=
             else:
                 dims = (CORRER, comp, h)
                 loc = (sinal * (d + CORRER / 2), 0, h / 2)
-            LB.box(f"{nome} {lado} degrau {f}", loc, dims, degr if f % 2 else pedra, 0.012)
+            if tubular:
+                dim_t = (comp, CORRER, 0.045) if longo else (CORRER, comp, 0.045)
+                LB.box(f"{nome} {lado} tabua {f}", (loc[0], loc[1], h - 0.022), dim_t, tabua, 0.01)
+                npes = max(2, int(comp / 1.6))
+                for q in range(npes + 1):
+                    ao_ = (q / npes - 0.5) * (comp - 0.2)
+                    for dd in (d + 0.04, d + CORRER - 0.04):
+                        px_, py_ = (ao_, sinal * dd) if longo else (sinal * dd, ao_)
+                        LB.rod(f"{nome} tubo", (px_, py_, 0), (px_, py_, h - 0.04), 0.022, aco, 8)
+                    if f < fileiras - 1 and q % 2 == 0:
+                        a2 = (q / npes - 0.5) * (comp - 0.2)
+                        p0 = (a2, sinal * (d + 0.04)) if longo else (sinal * (d + 0.04), a2)
+                        p1 = (a2, sinal * (d + CORRER + 0.04)) if longo else (sinal * (d + CORRER + 0.04), a2)
+                        LB.rod(f"{nome} diagonal", (p0[0], p0[1], h - 0.04), (p1[0], p1[1], h + SUBIR - 0.04), 0.012, aco, 6)
+            else:
+                LB.box(f"{nome} {lado} degrau {f}", loc, dims, degr if f % 2 else pedra, 0.012)
             for c in range(total_ass):
                 ao = (c - (total_ass - 1) / 2) * ASSENTO
                 corredor = (c % 14 == 7)
                 px, py = (ao, sinal * (d + CORRER * 0.55)) if longo else (sinal * (d + CORRER * 0.55), ao)
                 if corredor:
+                    corredores.append((px, py, h, longo, sinal))
                     LB.box(f"{nome} escada", (px, py, h + 0.008), (0.26, CORRER * 0.98, 0.016) if longo
                            else (CORRER * 0.98, 0.26, 0.016), escada, 0.003)
                     continue
                 # cadeira
                 if com_cadeiras:
-                    mi = ((c // 3) + f) % 3 if mosaico else 0
+                    mi = _indice_cor(estilo, c, f, fileiras) if mosaico else 0
                     sx, sy = (0.21, 0.16) if longo else (0.16, 0.21)
                     L_ass.cubo((px, py, h + 0.045), (sx, sy, 0.07) if longo else (sy, sx, 0.07), mi)
                     # encosto (aponta para tras)
@@ -132,6 +169,33 @@ def criar_arquibancada(lados=("norte",), fileiras=4, com_cadeiras=True, torcida=
         else:
             LB.box(f"{nome} {lado} parapeito", (sinal * (d0 - 0.08), 0, 0.16), (0.14, comp, 0.32), pedra, 0.02)
             LB.box(f"{nome} {lado} vidro", (sinal * (d0 - 0.08), 0, 0.46), (0.02, comp, 0.28), vidro, 0.0)
+    if bandeiras and corredores:
+        for (px, py, h, longo, sinal) in rng.sample(corredores, min(len(corredores), 14)):
+            for q in range(2):
+                off = rng.uniform(-1.6, 1.6)
+                bx, by = (px + off, py) if longo else (px, py + off)
+                alt = 0.55 + rng.random() * 0.25
+                L_band.cubo((bx, by, h + alt / 2 + 0.18), (0.012, 0.012, alt), len(bandeira_cores))
+                mi = rng.randrange(len(bandeira_cores))
+                if longo:
+                    L_band.cubo((bx + 0.13, by, h + 0.18 + alt - 0.06), (0.26, 0.012, 0.15), mi)
+                else:
+                    L_band.cubo((bx, by + 0.13, h + 0.18 + alt - 0.06), (0.012, 0.26, 0.15), mi)
+        L_band.criar()
+    if vendedores and corredores:
+        import sys as _s
+        _s.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "03_props"))
+        _s.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "02_personagens"))
+        import vendedores as VEND
+        import humano as HUM
+        z_old = HUM.Z_CHAO
+        for k, (px, py, h, longo, sinal) in enumerate(rng.sample(corredores, min(len(corredores), vendedores))):
+            HUM.Z_CHAO = h + 0.016
+            yaw = (math.pi if sinal > 0 else 0.0) if longo else (math.pi / 2 if sinal > 0 else -math.pi / 2)
+            VEND.criar_vendedor(["ambulante", "bebidas"][k % 2], f"{nome} vend {k}", px, py, yaw=yaw + 0.0,
+                                escala=0.5, pele=["morena", "negra", "clara", "parda"][k % 4],
+                                cabelo=["curto", "afro", "coque", "careca"][k % 4])
+        HUM.Z_CHAO = z_old
     if com_cadeiras:
         L_ass.criar()
     if torcida:
@@ -175,15 +239,38 @@ def variacao_c():
     criar_camarote_vip("norte")
 
 
-CENAS = {"A": variacao_a, "B": variacao_b, "C": variacao_c}
+def variacao_d():
+    """D) Arquibancada tubular de aco e madeira, 2 lados, cores de time pequeno."""
+    LB.limpar_cena()
+    criar_arquibancada(lados=("norte", "leste"), fileiras=3, tubular=True, estilo="xadrez",
+                       cores=(LB.PAL["azul"], LB.PAL["branco"], LB.PAL["vermelho"]), lotacao=0.9, nome="Tub")
+
+
+def variacao_e():
+    """E) Setor de torcida organizada: listras, bandeiras e ambulantes nos corredores."""
+    LB.limpar_cena()
+    criar_arquibancada(lados=("norte", "oeste"), fileiras=5, estilo="listras", bandeiras=True, vendedores=8,
+                       cores=((0.75, 0.05, 0.08), LB.PAL["branco"], LB.PAL["preto"]), lotacao=0.95, nome="Org")
+
+
+def variacao_f():
+    """F) Degradê de cores por fileira, 3 lados, sem muro (arena moderna)."""
+    LB.limpar_cena()
+    criar_arquibancada(lados=("norte", "sul", "leste"), fileiras=6, estilo="degrade", muro_fundo=False,
+                       cores=((0.05, 0.25, 0.7), (0.3, 0.55, 0.95), (0.85, 0.9, 1.0)), nome="Deg")
+
+
+CENAS = {"A": variacao_a, "B": variacao_b, "C": variacao_c, "D": variacao_d, "E": variacao_e, "F": variacao_f}
 
 if __name__ == "__main__":
     a = LB.args_cli()
     out = a[0] if a else "/tmp/arq.png"
     q = (a[1] if len(a) > 1 else "C").upper()
     CENAS[q]()
-    # chao
-    LB.box("Chao", (0, 0, -0.03), (24, 18, 0.06), LB.mat_ruido("Chao", (0.38, 0.40, 0.40), 0.9, 10, 0.5, 0.2), 0.0)
-    LB.camera_iso(ortho_scale={"A": 12.0, "B": 22.0, "C": 24.0}[q], alvo=(0, 0, 0.7))
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gramado
+    gramado.montar_c()   # campo embaixo, para dar contexto
+    LB.camera_iso(ortho_scale={"A": 12.0, "B": 22.0, "C": 24.0, "D": 10.0, "E": 11.0, "F": 24.0}[q],
+                  alvo={"D": (4.0, 4.5, 0.4), "E": (-1.5, 5.5, 1.0)}.get(q, (0, 0, 0.7)))
     LB.luz_estudio(fundo=((0.80, 0.86, 0.92), (0.45, 0.55, 0.62)))
     LB.render(out, 1200, 800)

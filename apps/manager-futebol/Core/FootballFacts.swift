@@ -23,6 +23,10 @@ struct WorldFact: Codable, Equatable, Identifiable {
     var clubIDs: [Int] = []
     var reliability: FactReliability = .confirmed
     var isPublic = false
+    /// Resultado de uma decisão (F1-02): o que foi aplicado, que compromissos nasceram e o que pode acontecer depois.
+    var effects: [String]? = nil
+    var commitmentIDs: [Int]? = nil
+    var nextEvents: [String]? = nil
 }
 
 struct FactStore: Codable, Equatable {

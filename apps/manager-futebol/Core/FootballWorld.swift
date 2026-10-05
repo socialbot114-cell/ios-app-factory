@@ -401,6 +401,15 @@ struct Tipster: Codable, Equatable, Identifiable {
     let name: String
     let skill: Double
     var profit: Int
+    /// Histórico simulado de palpites (PAL-05); optional para saves antigos.
+    var picks: Int? = nil
+    var hits: Int? = nil
+}
+
+/// Rascunho persistido do bilhete (PAL-03); guarda as seleções e o valor.
+struct BetDraft: Codable, Equatable {
+    var legs: [BetLeg]
+    var stake: Int
 }
 
 struct BettingState: Codable, Equatable {
@@ -421,6 +430,7 @@ struct BettingState: Codable, Equatable {
     var tipsters: [Tipster] = []
     /// Ganhos e perdas por dia de jogo para o limite de responsabilidade.
     var dailyNet: [Int: Int] = [:]
+    var draft: BetDraft? = nil
 }
 
 // MARK: - Rodada Mágica (fantasy)
@@ -640,9 +650,15 @@ struct Quest: Codable, Equatable, Identifiable {
     let expiresWorldDay: Int
     let seasonal: Bool
     var completed = false
+    /// MET-01/04: origem e eventos que contaram para o progresso; optional para saves antigos.
+    var origin: QuestOrigin? = nil
+    var sourceName: String? = nil
+    var contributions: [QuestContribution]? = nil
 }
 
 struct QuestState: Codable, Equatable {
+    /// MET-05: conclusão, falha e substituição preservadas; optional para saves antigos.
+    var history: [QuestRecord]? = nil
     var active: [Quest] = []
     var completedCount = 0
     var nextQuestID = 1
