@@ -62,3 +62,13 @@ final class FootballPhoneStateTests: XCTestCase {
         XCTAssertTrue(world.phone.preferences.pauses.decisions)
     }
 }
+
+extension FootballPhoneStateTests {
+    func testStartingAChallengeAppliesItsDifficultyAndTheLockReportsIt() throws {
+        let scenario = try XCTUnwrap(ChallengeScenario.all.first { $0.difficulty == .hard })
+        let career = FootballCareer.challenge(scenario)
+        XCTAssertEqual(career.difficulty, .hard)
+        XCTAssertTrue(career.difficultyLockReason?.contains("Difícil") ?? false)
+        XCTAssertTrue(career.activeChallengeRules.contains { $0.contains("Difícil") })
+    }
+}

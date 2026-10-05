@@ -120,7 +120,7 @@ extension FootballCareer {
         let commitment = openCommitment(kind: .storyArc, playerID: playerID, factID: factID, days: Self.arcLifetimeDays,
                                         title: "Responder ao boato sobre \(athlete.name)", detail: "Prazo do arco; sem decisão, o boato segue seu curso.")
         arc.commitmentID = commitment.id
-        arc.steps.append(ArcStep(id: 0, worldDay: worldDay, kind: .opened, text: "\(arc.origin) publica que \(athlete.name) negocia com o \(rival)."))
+        arc.steps.append(ArcStep(id: 0, worldDay: worldDay, kind: .opened, text: "\(reporter) publica, citando fontes ligadas ao jogador, que \(athlete.name) negocia com o \(rival)."))
         arcs.append(arc)
         return arc
     }

@@ -16,7 +16,7 @@ struct FootballGrowthView: View {
             }
             pressurePanel
             tvPanel
-            campaignPanel
+            FootballBrandHub(career: $career, onAlert: onAlert)
             slotsPanel
         }
         .factoryPage()

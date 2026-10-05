@@ -144,7 +144,6 @@ struct FootballHome: View {
     }
 
     private func open(_ app: PhoneApp) {
-        if app == .league { tableSection = nil }
         focusedContactID = nil
         focusedEventID = nil
         openApp = app
@@ -209,7 +208,7 @@ struct FootballHome: View {
         case .squad:
             FootballSquadView(career: $career, onAlert: showAlert)
         case .league:
-            FootballTableView(career: career, initialSection: tableSection)
+            FootballTableView(career: career, initialSection: tableSection, onSectionChange: { tableSection = $0 })
                 .onAppear { career.markTutorialSeen("table") }
         case .market:
             FootballMarketView(career: $career, onAlert: showAlert)

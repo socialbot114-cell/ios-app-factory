@@ -64,6 +64,8 @@ struct FinanceEntry: Codable, Equatable {
     let category: FinanceCategory
     let amount: Int
     let note: String
+    /// Origem do lançamento (BAN-06); opcional, então saves antigos continuam válidos.
+    var link: FinanceLink? = nil
 }
 
 struct FinanceSeasonSummary: Codable, Equatable, Identifiable {

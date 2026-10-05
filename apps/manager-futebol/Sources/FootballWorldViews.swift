@@ -56,6 +56,7 @@ struct FootballCoachLifeView: View {
                 }
             }
             FootballPersonalPlanPanel(career: $career, onAlert: onAlert)
+            FootballLifeContinuityPanel(career: $career, onAlert: onAlert)
             licensePanel
             assetsPanel
             investmentsPanel

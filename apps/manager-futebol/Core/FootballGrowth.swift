@@ -470,6 +470,7 @@ extension FootballCareer {
         tickYouthDevelopment(using: &random)
         tickPressure()
         tickContacts()
+        recordBrandDay()
     }
 
     mutating func closeGrowthSeason() {

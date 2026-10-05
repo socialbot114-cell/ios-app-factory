@@ -3,7 +3,8 @@ import SwiftUI
 /// Rotas de captura das telas da F4: cada uma abre o painel no topo com um estado de demonstração útil.
 enum FootballF4Captures {
     static let names: Set<String> = ["cash-projection", "board-meeting", "collection-project", "personal-plan", "commercial-delegation",
-                                     "transfer-talks", "recruitment-briefs", "coach-loans", "project-ledger", "contact-requests", "contact-dossier"]
+                                     "transfer-talks", "recruitment-briefs", "coach-loans", "project-ledger", "contact-requests", "contact-dossier",
+                                     "brand-hub", "life-projects"]
 
     /// Monta o estado de demonstração sobre a carreira de prévia.
     static func prepare(_ name: String, career: inout FootballCareer) {
@@ -73,6 +74,19 @@ enum FootballF4Captures {
             _ = career.toggle(.fanClubs)
             _ = career.toggle(.footballAcademy)
             for _ in 0..<4 { _ = career.simulateNextMatchDay() }
+        case "brand-hub":
+            career.transferBudget = max(career.transferBudget, 5_000_000)
+            career.reputation = max(career.reputation, 55)
+            _ = career.launchCampaign(CampaignBrief(channel: .influencers, objective: .fans, audience: .young, budget: .standard))
+            _ = career.signImageContract()
+            for _ in 0..<3 { _ = career.simulateNextMatchDay() }
+        case "life-projects":
+            career.reputation = max(career.reputation, 55)
+            career.world.coach.personalCash = max(career.world.coach.personalCash, 1_500_000)
+            _ = career.buyAsset(.beachHouse)
+            career.world.coach.bookSessions = 3
+            _ = career.acceptMediaContract()
+            for _ in 0..<3 { _ = career.simulateNextMatchDay() }
         case "contact-requests", "contact-dossier":
             let ids = Dictionary(uniqueKeysWithValues: career.world.contacts.contacts.map { ($0.role, $0.id) })
             career.world.coach.personalCash = max(career.world.coach.personalCash, 500_000)
@@ -149,6 +163,10 @@ struct FootballF4CaptureView: View {
                 FootballCoachLoanPanel(career: $career)
             case "project-ledger":
                 FootballProjectLedgerPanel(career: career)
+            case "brand-hub":
+                FootballBrandHub(career: $career, onAlert: onAlert)
+            case "life-projects":
+                FootballLifeContinuityPanel(career: $career, onAlert: onAlert)
             default:
                 FootballPersonalPlanPanel(career: $career, onAlert: onAlert, initialSelection: awayLecture)
             }
@@ -170,6 +188,7 @@ struct FootballF4CaptureView: View {
         case "collection-project", "commercial-delegation", "project-ledger": return "Negócios do clube"
         case "transfer-talks", "recruitment-briefs": return "Mercado"
         case "coach-loans": return "Banco"
+        case "brand-hub": return "Marca"
         default: return "Vida"
         }
     }

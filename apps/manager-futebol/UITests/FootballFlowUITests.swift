@@ -75,6 +75,11 @@ final class FootballFlowUITests: XCTestCase {
 
         app.buttons["dock-club"].tap()
         let newCareer = app.descendants(matching: .any).matching(identifier: "new-career").firstMatch
+        // A tela Clube ganhou painéis (estádio, caixa, projetos): o botão pode estar fora da viewport.
+        for _ in 0..<10 {
+            if newCareer.exists { break }
+            app.swipeUp()
+        }
         XCTAssertTrue(newCareer.waitForExistence(timeout: 8))
     }
 

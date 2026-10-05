@@ -174,6 +174,7 @@ extension FootballCareer {
         world.commercial.nextID += 1
         world.commercial.collections.append(project)
         book(.merchandise, -cost, "Lançamento: \(project.name)")
+        linkLastFinanceEntry(note: "Lançamento: \(project.name)", FinanceLink(kind: .collection, id: "\(project.id)", title: project.name))
         return true
     }
 
@@ -188,6 +189,7 @@ extension FootballCareer {
         let extra = collectionExtra(project.brief)
         world.commercial.collections[index].dailySales.append(extra)
         book(.merchandise, extra, "Vendas extras: \(project.name)")
+        linkLastFinanceEntry(note: "Vendas extras: \(project.name)", FinanceLink(kind: .collection, id: "\(project.id)", title: project.name))
         let sold = world.commercial.collections[index]
         if sold.dailySales.count == project.brief.size.matchDays / 2 {
             addInbox(.finance, title: "Relatório de vendas: \(project.name)",

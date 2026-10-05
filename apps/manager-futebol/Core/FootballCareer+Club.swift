@@ -59,8 +59,9 @@ extension FootballCareer {
         if fixture.competition.isCup { demand *= 1.08 }
         demand *= ticketPrice.demandFactor * hypeAttendanceFactor
         let potential = Int(Double(fanBase) * demand)
-        let floor = Int(Double(stadiumCapacity) * 0.18)
-        return min(stadiumCapacity, max(floor, potential))
+        let capacity = effectiveStadiumCapacity
+        let floor = Int(Double(capacity) * 0.18)
+        return min(capacity, max(floor, potential))
     }
 
     func gateRevenue(attendance: Int) -> Int {
@@ -189,7 +190,10 @@ extension FootballCareer {
         guard selectedClubID != nil, !isFired else { return "Sem clube." }
         guard let cost = upgradeCost(for: kind) else { return "Nível máximo." }
         guard upgradeProject == nil else { return "Já há uma obra em andamento." }
-        guard transferBudget >= cost else { return "Caixa insuficiente: a obra custa \(FootballFormat.money(cost))." }
+        let first = firstStageCost(for: kind) ?? cost
+        guard transferBudget >= first else {
+            return "Caixa insuficiente: a primeira etapa custa \(FootballFormat.money(first)) (obra total de \(FootballFormat.money(cost)))."
+        }
         return nil
     }
 
@@ -200,16 +204,24 @@ extension FootballCareer {
         var dueDay = matchDayIndex + upgradeDuration(for: kind)
         var dueSeason = season
         if dueDay >= FootballSeason.matchDaysPerSeason { dueDay -= FootballSeason.matchDaysPerSeason; dueSeason += 1 }
-        book(.facilities, -cost, "Obra: \(kind.title) nível \(target)")
+        // Paga-se por etapa (CLB-04): a fundação agora, o resto ao longo da obra.
+        let first = firstStageCost(for: kind) ?? cost
+        book(.facilities, -first, "Obra: \(kind.title) nível \(target) · fundação")
         upgradeProject = UpgradeProject(id: nextProjectID, kind: kind, targetLevel: target, cost: cost, dueSeason: dueSeason, dueMatchDay: dueDay)
+        registerConstruction(kind: kind, cost: cost, projectID: nextProjectID)
+        linkLastFinanceEntry(note: "Obra: \(kind.title) nível \(target) · fundação",
+                             FinanceLink(kind: .construction, id: "\(nextProjectID)", title: "Obra: \(kind.title)"))
         nextProjectID += 1
         return true
     }
 
     /// Conclui a obra quando o prazo chega.
     mutating func progressUpgrades() {
+        guard upgradeProject != nil else { return }
+        if payDueConstructionStage() { return }
         guard let project = upgradeProject else { return }
         guard season > project.dueSeason || (season == project.dueSeason && matchDayIndex >= project.dueMatchDay) else { return }
+        if let plan = constructionPlan, plan.stagesPaid < plan.stageCosts.count { return }
         switch project.kind {
         case .trainingCenter: trainingCenterLevel = project.targetLevel
         case .youthAcademy: youthAcademyLevel = project.targetLevel
@@ -217,10 +229,11 @@ extension FootballCareer {
         case .stadium: stadiumLevel = project.targetLevel
         }
         upgradeProject = nil
+        world.projects.construction = nil
         addInbox(.finance, title: "Obra concluída", body: "\(project.kind.title) agora está no nível \(project.targetLevel).")
     }
 
-    var trainingFacilityFactor: Double { 0.88 + 0.06 * Double(trainingCenterLevel - 1) }
+    var trainingFacilityFactor: Double { 0.88 + 0.06 * Double(trainingCenterLevel - 1) - constructionTrainingPenalty }
 
     // MARK: - Comissão técnica
 
@@ -281,7 +294,7 @@ extension FootballCareer {
     var injuryDurationFactor: Double {
         let facility = 1 - 0.035 * Double(medicalLevel - 3)
         let doctor = 1 - 0.025 * Double(doctorAbilityValue - 10)
-        return min(1.25, max(0.6, facility * doctor))
+        return min(1.25, max(0.6, facility * doctor * (1 + constructionInjuryPenalty)))
     }
 
     /// Risco de lesão nas partidas: o preparador físico reduz.

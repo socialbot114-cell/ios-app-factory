@@ -297,6 +297,7 @@ struct FootballFinanceView: View {
             }
             FootballCashProjectionPanel(career: career)
             FootballCoachLoanPanel(career: $career)
+            FootballStatementsPanel(career: career)
             FactoryPanel(title: "Aporte do treinador", systemImage: "arrow.down.to.line.circle.fill") {
                 Text("Seu bolso: \(FootballFormat.money(career.world.coach.personalCash)). Emprestar dinheiro ao clube alivia o caixa e, no vermelho, acalma a diretoria.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -368,9 +369,11 @@ struct FootballFacilitiesView: View {
                     Text("Entrega na temporada \(project.dueSeason), jogo \(project.dueMatchDay + 1).").font(.caption).foregroundStyle(.secondary)
                 }
             }
+            FootballConstructionPanel(career: career)
             ForEach(FacilityKind.allCases) { kind in
                 FactoryPanel(title: "\(kind.title) · nível \(career.facilityLevel(kind))/\(FootballCareer.maxFacilityLevel)", systemImage: kind.symbol) {
                     Text(kind.effect).font(.caption).foregroundStyle(.secondary)
+                    FootballUpgradeSimulationRow(career: career, kind: kind)
                     if let cost = career.upgradeCost(for: kind) {
                         Button {
                             if !career.startUpgrade(kind) { onAlert(career.canStartUpgrade(kind) ?? "Não foi possível iniciar a obra.") }

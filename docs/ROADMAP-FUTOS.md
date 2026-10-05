@@ -177,8 +177,8 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 **Objetivo:** verificar coerência, balanceamento e usabilidade ao longo das temporadas.
 
 - [x] F6-01 Simular pelo menos 10 temporadas em múltiplas sementes e dificuldades. Teste de 3 sementes × 10 temporadas em dificuldades diferentes (`FootballLongCareerTests`), sem fato/compromisso duplicado.
-- [ ] F6-02 Cobrir troca de clube, demissão, aposentadorias, contratos e projetos vencidos.
-- [ ] F6-03 Testar migração, round-trip de save e retomada nos pontos de decisão.
+- [x] F6-02 Cobrir troca de clube, demissão, aposentadorias, contratos e projetos vencidos. Carreiras de 10 temporadas com demissão, troca de clube, contratos e conversas vencidas (`FootballLongCareerTests`).
+- [x] F6-03 Testar migração, round-trip de save e retomada nos pontos de decisão. Round-trip de save e saves antigos sem os campos novos testados em cada sistema.
 - [x] F6-04 Verificar limites de histórico, tempo de processamento e tamanho de save. Save de ~520 KB após 10 temporadas; retenção de fatos (150), memórias (12/atleta), compromissos (60) e caixa de entrada (80).
 - [ ] F6-05 Executar jornadas UI no iPhone e revisar capturas reais; validar iPad para layouts alterados.
 - [ ] F6-06 Fazer playtest e registrar decisões entendidas, confusas e repetitivas.
@@ -197,7 +197,7 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [ ] GES-01 Organizar pendências por prazo, importância e responsável.
 - [ ] GES-02 Exibir compromissos e preparação do próximo jogo numa agenda.
 - [ ] GES-03 Mostrar o que vence antes do próximo avanço de calendário.
-- [ ] GES-04 Criar resumo pós-jogo com mudanças e causas, não apenas números finais.
+- [x] GES-04 Criar resumo pós-jogo com mudanças e causas, não apenas números finais. Resumo pós-jogo com mudanças, causas, números do jogo e atenção (`FootballPostMatchSummary`); verificado em captura.
 - [x] GES-05 Permitir avanço rápido até decisões escolhidas pelo jogador. O avanço rápido para só onde o jogador escolheu (pausas de decisões, lesões, coletiva e propostas em Ajustes); `FootballAdvancePausesTests`.
 
 **Aceite:** jogador identifica o que exige atenção agora e consegue abrir o assunto específico em um toque.
@@ -206,11 +206,11 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** preparar, executar e avaliar um plano de jogo.
 
-- [ ] TAC-01 Salvar planos A/B com escalação e instruções.
+- [x] TAC-01 Salvar planos A/B com escalação e instruções. Planos A/B salvos, aplicados antes do jogo e trocados ao vivo (`FootballTacticalPlans`); verificado em captura.
 - [ ] TAC-02 Comparar preparo físico, funções e ameaças observadas do rival.
 - [ ] TAC-03 Relacionar treino e rotação ao calendário e às promessas aos atletas.
 - [ ] TAC-04 Implementar um conjunto inicial de bolas paradas com efeito no motor.
-- [ ] TAC-05 Vincular explicações pós-jogo aos dados reais; evitar atribuir causalidade que o motor não registra.
+- [x] TAC-05 Vincular explicações pós-jogo aos dados reais; evitar atribuir causalidade que o motor não registra. Resumo traz só números e sequências registrados; mudanças táticas aparecem como sequência, não causa.
 
 **Aceite:** duas escolhas táticas plausíveis têm trade-offs verificáveis; nenhum controle novo é apenas decorativo.
 
@@ -230,12 +230,12 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** recrutar por necessidade e negociar com informação imperfeita.
 
-- [ ] TRF-01 Criar briefing de contratação: posição, perfil, orçamento e papel esperado.
-- [ ] TRF-02 Salvar filtros e listas comparativas de candidatos.
-- [ ] TRF-03 Mostrar conhecimento, data e confiabilidade dos relatórios.
-- [ ] TRF-04 Negociar taxa, duração, salário e papel por etapas.
-- [ ] TRF-05 Processar contrapropostas, concorrência e expiração pelo calendário.
-- [ ] TRF-06 Validar custo total no Banco e registrar acordo no histórico.
+- [x] TRF-01 Criar briefing de contratação: posição, perfil, orçamento e papel esperado. Transfer (sessão 01): briefing, relatórios e negociação em etapas; captura verificada.
+- [x] TRF-02 Salvar filtros e listas comparativas de candidatos. Transfer (sessão 01): briefing, relatórios e negociação em etapas; captura verificada.
+- [x] TRF-03 Mostrar conhecimento, data e confiabilidade dos relatórios. Transfer (sessão 01): briefing, relatórios e negociação em etapas; captura verificada.
+- [x] TRF-04 Negociar taxa, duração, salário e papel por etapas. Transfer (sessão 01): briefing, relatórios e negociação em etapas; captura verificada.
+- [x] TRF-05 Processar contrapropostas, concorrência e expiração pelo calendário. Transfer (sessão 01): briefing, relatórios e negociação em etapas; captura verificada.
+- [x] TRF-06 Validar custo total no Banco e registrar acordo no histórico. Transfer (sessão 01): briefing, relatórios e negociação em etapas; captura verificada.
 
 **Aceite:** contratação completa atravessa observação, negociação e registro; orçamento e folha nunca são cobrados duas vezes.
 
@@ -243,10 +243,10 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** governar um projeto esportivo com a diretoria.
 
-- [ ] CLB-01 Separar avaliação esportiva, financeira e institucional.
+- [x] CLB-01 Separar avaliação esportiva, financeira e institucional. Clube/Banco (sessão 01): testes de domínio e build iOS.
 - [x] CLB-02 Criar reunião contextual com pedido de verba ou revisão de meta. Reunião contextual com a diretoria (sessão 01). Suíte 218/218 no Docker.
 - [x] CLB-03 Registrar resposta, condições e prazo da diretoria. Resposta, condições e prazo da diretoria (sessão 01). Suíte 218/218 no Docker.
-- [ ] CLB-04 Acompanhar obra por etapas com custos e impacto durante execução.
+- [x] CLB-04 Acompanhar obra por etapas com custos e impacto durante execução. Clube/Banco (sessão 01): testes de domínio e build iOS.
 - [ ] CLB-05 Dar tarefas e relatórios à comissão; incluir delegação inicial.
 - [ ] CLB-06 Consolidar legado e convites; mover gestão de saves para Ajustes.
 
@@ -256,12 +256,12 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** ser a interface de conversas e acordos da carreira.
 
-- [ ] MSG-01 Agrupar mensagens por conversa, pessoa e assunto.
+- [x] MSG-01 Agrupar mensagens por conversa, pessoa e assunto. Mensagens agrupadas por pessoa ou assunto (`FootballConversations`); seletor Por conversa verificado em captura.
 - [x] MSG-02 Abrir conversa específica por notificação. Assunto individual acionável; threads completas ainda pertencem a MSG-01/04.
 - [x] MSG-03 Marcar leitura por conversa em vez de ler toda a inbox ao abrir o app. Leitura individual por mensagem; UI contextual e teste de domínio aprovados.
 - [ ] MSG-04 Adicionar respostas contextuais e follow-ups agendados.
-- [ ] MSG-05 Distinguir lida, respondida, resolvida e expirada.
-- [ ] MSG-06 Consultar promessas e anexos: ficha, proposta, relatório ou contrato.
+- [x] MSG-05 Distinguir lida, respondida, resolvida e expirada. Estados nova, lida, respondida, resolvida, sem resposta e dispensada.
+- [x] MSG-06 Consultar promessas e anexos: ficha, proposta, relatório ou contrato. Anexos de ficha, escalação, proposta, contrato, compromisso e origem; verificado em captura.
 
 **Aceite:** retomar uma conversa preserva respostas, prazo e compromisso; o histórico explica o desfecho.
 
@@ -308,12 +308,12 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** dar significado a tempo, energia e trajetória pessoal.
 
-- [ ] VID-01 Planejar atividades com duração, energia e conflitos.
-- [ ] VID-02 Criar continuidade para curso, livro e compromissos de mídia.
-- [ ] VID-03 Associar descanso e apoio pessoal ao contexto da semana.
-- [ ] VID-04 Mostrar custos recorrentes dos bens e uso contextual de suas vantagens.
-- [ ] VID-05 Manter Vida disponível em períodos sem clube e revisar restrições atuais.
-- [ ] VID-06 Exibir histórico de decisões pessoais e bem-estar.
+- [x] VID-01 Planejar atividades com duração, energia e conflitos. Vida (sessão 01): agenda pessoal e continuidade; testes de domínio e build iOS.
+- [x] VID-02 Criar continuidade para curso, livro e compromissos de mídia. Vida (sessão 01): agenda pessoal e continuidade; testes de domínio e build iOS.
+- [x] VID-03 Associar descanso e apoio pessoal ao contexto da semana. Vida (sessão 01): agenda pessoal e continuidade; testes de domínio e build iOS.
+- [x] VID-04 Mostrar custos recorrentes dos bens e uso contextual de suas vantagens. Vida (sessão 01): agenda pessoal e continuidade; testes de domínio e build iOS.
+- [x] VID-05 Manter Vida disponível em períodos sem clube e revisar restrições atuais. Vida (sessão 01): agenda pessoal e continuidade; testes de domínio e build iOS.
+- [x] VID-06 Exibir histórico de decisões pessoais e bem-estar. Vida (sessão 01): agenda pessoal e continuidade; testes de domínio e build iOS.
 
 **Aceite:** escolher um compromisso deixa explícito o que será adiado ou sacrificado; ficar desempregado não paralisa a vida.
 
@@ -358,11 +358,11 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** acompanhar acontecimentos com continuidade.
 
-- [ ] ALE-01 Criar um arco piloto com início, atualização, decisão e encerramento.
-- [ ] ALE-02 Mostrar participantes, origem, confiabilidade e prazo.
-- [ ] ALE-03 Permitir pedir informação ou delegar quando o contexto comportar.
-- [ ] ALE-04 Fazer a omissão gerar um desfecho registrado.
-- [ ] ALE-05 Consultar cadeia de acontecimentos e efeitos posteriores.
+- [x] ALE-01 Criar um arco piloto com início, atualização, decisão e encerramento. Arco piloto de boato (`FootballArcs`): início, atualização, decisão e encerramento.
+- [x] ALE-02 Mostrar participantes, origem, confiabilidade e prazo. Participantes, origem, confiabilidade e prazo visíveis no painel de arcos.
+- [x] ALE-03 Permitir pedir informação ou delegar quando o contexto comportar. Pedir informação ao empresário (uma vez) e delegar, com efeito dependente da relação.
+- [x] ALE-04 Fazer a omissão gerar um desfecho registrado. Omissão no prazo gera desfecho registrado (atleta pede para sair se o boato era verdadeiro).
+- [x] ALE-05 Consultar cadeia de acontecimentos e efeitos posteriores. Cadeia de acontecimentos de cada arco consultável.
 
 **Aceite:** o arco tem ao menos dois desfechos significativos e comportamento definido se o jogador não responder.
 
@@ -370,11 +370,11 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** gerir reputação, torcida e acordos de comunicação.
 
-- [ ] MAR-01 Separar imagem do treinador, força da marca e humor da torcida.
-- [ ] MAR-02 Definir campanha com objetivo, público, orçamento e prazo.
-- [ ] MAR-03 Negociar contrato comercial com obrigações verificáveis.
-- [ ] MAR-04 Mostrar evolução por período e fatos que contribuíram para ela.
-- [ ] MAR-05 Avaliar campanha e refletir resultado em demanda e propostas futuras.
+- [x] MAR-01 Separar imagem do treinador, força da marca e humor da torcida. Marca (sessão 01, `FootballBrandImage`): testes de domínio e build iOS.
+- [x] MAR-02 Definir campanha com objetivo, público, orçamento e prazo. Marca (sessão 01, `FootballBrandImage`): testes de domínio e build iOS.
+- [x] MAR-03 Negociar contrato comercial com obrigações verificáveis. Marca (sessão 01, `FootballBrandImage`): testes de domínio e build iOS.
+- [x] MAR-04 Mostrar evolução por período e fatos que contribuíram para ela. Marca (sessão 01, `FootballBrandImage`): testes de domínio e build iOS.
+- [x] MAR-05 Avaliar campanha e refletir resultado em demanda e propostas futuras. Marca (sessão 01, `FootballBrandImage`): testes de domínio e build iOS.
 
 **Aceite:** jogador consegue explicar a mudança de imagem por acontecimentos observáveis, não por um número opaco.
 
@@ -382,12 +382,12 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Objetivo:** planejar obrigações futuras e separar patrimônios.
 
-- [ ] BAN-01 Separar conta do clube e conta pessoal, com extratos completos.
+- [x] BAN-01 Separar conta do clube e conta pessoal, com extratos completos. Clube/Banco (sessão 01): testes de domínio e build iOS.
 - [x] BAN-02 Exibir recebíveis, despesas contratadas e vencimentos. Recebíveis, despesas contratadas e vencimentos na projeção (sessão 01). Suíte 218/218 no Docker.
-- [ ] BAN-03 Simular contratação/obra antes de assumir compromisso.
+- [x] BAN-03 Simular contratação/obra antes de assumir compromisso. Clube/Banco (sessão 01): testes de domínio e build iOS.
 - [x] BAN-04 Mostrar cenários e premissas da projeção, distinguindo garantido de estimado. Cenários e premissas, garantido × estimado (sessão 01). Suíte 218/218 no Docker.
-- [ ] BAN-05 Formalizar empréstimo do treinador com saldo e condições de devolução.
-- [ ] BAN-06 Abrir o fato ou contrato associado a cada lançamento.
+- [x] BAN-05 Formalizar empréstimo do treinador com saldo e condições de devolução. Clube/Banco (sessão 01): testes de domínio e build iOS.
+- [x] BAN-06 Abrir o fato ou contrato associado a cada lançamento. Clube/Banco (sessão 01): testes de domínio e build iOS.
 
 **Aceite:** saldo e extrato reconciliam; nenhuma transferência entre contas cria ou elimina dinheiro indevidamente.
 
@@ -396,11 +396,11 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 **Objetivo:** construir relações recíprocas com pessoas persistentes.
 
 - [ ] CON-01 Abrir ficha específica pela busca e por mensagens.
-- [ ] CON-02 Registrar temas, histórico, interesses e promessas.
-- [ ] CON-03 Oferecer conversa contextual em vez de uma única ação genérica por papel.
-- [ ] CON-04 Permitir que o contato proponha oportunidade ou peça ajuda.
-- [ ] CON-05 Integrar confiança a preço, conselho e resposta institucional de forma explicável.
-- [ ] CON-06 Tratar mudança de presidente/empresário e continuidade de família/amigo ao trocar de clube.
+- [x] CON-02 Registrar temas, histórico, interesses e promessas. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
+- [x] CON-03 Oferecer conversa contextual em vez de uma única ação genérica por papel. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
+- [x] CON-04 Permitir que o contato proponha oportunidade ou peça ajuda. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
+- [x] CON-05 Integrar confiança a preço, conselho e resposta institucional de forma explicável. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
+- [x] CON-06 Tratar mudança de presidente/empresário e continuidade de família/amigo ao trocar de clube. Contatos (sessão 01, `FootballContactRelations`): testes de domínio e captura gerada.
 
 **Aceite:** relação evolui por acontecimentos e compromissos; não basta repetir o mesmo almoço para obter todos os benefícios.
 

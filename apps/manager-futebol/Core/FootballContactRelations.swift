@@ -384,7 +384,7 @@ extension FootballCareer {
             let result = performActivity(.lecture, onWorldDay: worldDay)
             text = "Aula dada no curso do mentor. \(result.text)"
         case .friendLoan:
-            world.coach.personalCash -= request.amount
+            bookPersonal(-request.amount, "Empréstimo a \(contact.name)")
             world.projects.contactRelations.requests[index].status = .accepted
             world.projects.contactRelations.requests[index].eventWorldDay = worldDay + 10
             delta = 6
@@ -416,7 +416,7 @@ extension FootballCareer {
                 remember(contact, title: "Pedido sem resposta", summary: "Você não respondeu a tempo.", delta: -cost)
             case .accepted:
                 if request.kind == .friendLoan, let day = request.eventWorldDay, worldDay >= day {
-                    world.coach.personalCash += Int(Double(request.amount) * 1.05)
+                    bookPersonal(Int(Double(request.amount) * 1.05), "Devolução de \(contact.name)")
                     world.projects.contactRelations.requests[index].status = .fulfilled
                     remember(contact, title: "Devolveu o empréstimo", summary: "Com 5% de agradecimento.", delta: 0)
                 } else if [.familyEvent, .familyPromise].contains(request.kind), let day = request.eventWorldDay, worldDay > day {

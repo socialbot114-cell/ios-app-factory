@@ -52,7 +52,7 @@ extension FootballCareer {
 
     private var seasonStartWorldDay: Int { (season - 1) * FootballSeason.matchDaysPerSeason }
 
-    private func restGain() -> Int { 30 + world.coach.assets.reduce(0) { $0 + $1.kind.energyBonus } }
+    private func restGain(onWorldDay day: Int) -> Int { 30 + assetRestBonus(onWorldDay: day) }
 
     /// Energia no começo de cada dia do horizonte: gasto do plano e +3 de recuperação por dia de jogo.
     func projectedCoachEnergy(through lastDay: Int) -> [Int: Int] {
@@ -67,7 +67,7 @@ extension FootballCareer {
             } else {
                 activity = world.projects.personalPlan.first { $0.worldDay == day && $0.status == .planned }?.activity
             }
-            if let activity { energy = activity == .rest ? min(100, energy + restGain()) : energy - activity.energyCost }
+            if let activity { energy = activity == .rest ? min(100, energy + restGain(onWorldDay: day)) : energy - activity.energyCost }
             energy = min(100, max(0, energy + 3))
         }
         return result

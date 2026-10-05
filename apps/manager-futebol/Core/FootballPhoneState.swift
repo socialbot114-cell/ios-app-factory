@@ -71,7 +71,7 @@ extension FootballCareer {
 
     var difficultyLockReason: String? {
         guard !canChangeDifficulty, let challenge, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) else { return nil }
-        return "Travada em \(scenario.difficulty.title) pelo desafio \"\(scenario.title)\"."
+        return "Travada em \(difficulty.title) pelo desafio \"\(scenario.title)\"."
     }
 
     @discardableResult
@@ -85,7 +85,7 @@ extension FootballCareer {
     /// Regras do desafio ativo, em texto, para o jogador conferir (AJU-06).
     var activeChallengeRules: [String] {
         guard let challenge, challenge.status == .active, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) else { return [] }
-        var rules = ["Dificuldade: \(scenario.difficulty.title) (fixa)",
+        var rules = ["Dificuldade: \(difficulty.title) (fixa)",
                      "Prazo: \(scenario.seasonsAllowed) temporada(s), desde a temporada \(challenge.startSeason)"]
         if let age = scenario.maxStarterAge { rules.append("Titulares com até \(age) anos") }
         if let cap = scenario.wageCapFactor { rules.append("Folha limitada a \(Int((cap * 100).rounded()))% do referencial") }

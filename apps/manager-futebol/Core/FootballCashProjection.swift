@@ -62,7 +62,7 @@ extension FootballCareer {
 
     /// Projeta o caixa do clube nos próximos dias de jogo da temporada, sem alterar a carreira.
     /// Considera só compromissos já assumidos e fluxos recorrentes atuais; não supõe vendas, compras ou prêmios.
-    func cashProjection(horizon: Int = defaultProjectionHorizon) -> CashProjection {
+    func cashProjection(horizon: Int = defaultProjectionHorizon, scenario: [ScenarioPayment] = []) -> CashProjection {
         guard let selectedClubID, let club = selectedClub, !isFired else {
             return CashProjection(startingCash: transferBudget, days: [], lines: [])
         }
@@ -112,6 +112,14 @@ extension FootballCareer {
             }
         }
 
+        // Etapas restantes da obra em curso: pagas no tick em que o andamento alcança cada etapa.
+        var scheduled = scenario
+        if let plan = constructionPlan {
+            for stage in plan.stagesPaid..<plan.stageCosts.count {
+                scheduled.append(ScenarioPayment(worldDay: plan.startWorldDay + plan.pausedDays + plan.stageOffsets[stage], amount: plan.stageCosts[stage],
+                                                 title: "Obra: \(ConstructionPlan.stageNames[stage].lowercased())"))
+            }
+        }
         var days: [CashProjectionDay] = []
         let seasonStart = (season - 1) * perSeason
         var loanLeft: [Int: Int] = [:]
@@ -152,6 +160,13 @@ extension FootballCareer {
                 loanLeft[loan.id] = left - payment
                 contracted -= payment
                 add(.other, "Devolução do aporte ao treinador", .contracted, -payment)
+            }
+            // Pagamentos agendados (obra e cenários simulados): o tick deste dia acontece no dia corrido seguinte.
+            let tick = seasonStart + matchDay + 1
+            for payment in scheduled where payment.worldDay <= tick && (offset > 0 ? payment.worldDay > tick - 1 : true) {
+                let simulated = scenario.contains(payment)
+                contracted -= payment.amount
+                add(simulated ? .other : .facilities, payment.title, .contracted, -payment.amount, due: payment.worldDay)
             }
             // Parcelas: o índice avança antes do acerto, então este dia quita o que vence até matchDay + 1.
             for payment in pendingPayments {

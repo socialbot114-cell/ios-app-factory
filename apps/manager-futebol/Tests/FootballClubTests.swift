@@ -151,7 +151,8 @@ final class FootballClubTests: XCTestCase {
         let cost = try XCTUnwrap(career.upgradeCost(for: .stadium))
         let cash = career.transferBudget
         XCTAssertTrue(career.startUpgrade(.stadium))
-        XCTAssertEqual(career.transferBudget, cash - cost)
+        // Pagamento por etapas (CLB-04): só a fundação sai no início; o total exato sai até o fim da obra.
+        XCTAssertEqual(career.transferBudget, cash - (career.firstStageCost(for: .stadium) ?? cost))
         XCTAssertNotNil(career.upgradeProject)
         XCTAssertNotNil(career.canStartUpgrade(.medical), "Só uma obra por vez")
         XCTAssertEqual(career.stadiumLevel, 1)
@@ -160,6 +161,7 @@ final class FootballClubTests: XCTestCase {
         for _ in 0..<days { XCTAssertTrue(career.simulateNextMatchDay()) }
         XCTAssertNil(career.upgradeProject)
         XCTAssertEqual(career.stadiumLevel, 2)
+        XCTAssertEqual(career.finance.entries.filter { $0.note.hasPrefix("Obra: \(FacilityKind.stadium.title)") }.reduce(0) { $0 + $1.amount }, -cost)
         XCTAssertEqual(career.stadiumCapacity, Int(Double(FootballSeason.team(3)!.capacity) * 1.08))
         XCTAssertGreaterThan(career.stadiumCapacity, capacity)
         XCTAssertTrue(career.inbox.contains { $0.title == "Obra concluída" })

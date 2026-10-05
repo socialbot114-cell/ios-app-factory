@@ -21,6 +21,10 @@ extension FootballCareer {
         cancelTransferRaces()
         cancelTransferTalks()
         transitionContactsToNewClub()
+        // Campanha do clube antigo sai do ar sem avaliação: a marca nova começa do zero.
+        for index in world.projects.brand.campaigns.indices where world.projects.brand.campaigns[index].isRunning {
+            world.projects.brand.campaigns[index].verdict = .below
+        }
         for index in world.commercial.ledger.indices { world.commercial.ledger[index].closed = true }
 
         for index in world.projects.meetings.indices where world.projects.meetings[index].isOpen {

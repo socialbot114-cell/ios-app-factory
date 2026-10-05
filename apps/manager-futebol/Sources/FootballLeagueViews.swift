@@ -7,6 +7,8 @@ struct FootballTableView: View {
     @State private var section: LeagueSection
     @State private var serieARound: Int?
     @State private var serieBRound: Int?
+    /// Avisa a aba escolhida para ela ser lembrada ao sair e voltar ao app (OS-05).
+    var onSectionChange: ((LeagueSection) -> Void)? = nil
 
     enum LeagueSection: String, CaseIterable, Identifiable {
         case serieA = "Série A"
@@ -17,8 +19,9 @@ struct FootballTableView: View {
         var id: String { rawValue }
     }
 
-    init(career: FootballCareer, initialSection: LeagueSection? = nil) {
+    init(career: FootballCareer, initialSection: LeagueSection? = nil, onSectionChange: ((LeagueSection) -> Void)? = nil) {
         self.career = career
+        self.onSectionChange = onSectionChange
         let fallback: LeagueSection = career.userDivision == .serieB ? .serieB : .serieA
         _section = State(initialValue: initialSection ?? fallback)
     }
@@ -47,6 +50,7 @@ struct FootballTableView: View {
         }
         .factoryPage()
         .navigationTitle("Liga")
+        .onChange(of: section) { _, value in onSectionChange?(value) }
     }
 
     private var subtitle: String {
@@ -551,6 +555,7 @@ struct FootballClubView: View {
                     Text("Vitórias acima do esperado e clássicos vencidos aumentam a confiança. Terminar abaixo da meta com confiança baixa leva à demissão.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                FootballBoardEvaluationPanel(career: career)
                 FootballBoardMeetingPanel(career: $career, onAlert: onAlert)
                 FactoryPanel(title: "Histórico do treinador", systemImage: "clock.arrow.circlepath") {
                     if career.history.isEmpty {

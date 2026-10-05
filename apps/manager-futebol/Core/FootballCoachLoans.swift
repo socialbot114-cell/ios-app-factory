@@ -47,7 +47,9 @@ extension FootballCareer {
                 continue
             }
             book(.other, -payment, "Devolução do aporte ao treinador")
-            world.coach.personalCash += payment
+            let link = FinanceLink(kind: .loan, id: "\(loan.id)", title: "Aporte de \(FootballFormat.money(loan.principal))")
+            linkLastFinanceEntry(note: "Devolução do aporte ao treinador", link)
+            bookPersonal(payment, "Devolução do aporte", link: link)
             world.projects.coachLoans[index].outstanding -= payment
             if world.projects.coachLoans[index].outstanding <= 0 {
                 world.projects.coachLoans[index].status = .repaid
@@ -74,7 +76,7 @@ extension FootballCareer {
     /// Ao deixar o clube, o saldo devedor é quitado na rescisão: o dinheiro volta ao bolso do treinador.
     mutating func settleCoachLoansOnDeparture() {
         for index in world.projects.coachLoans.indices where world.projects.coachLoans[index].status == .active {
-            world.coach.personalCash += world.projects.coachLoans[index].outstanding
+            bookPersonal(world.projects.coachLoans[index].outstanding, "Aporte quitado na saída do clube")
             world.projects.coachLoans[index].outstanding = 0
             world.projects.coachLoans[index].status = .settled
         }

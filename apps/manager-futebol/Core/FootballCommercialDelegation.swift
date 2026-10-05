@@ -120,6 +120,7 @@ extension FootballCareer {
         }
         let fee = delegationFeePerMatchDay
         book(.marketing, -fee, "Gerente comercial")
+        linkLastFinanceEntry(note: "Gerente comercial", FinanceLink(kind: .delegation, id: "delegation", title: "Gerente comercial"))
         delegation.feesPaid += fee
         world.commercial.delegation = delegation
 

@@ -255,6 +255,7 @@ extension FootballCareer {
                              playerIDs: [talk.playerID], clubIDs: [talk.sellerID], reliability: .confirmed, isPublic: true,
                              effects: ["Entrada de \(FootballFormat.money(summary.upfront))", "Folha +\(FootballFormat.money(talk.wage))"]))
         deliverFact(factID, inbox: .transfer, social: true)
+        linkRecentFinanceEntries(prefix: "Entrada por \(name)", FinanceLink(kind: .fact, id: factID, title: "Contratação de \(name)"))
         return .accepted("\(name) é do clube.")
     }
 

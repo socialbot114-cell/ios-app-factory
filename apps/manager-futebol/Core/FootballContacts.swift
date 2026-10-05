@@ -84,7 +84,8 @@ extension FootballCareer {
     }
 
     func canContact(_ role: ContactRole) -> String? {
-        guard selectedClubID != nil, !isFired, liveMatch == nil, contact(role) != nil else { return "Indisponível agora." }
+        guard selectedClubID != nil, liveMatch == nil, contact(role) != nil else { return "Indisponível agora." }
+        if isFired && role == .president { return "Sem clube, não há presidente para conversar." }
         if world.contacts.lastActionWorldDay == worldDay { return "Uma conversa por dia de jogo." }
         if world.coach.energy < 8 { return "Energia insuficiente: descanse primeiro." }
         return nil

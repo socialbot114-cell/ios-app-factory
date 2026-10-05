@@ -90,10 +90,18 @@ struct ProjectsState: Codable, Equatable {
     var nextTalkID = 1
     /// Histórico, pedidos e promessas dos contatos (CON-02…06).
     var contactRelations = ContactRelationsState()
+    /// Continuidade da vida pessoal e histórico de bem-estar (VID-02…06).
+    var life = LifeState()
+    /// Campanhas com briefing, contrato de imagem e evolução da marca (MAR-01…05).
+    var brand = BrandState()
+    /// Plano por etapas da obra em curso (CLB-04).
+    var construction: ConstructionPlan? = nil
+    /// Extrato da conta pessoal do treinador (BAN-01).
+    var personalLedger = PersonalLedgerState()
 
     init() {}
 
-    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations }
+    private enum CodingKeys: String, CodingKey { case meetings, nextMeetingID, personalPlan, nextPlanID, lastLoanBonusWorldDay, coachLoans, nextLoanID, transferRaces, nextRaceID, recruitment, transferTalks, nextTalkID, contactRelations, life, brand, construction, personalLedger }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -110,6 +118,10 @@ struct ProjectsState: Codable, Equatable {
         transferTalks = try container.decodeIfPresent([TransferTalk].self, forKey: .transferTalks) ?? []
         nextTalkID = try container.decodeIfPresent(Int.self, forKey: .nextTalkID) ?? 1
         contactRelations = try container.decodeIfPresent(ContactRelationsState.self, forKey: .contactRelations) ?? ContactRelationsState()
+        life = try container.decodeIfPresent(LifeState.self, forKey: .life) ?? LifeState()
+        brand = try container.decodeIfPresent(BrandState.self, forKey: .brand) ?? BrandState()
+        construction = try container.decodeIfPresent(ConstructionPlan.self, forKey: .construction)
+        personalLedger = try container.decodeIfPresent(PersonalLedgerState.self, forKey: .personalLedger) ?? PersonalLedgerState()
     }
 }
 
@@ -232,6 +244,7 @@ extension FootballCareer {
             world.projects.meetings[index].status = .conditionRunning
             world.projects.meetings[index].answer = "Verba de \(FootballFormat.money(amount)) aprovada. Condição: vencer \(condition.winsNeeded) dos próximos \(condition.games) jogos."
             book(.other, amount, "Verba extra da diretoria")
+            linkLastFinanceEntry(note: "Verba extra da diretoria", FinanceLink(kind: .meeting, id: "\(meeting.id)", title: "Reunião com a diretoria"))
             addInbox(.board, title: "Verba aprovada", body: world.projects.meetings[index].answer + " Cumprir rende confiança +4; falhar custa confiança -10.")
         case .targetReview:
             let old = boardTarget

@@ -21,18 +21,19 @@ extension FootballCareer {
 
     /// Salário, manutenção de bens, rendimento de investimentos e royalties de cada dia de jogo.
     mutating func tickCoachFinances(using random: inout FootballRandom) {
-        guard selectedClubID != nil, !isFired else { return }
+        // Sem clube não há salário, mas bens, royalties e investimentos seguem correndo (VID-05).
+        guard selectedClubID != nil else { return }
         let days = FootballSeason.matchDaysPerSeason
-        world.coach.personalCash += coachSalaryPerSeason / days
+        if !isFired { bookPersonal(coachSalaryPerSeason / days, "Salário de treinador") }
         let upkeep = world.coach.assets.reduce(0) { $0 + $1.kind.upkeep } / days
-        world.coach.personalCash -= upkeep
-        world.coach.personalCash += world.coach.booksPublished * 4_000 / days
+        bookPersonal(-upkeep, "Manutenção dos bens")
+        bookPersonal(world.coach.booksPublished * 4_000 / days, "Direitos autorais")
         for index in world.coach.investments.indices {
             let kind = world.coach.investments[index].kind
             let noise = (random.unit() * 2 - 1) * kind.volatility * 1.7
             let value = Double(world.coach.investments[index].value) * (1 + kind.drift + noise)
             world.coach.investments[index].value = max(0, Int(value))
-            if kind == .realEstate { world.coach.personalCash += Int(Double(world.coach.investments[index].value) * 0.0015) }
+            if kind == .realEstate { bookPersonal(Int(Double(world.coach.investments[index].value) * 0.0015), "Aluguel de imóveis") }
         }
     }
 
@@ -54,6 +55,7 @@ extension FootballCareer {
         }
         world.coach.energy = min(100, max(0, energy))
         world.coach.stress = min(100, max(0, stress))
+        recordWellbeing()
     }
 
     func canBuyAsset(_ kind: AssetKind) -> String? {
@@ -65,10 +67,11 @@ extension FootballCareer {
     @discardableResult
     mutating func buyAsset(_ kind: AssetKind) -> Bool {
         guard canBuyAsset(kind) == nil else { return false }
-        world.coach.personalCash -= kind.price
+        bookPersonal(-kind.price, "Compra: \(kind.title)")
         world.coach.assets.append(OwnedAsset(id: world.coach.nextItemID, kind: kind, boughtSeason: season))
         world.coach.nextItemID += 1
         world.coach.stress = max(0, world.coach.stress - 5)
+        logLife("Comprou: \(kind.title)", "\(FootballFormat.money(kind.price)) à vista; manutenção de \(FootballFormat.money(kind.upkeep))/temporada.")
         bump("assets")
         return true
     }
@@ -77,16 +80,18 @@ extension FootballCareer {
     mutating func sellAsset(id: Int) -> Bool {
         guard let index = world.coach.assets.firstIndex(where: { $0.id == id }) else { return false }
         let asset = world.coach.assets.remove(at: index)
-        world.coach.personalCash += Int(Double(asset.kind.price) * 0.7)
+        bookPersonal(Int(Double(asset.kind.price) * 0.7), "Venda: \(asset.kind.title)")
+        logLife("Vendeu: \(asset.kind.title)", "Recebeu \(FootballFormat.money(Int(Double(asset.kind.price) * 0.7))).")
         return true
     }
 
     @discardableResult
     mutating func invest(_ kind: InvestmentKind, amount: Int) -> Bool {
         guard amount >= 10_000, world.coach.personalCash >= amount else { return false }
-        world.coach.personalCash -= amount
+        bookPersonal(-amount, "Investimento: \(kind.title)")
         world.coach.investments.append(Investment(id: world.coach.nextItemID, kind: kind, principal: amount, value: amount, startedWorldDay: worldDay))
         world.coach.nextItemID += 1
+        logLife("Investiu", "\(FootballFormat.money(amount)) em \(kind.title.lowercased()).")
         bump("investments")
         return true
     }
@@ -94,7 +99,8 @@ extension FootballCareer {
     @discardableResult
     mutating func withdrawInvestment(id: Int) -> Bool {
         guard let index = world.coach.investments.firstIndex(where: { $0.id == id }) else { return false }
-        world.coach.personalCash += world.coach.investments[index].value
+        bookPersonal(world.coach.investments[index].value, "Resgate de investimento")
+        logLife("Resgatou investimento", "\(FootballFormat.money(world.coach.investments[index].value)) de volta ao bolso.")
         world.coach.investments.remove(at: index)
         return true
     }
@@ -104,9 +110,14 @@ extension FootballCareer {
     mutating func lendToClub(amount: Int) -> Bool {
         guard selectedClubID != nil, !isFired, amount >= 50_000, world.coach.personalCash >= amount else { return false }
         let earnsBonus = loanEarnsBoardBonus(amount: amount)
-        world.coach.personalCash -= amount
+        bookPersonal(-amount, "Aporte ao clube")
         book(.other, amount, "Aporte do treinador")
         registerCoachLoan(amount: amount)
+        if let loan = world.projects.coachLoans.last {
+            let link = FinanceLink(kind: .loan, id: "\(loan.id)", title: "Aporte de \(FootballFormat.money(amount))")
+            linkLastFinanceEntry(note: "Aporte do treinador", link)
+            if let index = world.projects.personalLedger.entries.indices.last { world.projects.personalLedger.entries[index].link = link }
+        }
         if earnsBonus {
             boardConfidence = min(100, boardConfidence + 2)
             world.projects.lastLoanBonusWorldDay = worldDay
@@ -139,15 +150,18 @@ extension FootballCareer {
     mutating func startCourse() -> Bool {
         guard canStartCourse() == nil else { return false }
         let next = world.coach.licenseLevel + 1
-        world.coach.personalCash -= CoachProfile.courseCosts[next - 1]
+        bookPersonal(-CoachProfile.courseCosts[next - 1], "Curso de licença")
         world.coach.course = CoachCourse(targetLicense: next, sessionsDone: 0, sessionsNeeded: CoachProfile.courseSessions[next - 1])
+        world.projects.life.lastStudyWorldDay = worldDay
+        logLife("Começou o curso", "Rumo à \(CoachProfile.licenseNames[next - 1]).")
         return true
     }
 
     // MARK: - Atividades
 
     func canDo(_ activity: CoachActivity) -> String? {
-        guard selectedClubID != nil, !isFired else { return "Sem clube." }
+        // A vida continua sem clube (VID-05): só é preciso ter começado a carreira.
+        guard selectedClubID != nil else { return "Escolha um clube para começar a carreira." }
         guard world.coach.lastActivityWorldDay != worldDay else { return "Uma atividade por dia de jogo." }
         if activity != .rest && world.coach.energy < max(5, activity.energyCost) { return "Energia insuficiente: descanse primeiro." }
         if activity == .study && world.coach.course == nil { return "Inicie um curso de licença antes." }
@@ -171,10 +185,11 @@ extension FootballCareer {
         let rep = reputation
         switch activity {
         case .rest:
-            let bonus = world.coach.assets.reduce(0) { $0 + $1.kind.energyBonus }
-            world.coach.energy = min(100, world.coach.energy + 30 + bonus)
-            world.coach.stress = max(0, world.coach.stress - 25)
+            let context = restContext(onWorldDay: day)
+            world.coach.energy = min(100, world.coach.energy + 30 + context.energy)
+            world.coach.stress = max(0, world.coach.stress - 25 - context.stress)
             text = "Um dia de descanso devolveu energia e aliviou o estresse."
+            if !context.reasons.isEmpty { text += " Ajudou: " + context.reasons.joined(separator: ", ") + "." }
         case .study:
             world.coach.energy -= activity.energyCost
             if var course = world.coach.course {
@@ -237,9 +252,10 @@ extension FootballCareer {
         }
         world.coach.energy = min(100, max(0, world.coach.energy))
         world.coach.stress = min(100, max(0, world.coach.stress + activity.stressCost))
-        world.coach.personalCash += cash
+        bookPersonal(cash, activity.title)
         world.social.coachFollowers = max(0, world.social.coachFollowers + followers)
         bump("activities")
+        noteActivity(activity, text: text, onWorldDay: day)
         return ActivityResult(text: text, cashChange: cash, followersChange: followers)
     }
 }

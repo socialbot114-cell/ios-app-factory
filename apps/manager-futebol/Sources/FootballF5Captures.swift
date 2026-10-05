@@ -41,6 +41,8 @@ enum FootballF5Captures {
             career.world.phone.preferences.minimumPriority = 2
             career.world.phone.preferences.mutedApps = ["betting"]
             if let scenario = ChallengeScenario.all.first {
+                // Como no início real do desafio: a dificuldade do cenário passa a valer na carreira.
+                career.difficulty = scenario.difficulty
                 career.challenge = ChallengeState(scenarioID: scenario.id, startSeason: career.season, seasonsAllowed: scenario.seasonsAllowed)
             }
         default:
