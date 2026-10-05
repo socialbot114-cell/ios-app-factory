@@ -82,6 +82,7 @@ struct FootballInboxView: View {
                     }
                     action("Sem garantia", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
                     action("Ver atleta", "person.text.rectangle", id: "msg-sheet-\(message.id)") { selected = Selection(id: playerID) }
+                    action("Escalação", "list.number", id: "msg-lineup-\(message.id)") { onOpenApp(.squad) }
                 }
             case .playerWantsOut:
                 if let playerID {

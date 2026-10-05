@@ -103,13 +103,13 @@ Sem estimativas de calendário até medir a primeira entrega vertical. Revisar e
 - [ ] F2-01 Escolher um cenário: reserva pede minutos antes de uma partida importante.
 - [ ] F2-02 Mostrar pedido em Mensagens e necessidade de decisão no Gestor.
 - [ ] F2-03 Permitir resposta com alternativas e prazo de compromisso.
-- [ ] F2-04 Acessar diretamente o atleta e a escalação pela conversa.
+- [x] F2-04 Acessar diretamente o atleta e a escalação pela conversa. Botões Ver atleta e Escalação na mensagem de pedido de minutos.
 - [ ] F2-05 Preparar a partida usando relatório do rival e condição dos atletas.
 - [ ] F2-06 Contabilizar presença e resultado usando dados da partida efetivamente jogada.
-- [ ] F2-07 Avaliar promessa, moral e relação ao vencer o prazo.
-- [ ] F2-08 Produzir resposta do atleta, resumo do Gestor e repercussão pública somente quando justificável.
+- [x] F2-07 Avaliar promessa, moral e relação ao vencer o prazo. Veredito cumprida/parcial/quebrada/justificada; moral por profissionalismo, relação com o empresário, lesão não pesa. `FootballPromiseOutcomeTests`.
+- [x] F2-08 Produzir resposta do atleta, resumo do Gestor e repercussão pública somente quando justificável. Fala do atleta e consequências na mensagem; notícia pública só para craque (top 5) com profissionalismo baixo.
 - [ ] F2-09 Mostrar pendências que expiram antes de confirmar avanço rápido.
-- [ ] F2-10 Verificar cumprir, quebrar, recusar e ignorar o pedido, inclusive após reabrir o app.
+- [x] F2-10 Verificar cumprir, quebrar, recusar e ignorar o pedido, inclusive após reabrir o app. Pedido ignorado por 3 dias de jogo cobra moral -4 uma vez; testes de save/reabertura. Suíte 177/177 no Docker swift:5.9.
 
 **Meta M2:** uma jornada conectada entre Gestor, Mensagens, Tática e relatório pós-jogo, com retorno compreensível e persistente.
 

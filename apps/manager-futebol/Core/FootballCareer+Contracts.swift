@@ -149,15 +149,9 @@ extension FootballCareer {
                     addPromiseOutcome(promise, title: "Compromisso encerrado", body: "O atleta deixou o elenco; a promessa de minutos foi encerrada.")
                     continue
                 }
-                if promise.startsDone >= promise.requiredStarts {
-                    players[index].morale = min(100, players[index].morale + 8)
-                    addPromiseOutcome(promise, title: "Promessa cumprida", body: "\(players[index].name) começou \(promise.startsDone) jogo(s), como combinado. Moral +8.")
-                    continue
-                }
-                if promise.season < season || matchDayIndex >= promise.deadlineMatchDay {
-                    players[index].morale = max(0, players[index].morale - 18)
-                    boardConfidence = max(0, boardConfidence - 1)
-                    addPromiseOutcome(promise, title: "Promessa quebrada", body: "\(players[index].name) começou \(promise.startsDone) de \(promise.requiredStarts) jogos combinados. Moral -18; confiança da diretoria -1.")
+                let passed = promise.season < season || matchDayIndex >= promise.deadlineMatchDay
+                if let verdict = promiseVerdict(promise, athlete: players[index], deadlinePassed: passed) {
+                    applyPromiseVerdict(verdict, promise: promise, athleteIndex: index)
                     continue
                 }
             } else {
