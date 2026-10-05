@@ -24,9 +24,9 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["phone-search"].exists)
         XCTAssertTrue(app.buttons["phone-notifications"].exists)
 
-        app.buttons["dock-manager"].tap()
+        openFromHome("dock-manager", in: app)
         XCTAssertTrue(app.buttons["play-match"].waitForExistence(timeout: 8))
-        app.buttons["phone-home"].tap()
+        goHome(app)
 
         tapWhenReady(app.buttons["app-squad"], in: app)
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "squad-pitch").firstMatch.waitForExistence(timeout: 5))
@@ -34,18 +34,13 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(intensity.waitForExistence(timeout: 5))
         scrollUntilHittable(intensity, in: app)
         intensity.buttons["Intensa"].tap()
-        app.buttons["phone-home"].tap()
+        goHome(app)
 
-        app.buttons["dock-manager"].tap()
-        // Conteúdo fora da viewport pode não existir ainda na árvore de acessibilidade. A rolagem do Gestor é preservada,
-        // então volta ao topo antes de procurar para baixo (o painel de partida fica no começo da tela).
-        for _ in 0..<5 {
-            if app.buttons["play-match"].exists { break }
-            app.swipeDown()
-        }
+        openFromHome("dock-manager", in: app)
+        // Conteúdo fora da viewport pode não existir ainda na árvore de acessibilidade: rola com arrasto no meio da tela.
         for _ in 0..<8 {
             if app.buttons["play-match"].exists { break }
-            app.swipeUp()
+            dragUp(app)
         }
         tapWhenReady(app.buttons["play-match"], in: app)
 
@@ -62,28 +57,28 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(training.waitForExistence(timeout: 10))
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "match-report-shots").firstMatch.exists)
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "match-report-possession").firstMatch.exists)
-        app.buttons["phone-home"].tap()
+        goHome(app)
 
         tapWhenReady(app.buttons["app-league"], in: app)
         XCTAssertTrue(app.staticTexts["Classificação"].waitForExistence(timeout: 5))
         let auroraRow = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Aurora FC")).firstMatch
         XCTAssertTrue(auroraRow.waitForExistence(timeout: 5))
-        app.buttons["phone-home"].tap()
+        goHome(app)
 
         tapWhenReady(app.buttons["app-contacts"], in: app)
         XCTAssertTrue(app.buttons["contact-family"].waitForExistence(timeout: 6))
-        app.buttons["phone-home"].tap()
+        goHome(app)
 
         tapWhenReady(app.buttons["app-betting"], in: app)
         XCTAssertTrue(app.staticTexts["Palpite+"].waitForExistence(timeout: 6))
-        app.buttons["phone-home"].tap()
+        goHome(app)
 
-        app.buttons["dock-club"].tap()
+        openFromHome("dock-club", in: app)
         let newCareer = app.descendants(matching: .any).matching(identifier: "new-career").firstMatch
         // A tela Clube ganhou painéis (estádio, caixa, projetos): o botão pode estar fora da viewport.
         for _ in 0..<10 {
             if newCareer.exists { break }
-            app.swipeUp()
+            dragUp(app)
         }
         XCTAssertTrue(newCareer.waitForExistence(timeout: 8))
     }
@@ -182,7 +177,7 @@ final class FootballFlowUITests: XCTestCase {
             check.action(app)
             dismissAlertIfAny(app)
             attachScreenshot(app, name: "app-\(check.id)")
-            app.buttons["phone-home"].tap()
+            goHome(app)
             XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 8), "Não voltou à tela inicial: \(check.title)")
         }
     }
@@ -204,15 +199,41 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Fechar"].waitForExistence(timeout: 5))
         attachScreenshot(app, name: "futos-contextual-message")
         app.buttons["Fechar"].tap()
-        tapWhenReady(app.buttons["phone-home"], in: app)
-        tapWhenReady(app.buttons["dock-manager"], in: app)
+        goHome(app)
+        openFromHome("dock-manager", in: app)
         let agenda = app.descendants(matching: .any).matching(identifier: "football-agenda").firstMatch
         for _ in 0..<6 {
             if agenda.exists { break }
-            app.swipeUp()
+            dragUp(app)
         }
         XCTAssertTrue(agenda.waitForExistence(timeout: 8))
         attachScreenshot(app, name: "futos-manager-agenda")
+    }
+
+    /// Volta à tela inicial e espera a janela do app sair: `phone-home` só existe com um app aberto.
+    /// Tocar no dock durante a animação de saída cai na janela que está fechando e o toque se perde.
+    private func goHome(_ app: XCUIApplication) {
+        let home = app.buttons["phone-home"]
+        XCTAssertTrue(home.waitForExistence(timeout: 8), "Nenhum app aberto para fechar")
+        home.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: home)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 8), .completed, "A janela do app não fechou")
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 8))
+    }
+
+    /// Abre um app pelo ícone da tela inicial e espera a janela abrir.
+    private func openFromHome(_ identifier: String, in app: XCUIApplication) {
+        let icon = app.buttons[identifier]
+        XCTAssertTrue(icon.waitForExistence(timeout: 8), "Ícone ausente: \(identifier)")
+        icon.tap()
+        XCTAssertTrue(app.buttons["phone-home"].waitForExistence(timeout: 8), "O app \(identifier) não abriu")
+    }
+
+    /// Rola o conteúdo com um arrasto no meio da tela, longe da barra de início na borda inferior.
+    private func dragUp(_ app: XCUIApplication) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+        start.press(forDuration: 0.05, thenDragTo: end)
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
@@ -225,7 +246,7 @@ final class FootballFlowUITests: XCTestCase {
     private func scrollUntilHittable(_ element: XCUIElement, in app: XCUIApplication) {
         var attempts = 0
         while !element.isHittable && attempts < 6 {
-            app.swipeUp()
+            dragUp(app)
             attempts += 1
         }
     }

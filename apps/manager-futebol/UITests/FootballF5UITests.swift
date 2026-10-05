@@ -89,7 +89,8 @@ final class FootballF5UITests: XCTestCase {
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         for _ in 0..<8 {
             if element.exists { return true }
-            app.swipeUp()
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
+            start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)))
         }
         return element.exists
     }
@@ -108,8 +109,8 @@ final class FootballF5UITests: XCTestCase {
         XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10), "A tela inicial do celular não abriu")
         let icon = app.buttons[appIdentifier]
         XCTAssertTrue(icon.waitForExistence(timeout: 8), "Ícone ausente: \(appIdentifier)")
-        for _ in 0..<4 where !icon.isHittable { app.swipeUp() }
         icon.tap()
+        XCTAssertTrue(app.buttons["phone-home"].waitForExistence(timeout: 8), "O app \(appIdentifier) não abriu")
         return app
     }
 }
