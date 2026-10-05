@@ -158,7 +158,7 @@ struct FootballPressView: View {
                                         Button { career.answerPress(questionID: question.id, tone: tone) } label: {
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(tone.title).font(.subheadline.weight(.bold))
-                                                Text(tone.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                                                Text(question.topic?.hint(for: tone) ?? tone.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
                                             }
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                             .padding(12)

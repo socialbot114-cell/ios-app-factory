@@ -41,7 +41,7 @@ extension FootballCareer {
 
     /// Vendas da loja a cada dia de jogo.
     var merchRevenuePerMatchDay: Int {
-        let mood = 0.7 + 0.006 * Double(fanMood)
+        let mood = (0.7 + 0.006 * Double(fanMood)) * hypeMerchFactor
         let base = Double(fanBase) * 0.30 * shopRevenueFactor * world.business.shopPrice.demand * world.business.shopPrice.margin * mood
         return Int(base * (collectionActive ? 1.3 : 1.0) / 100) * 100
     }

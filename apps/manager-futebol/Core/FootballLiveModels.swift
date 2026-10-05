@@ -203,10 +203,13 @@ struct MatchSimulation: Codable, Equatable {
     var needsShootout = false
     var needsRecompute = true
     var possessionShare = 0.5
+    /// Acréscimos do segundo tempo; definido aos 90 minutos (zero nas copas).
+    var stoppageMinutes: Int? = nil
 
     var homeGoals: Int { home.goals }
     var awayGoals: Int { away.goals }
     var regulationLength: Int { 90 }
+    var regulationEnd: Int { 90 + (stoppageMinutes ?? 0) }
 }
 
 /// Resultado final de uma partida, com tudo o que precisa ser aplicado à carreira.

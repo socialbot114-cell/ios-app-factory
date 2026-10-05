@@ -29,7 +29,7 @@ struct FootballHome: View {
 
     var body: some View {
         Group {
-            if capture == "match", career.liveMatch != nil {
+            if capture?.hasPrefix("match") == true, career.liveMatch != nil {
                 FootballLiveMatchView(career: $career, staticPreview: true) { }
             } else if let capture, Self.deepCaptures.contains(capture) {
                 NavigationStack { deepCapture(capture).tint(FootballTheme.accent) }
@@ -236,11 +236,12 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = ["player", "staff"]
+    static let deepCaptures: Set<String> = ["player", "staff", "press"]
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
         switch name {
+        case "press": FootballPressView(career: $career)
         case "betting": FootballBettingView(career: $career, onAlert: showAlert)
         case "social": FootballSocialView(career: $career, onAlert: showAlert)
         case "fantasy": FootballFantasyView(career: $career, onAlert: showAlert)
@@ -360,7 +361,14 @@ struct FootballHome: View {
             career = FootballCareer(seed: 26)
             return
         }
-        career = Self.previewCareer(liveMatch: capture == "match")
+        career = Self.previewCareer(liveMatch: capture.hasPrefix("match"))
+        if capture == "press" {
+            var guardCount = 0
+            while career.pendingPress == nil, guardCount < 8 {
+                if career.canPlay || career.canAdvanceWithoutPlaying { career.simulateNextMatchDay() }
+                guardCount += 1
+            }
+        }
         slotSummaries = [
             SaveSlotSummary(slot: 0, clubID: career.selectedClubID, season: career.season, matchDay: career.matchDayIndex,
                             division: career.userDivision, updatedAt: Date()),

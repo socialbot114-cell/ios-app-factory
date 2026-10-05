@@ -626,7 +626,7 @@ struct FootballPlayer: Identifiable, Codable, Equatable {
 struct MatchEvent: Codable, Equatable {
     enum Kind: String, Codable {
         case kickoff, goal, chance, save, halfTime, tactic, substitution, fullTime, injury, extraTime, penalties
-        case yellowCard, redCard, penaltyAwarded
+        case yellowCard, redCard, penaltyAwarded, stoppage, pressure
     }
 
     let minute: Int
@@ -639,6 +639,14 @@ struct MatchEvent: Codable, Equatable {
     /// Posição do lance em coordenadas do campo: x é a distância do gol atacado (0 a 1), y a lateral (0 a 1).
     var x: Double? = nil
     var y: Double? = nil
+    /// Minutos de acréscimo em que o lance aconteceu (mostra 90+N).
+    var added: Int? = nil
+
+    var minuteLabel: String {
+        if kind == .kickoff { return "0′" }
+        if let added { return "90+\(added)′" }
+        return "\(minute)′"
+    }
 }
 
 struct LeagueFixture: Identifiable, Codable, Equatable {
@@ -678,6 +686,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     /// Domínio da partida minuto a minuto (positivo favorece o mandante), só nos jogos do usuário.
     var momentum: [Int] = []
     var attendance: Int? = nil
+    var impact: MatchImpact? = nil
     /// Detalhes usados pelo fantasy game e pelas notícias.
     var assistIDs: [Int] = []
     var playedIDs: [Int] = []
@@ -688,7 +697,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
         case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties, userStats
-        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum, attendance
+        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum, attendance, impact
         case assistIDs, playedIDs, yellowIDs, redIDs
     }
 
@@ -737,6 +746,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         awayRed = try container.decodeIfPresent(Int.self, forKey: .awayRed)
         momentum = try container.decodeIfPresent([Int].self, forKey: .momentum) ?? []
         attendance = try container.decodeIfPresent(Int.self, forKey: .attendance)
+        impact = try container.decodeIfPresent(MatchImpact.self, forKey: .impact)
         assistIDs = try container.decodeIfPresent([Int].self, forKey: .assistIDs) ?? []
         playedIDs = try container.decodeIfPresent([Int].self, forKey: .playedIDs) ?? []
         yellowIDs = try container.decodeIfPresent([Int].self, forKey: .yellowIDs) ?? []

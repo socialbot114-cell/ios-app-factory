@@ -56,7 +56,7 @@ extension FootballCareer {
         }
         if FootballSeason.isDerby(fixture.home, fixture.away) { demand *= 1.15 }
         if fixture.competition.isCup { demand *= 1.08 }
-        demand *= ticketPrice.demandFactor
+        demand *= ticketPrice.demandFactor * hypeAttendanceFactor
         let potential = Int(Double(fanBase) * demand)
         let floor = Int(Double(stadiumCapacity) * 0.18)
         return min(stadiumCapacity, max(floor, potential))

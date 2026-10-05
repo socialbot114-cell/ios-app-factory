@@ -170,6 +170,8 @@ extension FootballCareer {
         case .legendCreated: return !legends.isEmpty
         case .veteran: return (counters["matches"] ?? 0) >= 100
         case .pressMaster: return (counters["press"] ?? 0) >= 20
+        case .fansOnFire: return clubHype >= 80
+        case .epicComeback: return (counters["comebacks"] ?? 0) >= 3
         case .scoutEye: return scoutReports.count >= 10
         case .youthCup: return youthCupHistory.contains { $0.userResult == "Campeão da Copinha" }
         case .challengeWon: return challenge?.status == .won

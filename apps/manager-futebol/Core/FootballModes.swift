@@ -153,6 +153,7 @@ enum Achievement: String, Codable, CaseIterable, Identifiable {
     case youthCup, challengeWon
     case betWinner, accumulatorWin, tipsterKing, fantasyWinner, viralPost, verifiedProfile, proLicense
     case wealthy, bookAuthor, eventsMaster, questsMaster, brandDeal
+    case fansOnFire, epicComeback
 
     var id: String { rawValue }
 
@@ -192,6 +193,8 @@ enum Achievement: String, Codable, CaseIterable, Identifiable {
         case .legendCreated: return "Lenda do clube"
         case .veteran: return "Veterano"
         case .pressMaster: return "Mestre da coletiva"
+        case .fansOnFire: return "Torcida em chamas"
+        case .epicComeback: return "Mestre das viradas"
         case .scoutEye: return "Olho clínico"
         case .youthCup: return "Campeão da Copinha"
         case .challengeWon: return "Desafio vencido"
@@ -246,6 +249,8 @@ enum Achievement: String, Codable, CaseIterable, Identifiable {
         case .legendCreated: return "Veja um atleta virar lenda do clube."
         case .veteran: return "Dispute 100 partidas como treinador."
         case .pressMaster: return "Responda 20 perguntas na coletiva."
+        case .fansOnFire: return "Leve o embalo da torcida a 80 ou mais."
+        case .epicComeback: return "Vire três jogos que estava perdendo."
         case .scoutEye: return "Receba dez relatórios de observação."
         case .youthCup: return "Seja campeão da Copinha."
         case .challengeWon: return "Vença um desafio."
@@ -286,6 +291,8 @@ enum Achievement: String, Codable, CaseIterable, Identifiable {
         case .invitationAccepted: return "envelope.open.fill"
         case .reputation90: return "crown.fill"
         case .pressMaster: return "mic.fill"
+        case .fansOnFire: return "flame.fill"
+        case .epicComeback: return "arrow.uturn.up.circle.fill"
         case .scoutEye: return "binoculars.fill"
         case .challengeWon: return "flag.checkered"
         case .betWinner, .accumulatorWin, .tipsterKing: return "ticket.fill"

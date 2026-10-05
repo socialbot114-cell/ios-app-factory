@@ -230,7 +230,7 @@ final class FootballSeasonTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(career.player(incoming.id)?.appearances ?? 0, 1)
         XCTAssertGreaterThanOrEqual(career.player(outgoing.id)?.appearances ?? 0, 1)
         XCTAssertFalse(fixture.userStats.isEmpty)
-        XCTAssertEqual(fixture.momentum.count, 90)
+        XCTAssertGreaterThanOrEqual(fixture.momentum.count, 90)
         XCTAssertTrue(career.fixtures.filter { $0.matchDay == 0 }.allSatisfy(\.isPlayed))
         XCTAssertNotNil(career.pendingPress)
     }

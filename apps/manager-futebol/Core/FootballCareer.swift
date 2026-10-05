@@ -47,6 +47,7 @@ struct FootballCareer: Codable, Equatable {
         case penaltyTakerID
         case rivalMotivation
         case fanMood
+        case clubHype
         case pendingPress
         case transferLog
         case nextTransferID
@@ -132,6 +133,8 @@ struct FootballCareer: Codable, Equatable {
     /// Bônus de ataque que um rival ganha no próximo confronto por declarações provocadoras.
     var rivalMotivation: [Int: Double] = [:]
     var fanMood = 60
+    /// Embalo da torcida (0 a 100): mais público e mais camisas depois de bons jogos.
+    var clubHype = 0
     var pendingPress: PressConference? = nil
     var transferLog: [TransferRecord] = []
     var nextTransferID = 1
@@ -272,6 +275,7 @@ struct FootballCareer: Codable, Equatable {
         penaltyTakerID = try container.decodeIfPresent(Int.self, forKey: .penaltyTakerID)
         rivalMotivation = try container.decodeIfPresent([Int: Double].self, forKey: .rivalMotivation) ?? [:]
         fanMood = try container.decodeIfPresent(Int.self, forKey: .fanMood) ?? 60
+        clubHype = try container.decodeIfPresent(Int.self, forKey: .clubHype) ?? 0
         pendingPress = try container.decodeIfPresent(PressConference.self, forKey: .pendingPress)
         transferLog = try container.decodeIfPresent([TransferRecord].self, forKey: .transferLog) ?? []
         nextTransferID = try container.decodeIfPresent(Int.self, forKey: .nextTransferID) ?? 1
@@ -359,6 +363,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encodeIfPresent(penaltyTakerID, forKey: .penaltyTakerID)
         try container.encode(rivalMotivation, forKey: .rivalMotivation)
         try container.encode(fanMood, forKey: .fanMood)
+        try container.encode(clubHype, forKey: .clubHype)
         try container.encodeIfPresent(pendingPress, forKey: .pendingPress)
         try container.encode(transferLog, forKey: .transferLog)
         try container.encode(nextTransferID, forKey: .nextTransferID)

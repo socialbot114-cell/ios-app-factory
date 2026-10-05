@@ -71,6 +71,7 @@ extension MatchSimulation {
     mutating func step(players: [Int: FootballPlayer]) {
         guard !finished else { return }
         minute += 1
+        let eventsBefore = events.count
         var random = FootballRandom(seed: seed &+ UInt64(minute) &* 0xD6E8FEB86659FD93)
 
         applyFatigue(players: players)
@@ -83,7 +84,7 @@ extension MatchSimulation {
         home.possessionAccumulator += possessionShare
         away.possessionAccumulator += 1 - possessionShare
 
-        let periodFactor = inExtraTime ? 0.55 : 1.0
+        let periodFactor = inExtraTime ? 0.55 : (minute > 90 ? 0.6 : 1.0)
         let homeRate = FootballMatchEngine.expectedGoals(attack: home.cachedAttack, defense: away.cachedDefense, possessionShare: possessionShare) / 45 * periodFactor
         let awayRate = FootballMatchEngine.expectedGoals(attack: away.cachedAttack, defense: home.cachedDefense, possessionShare: 1 - possessionShare) / 45 * periodFactor
         home.expectedGoals += homeRate
@@ -106,7 +107,13 @@ extension MatchSimulation {
         }
 
         if minute == 45 { addEvent(.halfTime, nil, "Intervalo: \(scoreLine).") }
-        if minute == 90 {
+        if minute == 90 && stoppageMinutes == nil {
+            let added = isCup ? 0 : stoppage()
+            stoppageMinutes = added
+            if added > 0 { addEvent(.stoppage, nil, "O quarto árbitro levanta a placa: \(added) minuto(s) de acréscimo.") }
+        }
+        if detailed, minute % 12 == 0, minute < 90 { pressureNarration(random: &random) }
+        if minute == regulationEnd && !inExtraTime && !wentToExtraTime {
             if isCup && home.goals == away.goals {
                 inExtraTime = true
                 wentToExtraTime = true
@@ -119,6 +126,36 @@ extension MatchSimulation {
             finished = true
             if home.goals == away.goals { needsShootout = true }
         }
+        if !inExtraTime && !wentToExtraTime && minute > 90 {
+            for index in eventsBefore..<events.count { events[index].added = minute - 90 }
+        }
+    }
+
+    /// Acréscimos: paralisações por lesão, cartões, substituições e gols.
+    private func stoppage() -> Int {
+        let subs = home.substitutionsUsed + away.substitutionsUsed
+        let cards = home.yellowCards + away.yellowCards + home.redCards + away.redCards
+        let injuries = home.injuries.count + away.injuries.count
+        let goals = home.goals + away.goals
+        return max(1, min(7, 1 + subs / 3 + cards / 3 + injuries + goals / 2))
+    }
+
+    /// Narra o time que está por cima nos últimos minutos.
+    private mutating func pressureNarration(random: inout FootballRandom) {
+        let recent = momentum.suffix(8)
+        guard recent.count >= 8 else { return }
+        let value = Double(recent.reduce(0, +)) / Double(recent.count)
+        guard abs(value) >= 28 else { return }
+        let side: MatchTeamSide = value > 0 ? .home : .away
+        let teamID = self[side].teamID
+        let name = FootballSeason.teamName(teamID)
+        let lines = [
+            "O \(name) empurra o adversário para trás e cerca a área.",
+            "Pressão total do \(name): a bola quase não sai do campo de ataque.",
+            "O \(name) assume o jogo e o rival só se defende.",
+            "A torcida do \(name) sente que o gol está perto."
+        ]
+        events.append(MatchEvent(minute: minute, kind: .pressure, teamID: teamID, text: lines[random.int(in: 0...(lines.count - 1))]))
     }
 
     /// Simula até o minuto informado (ou até o fim).
@@ -280,7 +317,6 @@ extension MatchSimulation {
         let y = type == .header ? 0.35 + 0.3 * random.unit() : 0.15 + 0.7 * random.unit()
 
         self[side].shots += 1
-        self[side].expectedGoals += 0
         self[side].stats[shooter.id, default: PlayerMatchStats(playerID: shooter.id)].shots += 1
         let teamID = self[side].teamID
 
@@ -316,19 +352,53 @@ extension MatchSimulation {
             self[side].stats[shooter.id, default: PlayerMatchStats(playerID: shooter.id)].shotsOnTarget += 1
             if let rivalKeeper { self[side.other].stats[rivalKeeper.id, default: PlayerMatchStats(playerID: rivalKeeper.id)].saves += 1 }
         }
-        if random.chance(0.4) { self[side].corners += 1 }
-        guard detailed, xg >= 0.09 || onTarget && random.chance(0.4) else { return }
-        let keeperName = rivalKeeper?.name ?? "o goleiro"
-        let text: String
-        if onTarget {
-            text = random.chance(0.5)
-                ? "\(keeperName) faz grande defesa em chute de \(shooter.name)."
-                : "\(shooter.name) finaliza forte e \(keeperName) espalma."
-        } else {
-            text = random.chance(0.5) ? "\(shooter.name) finaliza por cima do travessão." : "\(shooter.name) cabeceia rente à trave."
+        let cornerWon = random.chance(0.4)
+        if cornerWon { self[side].corners += 1 }
+        guard detailed else { return }
+        let notable = xg >= 0.07 || (onTarget && random.chance(0.7)) || random.chance(0.1)
+        guard notable else {
+            if cornerWon && random.chance(0.35) {
+                events.append(MatchEvent(minute: minute, kind: .chance, teamID: teamID,
+                                         text: "Escanteio para o \(FootballSeason.teamName(teamID)) depois de bola desviada."))
+            }
+            return
         }
+        let keeperName = rivalKeeper?.name ?? "o goleiro"
+        let text = Self.missText(type: type, onTarget: onTarget, shooter: shooter.name, keeper: keeperName, random: &random)
         events.append(MatchEvent(minute: minute, kind: onTarget ? .save : .chance, teamID: teamID, text: text, playerID: shooter.id,
                                  relatedPlayerID: onTarget ? rivalKeeper?.id : nil, xg: (xg * 100).rounded() / 100, x: x, y: y))
+    }
+
+    private static func missText(type: ShotType, onTarget: Bool, shooter: String, keeper: String, random: inout FootballRandom) -> String {
+        let options: [String]
+        switch (type, onTarget) {
+        case (.header, true):
+            options = ["\(shooter) sobe bem e cabeceia firme, \(keeper) espalma para escanteio.",
+                       "Cabeçada de \(shooter) no canto! \(keeper) faz uma defesa difícil."]
+        case (.header, false):
+            options = ["\(shooter) cabeceia rente à trave.", "\(shooter) ganha no alto, mas cabeceia por cima."]
+        case (.longRange, true):
+            options = ["\(shooter) bate de longe e \(keeper) se estica para defender.",
+                       "Chute colocado de fora da área! \(keeper) segura firme."]
+        case (.longRange, false):
+            options = ["\(shooter) arrisca de longe e a bola passa perto do ângulo.", "\(shooter) chuta de fora da área e manda por cima."]
+        case (.counter, true):
+            options = ["Contra-ataque veloz! \(shooter) fica de frente e \(keeper) salva com o pé.",
+                       "\(shooter) escapa pelo meio e finaliza, mas \(keeper) fecha o ângulo."]
+        case (.counter, false):
+            options = ["\(shooter) finaliza em contra-ataque, mas pega mal e desperdiça.", "Contra-ataque perigoso: \(shooter) isola na saída do goleiro."]
+        case (.setPiece, true):
+            options = ["Bola parada ensaiada! \(shooter) finaliza e \(keeper) espalma.", "\(shooter) cobra com perigo e \(keeper) defende no canto."]
+        case (.setPiece, false):
+            options = ["\(shooter) cobra a bola parada e manda sobre o travessão.", "A bola parada passa rente à trave depois da cobrança de \(shooter)."]
+        case (.openPlay, true):
+            options = ["\(keeper) faz grande defesa em chute de \(shooter).", "\(shooter) finaliza forte e \(keeper) espalma.",
+                       "\(shooter) bate cruzado e \(keeper) evita o gol."]
+        case (.openPlay, false):
+            options = ["\(shooter) finaliza por cima do travessão.", "\(shooter) chuta cruzado e a bola passa ao lado da trave.",
+                       "\(shooter) tenta de primeira e manda para fora."]
+        }
+        return options[random.int(in: 0...(options.count - 1))]
     }
 
     private var scoreLineAfterGoal: String { "\(home.goals) × \(away.goals)." }
@@ -374,6 +444,7 @@ extension MatchSimulation {
         if random.chance(chance) {
             self[side].shotsOnTarget += 1
             self[side].goals += 1
+            self[side].expectedGoals += 0.76
             self[side].scorerIDs.append(taker.id)
             self[side].stats[taker.id, default: PlayerMatchStats(playerID: taker.id)].goals += 1
             if detailed {
@@ -427,7 +498,6 @@ extension MatchSimulation {
         let yellowChance = 0.175 + (state.style == .highPress ? 0.03 : 0) + (state.instructions.timeWasting ? 0.02 : 0)
         if random.chance(redChance) {
             sendOff(side: side, playerID: fouler.id, second: false, players: players)
-            _ = teamID
         } else if random.chance(yellowChance) {
             if self[side].booked.contains(fouler.id) {
                 // O árbitro nem sempre dá o segundo amarelo.
@@ -663,13 +733,17 @@ extension MatchSimulation {
                 events.append(contentsOf: result.events)
             }
         }
-        let length = wentToExtraTime ? 120 : 90
+        let length = wentToExtraTime ? 120 : regulationEnd
         var finalText = "Apito final: \(scoreLine)"
         if let homePenalties, let awayPenalties {
             let winner = homePenalties > awayPenalties ? home.teamID : away.teamID
             finalText += " (\(homePenalties) × \(awayPenalties) nos pênaltis). \(FootballSeason.teamName(winner)) avança"
         }
-        if detailed { events.append(MatchEvent(minute: length, kind: .fullTime, teamID: nil, text: finalText + ".")) }
+        if detailed {
+            var whistle = MatchEvent(minute: length, kind: .fullTime, teamID: nil, text: finalText + ".")
+            if length > 90 && !wentToExtraTime { whistle.added = length - 90 }
+            events.append(whistle)
+        }
 
         var finalCondition: [Int: Int] = [:]
         for side in [MatchTeamSide.home, .away] {

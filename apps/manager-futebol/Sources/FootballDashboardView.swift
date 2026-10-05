@@ -598,6 +598,8 @@ struct MatchEventRow: View {
         case .yellowCard: return "rectangle.portrait.fill"
         case .redCard: return "rectangle.portrait.fill"
         case .penaltyAwarded: return "exclamationmark.circle.fill"
+        case .stoppage: return "plus.circle.fill"
+        case .pressure: return "flame.fill"
         }
     }
 
@@ -606,7 +608,7 @@ struct MatchEventRow: View {
         case .goal: return event.teamID.flatMap { FootballSeason.team($0)?.primaryColor } ?? FootballTheme.accent
         case .injury, .redCard: return .red
         case .yellowCard: return .yellow
-        case .penaltyAwarded: return .orange
+        case .penaltyAwarded, .pressure: return .orange
         case .halfTime, .fullTime, .kickoff: return .secondary
         default: return .secondary
         }
@@ -614,10 +616,10 @@ struct MatchEventRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(event.kind == .kickoff ? "0′" : "\(event.minute)′")
+            Text(event.minuteLabel)
                 .font(.caption.weight(.bold).monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 30, alignment: .trailing)
+                .frame(width: 46, alignment: .trailing)
             Image(systemName: symbol)
                 .font(.caption.weight(.bold))
                 .foregroundStyle(tint)

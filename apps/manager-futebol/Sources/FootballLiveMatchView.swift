@@ -19,6 +19,33 @@ struct FootballLiveMatchView: View {
     @State private var showSubstitutions = false
     @State private var didStart = false
     @State private var finishing = false
+    @State private var quickFeedback = 0
+    @State private var keyMoments: KeyMomentMode = .brief
+    @State private var pitchExpanded = false
+    @AppStorage("football.liveViewMode") private var viewModeRaw = LiveViewMode.narration.rawValue
+
+    /// Como acompanhar a partida: texto (padrão) ou o campo animado.
+    enum LiveViewMode: String, CaseIterable, Identifiable {
+        case narration = "Narração", watch = "Ver jogo"
+
+        var id: String { rawValue }
+    }
+
+    private var viewMode: LiveViewMode {
+        if staticPreview {
+            let screen = FactoryCapture.screen
+            return screen == "match-narration" || screen == "match-final" ? .narration : .watch
+        }
+        return LiveViewMode(rawValue: viewModeRaw) ?? .narration
+    }
+    @State private var impactPreview: MatchImpact?
+
+    /// O que o relógio faz quando sai gol, pênalti ou lesão.
+    enum KeyMomentMode: String, CaseIterable, Identifiable {
+        case off = "Direto", brief = "Breve", pause = "Pausar"
+
+        var id: String { rawValue }
+    }
 
     private var live: LiveMatchState? { career.liveMatch }
 
@@ -39,9 +66,16 @@ struct FootballLiveMatchView: View {
                 if let live {
                     VStack(alignment: .leading, spacing: 16) {
                         scoreboard(live)
-                        controls(live)
                         if live.sim.finished { fullTimePanel(live) }
-                        Picker("Seção", selection: $section) {
+                        viewModePicker
+                        if viewMode == .watch {
+                            watchPanel(live)
+                        } else {
+                            narrationCard(live)
+                        }
+                        controls(live)
+                        if !live.sim.finished { quickActions(live) }
+                                        Picker("Seção", selection: $section) {
                             ForEach(LiveSection.allCases) { item in Text(item.rawValue).tag(item) }
                         }
                         .pickerStyle(.segmented)
@@ -76,6 +110,7 @@ struct FootballLiveMatchView: View {
             }
         }
         .sensoryFeedback(.impact(weight: .heavy), trigger: live?.homeGoals ?? 0)
+        .sensoryFeedback(.selection, trigger: quickFeedback)
         .sensoryFeedback(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
         .sheet(isPresented: $showSubstitutions) {
             FootballSubstitutionSheet(career: $career, outgoingID: nil)
@@ -106,8 +141,8 @@ struct FootballLiveMatchView: View {
             .padding(.vertical, 6)
             .background(Color.primary.opacity(0.06), in: Capsule())
             .accessibilityIdentifier("live-clock")
-            ProgressView(value: Double(min(sim.minute, sim.inExtraTime || sim.wentToExtraTime ? 120 : 90)),
-                         total: sim.inExtraTime || sim.wentToExtraTime ? 120 : 90)
+            ProgressView(value: Double(min(sim.minute, sim.inExtraTime || sim.wentToExtraTime ? 120 : sim.regulationEnd)),
+                         total: Double(sim.inExtraTime || sim.wentToExtraTime ? 120 : sim.regulationEnd))
                 .tint(FootballTheme.accent)
             momentumBar(sim)
         }
@@ -118,7 +153,8 @@ struct FootballLiveMatchView: View {
     private func clockText(_ sim: MatchSimulation) -> String {
         if sim.finished { return "Fim de jogo" }
         if sim.minute == 45 && !running { return "Intervalo · 45′" }
-        if sim.minute > 90 { return "Prorrogação · \(sim.minute)′" }
+        if sim.inExtraTime || sim.wentToExtraTime { return sim.minute > 90 ? "Prorrogação · \(sim.minute)′" : "\(sim.minute)′" }
+        if sim.minute > 90 { return "Acréscimos · 90+\(sim.minute - 90)′" }
         return "\(sim.minute)′"
     }
 
@@ -186,6 +222,14 @@ struct FootballLiveMatchView: View {
                     .accessibilityIdentifier("live-skip")
                 }
                 .font(.subheadline.weight(.semibold))
+                HStack(spacing: 8) {
+                    Text("Lances-chave").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Picker("Lances-chave", selection: $keyMoments) {
+                        ForEach(KeyMomentMode.allCases) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("live-key-moments")
+                }
                 if live.sim.minute == 45 && !running {
                     Label("Intervalo: troque jogadores à vontade e ajuste a tática antes do 2º tempo.", systemImage: "person.2.wave.2.fill")
                         .font(.caption.weight(.medium)).foregroundStyle(FootballTheme.accent)
@@ -194,12 +238,123 @@ struct FootballLiveMatchView: View {
         }
     }
 
+    // MARK: - Narração e campo
+
+    private var viewModePicker: some View {
+        Picker("Acompanhar", selection: Binding(get: { viewMode }, set: { viewModeRaw = $0.rawValue })) {
+            ForEach(LiveViewMode.allCases) { mode in
+                Label(mode.rawValue, systemImage: mode == .narration ? "text.bubble.fill" : "sportscourt.fill").tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .disabled(staticPreview)
+        .accessibilityIdentifier("live-view-mode")
+    }
+
+    private func watchPanel(_ live: LiveMatchState) -> some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            FootballLivePitchView(live: live, career: career, running: running, speed: speed, height: pitchExpanded ? 340 : 230)
+            Button {
+                withAnimation(.snappy) { pitchExpanded.toggle() }
+            } label: {
+                Label(pitchExpanded ? "Reduzir" : "Ampliar", systemImage: pitchExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("live-pitch-expand")
+        }
+    }
+
+    /// Texto grande com o lance do momento e os anteriores, como um narrador de rádio.
+    private func narrationCard(_ live: LiveMatchState) -> some View {
+        let recent = Array(live.sim.events.filter { $0.kind != .tactic }.suffix(3).reversed())
+        return FactoryPanel(title: "Narração", systemImage: "mic.fill") {
+            if recent.isEmpty {
+                Text("A bola vai rolar…").font(.title3.weight(.semibold))
+            }
+            ForEach(Array(recent.enumerated()), id: \.offset) { position, event in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(event.minuteLabel)
+                        .font((position == 0 ? Font.title3 : Font.subheadline).weight(.heavy).monospacedDigit())
+                        .foregroundStyle(event.kind == .goal ? FootballTheme.accent : .secondary)
+                        .frame(width: 66, alignment: .trailing)
+                    Text(event.text)
+                        .font(position == 0 ? Font.title3.weight(.semibold) : Font.subheadline)
+                        .foregroundStyle(position == 0 ? Color.primary : Color.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .accessibilityIdentifier("live-narration")
+    }
+
+    // MARK: - Ações rápidas
+
+    private func quickActions(_ live: LiveMatchState) -> some View {
+        let side = live.userSide
+        let active = QuickTacticPreset.allCases.first { $0.isActive(on: side) }
+        return FactoryPanel(title: "Ações rápidas", systemImage: "bolt.circle.fill") {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(QuickTacticPreset.allCases) { preset in
+                        let selected = preset == active
+                        Button {
+                            if career.liveApplyPreset(preset) { quickFeedback += 1 }
+                        } label: {
+                            Label(preset.title, systemImage: preset.systemImage)
+                                .font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .foregroundStyle(selected ? Color.white : Color.primary)
+                                .background(selected ? FootballTheme.accent : Color.primary.opacity(0.08), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(staticPreview)
+                        .accessibilityIdentifier("quick-preset-\(preset.rawValue)")
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                    }
+                }
+            }
+            Text(active?.summary ?? "Plano personalizado. Escolha um atalho para trocar tudo de uma vez.")
+                .font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(QuickSubstitutionKind.allCases) { kind in
+                    let plan = career.liveQuickSubstitutionPlan(kind)
+                    Button {
+                        if career.liveQuickSubstitute(kind) { quickFeedback += 1 }
+                    } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: kind.systemImage)
+                            Text(kind.title).font(.caption.weight(.semibold)).multilineTextAlignment(.center)
+                            Text(quickSubLabel(plan))
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(staticPreview || plan == nil)
+                    .accessibilityIdentifier("quick-sub-\(kind.rawValue)")
+                }
+            }
+        }
+        .accessibilityIdentifier("live-quick-actions")
+    }
+
+    private func quickSubLabel(_ plan: (out: FootballPlayer, incoming: FootballPlayer)?) -> String {
+        guard let plan else { return "Indisponível" }
+        let outName = plan.out.name.split(separator: " ").last.map(String.init) ?? plan.out.name
+        let inName = plan.incoming.name.split(separator: " ").last.map(String.init) ?? plan.incoming.name
+        return "\(outName) → \(inName)"
+    }
+
     private func fullTimePanel(_ live: LiveMatchState) -> some View {
         let userGoals = live.userIsHome ? live.homeGoals : live.awayGoals
         let rivalGoals = live.userIsHome ? live.awayGoals : live.homeGoals
         let result: FootballResult = userGoals > rivalGoals ? .win : (userGoals == rivalGoals ? .draw : .loss)
         return VStack(alignment: .leading, spacing: 12) {
             resultBanner(result, penalties: live.sim.needsShootout)
+            if let impactPreview { MatchImpactCard(impact: impactPreview, hypeTitle: hypeTitle(for: impactPreview)) }
             Button {
                 finishing = true
                 stopClock()
@@ -212,6 +367,13 @@ struct FootballLiveMatchView: View {
             .disabled(staticPreview || finishing)
             .accessibilityIdentifier("live-finish")
         }
+        .task { if impactPreview == nil { impactPreview = career.previewMatchImpact() } }
+    }
+
+    private func hypeTitle(for impact: MatchImpact) -> String {
+        var copy = career
+        copy.clubHype = impact.hypeAfter
+        return copy.hypeTitle
     }
 
     private func resultBanner(_ result: FootballResult, penalties: Bool) -> some View {
@@ -244,7 +406,7 @@ struct FootballLiveMatchView: View {
             if events.isEmpty {
                 Text("A bola vai rolar…").font(.subheadline).foregroundStyle(.secondary)
             }
-            ForEach(Array(events.suffix(60).enumerated().reversed()), id: \.offset) { _, event in
+            ForEach(Array(Array(events.enumerated()).suffix(60).reversed()), id: \.offset) { _, event in
                 MatchEventRow(event: event)
             }
         }
@@ -298,6 +460,18 @@ struct FootballLiveMatchView: View {
 
     private func pitchPanel(_ live: LiveMatchState) -> some View {
         FactoryPanel(title: "Mapa de finalizações", systemImage: "scope") {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Prévia ilustrativa · jogadores 3D", systemImage: "figure.soccer")
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(FootballTheme.accent)
+                Image("MatchScenePilot")
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 210)
+                    .accessibilityLabel("Cena isométrica de seis jogadores low-poly disputando a bola")
+            }
             FootballShotMap(sim: live.sim)
             Text("Cada bolinha é uma finalização; as maiores têm mais chance de gol. O anel marca os gols.")
                 .font(.caption).foregroundStyle(.secondary)
@@ -348,7 +522,18 @@ struct FootballLiveMatchView: View {
             return
         }
         if staticPreview {
-            career.liveAdvance(to: 38)
+            switch FactoryCapture.screen {
+            case "match-final":
+                career.liveAdvance(minutes: 200)
+            case "match-goal":
+                career.liveAdvance(to: 5)
+                while let sim = career.liveMatch?.sim, !sim.finished, sim.minute < 90 {
+                    career.liveAdvance(minutes: 1)
+                    if career.liveMatch?.sim.events.last(where: { $0.kind == .goal })?.minute == career.liveMatch?.sim.minute { break }
+                }
+            default:
+                career.liveAdvance(to: 38)
+            }
             return
         }
         // Partida retomada fica pausada; partida nova começa sozinha.
@@ -377,6 +562,7 @@ struct FootballLiveMatchView: View {
                     return
                 }
                 let reds = career.liveMatch?.sim.events.filter { $0.kind == .redCard }.count ?? 0
+                let keyBefore = keyMomentCount(career.liveMatch)
                 career.liveAdvance(minutes: 1)
                 let after = career.liveMatch
                 if after?.sim.finished == true {
@@ -388,8 +574,20 @@ struct FootballLiveMatchView: View {
                     running = false
                     return
                 }
+                // Gol, pênalti e lesão: pausa total ou uma respirada para o lance render.
+                if keyMoments != .off, keyMomentCount(after) > keyBefore {
+                    if keyMoments == .pause {
+                        running = false
+                        return
+                    }
+                    if !FactoryCapture.isUITesting { try? await Task.sleep(nanoseconds: 1_300_000_000) }
+                }
             }
         }
+    }
+
+    private func keyMomentCount(_ live: LiveMatchState?) -> Int {
+        live?.sim.events.filter { $0.kind == .goal || $0.kind == .penaltyAwarded || $0.kind == .injury }.count ?? 0
     }
 
     private func advance(minutes: Int) {
@@ -746,6 +944,56 @@ struct FootballSeasonSummaryView: View {
             Text(title).font(.subheadline).foregroundStyle(.secondary)
             Spacer()
             Text(value).font(.subheadline.weight(.semibold)).multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+// MARK: - Repercussão do jogo
+
+/// Nota do time, torcida, bilheteria, camisas e reputação depois do apito final.
+struct MatchImpactCard: View {
+    let impact: MatchImpact
+    let hypeTitle: String
+
+    var body: some View {
+        FactoryPanel(title: "Repercussão do jogo", systemImage: "megaphone.fill") {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(impact.verdict).font(.headline)
+                    if !hypeTitle.isEmpty { Text(hypeTitle).font(.caption.weight(.semibold)).foregroundStyle(FootballTheme.accent) }
+                }
+                Spacer()
+                VStack(spacing: 0) {
+                    Text(String(format: "%.1f", impact.teamGrade)).font(.title.weight(.heavy).monospacedDigit())
+                    Text("nota do time").font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            ForEach(impact.highlights, id: \.self) { line in
+                Label(line, systemImage: "sparkle").font(.subheadline)
+            }
+            Divider()
+            impactRow("Embalo da torcida", "\(impact.hypeChange >= 0 ? "+" : "")\(impact.hypeChange) → \(impact.hypeAfter)/100", impact.hypeChange)
+            impactRow("Humor da torcida", signed(impact.fanMoodChange), impact.fanMoodChange)
+            if impact.newFans > 0 { impactRow("Novos torcedores", "+\(impact.newFans)", 1) }
+            if impact.gateRevenue > 0 {
+                impactRow("Bilheteria", "\(FootballFormat.money(impact.gateRevenue)) · \(impact.attendance) pagantes", 1)
+                if impact.crowdBonusPercent > 0 { impactRow("Bônus do embalo no público", "+\(impact.crowdBonusPercent)%", 1) }
+            }
+            if impact.shirtsSold > 0 { impactRow("Camisas vendidas", "\(impact.shirtsSold) · \(FootballFormat.money(impact.shirtRevenue))", 1) }
+            if impact.reputationChange != 0 { impactRow("Reputação", signed(impact.reputationChange), impact.reputationChange) }
+            if impact.boardChange != 0 { impactRow("Confiança da diretoria", signed(impact.boardChange), impact.boardChange) }
+        }
+        .accessibilityIdentifier("match-impact")
+    }
+
+    private func signed(_ value: Int) -> String { value > 0 ? "+\(value)" : "\(value)" }
+
+    private func impactRow(_ title: String, _ value: String, _ trend: Int) -> some View {
+        HStack {
+            Text(title).font(.subheadline).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).font(.subheadline.weight(.semibold).monospacedDigit())
+                .foregroundStyle(trend > 0 ? Color.green : (trend < 0 ? Color.red : Color.primary))
         }
     }
 }

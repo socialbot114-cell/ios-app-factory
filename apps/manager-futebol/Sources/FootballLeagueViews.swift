@@ -342,6 +342,9 @@ private struct FootballLeagueMatchDetail: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if let impact = fixture.impact {
+                MatchImpactCard(impact: impact, hypeTitle: "")
+            }
             FactoryPanel(title: "Clubes", systemImage: "shield") {
                 ForEach([fixture.home, fixture.away], id: \.self) { teamID in
                     if let team = FootballSeason.team(teamID) {
@@ -494,6 +497,25 @@ struct FootballClubView: View {
                         if let division = career.userDivision {
                             PillLabel(text: division.name, tint: division.tint)
                         }
+                    }
+                }
+                FactoryPanel(title: "Estádio", systemImage: "sportscourt.fill") {
+                    Image("StadiumPilot")
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 190)
+                        .accessibilityLabel("Ilustração isométrica de um estádio de futebol")
+                    HStack {
+                        Label(career.stadiumDisplayName, systemImage: "mappin.and.ellipse")
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text("\(career.stadiumCapacity.formatted(.number.locale(Locale(identifier: "pt_BR")))) lugares")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
                 HStack(spacing: 12) {

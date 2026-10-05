@@ -217,6 +217,8 @@ struct PressQuestion: Codable, Equatable, Identifiable {
     let id: Int
     let prompt: String
     var answered: PressTone? = nil
+    var topic: PressTopic? = nil
+    var playerID: Int? = nil
 }
 
 struct PressConference: Codable, Equatable {

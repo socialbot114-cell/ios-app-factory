@@ -391,7 +391,7 @@ extension FootballCareer {
                                    derby: FootballSeason.isDerby(fixture.home, fixture.away), started: startingXIAtKickoff)
                 rivalMotivation[fixture.opponent(of: selectedClubID)] = nil
                 opponentPrep = false
-                pendingPress = makePressConference(fixture: fixture)
+                pendingPress = makePressConference(fixture: fixtures[userFixtureIndex])
                 updateRecords(after: fixtures[userFixtureIndex])
                 bump("matches")
                 if fixture.result(for: selectedClubID) == .win { bump("wins"); settleTVWin() }
@@ -403,6 +403,7 @@ extension FootballCareer {
             startingXIAtKickoff = []
         } else {
             lastRoundRevenue = 0
+            coolDownHype()
             if selectedClubID != nil { processUserPlayers(stats: [], result: nil, derby: false, started: [], teamPlayed: false) }
         }
         collectMatchDayIncome()
@@ -480,6 +481,9 @@ extension FootballCareer {
         boardConfidence = min(100, max(0, boardConfidence + delta))
         let fanDelta = (result == .win ? 2 : (result == .loss ? -2 : 0)) * (derby ? 2 : 1)
         fanMood = min(100, max(0, fanMood + fanDelta))
+        if let index = fixtures.firstIndex(where: { $0.id == fixture.id }), let impact = evaluateImpact(fixture: fixtures[index]) {
+            applyImpact(impact, fixtureIndex: index)
+        }
     }
 
     // MARK: - Coletiva de imprensa
@@ -502,7 +506,11 @@ extension FootballCareer {
                        "O que deu errado diante do \(opponent)?"]
         }
         if derby { prompts.append("Foi um clássico. Que recado o senhor deixa para o rival?") }
-        let questions = prompts.enumerated().map { PressQuestion(id: $0.offset + 1, prompt: $0.element) }
+        var questions = prompts.enumerated().map { PressQuestion(id: $0.offset + 1, prompt: $0.element, topic: .general) }
+        if derby, let last = questions.indices.last { questions[last].topic = .derby }
+        for item in makeMatchQuestions(fixture: fixture, result: result, opponent: opponent).prefix(3) {
+            questions.append(PressQuestion(id: questions.count + 1, prompt: item.prompt, topic: item.topic, playerID: item.playerID))
+        }
         return PressConference(matchDay: matchDayIndex, fixtureID: fixture.id, opponentID: fixture.opponent(of: selectedClubID),
                                result: result, isDerby: derby, questions: questions)
     }
@@ -535,6 +543,7 @@ extension FootballCareer {
             rivalMotivation[press.opponentID] = press.isDerby ? 2.5 : 1.5
             if result == .win { fanMood += 3 } else { fanMood -= 4; boardConfidence -= 2 }
         }
+        applyPressTopicEffect(topic: press.questions[index].topic ?? .general, tone: tone, result: result, playerID: press.questions[index].playerID)
         boardConfidence = min(100, max(0, boardConfidence))
         fanMood = min(100, max(0, fanMood))
         bump("press")
