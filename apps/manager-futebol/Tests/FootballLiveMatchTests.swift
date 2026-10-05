@@ -467,7 +467,9 @@ final class FootballLiveMatchTests: XCTestCase {
         XCTAssertEqual(career.counters["comebacks"], before + 1)
         XCTAssertEqual(career.clubHype, comeback.hypeAfter)
         XCTAssertEqual(career.reputation, min(100, reputation + comeback.reputationChange))
-        XCTAssertEqual(career.fixtures[index].impact, comeback)
+        var stored = comeback
+        stored.gateRevenue = career.lastRoundRevenue
+        XCTAssertEqual(career.fixtures[index].impact, stored, "A bilheteria da rodada é gravada ao aplicar")
     }
 
     func testCareerRoundTripKeepsHypeAndImpact() throws {
@@ -544,5 +546,36 @@ final class FootballLiveMatchTests: XCTestCase {
         }
         XCTAssertGreaterThan(Double(assists) / Double(max(1, goals)), 0.55)
         XCTAssertLessThan(Double(assists) / Double(max(1, goals)), 0.85)
+    }
+
+    func testCalibrationKeepsRealisticNumbersAndReadableNarration() throws {
+        // Jogos variados da liga (não um confronto só), para medir a média real do campeonato.
+        let career = FootballCareer(seed: 21)
+        let players = career.playersByID()
+        let league = Array(career.fixtures.filter { $0.competition.division != nil }.prefix(300))
+        let matches = league.count
+        var goals = 0, shots = 0, fouls = 0, cards = 0, tackles = 0, narrated = 0, crowdedMinutes = 0
+        for fixture in league {
+            var sim = career.makeSimulation(fixture: fixture, detailed: true)
+            sim.runToEnd(players: players)
+            for side in [MatchTeamSide.home, .away] {
+                goals += sim[side].goals
+                shots += sim[side].shots
+                fouls += sim[side].fouls
+                cards += sim[side].yellowCards + sim[side].redCards
+                tackles += sim[side].stats.values.reduce(0) { $0 + $1.tackles }
+            }
+            let actions: Set<MatchEvent.Kind> = [.offside, .tackle, .dribble, .cross]
+            narrated += sim.events.count
+            let perMinute = Dictionary(grouping: sim.events.filter { actions.contains($0.kind) }, by: \.minute)
+            crowdedMinutes += perMinute.values.filter { $0.count > 1 }.count
+        }
+        let n = Double(matches)
+        print(String(format: "Calibração: %.2f gols, %.1f chutes, %.1f faltas, %.1f cartões, %.1f desarmes, %.1f eventos por jogo",
+                     Double(goals) / n, Double(shots) / n, Double(fouls) / n, Double(cards) / n, Double(tackles) / n, Double(narrated) / n))
+        XCTAssertEqual(Double(goals) / n, 2.6, accuracy: 0.8)
+        XCTAssertEqual(Double(tackles) / n, 24, accuracy: 10)
+        XCTAssertLessThan(Double(narrated) / n, 60, "Narração legível: sem enxurrada de lances")
+        XCTAssertEqual(crowdedMinutes, 0, "No máximo um lance secundário narrado por minuto")
     }
 }
