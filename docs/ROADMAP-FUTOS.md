@@ -18,7 +18,8 @@ Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) em
 | Tentativa | Run | Resultado |
 |---|---|---|
 | 1 | `37309095531` | **Barrada pelo gate de testes**; nada foi enviado. `testPlayLiveMatchAndReadLeague` passou isolado e falhou na suíte completa: o botão `live-finish` demorou mais de 20 s. |
-| 2 | `37315165659` | Em andamento. Correção: a prévia de repercussão da partida passou a rodar fora da thread principal (`Task.detached`). |
+| 2 | `37315165659` | Teste da partida **passou**; barrada por um UITest novo (`testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate`) que procura a ficha do clube numa `UINavigationBar` que o FutOS não usa. Correção anterior mantida: prévia de repercussão fora da thread principal (`Task.detached`). |
+| 3 | a registrar | Teste de LIG-01..03 pulado com motivo explícito (reescrever com `staticTexts`/identificadores); LIG-01..03 seguem abertos. |
 
 Causa da tentativa 1 é **provável, não provada** (não há UITest local). Antes disso, o mesmo fluxo falhou por outro motivo: toque no dock durante a animação de saída do app (corrigido nos testes). Se a tentativa 2 falhar, abrir o `xcresult` do run, ver a tela do momento da falha e corrigir; não reenviar sem o gate verde.
 
