@@ -18,6 +18,7 @@ struct FootballHome: View {
     @State private var searchSeed = ""
     @State private var searchedPlayer: SearchedPlayer?
     @State private var focusedContactID: Int?
+    @State private var focusedEventID: Int?
     @State private var notifiedMessage: SearchedPlayer?
     @State private var pendingMessageID: Int?
     @State private var pendingPlayerID: Int?
@@ -57,7 +58,8 @@ struct FootballHome: View {
                 openMessage(id)
             }
         }) {
-            PhoneNotificationCenter(career: career, onOpen: { app in openApp = app }, onOpenMessage: { pendingMessageID = $0 })
+            PhoneNotificationCenter(career: career, onOpen: { app in openApp = app }, onOpenMessage: { pendingMessageID = $0 },
+                                    onOpenEvent: { focusedEventID = $0; openApp = .alerts })
         }
         .sheet(isPresented: $showSearch, onDismiss: {
             if let id = pendingPlayerID {
@@ -131,16 +133,18 @@ struct FootballHome: View {
                     .zIndex(1)
             }
             if locked {
-                PhoneLockScreen(career: career, onUnlock: { withAnimation(.easeOut(duration: 0.3)) { locked = false } }, onOpen: { openApp = $0 }, onOpenMessage: openMessage)
+                PhoneLockScreen(career: career, onUnlock: { withAnimation(.easeOut(duration: 0.3)) { locked = false } }, onOpen: { openApp = $0 }, onOpenMessage: openMessage,
+                                onOpenEvent: { id in withAnimation(.easeOut(duration: 0.3)) { locked = false }; focusedEventID = id; openApp = .alerts })
                     .transition(.move(edge: .top))
                     .zIndex(2)
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: openApp)
+        .animation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: openApp)
     }
 
     private func open(_ app: PhoneApp) {
         focusedContactID = nil
+        focusedEventID = nil
         openApp = app
     }
 
@@ -228,7 +232,7 @@ struct FootballHome: View {
         case .business: FootballBusinessView(career: $career, onAlert: showAlert)
         case .quests: FootballQuestsView(career: $career, onOpenApp: { openApp = PhoneApp(rawValue: $0) })
         case .trophies: FootballAchievementsView(career: $career)
-        case .alerts: FootballEventsView(career: $career)
+        case .alerts: FootballEventsView(career: $career, focusedEventID: focusedEventID)
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
         case .bank: FootballFinanceView(career: $career, onAlert: showAlert)
         case .contacts: FootballContactsView(career: $career, onAlert: showAlert, focusedContactID: focusedContactID)
@@ -236,7 +240,7 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -244,6 +248,12 @@ struct FootballHome: View {
         case "press": FootballPressView(career: $career)
         case _ where FootballF4Captures.names.contains(name): FootballF4CaptureView(name: name, career: $career, onAlert: showAlert)
         case _ where FootballF5Captures.names.contains(name): FootballF5CaptureView(name: name, career: $career, onAlert: showAlert)
+        case "tactical-plans":
+            ScrollView { FootballTacticalPlansPanel(career: $career).padding(20) }
+        case "post-summary":
+            ScrollView {
+                if let summary = career.latestUserFixture?.summary { FootballPostMatchSummaryPanel(summary: summary).padding(20) }
+            }
         case "renewal": FootballRenewalSheet(career: $career, playerID: career.clubRoster.first?.id ?? 0)
         case "betting": FootballBettingView(career: $career, onAlert: showAlert)
         case "social": FootballSocialView(career: $career, onAlert: showAlert)
@@ -263,6 +273,7 @@ struct FootballHome: View {
 
     private func showAlert(_ message: String) {
         alertMessage = message
+        if capture == nil { career.logActionResult(message, appID: openApp?.rawValue) }
     }
 
     private func openAgendaItem(_ item: FootballAgendaItem) {
@@ -376,6 +387,14 @@ struct FootballHome: View {
             _ = career.promiseStarts(playerID: athlete.id)
             career.matchDayIndex += 20
             career.evaluatePromises(started: [])
+        }
+        if capture == "tactical-plans" {
+            career.setPlayStyle(.defensive)
+            career.saveTacticalPlan(.a)
+            career.setPlayStyle(.attacking)
+            career.teamInstructions.tempo = .high
+            career.teamInstructions.lineHeight = .high
+            career.saveTacticalPlan(.b)
         }
         if capture == "press" {
             var guardCount = 0

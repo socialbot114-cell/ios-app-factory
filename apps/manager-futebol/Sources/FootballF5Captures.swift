@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Rotas de captura da F5: a tela nova já no topo, sem rolar.
 enum FootballF5Captures {
-    static let names: Set<String> = ["league-insight", "fantasy-insight", "betting-insight", "goals-origin", "trophy-legacy"]
+    static let names: Set<String> = ["league-insight", "fantasy-insight", "betting-insight", "goals-origin", "trophy-legacy", "settings-phone"]
 
     static func prepare(_ name: String, career: inout FootballCareer) {
         switch name {
@@ -35,6 +35,14 @@ enum FootballF5Captures {
             career.records.longestWinStreak = 4
             career.checkAchievements(fixture: fixture)
             career.setHighlight(.firstWin, on: true)
+        case "settings-phone":
+            career.logActionResult("Bilhete feito! Resultado depois dos jogos.", appID: "betting")
+            career.logActionResult("Escalação salva! O capitão pontua 1,5×.", appID: "fantasy")
+            career.world.phone.preferences.minimumPriority = 2
+            career.world.phone.preferences.mutedApps = ["betting"]
+            if let scenario = ChallengeScenario.all.first {
+                career.challenge = ChallengeState(scenarioID: scenario.id, startSeason: career.season, seasonsAllowed: scenario.seasonsAllowed)
+            }
         default:
             break
         }
@@ -60,6 +68,8 @@ struct FootballF5CaptureView: View {
             FootballBettingView(career: $career, onAlert: onAlert, captureFocus: true)
         case "trophy-legacy":
             FootballAchievementsView(career: $career)
+        case "settings-phone":
+            FootballModesView(career: $career, onStartChallenge: { _ in }, onAlert: onAlert)
         default:
             VStack(alignment: .leading, spacing: 18) {
                 FootballGoalsPlannerPanel(career: $career)

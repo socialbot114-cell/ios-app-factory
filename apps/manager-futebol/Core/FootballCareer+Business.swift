@@ -263,10 +263,11 @@ extension FootballCareer {
         }
         advanceLedgerDay()
         repayCoachLoans()
-        progressContactRequests()
         generateAgentOffers(using: &random)
         progressBoardMeetings()
         runPersonalPlan()
+        // Depois da agenda pessoal: a folga prometida do dia já foi executada (ou não) ao conferir.
+        progressContactRequests()
     }
 
     mutating func closeBusinessSeason(using random: inout FootballRandom) {

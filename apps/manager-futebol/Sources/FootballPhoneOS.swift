@@ -93,6 +93,7 @@ struct PhoneNotification: Identifiable {
     var priority: Int = 1
     var deadlineWorldDay: Int? = nil
     var messageID: Int? = nil
+    var eventID: Int? = nil
 }
 
 extension FootballCareer {
@@ -105,7 +106,7 @@ extension FootballCareer {
             list.append(PhoneNotification(id: "crisis", title: "Crise de imagem", detail: crisis.title, symbol: "exclamationmark.triangle.fill", app: .social, priority: 3))
         }
         for event in world.events.pending {
-            list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Prazo: dia \(event.expiresWorldDay) do jogo.", symbol: "exclamationmark.bubble.fill", app: .alerts, priority: 2, deadlineWorldDay: event.expiresWorldDay))
+            list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Prazo: dia \(event.expiresWorldDay) do jogo.", symbol: "exclamationmark.bubble.fill", app: .alerts, priority: 2, deadlineWorldDay: event.expiresWorldDay, eventID: event.id))
         }
         for (index, message) in inbox.filter({ !$0.isRead }).sorted(by: { $0.id > $1.id }).enumerated() {
             list.append(PhoneNotification(id: index == 0 ? "inbox" : "inbox-\(message.id)", title: message.title, detail: "Mensagem não lida · T\(message.season), J\(message.matchDay + 1)", symbol: "tray.full.fill", app: .messages, messageID: message.id))
@@ -126,6 +127,7 @@ extension FootballCareer {
         if world.coach.energy < 25 {
             list.append(PhoneNotification(id: "energy", title: "Bateria baixa", detail: "Sua energia está em \(world.coach.energy)%. Descanse na Vida.", symbol: "battery.25percent", app: .life))
         }
+        list = list.filter { world.phone.preferences.allows(appID: $0.app.rawValue, priority: $0.priority) }
         return list.enumerated().sorted { lhs, rhs in
             // Prazos comparáveis usam o calendário do jogo, nunca o relógio real.
             let leftDue = lhs.element.deadlineWorldDay.map { $0 <= worldDay + 1 } ?? false
@@ -197,7 +199,8 @@ struct PhoneStatusBar: View {
         }
         .foregroundStyle(.white)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Temporada \(career.season), energia \(career.world.coach.energy) por cento")
+        .accessibilityLabel("Temporada \(career.season), energia \(career.world.coach.energy) por cento, humor da torcida \(career.fanMood) de 100")
+        .accessibilityHint("A bateria é a sua energia: conversas, agenda e compromissos gastam. As barras de sinal mostram o humor da torcida.")
     }
 }
 
@@ -208,6 +211,7 @@ struct PhoneLockScreen: View {
     let onUnlock: () -> Void
     var onOpen: (PhoneApp) -> Void = { _ in }
     var onOpenMessage: ((Int) -> Void)? = nil
+    var onOpenEvent: ((Int) -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -226,6 +230,7 @@ struct PhoneLockScreen: View {
                         Button {
                             onUnlock()
                             if let id = item.messageID, let onOpenMessage { onOpenMessage(id) }
+                            else if let id = item.eventID, let onOpenEvent { onOpenEvent(id) }
                             else { onOpen(item.app) }
                         } label: {
                         HStack(spacing: 12) {
@@ -430,6 +435,7 @@ struct PhoneNotificationCenter: View {
     let career: FootballCareer
     let onOpen: (PhoneApp) -> Void
     var onOpenMessage: ((Int) -> Void)? = nil
+    var onOpenEvent: ((Int) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -443,6 +449,7 @@ struct PhoneNotificationCenter: View {
                     Button {
                         dismiss()
                         if let id = item.messageID, let onOpenMessage { onOpenMessage(id) }
+                        else if let id = item.eventID, let onOpenEvent { onOpenEvent(id) }
                         else { onOpen(item.app) }
                     } label: {
                         HStack(spacing: 12) {
@@ -663,6 +670,7 @@ struct FootballContactsView: View {
                     .buttonStyle(.bordered)
                     .opacity(block == nil ? 1 : 0.45)
                     .accessibilityIdentifier("contact-\(contact.role.rawValue)")
+                    FootballContactTopicsView(career: $career, contact: contact) { note = $0 }
                 }
             }
         }
@@ -686,6 +694,7 @@ struct FootballContactsView: View {
                             Text(career.canContact(contact.role) ?? "Conversa disponível no app Contatos.")
                                 .foregroundStyle(.secondary)
                         }
+                        FootballContactDossier(career: career, contact: contact)
                     }
                 }
                 .navigationTitle("Ficha do contato")

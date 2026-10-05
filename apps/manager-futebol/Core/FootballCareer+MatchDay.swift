@@ -377,6 +377,7 @@ extension FootballCareer {
     mutating func completeMatchDay(userFixtureIndex: Int?) {
         let slot = currentSlot
         var postRandom = FootballRandom(seed: matchSeed(stream: .postMatch, id: matchDayIndex))
+        let summaryBefore = userFixtureIndex == nil ? nil : capturePostMatchSnapshot()
         for index in players.indices where players[index].teamID != nil && !playedThisMatchDay.contains(players[index].id) {
             players[index].condition = min(100, players[index].condition + 6)
         }
@@ -440,6 +441,9 @@ extension FootballCareer {
         if matchDayIndex % 8 == 0 { refreshBrandOffers() }
         manageNationalDuty()
         repairLineup()
+        if let summaryBefore, let userFixtureIndex, let summary = buildPostMatchSummary(fixture: fixtures[userFixtureIndex], before: summaryBefore) {
+            fixtures[userFixtureIndex].summary = summary
+        }
     }
 
     mutating func developAIPlayers(using random: inout FootballRandom) {

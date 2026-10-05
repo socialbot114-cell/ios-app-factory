@@ -44,6 +44,7 @@ struct FootballDashboardView: View {
                 if !career.offers.isEmpty && !career.isFired {
                     FootballOffersPanel(career: $career, onAlert: onAlert)
                 }
+                if let summary = career.latestUserFixture?.summary { FootballPostMatchSummaryPanel(summary: summary) }
                 if let lastResult = career.latestUserFixture {
                     FactoryPanel(title: "Último resultado · \(lastResult.title)", systemImage: "sportscourt.fill") {
                         FootballMatchReport(fixture: lastResult, career: career, showAllEvents: false)

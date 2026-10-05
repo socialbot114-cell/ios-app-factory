@@ -9,6 +9,8 @@ struct FootballInboxView: View {
     var focusedMessageID: Int? = nil
     @State private var selected: Selection?
     @State private var renewal: Selection?
+    @State private var grouped = false
+    @State private var openConversation: String?
 
     struct Selection: Identifiable { let id: Int }
 
@@ -19,18 +21,34 @@ struct FootballInboxView: View {
                     Text("Atletas, diretoria, olheiros e mercado vão escrever para você aqui.").font(.subheadline).foregroundStyle(.secondary)
                 }
             }
+            if focusedMessageID == nil && !career.inbox.isEmpty {
+                Picker("Ver", selection: $grouped) {
+                    Text("Linha do tempo").tag(false)
+                    Text("Por conversa").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("inbox-grouping")
+                if grouped && openConversation == nil { conversationList }
+            }
             let focused = focusedMessageID.flatMap { id in career.inbox.first { $0.id == id } }
             if focusedMessageID != nil && focused == nil {
                 Text("Esta mensagem não está mais na caixa de entrada.").font(.subheadline).foregroundStyle(.secondary)
             }
-            let visible = focused.map { [$0] } ?? Array(career.inbox.reversed().prefix(60))
+            let visible = focused.map { [$0] } ?? visibleMessages
+            if grouped, let openConversation, focusedMessageID == nil {
+                Button { self.openConversation = nil } label: { Label("Todas as conversas", systemImage: "chevron.left") }
+                    .font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier("inbox-back")
+                    .onAppear { career.markConversationRead(openConversation) }
+            }
             ForEach(visible) { message in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
                         Image(systemName: message.kind.symbol).foregroundStyle(message.isRead ? Color.secondary : FootballTheme.accent)
                         Text(message.title).font(.subheadline.weight(.bold))
                         Spacer()
-                        if message.isResolved { PillLabel(text: "RESOLVIDO", tint: .gray) }
+                        let state = career.messageState(message)
+                        if state != .unread && state != .read { PillLabel(text: state.title, tint: state == .expired ? .orange : .gray) }
                         Text("T\(message.season) · J\(message.matchDay + 1)").font(.caption2).foregroundStyle(.secondary)
                     }
                     Text(message.body).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -38,6 +56,7 @@ struct FootballInboxView: View {
                         Label(reply, systemImage: "arrowshape.turn.up.left.fill")
                             .font(.subheadline).foregroundStyle(FootballTheme.accent)
                     }
+                    attachmentRow(message)
                     if let playerID = message.playerID {
                         ForEach(career.promises.filter { $0.playerID == playerID }) { promise in
                             Text("Compromisso: \(promise.startsDone)/\(promise.requiredStarts) titularidades · prazo J\(promise.deadlineMatchDay + 1)")
@@ -65,6 +84,74 @@ struct FootballInboxView: View {
         }
         .sheet(item: $renewal) { selection in
             FootballRenewalSheet(career: $career, playerID: selection.id)
+        }
+    }
+
+    // MARK: Conversas e anexos
+
+    private var visibleMessages: [InboxMessage] {
+        if grouped {
+            guard let openConversation, let group = career.conversations().first(where: { $0.id == openConversation }) else { return [] }
+            return group.messageIDs.compactMap { id in career.inbox.first { $0.id == id } }
+        }
+        return Array(career.inbox.reversed().prefix(60))
+    }
+
+    private var conversationList: some View {
+        VStack(spacing: 10) {
+            ForEach(career.conversations()) { group in
+                Button { openConversation = group.id } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: group.playerID == nil ? "tray.full.fill" : "person.crop.circle.fill").foregroundStyle(FootballTheme.accent)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(group.title).font(.subheadline.weight(.bold))
+                            Text("\(group.messageIDs.count) mensagem(ns)" + (group.open > 0 ? " · \(group.open) aguardando resposta" : "")).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if group.unread > 0 { PillLabel(text: "\(group.unread) NOVA(S)", tint: FootballTheme.accent) }
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("conversation-\(group.id)")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func attachmentRow(_ message: InboxMessage) -> some View {
+        let attachments = career.attachments(for: message)
+        if !attachments.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(attachments) { attachment in
+                        switch attachment {
+                        case .fact:
+                            Label(attachment.title, systemImage: attachment.symbol).font(.caption.weight(.semibold)).padding(.horizontal, 10).padding(.vertical, 6)
+                                .background(Color.primary.opacity(0.06), in: Capsule())
+                        default:
+                            Button { open(attachment) } label: {
+                                Label(attachment.title, systemImage: attachment.symbol).font(.caption.weight(.semibold)).padding(.horizontal, 10).padding(.vertical, 6)
+                                    .background(FootballTheme.accent.opacity(0.14), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("msg-attachment-\(message.id)-\(attachment.id)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func open(_ attachment: MessageAttachment) {
+        switch attachment {
+        case .playerSheet(let id): selected = Selection(id: id)
+        case .lineup, .commitment: onOpenApp(.squad)
+        case .offer: onOpenApp(.market)
+        case .contract(let id): renewal = Selection(id: id)
+        case .fact: break
         }
     }
 
@@ -518,14 +605,10 @@ struct FootballModesView: View {
                 NavigationLink { FootballStoryView(career: $career, onAlert: onAlert) } label: { shortcut("História, recordes e convites", "list.star") }
                     .accessibilityIdentifier("settings-story")
             }
-            FactoryPanel(title: "Dificuldade", systemImage: "dial.medium.fill") {
-                Picker("Dificuldade", selection: $career.difficulty) {
-                    ForEach(Difficulty.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("difficulty-picker")
-                Text(career.difficulty.summary).font(.caption).foregroundStyle(.secondary)
-            }
+            FootballDifficultyRulesPanel(career: $career)
+            FootballPhonePreferencesPanel(career: $career)
+            FootballAdvancePausesPanel(career: $career)
+            FootballActionHistoryPanel(career: career)
             if let challenge = career.challenge, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) {
                 FactoryPanel(title: "Desafio ativo", systemImage: "flag.checkered") {
                     Text(scenario.title).font(.subheadline.weight(.bold))

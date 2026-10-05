@@ -51,6 +51,7 @@ struct FootballSquadView: View {
                             .font(.caption.weight(.medium)).foregroundStyle(.orange)
                     }
                 }
+                FootballTacticalPlansPanel(career: $career)
                 instructionsPanel
                 rolesPanel
                 trainingPanel

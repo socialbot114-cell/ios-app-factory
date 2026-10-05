@@ -688,6 +688,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
     var momentum: [Int] = []
     var attendance: Int? = nil
     var impact: MatchImpact? = nil
+    var summary: PostMatchSummary? = nil
     /// Detalhes usados pelo fantasy game e pelas notícias.
     var assistIDs: [Int] = []
     var playedIDs: [Int] = []
@@ -698,7 +699,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         case id, matchDay, round, competition, home, away, homeGoals, awayGoals, homeScorerIDs, awayScorerIDs, commentary, events
         case homeShots, awayShots, homeOnTarget, awayOnTarget, homePossession, awayPossession
         case homeExpectedGoals, awayExpectedGoals, wentToExtraTime, homePenalties, awayPenalties, userStats
-        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum, attendance, impact
+        case homeCorners, awayCorners, homeFouls, awayFouls, homeYellow, awayYellow, homeRed, awayRed, momentum, attendance, impact, summary
         case assistIDs, playedIDs, yellowIDs, redIDs
     }
 
@@ -748,6 +749,7 @@ struct LeagueFixture: Identifiable, Codable, Equatable {
         momentum = try container.decodeIfPresent([Int].self, forKey: .momentum) ?? []
         attendance = try container.decodeIfPresent(Int.self, forKey: .attendance)
         impact = try container.decodeIfPresent(MatchImpact.self, forKey: .impact)
+        summary = try container.decodeIfPresent(PostMatchSummary.self, forKey: .summary)
         assistIDs = try container.decodeIfPresent([Int].self, forKey: .assistIDs) ?? []
         playedIDs = try container.decodeIfPresent([Int].self, forKey: .playedIDs) ?? []
         yellowIDs = try container.decodeIfPresent([Int].self, forKey: .yellowIDs) ?? []

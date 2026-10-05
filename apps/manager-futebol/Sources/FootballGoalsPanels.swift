@@ -59,7 +59,7 @@ struct FootballGoalRow: View {
             ProgressView(value: Double(career.progress(of: quest)), total: Double(max(1, quest.target))).tint(.blue)
             Label(quest.reward.text, systemImage: "gift.fill").font(.caption).foregroundStyle(FootballTheme.gold)
             if let contributions = quest.contributions, !contributions.isEmpty {
-                Text("Contou: " + contributions.suffix(3).map { "\($0.text) (dia \($0.matchDay + 1))" }.joined(separator: ", "))
+                Text("Contou: " + FootballCareer.compactContributions(contributions))
                     .font(.caption2).foregroundStyle(.secondary)
                     .accessibilityIdentifier("goal-contributions-\(quest.id)")
             }
@@ -93,7 +93,7 @@ struct FootballGoalsHistoryPanel: View {
                     Text("T\(record.season) · dia \(record.matchDay + 1) · \(record.sourceName) · \(record.progress)/\(record.target)")
                         .font(.caption2).foregroundStyle(.secondary)
                     if !record.contributions.isEmpty {
-                        Text("Contou: " + record.contributions.map(\.text).joined(separator: ", ")).font(.caption2).foregroundStyle(.secondary)
+                        Text("Contou: " + FootballCareer.compactContributions(record.contributions)).font(.caption2).foregroundStyle(.secondary)
                     }
                 }
             }

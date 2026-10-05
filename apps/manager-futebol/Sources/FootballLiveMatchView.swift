@@ -318,6 +318,20 @@ struct FootballLiveMatchView: View {
             }
             Text(active?.summary ?? "Plano personalizado. Escolha um atalho para trocar tudo de uma vez.")
                 .font(.caption).foregroundStyle(.secondary)
+            if career.tacticalPlan(.a) != nil || career.tacticalPlan(.b) != nil {
+                HStack(spacing: 8) {
+                    ForEach(PlanSlot.allCases) { slot in
+                        Button {
+                            if career.liveApplyTacticalPlan(slot).applied { quickFeedback += 1 }
+                        } label: {
+                            Label(slot.title, systemImage: "square.on.square").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(staticPreview || career.tacticalPlan(slot) == nil)
+                        .accessibilityIdentifier("quick-plan-\(slot.rawValue)")
+                    }
+                }
+            }
             HStack(spacing: 8) {
                 ForEach(QuickSubstitutionKind.allCases) { kind in
                     let plan = career.liveQuickSubstitutionPlan(kind)

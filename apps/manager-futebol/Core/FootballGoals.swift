@@ -134,6 +134,19 @@ extension FootballCareer {
 
     // MARK: Contribuições
 
+    /// Resume as contribuições sem repetir: "acontecimento decidido ×7, vitória ×2", no máximo `limit` itens distintos.
+    static func compactContributions(_ list: [QuestContribution], limit: Int = 3) -> String {
+        var counts: [String: Int] = [:]
+        var order: [String] = []
+        for item in list {
+            if counts[item.text] == nil { order.append(item.text) }
+            counts[item.text, default: 0] += 1
+        }
+        let shown = order.suffix(limit)
+        let text = shown.map { counts[$0]! > 1 ? "\($0) ×\(counts[$0]!)" : $0 }.joined(separator: ", ")
+        return order.count > limit ? text + " e mais \(order.count - limit)" : text
+    }
+
     /// Registra o evento que fez progredir cada meta aberta que usa este contador.
     mutating func logQuestContribution(counter: String, amount: Int) {
         guard amount > 0 else { return }

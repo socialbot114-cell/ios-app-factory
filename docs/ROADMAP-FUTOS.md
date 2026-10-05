@@ -198,7 +198,7 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 - [ ] GES-02 Exibir compromissos e preparação do próximo jogo numa agenda.
 - [ ] GES-03 Mostrar o que vence antes do próximo avanço de calendário.
 - [ ] GES-04 Criar resumo pós-jogo com mudanças e causas, não apenas números finais.
-- [ ] GES-05 Permitir avanço rápido até decisões escolhidas pelo jogador.
+- [x] GES-05 Permitir avanço rápido até decisões escolhidas pelo jogador. O avanço rápido para só onde o jogador escolheu (pausas de decisões, lesões, coletiva e propostas em Ajustes); `FootballAdvancePausesTests`.
 
 **Aceite:** jogador identifica o que exige atenção agora e consegue abrir o assunto específico em um toque.
 

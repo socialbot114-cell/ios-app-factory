@@ -67,7 +67,7 @@ final class FootballFactsAndTalksTests: XCTestCase {
         XCTAssertEqual(career.messageState(try XCTUnwrap(career.inbox.first { $0.id == notice.id })), .dismissed)
         career.dismissRequest(playerID: id)
         let resolved = try XCTUnwrap(career.inbox.first { $0.id == request.id })
-        XCTAssertEqual(career.messageState(resolved), .resolved)
+        XCTAssertEqual(career.messageState(resolved), .answered, "O treinador respondeu (sem garantia)")
         XCTAssertNotEqual(career.messageState(resolved), .dismissed)
     }
 

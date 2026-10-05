@@ -79,3 +79,14 @@ final class FootballGoalsTests: XCTestCase {
         XCTAssertEqual(state.completedCount, 2)
     }
 }
+
+extension FootballGoalsTests {
+    func testCompactContributionsGroupRepeatsAndLimitDistinctItems() {
+        func item(_ text: String) -> QuestContribution { QuestContribution(season: 1, matchDay: 0, text: text) }
+        let repeated = Array(repeating: item("acontecimento decidido"), count: 7)
+        XCTAssertEqual(FootballCareer.compactContributions(repeated), "acontecimento decidido ×7")
+        let mixed = [item("a"), item("b"), item("a"), item("c"), item("d")]
+        XCTAssertEqual(FootballCareer.compactContributions(mixed), "b, c, d e mais 1")
+        XCTAssertEqual(FootballCareer.compactContributions([]), "")
+    }
+}

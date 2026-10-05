@@ -37,7 +37,19 @@ struct FactStore: Codable, Equatable {
 
 /// Estados de leitura que não se confundem (F1-06): lida, resolvida e dispensada são coisas diferentes.
 enum MessageState: String, Equatable {
-    case unread, read, resolved, dismissed
+    /// `answered`: o treinador respondeu. `resolved`: encerrada sem resposta própria. `expired`: o prazo passou sem resposta.
+    case unread, read, answered, resolved, expired, dismissed
+
+    var title: String {
+        switch self {
+        case .unread: return "NOVA"
+        case .read: return "LIDA"
+        case .answered: return "RESPONDIDA"
+        case .resolved: return "RESOLVIDA"
+        case .expired: return "SEM RESPOSTA"
+        case .dismissed: return "DISPENSADA"
+        }
+    }
 }
 
 extension FootballCareer {
@@ -86,7 +98,8 @@ extension FootballCareer {
 
     func messageState(_ message: InboxMessage) -> MessageState {
         if message.isDismissed == true { return .dismissed }
-        if message.isResolved { return .resolved }
+        if message.isResolved { return message.coachReply != nil ? .answered : .resolved }
+        if message.coachReply != nil { return .expired }
         return message.isRead ? .read : .unread
     }
 

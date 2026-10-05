@@ -174,6 +174,8 @@ struct FootballCoachLifeView: View {
 
 struct FootballEventsView: View {
     @Binding var career: FootballCareer
+    /// Abre o acontecimento escolhido num aviso no topo da lista.
+    var focusedEventID: Int? = nil
     @State private var resultText: String?
 
     var body: some View {
@@ -187,7 +189,7 @@ struct FootballEventsView: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-            ForEach(career.pendingEvents) { event in
+            ForEach(career.pendingEvents.sorted { $0.id == focusedEventID ? $1.id != focusedEventID : ($1.id == focusedEventID ? false : $0.id < $1.id) }) { event in
                 FactoryPanel(title: event.title, systemImage: "exclamationmark.bubble.fill") {
                     Text(event.body).font(.subheadline)
                     ForEach(Array(event.choices.enumerated()), id: \.offset) { index, choice in

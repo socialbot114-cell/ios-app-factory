@@ -241,6 +241,8 @@ extension FootballCareer {
         var days = 0
         let baseRequests = pendingRequestCount
         let baseOffers = offers.count
+        // GES-05: o jogador escolhe em que o avanço rápido para (Ajustes › Avanço rápido).
+        let pauses = world.phone.preferences.pauses
         var reason = "Limite de dias atingido."
         while days < maxDays {
             if liveMatch != nil { return (days, "Há uma partida em andamento.") }
@@ -248,11 +250,12 @@ extension FootballCareer {
             if isSeasonComplete { return (days, "A temporada terminou.") }
             guard simulateNextMatchDay() else { return (days, "Não foi possível avançar.") }
             days += 1
+            if pauses.press, pendingPress != nil { reason = "Coletiva de imprensa aguardando resposta."; break }
             skipPress()
             if isFired { reason = "Você foi demitido."; break }
             if isSeasonComplete { reason = "A temporada terminou."; break }
-            if pendingRequestCount > baseRequests { reason = "Há mensagens pedindo a sua resposta."; break }
-            if offers.count > baseOffers { reason = "Chegou uma proposta por um dos seus atletas."; break }
+            if pauses.decisions, pendingRequestCount > baseRequests { reason = "Há mensagens pedindo a sua resposta."; break }
+            if pauses.offers, offers.count > baseOffers { reason = "Chegou uma proposta por um dos seus atletas."; break }
             if let window = transferWindow, window.isLastDay { reason = "Último dia da janela de transferências."; break }
             if !invitations.isEmpty { reason = "Um clube convidou você para o cargo de treinador."; break }
             if sponsorDeal == nil && !sponsorOffers.isEmpty { reason = "Escolha o patrocinador da temporada."; break }
@@ -260,7 +263,7 @@ extension FootballCareer {
                 if FootballSeason.isDerby(next.home, next.away) { reason = "Clássico no próximo jogo."; break }
                 if let round = next.competition.cupRound, round >= .semiFinal { reason = "Mata-mata decisivo no próximo jogo."; break }
             }
-            if starters.contains(where: { !$0.isAvailable(matchDay: matchDayIndex) }) { reason = "Há titulares indisponíveis."; break }
+            if pauses.injuries, starters.contains(where: { !$0.isAvailable(matchDay: matchDayIndex) }) { reason = "Há titulares indisponíveis."; break }
             if isInDebt { reason = "O clube está no vermelho."; break }
         }
         return (days, reason)

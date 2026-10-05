@@ -10,6 +10,7 @@ struct FootballLivePitchView: View {
     var height: CGFloat = 230
 
     @State private var engine = PitchEngine()
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     private var sim: MatchSimulation { live.sim }
 
@@ -79,10 +80,11 @@ struct FootballLivePitchView: View {
         let crowd = min(1, max(0.35, 0.40 + Double(career.clubHype) / 160))
         let kits = Kits(home: homeKit, away: awayKit, homeKeeper: homeKeeperKit, awayKeeper: awayKeeperKit)
         let stageEngine = self.engine
+        let reduceMotion = systemReduceMotion || career.world.phone.preferences.reduceMotion
         let celebrating = stageEngine.celebratingHome
 
         return VStack(spacing: 6) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: FactoryCapture.screen != nil || !(running || busy))) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: FactoryCapture.screen != nil || reduceMotion || !(running || busy))) { timeline in
                 let time = timeline.date.timeIntervalSinceReferenceDate
                 Canvas { context, size in
                     stageEngine.advance(now: time, speed: rate, input: input)
