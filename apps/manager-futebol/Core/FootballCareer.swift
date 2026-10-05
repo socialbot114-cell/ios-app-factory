@@ -54,6 +54,8 @@ struct FootballCareer: Codable, Equatable {
         case playerMemories
         case talks
         case tacticalPlans
+        case arcs
+        case nextArcID
         case nextTalkID
         case pendingPress
         case transferLog
@@ -148,6 +150,8 @@ struct FootballCareer: Codable, Equatable {
     var playerMemories: [PlayerMemory] = []
     var talks: [RenewalTalk] = []
     var tacticalPlans: [TacticalPlan] = []
+    var arcs: [StoryArc] = []
+    var nextArcID = 1
     var nextTalkID = 1
     var pendingPress: PressConference? = nil
     var transferLog: [TransferRecord] = []
@@ -296,6 +300,8 @@ struct FootballCareer: Codable, Equatable {
         playerMemories = try container.decodeIfPresent([PlayerMemory].self, forKey: .playerMemories) ?? []
         talks = try container.decodeIfPresent([RenewalTalk].self, forKey: .talks) ?? []
         tacticalPlans = try container.decodeIfPresent([TacticalPlan].self, forKey: .tacticalPlans) ?? []
+        arcs = try container.decodeIfPresent([StoryArc].self, forKey: .arcs) ?? []
+        nextArcID = try container.decodeIfPresent(Int.self, forKey: .nextArcID) ?? 1
         nextTalkID = try container.decodeIfPresent(Int.self, forKey: .nextTalkID) ?? 1
         pendingPress = try container.decodeIfPresent(PressConference.self, forKey: .pendingPress)
         transferLog = try container.decodeIfPresent([TransferRecord].self, forKey: .transferLog) ?? []
@@ -391,6 +397,8 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(playerMemories, forKey: .playerMemories)
         try container.encode(talks, forKey: .talks)
         try container.encode(tacticalPlans, forKey: .tacticalPlans)
+        try container.encode(arcs, forKey: .arcs)
+        try container.encode(nextArcID, forKey: .nextArcID)
         try container.encode(nextTalkID, forKey: .nextTalkID)
         try container.encodeIfPresent(pendingPress, forKey: .pendingPress)
         try container.encode(transferLog, forKey: .transferLog)

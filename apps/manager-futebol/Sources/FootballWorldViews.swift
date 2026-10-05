@@ -183,7 +183,8 @@ struct FootballEventsView: View {
             if let resultText {
                 Label(resultText, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }
-            if career.pendingEvents.isEmpty {
+            FootballStoryArcPanel(career: $career)
+            if career.pendingEvents.isEmpty && career.openArcs.isEmpty {
                 FactoryPanel(title: "Tudo calmo", systemImage: "leaf.fill") {
                     Text("Nenhum acontecimento esperando decisão. Eles surgem conforme o clube vive bons e maus momentos.")
                         .font(.subheadline).foregroundStyle(.secondary)

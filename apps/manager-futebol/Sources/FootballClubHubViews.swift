@@ -575,16 +575,6 @@ struct FootballStoryView: View {
 
 // MARK: - Modos: dificuldade, desafios e tutorial
 
-private func shortcut(_ title: String, _ symbol: String) -> some View {
-    HStack(spacing: 12) {
-        Image(systemName: symbol).frame(width: 28).foregroundStyle(FootballTheme.accent)
-        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-        Spacer()
-        Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
-    }
-    .contentShape(Rectangle())
-}
-
 struct FootballModesView: View {
     @Binding var career: FootballCareer
     let onStartChallenge: (ChallengeScenario) -> Void
@@ -592,19 +582,6 @@ struct FootballModesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            FactoryPanel(title: "Atalhos do clube", systemImage: "square.grid.2x2.fill") {
-                NavigationLink { FootballFacilitiesView(career: $career, onAlert: onAlert) } label: { shortcut("Estrutura e ingressos", "building.2.fill") }
-                    .accessibilityIdentifier("settings-facilities")
-                Divider()
-                NavigationLink { FootballStaffView(career: $career, onAlert: onAlert) } label: { shortcut("Comissão técnica", "person.2.fill") }
-                    .accessibilityIdentifier("settings-staff")
-                Divider()
-                NavigationLink { FootballSponsorView(career: $career, onAlert: onAlert) } label: { shortcut("Patrocínio master", "megaphone.fill") }
-                    .accessibilityIdentifier("settings-sponsor")
-                Divider()
-                NavigationLink { FootballStoryView(career: $career, onAlert: onAlert) } label: { shortcut("História, recordes e convites", "list.star") }
-                    .accessibilityIdentifier("settings-story")
-            }
             FootballDifficultyRulesPanel(career: $career)
             FootballPhonePreferencesPanel(career: $career)
             FootballAdvancePausesPanel(career: $career)

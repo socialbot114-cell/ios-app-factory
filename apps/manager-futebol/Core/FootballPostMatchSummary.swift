@@ -70,7 +70,11 @@ extension FootballCareer {
             let byCategory = Dictionary(grouping: entries, by: \.category).mapValues { $0.reduce(0) { $0 + $1.amount } }
             let top = byCategory.sorted { abs($0.value) != abs($1.value) ? abs($0.value) > abs($1.value) : $0.key.rawValue < $1.key.rawValue }.prefix(3)
             let parts = top.map { "\($0.key.title) \(FootballFormat.money($0.value))" }
-            add("Caixa", transferBudget - before.cash, "Caixa \(FootballFormat.money(before.cash)) → \(FootballFormat.money(transferBudget)).", parts.joined(separator: " · "))
+            let cashDelta = transferBudget - before.cash
+            if cashDelta != 0 {
+                let signed = (cashDelta > 0 ? "+" : "−") + FootballFormat.money(abs(cashDelta))
+                changes.append(SummaryChange(label: "Caixa", delta: nil, text: "Caixa \(FootballFormat.money(before.cash)) → \(FootballFormat.money(transferBudget)) (\(signed)).", cause: parts.joined(separator: " · ")))
+            }
         }
 
         // Elenco: quem mais mudou de moral e por quê.

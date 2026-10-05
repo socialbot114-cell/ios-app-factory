@@ -67,7 +67,8 @@ struct FootballHome: View {
                 searchedPlayer = SearchedPlayer(id: id)
             }
         }) {
-            PhoneSpotlight(career: career, initialQuery: searchSeed, onApp: { openApp = $0 }, onPlayer: { pendingPlayerID = $0 }, onContact: { focusedContactID = $0; openApp = .contacts })
+            PhoneSpotlight(career: career, initialQuery: searchSeed, onApp: { openApp = $0 }, onPlayer: { pendingPlayerID = $0 }, onContact: { focusedContactID = $0; openApp = .contacts },
+                           onLeagueSection: { tableSection = $0; openApp = .league })
         }
         .sheet(item: $searchedPlayer) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: showAlert)
@@ -143,6 +144,7 @@ struct FootballHome: View {
     }
 
     private func open(_ app: PhoneApp) {
+        if app == .league { tableSection = nil }
         focusedContactID = nil
         focusedEventID = nil
         openApp = app
@@ -240,7 +242,7 @@ struct FootballHome: View {
         }
     }
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -248,6 +250,8 @@ struct FootballHome: View {
         case "press": FootballPressView(career: $career)
         case _ where FootballF4Captures.names.contains(name): FootballF4CaptureView(name: name, career: $career, onAlert: showAlert)
         case _ where FootballF5Captures.names.contains(name): FootballF5CaptureView(name: name, career: $career, onAlert: showAlert)
+        case "story-arc":
+            ScrollView { FootballStoryArcPanel(career: $career).padding(20) }
         case "tactical-plans":
             ScrollView { FootballTacticalPlansPanel(career: $career).padding(20) }
         case "post-summary":
@@ -387,6 +391,14 @@ struct FootballHome: View {
             _ = career.promiseStarts(playerID: athlete.id)
             career.matchDayIndex += 20
             career.evaluatePromises(started: [])
+        }
+        if capture == "story-arc", let star = career.clubRoster.max(by: { $0.overall < $1.overall }) {
+            career.matchDayIndex = max(career.matchDayIndex, 6)
+            if let arc = career.openRumorArc(playerID: star.id, truth: true) {
+                career.matchDayIndex += FootballCareer.arcUpdateDay
+                career.advanceArcs()
+                _ = career.askArcInfo(arc.id)
+            }
         }
         if capture == "tactical-plans" {
             career.setPlayStyle(.defensive)

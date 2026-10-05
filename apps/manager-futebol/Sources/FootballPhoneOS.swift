@@ -403,10 +403,15 @@ struct PhoneHomeScreen: View {
                                     in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                     let badge = career.badge(for: app)
                     if badge > 0 {
-                        Text(badge > 9 ? "9+" : "\(badge)").font(.caption2.weight(.heavy)).foregroundStyle(.white)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(app == .quests ? app.tint : Color.red, in: Capsule())
-                            .offset(x: 6, y: -6)
+                        // Tarefas ativas (checklist, azul) não se confundem com novidades (número, vermelho).
+                        HStack(spacing: 2) {
+                            if app == .quests { Image(systemName: "checklist") }
+                            Text(badge > 9 ? "9+" : "\(badge)")
+                        }
+                        .font(.caption2.weight(.heavy)).foregroundStyle(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(app == .quests ? app.tint : Color.red, in: Capsule())
+                        .offset(x: 6, y: -6)
                     }
                 }
                 Text(app.title).font(.caption2.weight(.medium)).foregroundStyle(.white).lineLimit(1)
@@ -481,6 +486,7 @@ struct PhoneSpotlight: View {
     let onApp: (PhoneApp) -> Void
     let onPlayer: (Int) -> Void
     var onContact: (Int) -> Void = { _ in }
+    var onLeagueSection: (FootballTableView.LeagueSection) -> Void = { _ in }
     @State private var query = ""
     @State private var selectedClub: LeagueTeam?
     @Environment(\.dismiss) private var dismiss
@@ -494,6 +500,11 @@ struct PhoneSpotlight: View {
     private func matches(_ text: String) -> Bool {
         let value = normalized(text)
         return term.split(separator: " ").allSatisfy { value.contains($0) }
+    }
+
+    /// Seções exatas da Liga (OS-03): abrem direto na aba pedida.
+    private var leagueSections: [FootballTableView.LeagueSection] {
+        term.count >= 2 ? FootballTableView.LeagueSection.allCases.filter { matches("Liga \($0.rawValue)") } : []
     }
 
     private var apps: [PhoneApp] { term.isEmpty ? [] : PhoneApp.allCases.filter { matches($0.title) } }
@@ -526,6 +537,14 @@ struct PhoneSpotlight: View {
                     Section("Apps") {
                         ForEach(apps) { app in
                             Button { dismiss(); onApp(app) } label: { Label(app.title, systemImage: app.symbol) }
+                        }
+                    }
+                }
+                if !leagueSections.isEmpty {
+                    Section("Seções") {
+                        ForEach(leagueSections) { section in
+                            Button { dismiss(); onLeagueSection(section) } label: { Label("Liga · \(section.rawValue)", systemImage: "list.number") }
+                                .accessibilityIdentifier("search-league-\(section.id)")
                         }
                     }
                 }
@@ -564,7 +583,7 @@ struct PhoneSpotlight: View {
                         }
                     }
                 }
-                if term.count >= 2 && apps.isEmpty && players.isEmpty && clubs.isEmpty && contacts.isEmpty {
+                if term.count >= 2 && apps.isEmpty && leagueSections.isEmpty && players.isEmpty && clubs.isEmpty && contacts.isEmpty {
                     Text("Nada encontrado para \"\(query)\". Tente parte do nome, a cidade do clube ou o papel do contato; acentos são opcionais.").foregroundStyle(.secondary)
                 }
             }

@@ -229,7 +229,9 @@ extension FootballCareer {
         for step in Self.calendarProcessingOrder {
             switch step {
             case .commitments:
+                advanceArcs()
                 expireDueCommitments()
+                maybeStartRumorArc()
                 ran.append(step)
             case .negotiations:
                 expireStaleTalks()
@@ -250,6 +252,13 @@ extension FootballCareer {
         for index in talks.indices where talks[index].stage.isOpen && player(talks[index].playerID)?.teamID != clubID {
             talks[index].stage = .expired
             if let commitment = talks[index].commitmentID { resolveCommitment(id: commitment, as: .cancelled) }
+        }
+        for index in arcs.indices where arcs[index].isOpen {
+            guard let id = arcs[index].playerID, player(id)?.teamID != clubID else { continue }
+            arcs[index].stage = .ended
+            arcs[index].outcome = "O atleta deixou o clube; o arco foi encerrado."
+            arcs[index].steps.append(ArcStep(id: arcs[index].steps.count, worldDay: worldDay, kind: .outcome, text: "O atleta deixou o clube; o arco foi encerrado."))
+            if let commitment = arcs[index].commitmentID { resolveCommitment(id: commitment, as: .cancelled) }
         }
         for item in commitments where item.state == .open && (item.kind == .followUp || item.kind == .negotiationCounter) {
             guard let id = item.playerID, player(id)?.teamID != clubID else { continue }

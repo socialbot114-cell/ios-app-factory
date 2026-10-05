@@ -56,10 +56,14 @@ struct FootballTransferTalksPanel: View {
     private func controls(_ talk: TransferTalk) -> some View {
         switch talk.stage {
         case .clubOffer:
-            let ask = career.player(talk.playerID).map { career.askingPrice(for: $0) } ?? 0
+            let base = career.player(talk.playerID).map { career.askingPrice(for: $0) } ?? 0
+            // Mesmo acréscimo do motor: +3% por parcela extra.
+            let ask = Int(Double(base) * (1 + 0.03 * Double(installments - 1)) / 10_000) * 10_000
             Stepper("Parcelas: \(installments)x", value: $installments, in: 1...4).font(.caption)
+            Text("O clube pede \(FootballFormat.money(ask))\(installments > 1 ? " (+3% por parcela extra)" : "").")
+                .font(.caption2).foregroundStyle(.secondary)
             HStack(spacing: 8) {
-                ForEach([0.85, 0.95, 1.05], id: \.self) { share in
+                ForEach([0.9, 1.0], id: \.self) { share in
                     let fee = Int(Double(ask) * share / 10_000) * 10_000
                     Button(FootballFormat.money(fee)) { report(career.proposeFee(talkID: talk.id, fee: fee, installments: installments)) }
                         .buttonStyle(.bordered).font(.caption.weight(.semibold))

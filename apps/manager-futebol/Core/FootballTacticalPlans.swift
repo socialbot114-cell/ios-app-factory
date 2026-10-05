@@ -93,7 +93,7 @@ extension FootballCareer {
         if a.style != b.style { lines.append("Estilo: \(a.style.rawValue) × \(b.style.rawValue).") }
         if a.instructions != b.instructions {
             let ma = a.instructions.modifiers, mb = b.instructions.modifiers
-            lines.append("Instruções: ataque \(Self.signed(ma.attack)) × \(Self.signed(mb.attack)), defesa \(Self.signed(ma.defense)) × \(Self.signed(mb.defense)), controle \(Self.signed(ma.control)) × \(Self.signed(mb.control)); desgaste ×\(String(format: "%.2f", a.instructions.fatigueFactor)) contra ×\(String(format: "%.2f", b.instructions.fatigueFactor)).")
+            lines.append("Instruções: ataque \(Self.signed(ma.attack)) × \(Self.signed(mb.attack)), defesa \(Self.signed(ma.defense)) × \(Self.signed(mb.defense)), controle \(Self.signed(ma.control)) × \(Self.signed(mb.control)); desgaste ×\(String(format: "%.2f", a.instructions.fatigueFactor).replacingOccurrences(of: ".", with: ",")) contra ×\(String(format: "%.2f", b.instructions.fatigueFactor).replacingOccurrences(of: ".", with: ",")).")
         }
         let shared = Set(a.lineup).intersection(b.lineup).count
         lines.append("Titulares em comum: \(shared) de 11.")
@@ -104,5 +104,8 @@ extension FootballCareer {
         return lines
     }
 
-    private static func signed(_ value: Double) -> String { value >= 0 ? "+\(String(format: "%.1f", value))" : String(format: "%.1f", value) }
+    private static func signed(_ value: Double) -> String {
+        let text = String(format: "%.1f", abs(value)).replacingOccurrences(of: ".", with: ",")
+        return value >= 0 ? "+\(text)" : "−\(text)"
+    }
 }

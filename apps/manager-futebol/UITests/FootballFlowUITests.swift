@@ -156,8 +156,9 @@ final class FootballFlowUITests: XCTestCase {
                 let picker = app.segmentedControls["difficulty-picker"]
                 XCTAssertTrue(picker.waitForExistence(timeout: 6))
                 picker.buttons["Difícil"].tap()
-                self.tapWhenReady(app.buttons["settings-staff"], in: app)
-                XCTAssertTrue(app.staticTexts["Comissão técnica"].waitForExistence(timeout: 6))
+                // Estrutura, comissão e patrocínio ficam no Clube; Ajustes só configura o app e a simulação.
+                XCTAssertFalse(app.buttons["settings-staff"].exists)
+                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "settings-notification-priority").firstMatch.waitForExistence(timeout: 6))
             }
         ]
 
