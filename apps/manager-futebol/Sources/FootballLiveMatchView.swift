@@ -381,7 +381,12 @@ struct FootballLiveMatchView: View {
             .disabled(staticPreview || finishing)
             .accessibilityIdentifier("live-finish")
         }
-        .task { if impactPreview == nil { impactPreview = career.previewMatchImpact() } }
+        .task {
+            // O fechamento do dia roda numa cópia e fora da thread principal: o botão de concluir aparece na hora.
+            guard impactPreview == nil else { return }
+            let snapshot = career
+            impactPreview = await Task.detached(priority: .userInitiated) { snapshot.previewMatchImpact() }.value
+        }
     }
 
     private func hypeTitle(for impact: MatchImpact) -> String {
