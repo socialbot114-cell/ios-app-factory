@@ -19,6 +19,10 @@ Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) en
 - **Partida (física):** intervalo e apito final param o campo (bancos, bola no centro, "INTERVALO"/"FIM DE JOGO"); no 2º tempo o visitante dá a saída; faltas, cartões, lesões e impedimentos geram bola parada com cobrador; bola fora gera lateral/escanteio/tiro de meta; chute sai do ponto narrado; bola na trave rebate; no modo "Ver jogo" o relógio espera a jogada narrada terminar.
 - **Testes escritos (não executados):** `FootballCalendarClockTests`, `FootballChatAndGuideTests`; UITests ajustados (`club-management`, busca por trecho de "Bem-vindo, Treinador", novo teste de bloqueio).
 
+### Próximo plano
+
+Ver `docs/PLANO-FLUXO-E-DESIGN.md` (fluxo do dia e da partida, design de mundo vivo e fase final de testes).
+
 ### Pendente / riscos
 
 - Compilar e rodar tudo (principal risco: erros de tipo Swift não detectáveis aqui, ex.: `contentTransition(.symbolEffect)`, sobrecargas de `showGuide`, inicializadores memberwise).
