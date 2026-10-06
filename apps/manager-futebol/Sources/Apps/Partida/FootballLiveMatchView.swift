@@ -69,7 +69,6 @@ struct FootballLiveMatchView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         scoreboard(live)
                         if live.sim.finished { fullTimePanel(live) }
-                        if career.canHoldHalftimeTalk && !running { FootballHalftimeTalkPanel(career: $career, locked: staticPreview) }
                         viewModePicker
                         if viewMode == .watch {
                             watchPanel(live)
@@ -77,6 +76,8 @@ struct FootballLiveMatchView: View {
                             narrationCard(live)
                         }
                         controls(live)
+                        // Abaixo dos controles: ao aparecer no intervalo, não empurra os botões da partida de lugar.
+                        if career.canHoldHalftimeTalk && !running { FootballHalftimeTalkPanel(career: $career, locked: staticPreview) }
                         if !live.sim.finished { quickActions(live) }
                                         Picker("Seção", selection: $section) {
                             ForEach(LiveSection.allCases) { item in Text(item.rawValue).tag(item) }
@@ -234,7 +235,7 @@ struct FootballLiveMatchView: View {
                     .accessibilityIdentifier("live-key-moments")
                 }
                 if live.sim.minute == 45 && !running {
-                    Label("Intervalo: troque jogadores à vontade e ajuste a tática antes do 2º tempo.", systemImage: "person.2.wave.2.fill")
+                    Label("Intervalo: converse com o time abaixo, troque jogadores e ajuste a tática antes do 2º tempo.", systemImage: "person.2.wave.2.fill")
                         .font(.caption.weight(.medium)).foregroundStyle(FootballTheme.accent)
                 }
             }

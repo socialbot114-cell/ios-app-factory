@@ -129,7 +129,7 @@ final class FootballFlowUITests: XCTestCase {
         let talk = app.descendants(matching: .any).matching(identifier: "halftime-talk").firstMatch
         XCTAssertTrue(talk.waitForExistence(timeout: 30), "A conversa de vestiário aparece no intervalo")
         let praise = app.buttons["halftime-praise"]
-        if praise.waitForExistence(timeout: 4) { praise.tap() }
+        if praise.waitForExistence(timeout: 4) { scrollUntilHittable(praise, in: app); praise.tap() }
         leagueTap(app.buttons["live-skip"], in: app)
         XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
         let card = app.descendants(matching: .any).matching(identifier: "fulltime-card").firstMatch
