@@ -377,8 +377,7 @@ struct FootballLiveMatchView: View {
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("live-shootout")
             }
-            if let digest = career.fullTimeDigest() { FootballFullTimeCard(digest: digest) }
-            if let impactPreview { MatchImpactCard(impact: impactPreview, hypeTitle: hypeTitle(for: impactPreview)) }
+            // A ação principal fica logo abaixo do resultado: o resumo e a repercussão vêm depois.
             Button {
                 finishing = true
                 stopClock()
@@ -390,6 +389,8 @@ struct FootballLiveMatchView: View {
             .buttonStyle(FactoryPrimaryButtonStyle())
             .disabled(staticPreview || finishing)
             .accessibilityIdentifier("live-finish")
+            if let digest = career.fullTimeDigest() { FootballFullTimeCard(digest: digest) }
+            if let impactPreview { MatchImpactCard(impact: impactPreview, hypeTitle: hypeTitle(for: impactPreview)) }
         }
         .task {
             // O fechamento do dia roda numa cópia e fora da thread principal: o botão de concluir aparece na hora.

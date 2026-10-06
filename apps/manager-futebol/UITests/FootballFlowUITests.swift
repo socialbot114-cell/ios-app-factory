@@ -132,7 +132,9 @@ final class FootballFlowUITests: XCTestCase {
         if praise.waitForExistence(timeout: 4) { praise.tap() }
         leagueTap(app.buttons["live-skip"], in: app)
         XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "fulltime-card").firstMatch.waitForExistence(timeout: 5))
+        let card = app.descendants(matching: .any).matching(identifier: "fulltime-card").firstMatch
+        for _ in 0..<6 where !card.exists { dragUp(app) }
+        XCTAssertTrue(card.exists, "O resumo do jogo aparece abaixo do botão de concluir")
         leagueTap(app.buttons["live-finish"], in: app)
         if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
     }

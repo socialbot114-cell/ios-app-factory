@@ -15,28 +15,29 @@ struct FootballHalftimeTalkPanel: View {
             } else {
                 Text(difference < 0 ? "Você perde por \(-difference). O que diz ao grupo?" : (difference > 0 ? "Você vence por \(difference). O que diz ao grupo?" : "Jogo empatado. O que diz ao grupo?"))
                     .font(.subheadline).foregroundStyle(.secondary)
-                ForEach(HalftimeTalk.allCases) { talk in
-                    Button {
-                        reaction = career.holdHalftimeTalk(talk)
-                    } label: {
-                        HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: talk.symbol).frame(width: 26).foregroundStyle(FootballTheme.accent)
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 6) {
-                                    Text(talk.title).font(.subheadline.weight(.bold)).foregroundStyle(.primary)
-                                    if talk == recommended { PillLabel(text: "SUGERIDO", systemImage: "lightbulb.fill") }
-                                }
-                                Text(talk.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                // Compacto: a conversa ocupa pouco espaço para os controles da partida continuarem à vista.
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    ForEach(HalftimeTalk.allCases) { talk in
+                        Button {
+                            reaction = career.holdHalftimeTalk(talk)
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: talk.symbol).font(.title3)
+                                Text(talk.title).font(.subheadline.weight(.bold))
+                                if talk == recommended { Text("sugerido").font(.caption2.weight(.heavy)).foregroundStyle(FootballTheme.accent) }
                             }
-                            Spacer(minLength: 0)
+                            .frame(maxWidth: .infinity, minHeight: 64)
+                            .background(talk == recommended ? FootballTheme.accent.opacity(0.14) : Color.primary.opacity(0.05),
+                                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .disabled(locked)
+                        .accessibilityLabel("\(talk.title). \(talk.summary)")
+                        .accessibilityIdentifier("halftime-\(talk.rawValue)")
                     }
-                    .buttonStyle(.plain)
-                    .disabled(locked)
-                    .accessibilityIdentifier("halftime-\(talk.rawValue)")
-                    if talk != HalftimeTalk.allCases.last { Divider() }
                 }
+                if let recommended { Text(recommended.summary).font(.caption).foregroundStyle(.secondary) }
             }
         }
         .accessibilityIdentifier("halftime-talk")
