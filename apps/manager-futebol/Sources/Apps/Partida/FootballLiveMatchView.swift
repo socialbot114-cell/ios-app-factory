@@ -76,8 +76,8 @@ struct FootballLiveMatchView: View {
                             narrationCard(live)
                         }
                         controls(live)
-                        // Abaixo dos controles: ao aparecer no intervalo, não empurra os botões da partida de lugar.
-                        if career.canHoldHalftimeTalk && !running { FootballHalftimeTalkPanel(career: $career, locked: staticPreview) }
+                        // Abaixo dos controles: aparece quando pode falar (intervalo), sem empurrar os botões da partida de lugar.
+                        if career.canHoldHalftimeTalk { FootballHalftimeTalkPanel(career: $career, locked: staticPreview) }
                         if !live.sim.finished { quickActions(live) }
                                         Picker("Seção", selection: $section) {
                             ForEach(LiveSection.allCases) { item in Text(item.rawValue).tag(item) }
