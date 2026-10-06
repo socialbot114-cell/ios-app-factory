@@ -30,6 +30,14 @@ on:
           - brasilia-politica-contexto
           - diario-sono
           - quebra-cabecas
+      suite:
+        description: Todos os testes ou somente jornadas UI
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - ui
 
 permissions:
   contents: read
@@ -80,8 +88,12 @@ jobs:
           SCHEME: ${{ matrix.scheme }}
           APP_SLUG: ${{ matrix.slug }}
           SIMULATOR_ID: ${{ steps.simulators.outputs.iphone }}
+          TEST_SUITE: ${{ inputs.suite || 'all' }}
         run: |
+          flags=()
+          if [ "$TEST_SUITE" = "ui" ]; then flags+=("-only-testing:${SCHEME}UITests"); fi
           xcodebuild test -project IOSAppFactory.xcodeproj -scheme "$SCHEME" \
+            "${flags[@]}" \
             -destination "id=$SIMULATOR_ID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -resultBundlePath "$RUNNER_TEMP/$APP_SLUG-iphone.xcresult" \
@@ -91,8 +103,12 @@ jobs:
           SCHEME: ${{ matrix.scheme }}
           APP_SLUG: ${{ matrix.slug }}
           SIMULATOR_ID: ${{ steps.simulators.outputs.ipad }}
+          TEST_SUITE: ${{ inputs.suite || 'all' }}
         run: |
+          flags=()
+          if [ "$TEST_SUITE" = "ui" ]; then flags+=("-only-testing:${SCHEME}UITests"); fi
           xcodebuild test -project IOSAppFactory.xcodeproj -scheme "$SCHEME" \
+            "${flags[@]}" \
             -destination "id=$SIMULATOR_ID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -resultBundlePath "$RUNNER_TEMP/$APP_SLUG-ipad.xcresult" \

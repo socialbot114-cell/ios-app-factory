@@ -66,6 +66,7 @@ struct FootballCashProjectionPanel: View {
                     .accessibilityIdentifier("budget-assumptions")
             }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("cash-projection")
         .onAppear { if FactoryCapture.screen == "budget-planning" { showSimulator = true } }
     }
@@ -131,6 +132,8 @@ struct FootballCashProjectionPanel: View {
             FactoryMetric(label: "Esperado", value: FootballFormat.money(projection.endingExpected),
                           symbol: "chart.line.uptrend.xyaxis", tint: projection.endingExpected >= 0 ? .indigo : .red)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Só garantido: \(FootballFormat.money(projection.endingContracted)). Esperado: \(FootballFormat.money(projection.endingExpected)).")
         .accessibilityIdentifier("budget-summary")
     }
 

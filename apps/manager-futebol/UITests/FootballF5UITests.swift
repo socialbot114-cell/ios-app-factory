@@ -21,7 +21,7 @@ final class FootballF5UITests: XCTestCase {
         let app = openApp("app-bank")
         let summary = element("budget-summary", in: app)
         XCTAssertTrue(reveal(summary, in: app))
-        let before = summary.staticTexts.allElementsBoundByIndex.map(\.label)
+        let before = summary.label
         XCTAssertFalse(before.isEmpty)
         let simulator = element("budget-simulator", in: app)
         XCTAssertTrue(reveal(simulator, in: app))
@@ -34,11 +34,12 @@ final class FootballF5UITests: XCTestCase {
             app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)).press(forDuration: 0.05,
                 thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65)))
         }
-        XCTAssertNotEqual(before, summary.staticTexts.allElementsBoundByIndex.map(\.label))
+        XCTAssertNotEqual(before, summary.label)
         let reset = app.buttons["budget-reset"]
         XCTAssertTrue(reveal(reset, in: app))
         reset.tap()
-        XCTAssertEqual(before, summary.staticTexts.allElementsBoundByIndex.map(\.label))
+        XCTAssertTrue(reveal(summary, in: app))
+        XCTAssertEqual(before, summary.label)
     }
 
     func testFantasyShowsDeadlineAndFilters() {
@@ -114,12 +115,16 @@ final class FootballF5UITests: XCTestCase {
 
     /// Rola até o elemento existir; conteúdo fora da tela pode não estar na árvore ainda.
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
-        for _ in 0..<8 {
-            if element.exists { return true }
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
-            start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)))
+        for up in [true, false] {
+            for _ in 0..<8 {
+                if element.exists && (element.elementType != .button || element.isHittable) { return true }
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.65 : 0.3))
+                start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: up ? 0.3 : 0.65)))
+            }
         }
-        return element.exists
+        if element.exists { return element.elementType != .button || element.isHittable }
+        XCTFail("Elemento ausente: \(element). Hierarquia:\n\(app.debugDescription)")
+        return false
     }
 
     private func openApp(_ appIdentifier: String) -> XCUIApplication {

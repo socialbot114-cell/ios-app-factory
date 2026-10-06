@@ -56,6 +56,7 @@ struct FootballSaveSlotsView: View {
                 if slot < FootballSaveStore.slotCount - 1 { Divider() }
             }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("settings-save-slots")
         .confirmationDialog(pending?.title ?? "Carreiras", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }), titleVisibility: .visible) {
             if let pending {
