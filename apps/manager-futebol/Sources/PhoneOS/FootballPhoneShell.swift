@@ -82,13 +82,13 @@ struct PhoneWallpaper: View {
             Canvas { context, size in
                 for x in [size.width * 0.16, size.width * 0.84] {
                     var beam = Path()
-                    beam.move(to: CGPoint(x: x, y: 0))
+                    beam.move(to: CGPoint(x: x, y: 70))
                     beam.addLine(to: CGPoint(x: x - 55, y: size.height * 0.42))
                     beam.addLine(to: CGPoint(x: x + 55, y: size.height * 0.42))
                     beam.closeSubpath()
                     context.fill(beam, with: .linearGradient(Gradient(colors: [.white.opacity(0.16), .clear]),
-                                                             startPoint: CGPoint(x: x, y: 0), endPoint: CGPoint(x: x, y: size.height * 0.42)))
-                    context.fill(Path(ellipseIn: CGRect(x: x - 9, y: 6, width: 18, height: 18)), with: .color(.white.opacity(0.85)))
+                                                             startPoint: CGPoint(x: x, y: 70), endPoint: CGPoint(x: x, y: size.height * 0.42)))
+                    context.fill(Path(ellipseIn: CGRect(x: x - 9, y: 62, width: 18, height: 18)), with: .color(.white.opacity(0.85)))
                 }
             }
             Image(systemName: "sportscourt.fill").font(.system(size: 80)).foregroundStyle(.white.opacity(0.12)).offset(x: 110, y: -265)
