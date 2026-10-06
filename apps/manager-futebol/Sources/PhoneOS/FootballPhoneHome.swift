@@ -27,23 +27,23 @@ struct PhoneHomeScreen: View {
                 }
                 .padding(.top, 4)
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 18) {
-                        Button(action: onSearch) {
-                            HStack(spacing: 8) {
+                    VStack(spacing: 12) {
+                        // Guia e busca na mesma linha: sobra espaço para todos os ícones caberem sem rolar.
+                        HStack(spacing: 10) {
+                            guideButton
+                            Button(action: onSearch) {
                                 Image(systemName: "magnifyingglass")
-                                Text("Buscar atletas, clubes, contatos e apps")
-                                Spacer()
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 52, height: 52)
+                                    .background(.white.opacity(0.16), in: Circle())
+                                    .contentShape(Circle())
                             }
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.85))
-                            .padding(12)
-                            .background(.white.opacity(0.16), in: Capsule())
-                            .contentShape(Capsule())
+                            .accessibilityLabel("Buscar atletas, clubes, contatos e apps")
+                            .accessibilityIdentifier("phone-search")
                         }
-                        .accessibilityIdentifier("phone-search")
-                        guideButton
                         widgets
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 18) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 10) {
                             ForEach(PhoneApp.grid) { app in icon(app, id: "app-\(app.rawValue)") }
                         }
                         Color.clear.frame(height: 8)
@@ -104,7 +104,7 @@ struct PhoneHomeScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             if let fixture = career.nextUserFixture {
                 Text("PRÓXIMO JOGO · \(fixture.title.uppercased())").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(.white.opacity(0.75))
-                MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away), homeScore: nil, awayScore: nil, crestSize: 36)
+                MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away), homeScore: nil, awayScore: nil, crestSize: 28)
                     .environment(\.colorScheme, .dark)
             } else if career.isSeasonComplete {
                 Text("TEMPORADA ENCERRADA").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(.white.opacity(0.75))
@@ -114,7 +114,7 @@ struct PhoneHomeScreen: View {
                 Text("Seu clube não joga agora. Aproveite para cuidar da vida fora de campo.").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
             }
         }
-        .padding(14)
+        .padding(11)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))

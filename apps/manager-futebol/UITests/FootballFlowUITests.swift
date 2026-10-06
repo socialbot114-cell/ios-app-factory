@@ -428,6 +428,8 @@ final class FootballFlowUITests: XCTestCase {
     }
 
     private func tapWhenReady(_ element: XCUIElement, in app: XCUIApplication) {
+        // Ícones abaixo da dobra da tela inicial só entram na árvore de acessibilidade depois de rolar.
+        for _ in 0..<4 where !element.waitForExistence(timeout: 2) { dragUp(app) }
         guard element.waitForExistence(timeout: 10) else {
             attachScreenshot(app, name: "missing-element")
             XCTFail("Elemento ausente: \(element). Hierarquia:\n\(app.debugDescription)")
