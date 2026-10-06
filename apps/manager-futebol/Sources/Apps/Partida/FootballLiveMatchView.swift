@@ -69,6 +69,7 @@ struct FootballLiveMatchView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         scoreboard(live)
                         if live.sim.finished { fullTimePanel(live) }
+                        if career.canHoldHalftimeTalk && !running { FootballHalftimeTalkPanel(career: $career, locked: staticPreview) }
                         viewModePicker
                         if viewMode == .watch {
                             watchPanel(live)
@@ -371,6 +372,12 @@ struct FootballLiveMatchView: View {
         let result: FootballResult = userGoals > rivalGoals ? .win : (userGoals == rivalGoals ? .draw : .loss)
         return VStack(alignment: .leading, spacing: 12) {
             resultBanner(result, penalties: live.sim.needsShootout)
+            if career.canRevealShootout {
+                Button { career.revealLiveShootout() } label: { Label("Ver os pênaltis", systemImage: "scope").frame(maxWidth: .infinity) }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("live-shootout")
+            }
+            if let digest = career.fullTimeDigest() { FootballFullTimeCard(digest: digest) }
             if let impactPreview { MatchImpactCard(impact: impactPreview, hypeTitle: hypeTitle(for: impactPreview)) }
             Button {
                 finishing = true
@@ -554,7 +561,7 @@ struct FootballLiveMatchView: View {
             switch FactoryCapture.screen {
             case "match-final":
                 career.liveAdvance(minutes: 200)
-            case "match-halftime":
+            case "match-halftime", "halftime-talk":
                 career.liveAdvance(to: 45)
             case "match-goal":
                 career.liveAdvance(to: 5)
@@ -582,7 +589,7 @@ struct FootballLiveMatchView: View {
 
     /// Intervalo e apito final param o campo: a bola não rola enquanto o jogo está parado.
     private func pitchPhase(_ live: LiveMatchState) -> PitchPhase {
-        if live.sim.finished { return .fullTime }
+        if live.sim.finished { return live.sim.needsShootout && live.sim.events.contains { $0.kind == .penalties } ? .live : .fullTime }
         if live.sim.minute == 45, !running, live.sim.events.contains(where: { $0.kind == .halfTime }) { return .halftime }
         return .live
     }

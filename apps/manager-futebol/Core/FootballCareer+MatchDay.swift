@@ -430,6 +430,7 @@ extension FootballCareer {
         for index in players.indices { refreshValue(at: index) }
         generateLeagueNews(forMatchDay: matchDayIndex - 1)
         generateSocialFeed(fixture: userFixtureIndex.map { fixtures[$0] }, using: &worldRandom)
+        if let userFixtureIndex { generatePostMatchReactions(fixture: fixtures[userFixtureIndex]) }
         settleBets()
         updateTipsters(using: &worldRandom)
         scoreFantasyRound(matchDay: matchDayIndex - 1)

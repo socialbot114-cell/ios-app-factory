@@ -108,6 +108,35 @@ final class FootballFlowUITests: XCTestCase {
         if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
     }
 
+    /// Preparação em passos, conversa do intervalo e resumo de fim de jogo, de ponta a ponta.
+    func testPrepFlowHalftimeTalkAndFullTimeCard() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tapWhenReady(app.buttons["choose-offer-0"], in: app)
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+
+        openFromHome("dock-manager", in: app)
+        leagueTap(app.buttons["prep-flow-open"], in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "prep-flow").firstMatch.waitForExistence(timeout: 8))
+        for _ in 0..<10 where !app.buttons["prep-go"].exists {
+            if app.buttons["prep-next"].exists { app.buttons["prep-next"].tap() }
+        }
+        XCTAssertTrue(app.buttons["prep-go"].waitForExistence(timeout: 6))
+        app.buttons["prep-go"].tap()
+
+        XCTAssertTrue(leagueElement("live-scoreboard", in: app).waitForExistence(timeout: 15))
+        let talk = app.descendants(matching: .any).matching(identifier: "halftime-talk").firstMatch
+        XCTAssertTrue(talk.waitForExistence(timeout: 30), "A conversa de vestiário aparece no intervalo")
+        let praise = app.buttons["halftime-praise"]
+        if praise.waitForExistence(timeout: 4) { praise.tap() }
+        leagueTap(app.buttons["live-skip"], in: app)
+        XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "fulltime-card").firstMatch.waitForExistence(timeout: 5))
+        leagueTap(app.buttons["live-finish"], in: app)
+        if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
+    }
+
     /// LIG-01..03: usa entidades e estados da Liga, sem depender do header do FutOS.
     func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() {
         let app = XCUIApplication()

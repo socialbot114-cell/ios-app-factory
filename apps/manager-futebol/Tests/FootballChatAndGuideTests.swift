@@ -109,3 +109,100 @@ final class FootballChatAndGuideTests: XCTestCase {
         XCTAssertEqual(Set(ids).count, ids.count)
     }
 }
+
+final class FootballMatchFlowTests: XCTestCase {
+    private func liveAtHalftime() -> FootballCareer {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        XCTAssertTrue(career.beginMatchDay())
+        career.liveAdvance(to: 45)
+        return career
+    }
+
+    func testHalftimeTalkOnlyAtTheInterval() {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        XCTAssertTrue(career.beginMatchDay())
+        XCTAssertFalse(career.canHoldHalftimeTalk)
+        XCTAssertNil(career.holdHalftimeTalk(.praise))
+        career.liveAdvance(to: 45)
+        XCTAssertTrue(career.canHoldHalftimeTalk)
+    }
+
+    func testHalftimeTalkAppliesOnceAndLeavesAnEvent() {
+        var career = liveAtHalftime()
+        let before = career.liveMatch?.events.count ?? 0
+        let moraleBefore = career.starters.map(\.morale).reduce(0, +)
+        XCTAssertNotNil(career.holdHalftimeTalk(.praise))
+        XCTAssertFalse(career.canHoldHalftimeTalk)
+        XCTAssertNil(career.holdHalftimeTalk(.demand), "Só uma conversa por jogo")
+        XCTAssertEqual(career.liveMatch?.events.count, before + 1)
+        XCTAssertEqual(career.liveMatch?.halftimeTalk, HalftimeTalk.praise.rawValue)
+        XCTAssertGreaterThan(career.starters.map(\.morale).reduce(0, +), moraleBefore - 1)
+    }
+
+    func testRecommendedTalkFollowsTheScore() {
+        var career = liveAtHalftime()
+        guard var live = career.liveMatch else { return XCTFail("sem partida") }
+        let side: MatchTeamSide = live.userIsHome ? .home : .away
+        live.sim[side].goals = live.sim[side.other].goals + 1
+        career.liveMatch = live
+        XCTAssertEqual(career.recommendedHalftimeTalk(), .calm)
+        live.sim[side].goals = live.sim[side.other].goals
+        career.liveMatch = live
+        XCTAssertEqual(career.recommendedHalftimeTalk(), .praise)
+    }
+
+    func testFullTimeDigestSummarisesTheMatch() throws {
+        var career = liveAtHalftime()
+        career.liveAdvance(minutes: 200)
+        let digest = try XCTUnwrap(career.fullTimeDigest())
+        XCTAssertEqual(digest.goalLines.count, (career.liveMatch?.homeGoals ?? 0) + (career.liveMatch?.awayGoals ?? 0))
+        XCTAssertTrue((0...100).contains(digest.possessionUser))
+    }
+
+    func testPostMatchReactionsAreCappedAndUnread() {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        XCTAssertTrue(career.simulateNextMatchDay())
+        let log = career.world.phone.chat?.log.filter { $0.unread == true } ?? []
+        XCTAssertFalse(log.isEmpty)
+        XCTAssertLessThanOrEqual(log.count, 2)
+        XCTAssertGreaterThanOrEqual(career.unreadMessageBadge, log.count)
+        let thread = log[0].threadID
+        career.markChatRead(thread)
+        XCTAssertFalse((career.world.phone.chat?.log ?? []).contains { $0.threadID == thread && $0.unread == true })
+    }
+
+    func testPassiveNewsDoNotCountAsUnread() {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        let before = career.unreadCount
+        career.addInbox(.news, title: "Zebra", body: "x")
+        XCTAssertEqual(career.unreadCount, before)
+        career.addInbox(.board, title: "Diretoria", body: "x")
+        XCTAssertEqual(career.unreadCount, before + 1)
+    }
+}
+
+final class FootballShootoutRevealTests: XCTestCase {
+    func testRevealedShootoutIsNotDuplicatedAndMatchesTheOutcome() throws {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        XCTAssertTrue(career.beginMatchDay())
+        career.liveAdvance(minutes: 200)
+        var live = try XCTUnwrap(career.liveMatch)
+        live.sim.needsShootout = true
+        career.liveMatch = live
+        XCTAssertTrue(career.canRevealShootout)
+        career.revealLiveShootout()
+        XCTAssertFalse(career.canRevealShootout)
+        var sim = try XCTUnwrap(career.liveMatch).sim
+        let kicks = sim.events.filter { $0.kind == .penalties }.count
+        XCTAssertGreaterThanOrEqual(kicks, 2)
+        let players = career.playersByID()
+        let outcome = sim.makeOutcome(players: players, startHome: sim.home.onPitch, startAway: sim.away.onPitch)
+        XCTAssertEqual(sim.events.filter { $0.kind == .penalties }.count, kicks, "Sem cobranças duplicadas")
+        XCTAssertNotNil(outcome.homePenalties)
+    }
+}

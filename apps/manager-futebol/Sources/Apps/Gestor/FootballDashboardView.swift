@@ -9,6 +9,7 @@ struct FootballDashboardView: View {
     let onShowPress: () -> Void
     var onOpenAgenda: ((FootballAgendaItem) -> Void)? = nil
     @State private var confirmsQuickSimulation = false
+    @State private var showsPrepFlow = false
     @State private var agendaSort: AgendaSort = .deadline
 
     var body: some View {
@@ -70,6 +71,15 @@ struct FootballDashboardView: View {
         .factoryPage()
         .navigationTitle("Painel do treinador")
         .onAppear { career.markTutorialSeen("dashboard") }
+        .sheet(isPresented: $showsPrepFlow) {
+            FootballMatchPrepFlow(career: $career, onOpenSquad: { onNavigate(.squad) }, onPlay: {
+                // A partida abre depois que a folha termina de fechar; apresentar as duas ao mesmo tempo falha.
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    onPlayLive()
+                }
+            })
+        }
         .confirmationDialog("Avançar e avaliar estes prazos?", isPresented: $confirmsQuickSimulation, titleVisibility: .visible) {
             Button("Simular e avançar o calendário") { runQuickSimulation() }
             Button("Rever prioridades", role: .cancel) {}
@@ -298,6 +308,13 @@ struct FootballDashboardView: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.orange)
             }
+
+            Button { showsPrepFlow = true } label: {
+                Label("Preparar a partida", systemImage: "checklist").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .font(.subheadline.weight(.semibold))
+            .accessibilityIdentifier("prep-flow-open")
 
             Button(action: onPlayLive) {
                 Label("Jogar partida ao vivo", systemImage: "play.fill")

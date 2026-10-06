@@ -17,6 +17,9 @@ struct FootballLivePitchView: View {
 
     private var sim: MatchSimulation { live.sim }
 
+    /// Disputa de pênaltis já revelada: o campo volta a animar mesmo com o jogo encerrado.
+    private var inShootout: Bool { sim.finished && sim.needsShootout && sim.events.contains { $0.kind == .penalties } }
+
     private static let lineDepth: [Double] = [0.07, 0.25, 0.43, 0.62]
 
     /// Pressão recente de -1 (rival domina) a 1 (mandante domina).
@@ -74,10 +77,10 @@ struct FootballLivePitchView: View {
         let homeKeeperKit = PitchKit.keeper(avoiding: [homeKit.shirt, awayKit.shirt])
         let awayKeeperKit = PitchKit.keeper(avoiding: [homeKit.shirt, awayKit.shirt, homeKeeperKit.shirt])
         let input = PitchInput(slots: slots(), homeShare: sim.possessionShare, pressure: pressure, events: sim.events,
-                               homeTeamID: sim.home.teamID, finished: sim.finished, phase: phase)
+                               homeTeamID: sim.home.teamID, finished: sim.finished && !inShootout, phase: inShootout ? .live : phase)
         if FactoryCapture.screen.map { FootballHome.liveMatchCaptures.contains($0) } == true, !engine.isWarmed, sim.minute > 0 { engine.warmUpForCapture(input: input) }
         let eventCount = sim.events.count
-        let busy = engine.isBusy(eventCount: eventCount, phase: phase)
+        let busy = engine.isBusy(eventCount: eventCount, phase: inShootout ? .live : phase)
         let rates: [Int: Double] = [1: 1.0, 2: 1.5, 4: 2.2]
         let rate = running ? (rates[speed] ?? 1.0) : 1.0
         let crowd = min(1, max(0.35, 0.40 + Double(career.clubHype) / 160))
@@ -175,6 +178,18 @@ struct FootballLivePitchView: View {
 
     private func draw(_ context: inout GraphicsContext, size: CGSize, engine: PitchEngine, kits: Kits, crowd: Double, time: Double) {
         let stage = Stage(size: size)
+        // Câmera: aproxima nos lances e acompanha a bola, sem mostrar além das bordas da cena.
+        let zoom = CGFloat(engine.cameraZoom)
+        if zoom > 1.001 {
+            let focus = stage.point(engine.cameraCenter)
+            let halfWidth = size.width / (2 * zoom)
+            let halfHeight = size.height / (2 * zoom)
+            let fx = min(max(focus.x, halfWidth), size.width - halfWidth)
+            let fy = min(max(focus.y, halfHeight), size.height - halfHeight)
+            context.translateBy(x: size.width / 2, y: size.height / 2)
+            context.scaleBy(x: zoom, y: zoom)
+            context.translateBy(x: -fx, y: -fy)
+        }
         drawSurroundings(&context, stage: stage, kits: kits, crowd: crowd, time: time, celebrating: engine.celebratingHome)
         drawPitch(&context, stage: stage)
         drawActors(&context, stage: stage, engine: engine, kits: kits, time: time)
@@ -399,7 +414,7 @@ struct FootballLivePitchView: View {
     // MARK: - Atores
 
     private func drawActors(_ context: inout GraphicsContext, stage: Stage, engine: PitchEngine, kits: Kits, time: Double) {
-        let spriteHeight = max(13, min(21, stage.sx * 4.6))
+        let spriteHeight = max(15, min(24, stage.sx * 5.6))
         let ordered = engine.bodies.sorted { $0.pos.y < $1.pos.y }
         let skins: [Color] = [Color(red: 0.96, green: 0.80, blue: 0.66), Color(red: 0.78, green: 0.58, blue: 0.42),
                               Color(red: 0.55, green: 0.38, blue: 0.26), Color(red: 0.36, green: 0.24, blue: 0.17)]

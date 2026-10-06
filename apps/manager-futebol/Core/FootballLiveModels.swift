@@ -273,6 +273,8 @@ struct LiveMatchState: Codable, Equatable {
     /// Demais jogos do dia, já decididos e revelados minuto a minuto.
     var others: [MatchOutcome]
     var styleAtKickoff: FootballPlayStyle
+    /// Conversa feita no intervalo (`HalftimeTalk.rawValue`); opcional para saves antigos.
+    var halftimeTalk: String? = nil
 
     var fixtureID: Int { sim.fixtureID }
     var userSide: MatchSideState { userIsHome ? sim.home : sim.away }

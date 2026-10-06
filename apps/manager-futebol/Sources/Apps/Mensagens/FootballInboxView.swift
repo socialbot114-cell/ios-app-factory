@@ -80,6 +80,9 @@ struct FootballInboxView: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField("Buscar conversa", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Button { career.markAllChatsRead() } label: { Image(systemName: "checkmark.circle").font(.headline) }
+                    .accessibilityLabel("Marcar tudo como lido")
+                    .accessibilityIdentifier("chat-read-all")
                 Button { showNewChat = true } label: { Image(systemName: "square.and.pencil").font(.headline) }
                     .accessibilityLabel("Nova conversa com atleta")
                     .accessibilityIdentifier("chat-new")
@@ -250,6 +253,7 @@ struct FootballInboxView: View {
                 }
                 .onAppear {
                     career.markConversationRead(thread.id)
+                    career.markChatRead(thread.id)
                     if let focusedMessageID { career.markMessageRead(id: focusedMessageID) }
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }

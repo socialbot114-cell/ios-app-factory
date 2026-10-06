@@ -279,7 +279,7 @@ extension FootballCareer {
         for index in inbox.indices { inbox[index].isRead = true }
     }
 
-    var unreadCount: Int { inbox.filter { !$0.isRead }.count }
+    var unreadCount: Int { inbox.filter { !$0.isRead && !$0.kind.isPassive }.count }
 
     var pendingRequestCount: Int { inbox.filter { $0.kind.needsResponse && !$0.isResolved }.count }
 

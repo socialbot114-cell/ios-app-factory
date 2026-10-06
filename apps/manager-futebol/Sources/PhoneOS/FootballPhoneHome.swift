@@ -8,10 +8,12 @@ struct PhoneHomeScreen: View {
     let onNotifications: () -> Void
     let onSearch: () -> Void
     var onGuide: () -> Void = {}
+    /// Só para capturas de tela: força o clima do papel de parede.
+    var momentOverride: PhoneMoment? = nil
 
     var body: some View {
         ZStack {
-            PhoneWallpaper(team: career.selectedClub)
+            PhoneWallpaper(team: career.selectedClub, moment: momentOverride ?? career.phoneMoment)
             VStack(spacing: 14) {
                 HStack {
                     PhoneStatusBar(career: career)

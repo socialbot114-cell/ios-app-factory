@@ -25,7 +25,8 @@ CAPTURES = {
 }
 
 CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-league", "fantasy-share", "save-slots",
-                                "lock-night", "guide-banner", "day-plan", "chat-player", "chat-family", "chat-staff", "match-halftime"]
+                                "lock-night", "guide-banner", "day-plan", "chat-player", "chat-family", "chat-staff", "match-halftime",
+                                "prep-flow", "halftime-talk", "wallpaper-night"]
 
 
 def requested_states(slug: str, selection: str) -> list[str]:

@@ -194,6 +194,9 @@ final class PitchEngine {
     private(set) var carrierID: Int?
     private(set) var celebratingHome: Bool?
     private(set) var possessionHome = true
+    /// Câmera: 1 = campo inteiro; sobe nos lances (chute, comemoração, bola parada) e acompanha a bola.
+    private(set) var cameraZoom = 1.0
+    private(set) var cameraCenter = PitchVector(52.5, 34)
 
     private var mode = BallMode.restart
     private var ballVel = PitchVector.zero
@@ -210,6 +213,7 @@ final class PitchEngine {
     private var restartTimer = 0.0
     private var restartHome = true
     private var deadTakerID: Int?
+    private var shootoutKicks = 0
     private var lastPhase = PitchPhase.live
     private var breakSettled = false
     private var settleTimer = 0.0
@@ -292,6 +296,30 @@ final class PitchEngine {
         for _ in 0..<steps { step(scaled / Double(steps)) }
     }
 
+    // MARK: Câmera
+
+    private func updateCamera(_ dt: Double) {
+        var targetZoom = 1.0
+        var focus = ballPos
+        if let current = plan {
+            targetZoom = current.phase == .approach ? 1.3 : 1.6
+        } else if celebratingHome != nil {
+            targetZoom = 1.3
+            if let scorer = body(celebrationScorer) { focus = scorer.pos }
+        } else if deadBall {
+            targetZoom = 1.25
+        }
+        let follow = min(1, 2.4 * dt)
+        cameraZoom += (targetZoom - cameraZoom) * follow
+        cameraCenter = cameraCenter + (focus - cameraCenter) * follow
+    }
+
+    private func relaxCamera(_ dt: Double) {
+        let follow = min(1, 2.0 * dt)
+        cameraZoom += (1.0 - cameraZoom) * follow
+        cameraCenter = cameraCenter + (PitchVector(Self.length / 2, Self.width / 2) - cameraCenter) * follow
+    }
+
     // MARK: Intervalo e apito final
 
     /// Dois centros de arremesso: o time da casa vai ao banco da esquerda e o visitante ao da direita.
@@ -331,6 +359,7 @@ final class PitchEngine {
     /// Todo mundo vai para o vestiário/banco e fica parado: a bola não anda enquanto o jogo está parado.
     private func stepHalftime(_ dt: Double) {
         time += dt
+        relaxCamera(dt)
         ballPos = PitchVector(Self.length / 2, Self.width / 2)
         ballZ = 0
         var allThere = true
@@ -359,6 +388,7 @@ final class PitchEngine {
     /// Apito final: o jogo para onde está; ninguém corre atrás da bola.
     private func stepFullTime(_ dt: Double) {
         time += dt
+        relaxCamera(dt)
         settleTimer = max(0, settleTimer - dt)
         for i in bodies.indices {
             bodies[i].vel = bodies[i].vel * max(0, 1 - 3.2 * dt)
@@ -415,6 +445,15 @@ final class PitchEngine {
         guard consumed < events.count else { return }
         let fresh = Array(events[consumed...])
         consumed = events.count
+        // Disputa de pênaltis: todas as cobranças entram na fila, uma a uma, sem os limites do jogo corrido.
+        if input.phase == .live, fresh.contains(where: { $0.kind == .penalties }) {
+            for event in fresh where event.kind == .penalties {
+                let text = event.text
+                let outcome: Outcome = text.contains("convertido") ? .goal : (text.contains("defende") ? .save : .miss)
+                queue.append(Plan(home: event.teamID == input.homeTeamID, shooterID: -1, outcome: outcome, penalty: true))
+            }
+            return
+        }
         if input.finished || input.phase != .live {
             plan = nil
             queue = []
@@ -444,6 +483,9 @@ final class PitchEngine {
                     cardMarks.append(PitchCardMark(pos: bodies[i].pos, red: event.kind == .redCard, until: time + 3.2))
                 }
                 if queue.count < 5 { queue.append(stoppagePlan(offenderHome: isHome)) }
+            case .substitution:
+                // Troca: o jogo para um instante e o time que mexeu continua com a bola.
+                if queue.count < 5 { queue.append(stoppagePlan(offenderHome: !isHome)) }
             case .injury, .offside:
                 if queue.count < 5 { queue.append(stoppagePlan(offenderHome: isHome)) }
             default:
@@ -495,6 +537,7 @@ final class PitchEngine {
         updateBall(dt)
         updatePlayers(dt)
         updateReferee(dt)
+        updateCamera(dt)
         if abs(ballVel.x) + abs(ballVel.y) > 12 {
             trail.append(ballPos)
             if trail.count > 7 { trail.removeFirst() }
@@ -508,7 +551,15 @@ final class PitchEngine {
     private func beginPlan(_ new: Plan) {
         var next = new
         let candidates = bodies.filter { $0.home == next.home && !$0.keeper }
-        let chosen = candidates.first { $0.id == next.shooterID } ?? candidates.max { $0.depth < $1.depth }
+        let chosen: PitchBody?
+        if next.shooterID == -1, next.penalty {
+            // Pênaltis da disputa: cada cobrança sai de um atleta diferente, dos mais avançados para os mais recuados.
+            let ordered = candidates.sorted { $0.depth != $1.depth ? $0.depth > $1.depth : $0.id < $1.id }
+            shootoutKicks += 1
+            chosen = ordered.isEmpty ? nil : ordered[((shootoutKicks - 1) / 2) % ordered.count]
+        } else {
+            chosen = candidates.first { $0.id == next.shooterID } ?? candidates.max { $0.depth < $1.depth }
+        }
         guard let shooter = chosen else { return }
         next.shooterID = shooter.id
         next.side = random.next() < 0.5 ? -1 : 1

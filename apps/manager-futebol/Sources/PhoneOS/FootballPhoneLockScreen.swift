@@ -49,6 +49,7 @@ struct PhoneLockScreen: View {
     @State private var tick = 0
     @State private var elapsedDays = 0
     @State private var settled: Bool
+    @State private var digestExpanded = false
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     init(career: FootballCareer, transition: PhoneDayTransition? = nil, onUnlock: @escaping () -> Void,
@@ -76,7 +77,7 @@ struct PhoneLockScreen: View {
 
     var body: some View {
         ZStack {
-            PhoneWallpaper(team: career.selectedClub)
+            PhoneWallpaper(team: career.selectedClub, moment: career.phoneMoment)
             VStack(spacing: 16) {
                 PhoneStatusBar(career: career).padding(.top, 8)
                 ScrollView(showsIndicators: false) {
@@ -225,24 +226,42 @@ struct PhoneLockScreen: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lock-guide")
                 }
-                ForEach(items.dropFirst()) { item in
-                    Button { onUnlock(); onSuggestion(item) } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: item.symbol).frame(width: 26).foregroundStyle(item.priority >= 3 ? Color.red : Color.white.opacity(0.9))
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.title).font(.subheadline.weight(.semibold)).lineLimit(1)
-                                Text(item.detail).font(.caption).foregroundStyle(.white.opacity(0.75)).lineLimit(1)
-                            }
+                let rest = Array(items.dropFirst())
+                if !rest.isEmpty {
+                    Button { withAnimation(.easeInOut(duration: 0.25)) { digestExpanded.toggle() } } label: {
+                        HStack {
+                            Text(digestExpanded ? "Mostrar menos" : "Mais \(rest.count) pendência\(rest.count == 1 ? "" : "s")")
+                                .font(.caption.weight(.semibold))
                             Spacer()
-                            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.white.opacity(0.5))
+                            Image(systemName: digestExpanded ? "chevron.up" : "chevron.down").font(.caption.bold())
                         }
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .padding(.vertical, 4)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityIdentifier("lock-digest-\(item.id)")
+                    .accessibilityIdentifier("lock-digest-toggle")
                 }
-            }
+                if digestExpanded {
+                    ForEach(rest) { item in
+                        Button { onUnlock(); onSuggestion(item) } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: item.symbol).frame(width: 26).foregroundStyle(item.priority >= 3 ? Color.red : Color.white.opacity(0.9))
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(item.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                                    Text(item.detail).font(.caption).foregroundStyle(.white.opacity(0.75)).lineLimit(1)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.white.opacity(0.5))
+                            }
+                            .foregroundStyle(.white)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("lock-digest-\(item.id)")
+                    }
+                }
+                }
             .padding(14)
             .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .accessibilityIdentifier("lock-night-digest")

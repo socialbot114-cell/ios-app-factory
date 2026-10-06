@@ -64,7 +64,7 @@ extension FootballCareer {
         case .manager: return pendingPress != nil ? 1 : 0
         case .market: return offers.count
         case .club: return invitations.count
-        case .messages: return unreadCount
+        case .messages: return unreadMessageBadge
         case .social: return world.social.crisis != nil ? 1 : 0
         case .betting: return world.betting.bets.filter { $0.status == .open }.count
         case .quests: return world.quests.active.filter { !$0.completed }.count

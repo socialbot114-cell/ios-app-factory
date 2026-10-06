@@ -122,3 +122,24 @@ extension FootballCareer {
         FootballCalendarClock.shortDate(gameDate(matchDay: index, season: ofSeason))
     }
 }
+
+/// Clima do dia no celular: muda o papel de parede.
+enum PhoneMoment: String, Equatable {
+    case morning, matchAfternoon, matchNight
+
+    var title: String {
+        switch self {
+        case .morning: return "Manhã"
+        case .matchAfternoon: return "Dia de jogo"
+        case .matchNight: return "Jogo à noite"
+        }
+    }
+}
+
+extension FootballCareer {
+    var phoneMoment: PhoneMoment {
+        guard canPlay || liveMatch != nil else { return .morning }
+        let kickoff = FootballCalendarClock.kickoff(season: season, matchDay: matchDayIndex)
+        return FootballCalendarClock.calendar.component(.hour, from: kickoff) >= 20 ? .matchNight : .matchAfternoon
+    }
+}

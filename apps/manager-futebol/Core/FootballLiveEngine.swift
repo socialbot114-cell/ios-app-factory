@@ -753,6 +753,16 @@ extension MatchSimulation {
     // MARK: - Resultado
 
     /// Disputa de pênaltis e resultado final. Deve ser chamado depois que a simulação termina.
+    /// Mostra a disputa de pênaltis cobrança a cobrança antes de concluir (o campo anima cada uma).
+    /// O resultado é o mesmo de `makeOutcome`: mesma semente, mesmo elenco em campo.
+    mutating func revealShootout(players: [Int: FootballPlayer]) {
+        guard needsShootout, detailed, !events.contains(where: { $0.kind == .penalties }) else { return }
+        var shootoutRandom = FootballRandom(seed: seed ^ 0x5EEDBEEF)
+        let result = FootballMatchEngine.penaltyShootout(home: matchSide(.home, players: players), away: matchSide(.away, players: players), using: &shootoutRandom)
+        events.append(MatchEvent(minute: 120, kind: .extraTime, teamID: nil, text: "Fim da prorrogação. A vaga será decidida nos pênaltis."))
+        events.append(contentsOf: result.events)
+    }
+
     mutating func makeOutcome(players: [Int: FootballPlayer], startHome: [Int], startAway: [Int]) -> MatchOutcome {
         var homePenalties: Int?
         var awayPenalties: Int?
@@ -763,7 +773,7 @@ extension MatchSimulation {
             let result = FootballMatchEngine.penaltyShootout(home: homeSide, away: awaySide, using: &shootoutRandom)
             homePenalties = result.homeScore
             awayPenalties = result.awayScore
-            if detailed {
+            if detailed && !events.contains(where: { $0.kind == .penalties }) {
                 events.append(MatchEvent(minute: 120, kind: .extraTime, teamID: nil, text: "Fim da prorrogação. A vaga será decidida nos pênaltis."))
                 events.append(contentsOf: result.events)
             }

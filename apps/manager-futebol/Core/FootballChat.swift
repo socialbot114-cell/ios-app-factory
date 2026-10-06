@@ -36,6 +36,8 @@ struct ChatLogEntry: Codable, Equatable, Identifiable {
     let text: String
     let season: Int
     let matchDay: Int
+    /// Mensagem recebida que ainda não foi aberta; opcional para saves antigos.
+    var unread: Bool? = nil
 }
 
 struct ChatState: Codable, Equatable {
@@ -153,6 +155,7 @@ extension FootballCareer {
         // Última mensagem livre de cada conversa define a prévia e a ordem.
         for entry in chatState.log {
             guard var thread = threads[entry.threadID] else { continue }
+            if entry.unread == true { thread.unread += 1; threads[entry.threadID] = thread }
             let order = chatOrder(season: entry.season, matchDay: entry.matchDay, rank: 50 + entry.id % 40)
             if order >= thread.order {
                 thread.order = order
@@ -179,6 +182,24 @@ extension FootballCareer {
     }
 
     var chatUnreadCount: Int { chatThreads().reduce(0) { $0 + $1.unread } }
+
+    /// Mensagens novas no app Mensagens: avisos do sistema que importam mais as mensagens livres de pessoas.
+    var unreadMessageBadge: Int { unreadCount + (chatState.log.filter { $0.unread == true }.count) }
+
+    /// Abre a conversa: as mensagens livres dela passam a lidas.
+    mutating func markChatRead(_ threadID: String) {
+        guard var state = world.phone.chat, state.log.contains(where: { $0.threadID == threadID && $0.unread == true }) else { return }
+        for index in state.log.indices where state.log[index].threadID == threadID { state.log[index].unread = nil }
+        world.phone.chat = state
+    }
+
+    /// "Marcar tudo como lido": caixa de entrada e mensagens livres.
+    mutating func markAllChatsRead() {
+        markInboxRead()
+        guard var state = world.phone.chat else { return }
+        for index in state.log.indices { state.log[index].unread = nil }
+        world.phone.chat = state
+    }
 
     // MARK: Balões
 
@@ -236,9 +257,10 @@ extension FootballCareer {
         return nil
     }
 
-    private mutating func appendChat(_ threadID: String, fromCoach: Bool, _ text: String) {
+    mutating func appendChat(_ threadID: String, fromCoach: Bool, _ text: String, unread: Bool = false) {
         var state = chatState
-        state.log.append(ChatLogEntry(id: state.nextID, threadID: threadID, fromCoach: fromCoach, text: text, season: season, matchDay: matchDayIndex))
+        state.log.append(ChatLogEntry(id: state.nextID, threadID: threadID, fromCoach: fromCoach, text: text, season: season, matchDay: matchDayIndex,
+                                      unread: unread ? true : nil))
         state.nextID += 1
         if state.log.count > ChatState.logLimit { state.log.removeFirst(state.log.count - ChatState.logLimit) }
         world.phone.chat = state
@@ -346,4 +368,9 @@ extension FootballCareer {
             return "Estamos no \(formation.rawValue). Os números mostram que dá para crescer na posse de bola."
         }
     }
+}
+
+extension InboxKind {
+    /// Notícias e palpites informam, não pedem nada: não contam como "não lidas" no ícone do app.
+    var isPassive: Bool { self == .news || self == .bet }
 }

@@ -28,6 +28,7 @@ struct FootballHome: View {
     @State private var pressAfterUnlock = false
     @State private var guideSuggestion: FootballSuggestion?
     @State private var guideAfterUnlock = false
+    @State private var momentOverride: PhoneMoment?
     @Environment(\.scenePhase) private var scenePhase
 
     /// Dia do calendário em que a carreira está; quando muda, o FutOS bloqueia a tela e mostra a passagem do dia.
@@ -161,8 +162,10 @@ struct FootballHome: View {
     private var phone: some View {
         ZStack {
             PhoneHomeScreen(career: career, onOpen: open, onNotifications: { showNotifications = true },
-                            onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() })
+                            onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() }, momentOverride: momentOverride)
                 .accessibilityHidden(openApp != nil || locked)
+                .blur(radius: openApp != nil && !career.world.phone.preferences.reduceMotion ? 6 : 0)
+                .scaleEffect(openApp != nil && !career.world.phone.preferences.reduceMotion ? 0.95 : 1)
             if let app = openApp {
                 appWindow(app)
                     .transition(.scale(scale: 0.88).combined(with: .opacity))
@@ -189,6 +192,7 @@ struct FootballHome: View {
             }
         }
         .animation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: openApp)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: openApp)
     }
 
     private func unlock() {
@@ -342,9 +346,9 @@ struct FootballHome: View {
     }
 
     /// Rotas de captura que abrem a partida ao vivo (nome exato, para não confundir com rotas como `match-prep`).
-    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final", "match-halftime"]
+    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final", "match-halftime", "halftime-talk"]
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -354,6 +358,8 @@ struct FootballHome: View {
                 FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: { _ in }, onNew: { _ in }, onDelete: { _ in })
             }.factoryPage().navigationTitle("Carreiras do FutOS")
         case "press": FootballPressView(career: $career)
+        case "prep-flow":
+            FootballMatchPrepFlow(career: $career, onOpenSquad: {}, onPlay: {})
         case "day-plan":
             ScrollView { FootballDayPlanPanel(career: career).padding(20) }
         case "chat-player", "chat-family", "chat-staff":
@@ -617,6 +623,9 @@ struct FootballHome: View {
             let from = career.latestUserFixture?.matchDay ?? max(0, career.matchDayIndex - 1)
             dayTransition = PhoneDayTransition(fromSeason: career.season, fromMatchDay: from, toSeason: career.season, toMatchDay: career.matchDayIndex)
             locked = true
+        case "wallpaper-night":
+            momentOverride = .matchNight
+            openApp = nil
         case "guide-banner":
             openApp = nil
             guideSuggestion = career.nextBestAction()
