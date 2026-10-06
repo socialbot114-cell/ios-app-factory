@@ -2,10 +2,22 @@ import SwiftUI
 
 /// Rotas de captura da F5: a tela nova já no topo, sem rolar.
 enum FootballF5Captures {
-    static let names: Set<String> = ["league-insight", "fantasy-insight", "betting-insight", "goals-origin", "trophy-legacy", "settings-phone"]
+    static let names: Set<String> = ["league-insight", "fantasy-insight", "betting-insight", "goals-origin", "trophy-legacy", "settings-phone", "fantasy-result", "fantasy-league", "fantasy-share", "budget-planning"]
 
     static func prepare(_ name: String, career: inout FootballCareer) {
         switch name {
+        case "fantasy-result", "fantasy-league", "fantasy-share":
+            // Resultado verdadeiro de uma rodada simulada, usando a regra normal do fantasy.
+            career = FootballCareer(seed: 26)
+            _ = career.chooseClub(0)
+            let suggestion = career.suggestedFantasyLineup()
+            _ = career.setFantasyLineup(ids: suggestion.ids, captainID: suggestion.captainID)
+            for _ in 0..<6 where career.world.fantasy.history.isEmpty {
+                _ = career.simulateNextMatchDay()
+                career.skipPress()
+            }
+        case "budget-planning":
+            career.transferBudget = 1_500_000
         case "league-insight":
             // Algumas rodadas jogadas para haver forma, confronto e calendário restante.
             for _ in 0..<4 where career.canPlay || career.canAdvanceWithoutPlaying { career.simulateNextMatchDay() }
@@ -58,6 +70,13 @@ struct FootballF5CaptureView: View {
 
     var body: some View {
         switch name {
+        case "fantasy-result": FootballFantasyView(career: $career, onAlert: onAlert, captureSection: "result")
+        case "fantasy-league": FootballFantasyView(career: $career, onAlert: onAlert, captureSection: "league")
+        case "fantasy-share": FootballFantasyView(career: $career, onAlert: onAlert, captureSection: "share")
+        case "budget-planning":
+            VStack(alignment: .leading, spacing: 16) {
+                FootballCashProjectionPanel(career: career)
+            }.factoryPage().navigationTitle("Planejamento do Banco")
         case "league-insight":
             VStack(alignment: .leading, spacing: 18) {
                 FootballLeagueInsightPanel(career: career, division: career.userDivision ?? .serieA)

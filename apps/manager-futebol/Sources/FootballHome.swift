@@ -237,18 +237,23 @@ struct FootballHome: View {
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
         case .bank: FootballFinanceView(career: $career, onAlert: showAlert)
         case .contacts: FootballContactsView(career: $career, onAlert: showAlert, focusedContactID: focusedContactID)
-        case .settings: FootballModesView(career: $career, onStartChallenge: startChallenge, onAlert: showAlert)
+        case .settings: FootballModesView(career: $career, onStartChallenge: startChallenge, onAlert: showAlert,
+            saveSlots: FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: loadSlot, onNew: startNewCareer, onDelete: deleteSlot))
         }
     }
 
     /// Rotas de captura que abrem a partida ao vivo (nome exato, para não confundir com rotas como `match-prep`).
     static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final"]
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
         switch name {
+        case "save-slots":
+            VStack(alignment: .leading, spacing: 16) {
+                FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: { _ in }, onNew: { _ in }, onDelete: { _ in })
+            }.factoryPage().navigationTitle("Carreiras do FutOS")
         case "press": FootballPressView(career: $career)
         case _ where FootballF4Captures.names.contains(name): FootballF4CaptureView(name: name, career: $career, onAlert: showAlert)
         case _ where FootballF5Captures.names.contains(name): FootballF5CaptureView(name: name, career: $career, onAlert: showAlert)

@@ -4,6 +4,16 @@ Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
 Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) enviado ao TestFlight em 5 de outubro de 2026 (run 37323855519). Veja a seção "Atualização — 5 de outubro" abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
 
+## Atualização — 6 de outubro de 2026: revisão antes de lançamento
+
+- Novo incremento em validação: **Rodada Mágica com detalhe por atleta, liga dos amigos e compartilhamento contextual**, **simulador financeiro do Banco** e **carreiras salvas em Ajustes**.
+- Liga: teste antigo pulado substituído por jornada com identificadores próprios, cobrindo clube, atleta, rodadas, pré-jogo e relatório. Aguardando aprovação iOS deste incremento.
+- Save versão **12**: snapshot fantasy opcional separado dos efeitos narrativos; saves antigos continuam abrindo sem inventar escalação histórica.
+- Motor verificado no Linux via Docker Swift 5.9: **388 testes aprovados, zero falhas**, incluindo novos testes de cenários financeiros e detalhes fantasy.
+- Capturas novas preparadas: `budget-planning`, `fantasy-result`, `fantasy-league`, `fantasy-share`, `save-slots`.
+- Workflow de captura agora permite escolher estados e famílias; revisão e evidências em `docs/REVISAO-FUTOS-06-10.md`.
+- Este trabalho **não publica um novo build TestFlight**. Primeiro gerar prints atuais, validar interface iPhone/iPad e revisar com o usuário.
+
 ## Atualização — 5 de outubro de 2026
 
 ### Onde estamos

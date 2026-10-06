@@ -592,10 +592,12 @@ struct FootballModesView: View {
     @Binding var career: FootballCareer
     let onStartChallenge: (ChallengeScenario) -> Void
     var onAlert: (String) -> Void = { _ in }
+    var saveSlots: FootballSaveSlotsView? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             FootballDifficultyRulesPanel(career: $career)
+            if let saveSlots { saveSlots }
             FootballPhonePreferencesPanel(career: $career)
             FootballAdvancePausesPanel(career: $career)
             FootballActionHistoryPanel(career: career)

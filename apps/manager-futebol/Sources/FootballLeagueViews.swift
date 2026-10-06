@@ -41,6 +41,9 @@ struct FootballTableView: View {
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier("league-section")
+            Text(section.rawValue)
+                .font(.caption).foregroundStyle(.secondary)
+                .accessibilityIdentifier("league-section-state")
             switch section {
             case .serieA: divisionPanels(.serieA)
             case .serieB: divisionPanels(.serieB)
@@ -108,12 +111,16 @@ struct FootballTableView: View {
             let selectedRound = rounds.contains(selection.wrappedValue ?? defaultRound) ? (selection.wrappedValue ?? defaultRound) : defaultRound
             if !rounds.isEmpty {
                 FactoryPanel(title: "Jogos · rodada \(selectedRound)", systemImage: "calendar") {
+                    Text("Rodada \(selectedRound)")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("league-round-state")
                     HStack {
                         Button { selection.wrappedValue = rounds.last { $0 < selectedRound } } label: {
                             Image(systemName: "chevron.left")
                         }
                         .disabled(selectedRound == rounds.first)
                         .accessibilityLabel("Rodada anterior")
+                        .accessibilityIdentifier("league-round-previous")
                         Picker("Rodada", selection: Binding(get: { selectedRound }, set: { selection.wrappedValue = $0 })) {
                             ForEach(rounds, id: \.self) { round in
                                 Text("Rodada \(round)").tag(round)
@@ -126,6 +133,7 @@ struct FootballTableView: View {
                         }
                         .disabled(selectedRound == rounds.last)
                         .accessibilityLabel("Próxima rodada")
+                        .accessibilityIdentifier("league-round-next")
                     }
                     roundList(fixtures.filter { $0.round == selectedRound })
                 }
@@ -303,6 +311,7 @@ struct FootballTableView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("league-match-\(fixture.id)")
+                .accessibilityValue(fixture.isPlayed ? "Disputada" : "Agendada")
             }
         }
     }
@@ -325,13 +334,20 @@ struct FootballTableView: View {
 // MARK: - Clube
 
 private struct FootballLeagueMatchDetail: View {
+    @Environment(\.dismiss) private var dismiss
     let career: FootballCareer
     let fixture: LeagueFixture
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Button("Voltar") { dismiss() }
+                .accessibilityIdentifier("league-match-back")
+            Text(fixture.isPlayed ? "Relatório da partida" : "Partida agendada")
+                .font(.headline)
+                .accessibilityIdentifier("league-match-detail-\(fixture.id)")
             Text("\(fixture.competition.name) · rodada \(fixture.round) · dia \(fixture.matchDay + 1)")
                 .font(.subheadline).foregroundStyle(.secondary)
+                .accessibilityIdentifier("league-match-context")
             FactoryPanel(title: fixture.isPlayed ? "Relatório da partida" : "Partida agendada", systemImage: "soccerball") {
                 FootballMatchReport(fixture: fixture, career: career, showAllEvents: true)
                 if let penalties = fixture.penaltySummary {
@@ -354,6 +370,7 @@ private struct FootballLeagueMatchDetail: View {
                 ForEach([fixture.home, fixture.away], id: \.self) { teamID in
                     if let team = FootballSeason.team(teamID) {
                         NavigationLink(team.name) { FootballLeagueClubProfile(career: career, team: team) }
+                            .accessibilityIdentifier("league-match-club-\(teamID)")
                     }
                 }
             }
@@ -364,11 +381,16 @@ private struct FootballLeagueMatchDetail: View {
 }
 
 private struct FootballLeaguePlayerProfile: View {
+    @Environment(\.dismiss) private var dismiss
     let career: FootballCareer
     let player: FootballPlayer
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Button("Voltar") { dismiss() }
+                .accessibilityIdentifier("league-player-back")
+            Text(player.name).font(.headline)
+                .accessibilityIdentifier("league-player-profile-\(player.id)")
             FactoryHeader(eyebrow: "Ficha de consulta", title: player.name,
                           subtitle: "\(player.position.rawValue) · \(player.age) anos", accent: FootballTheme.accent)
             if let teamID = player.teamID, let team = FootballSeason.team(teamID) {
@@ -376,6 +398,7 @@ private struct FootballLeaguePlayerProfile: View {
                     HStack { ClubCrest(team: team, size: 32); Text(team.name); Spacer(); Image(systemName: "chevron.right") }
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("league-player-club-\(teamID)")
             } else {
                 Text("Sem clube").foregroundStyle(.secondary)
             }
@@ -399,6 +422,7 @@ private struct FootballLeaguePlayerProfile: View {
 }
 
 private struct FootballLeagueClubProfile: View {
+    @Environment(\.dismiss) private var dismiss
     let career: FootballCareer
     let team: LeagueTeam
 
@@ -409,10 +433,13 @@ private struct FootballLeagueClubProfile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Button("Voltar") { dismiss() }
+                .accessibilityIdentifier("league-club-back")
             HStack(spacing: 12) {
                 ClubCrest(team: team, size: 56)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(team.name).font(.title2.bold())
+                        .accessibilityIdentifier("league-club-profile-\(team.id)")
                     Text("\(team.city) · \(career.division(of: team.id).name)").font(.subheadline).foregroundStyle(.secondary)
                     Text(team.stadium).font(.caption).foregroundStyle(.secondary)
                 }
@@ -441,6 +468,7 @@ private struct FootballLeagueClubProfile: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("league-club-player-\(player.id)")
                 }
             }
             FactoryPanel(title: "Calendário da temporada", systemImage: "calendar") {

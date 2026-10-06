@@ -184,7 +184,8 @@ extension FootballCareer {
         }
         let sorted = lines.values.sorted {
             if $0.certainty != $1.certainty { return $0.certainty == .contracted }
-            return abs($0.total) > abs($1.total)
+            if abs($0.total) != abs($1.total) { return abs($0.total) > abs($1.total) }
+            return $0.id < $1.id
         }
         return CashProjection(startingCash: transferBudget, days: days, lines: sorted)
     }

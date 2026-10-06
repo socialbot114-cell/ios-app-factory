@@ -7,6 +7,7 @@ struct FootballFantasyView: View {
     let onAlert: (String) -> Void
     /// Captura: só os painéis novos, no topo.
     var captureFocus = false
+    var captureSection: String? = nil
 
     @State private var lineup: [Int] = []
     @State private var captainID: Int?
@@ -26,7 +27,14 @@ struct FootballFantasyView: View {
                 FactoryMetric(label: "Pontos na temporada", value: String(format: "%.1f", fantasy.seasonPoints), symbol: "star.fill", tint: FootballTheme.gold)
                 FactoryMetric(label: "Títulos", value: "\(fantasy.titles)", symbol: "trophy.fill", tint: .green)
             }
+            if captureSection == "league" {
+                standingsPanel
+            } else if captureSection == "share" {
+                historyPanel
+            } else {
             roundPanel
+            detailPanel
+            if captureSection != "result" {
             if !captureFocus { lineupPanel }
             captainPanel
             marketPanel
@@ -34,10 +42,13 @@ struct FootballFantasyView: View {
                 standingsPanel
                 historyPanel
             }
+            }
+            }
         }
         .factoryPage()
         .navigationTitle("Rodada Mágica")
         .onAppear {
+            career.ensureFantasyManagers()
             guard !didLoad else { return }
             didLoad = true
             let working = career.fantasyWorkingLineup
@@ -121,7 +132,7 @@ struct FootballFantasyView: View {
                     .font(.subheadline.weight(.bold).monospacedDigit())
                     .foregroundStyle(cost > FantasyState.budget ? .red : .primary)
             }
-            if lineup.isEmpty { Text("Monte 11 atletas de qualquer clube: pontuam por gols, assistências, desarmes e nota.").font(.caption).foregroundStyle(.secondary) }
+            if lineup.isEmpty { Text("Monte 11 atletas: presença, gols, assistências, saldo defensivo e vitória somam pontos; cartões descontam.").font(.caption).foregroundStyle(.secondary) }
             ForEach(lineup.compactMap { career.player($0) }) { athlete in
                 HStack(spacing: 10) {
                     Text(athlete.position.rawValue).font(.caption2.weight(.bold)).frame(width: 28)
@@ -213,30 +224,101 @@ struct FootballFantasyView: View {
 
     // MARK: Classificação e histórico
 
+    private var detailPanel: some View {
+        FactoryPanel(title: "Como seu time pontuou", systemImage: "list.bullet.rectangle") {
+            if let detail = career.fantasyLatestDetail {
+                Text(String(format: "T%d · R%d · %.1f pontos", detail.season, detail.round, detail.points))
+                    .font(.subheadline.weight(.bold)).accessibilityIdentifier("fantasy-detail-total")
+                ForEach(detail.athletes) { athlete in
+                    DisclosureGroup {
+                        Text(athlete.status).font(.caption).foregroundStyle(.secondary)
+                        if let fixtureID = athlete.fixtureID {
+                            Text("Fonte: partida #\(fixtureID)").font(.caption2).foregroundStyle(.secondary)
+                        }
+                        ForEach(athlete.components) { component in
+                            HStack {
+                                Text("\(component.label) · \(component.quantity)")
+                                Spacer()
+                                Text(String(format: "%+.1f", component.points)).monospacedDigit()
+                            }.font(.caption)
+                        }
+                        if athlete.isCaptain {
+                            Text(String(format: "Capitão: %+.1f de bônus (1,5×, inclusive descontos)", athlete.captainBonus)).font(.caption)
+                        }
+                    } label: {
+                        HStack {
+                            Text(athlete.name + (athlete.isCaptain ? " · C" : ""))
+                            Spacer()
+                            Text(String(format: "%.1f", athlete.points)).monospacedDigit()
+                        }.font(.subheadline)
+                    }.accessibilityIdentifier("fantasy-detail-\(athlete.id)")
+                }
+            } else {
+                Text("Nenhum detalhe de rodada disponível. Monte seu time e conclua uma rodada da liga.").font(.subheadline)
+            }
+            Text(FootballCareer.fantasyDetailLimitation).font(.caption).foregroundStyle(.secondary)
+        }
+        .accessibilityIdentifier("fantasy-detail-panel")
+    }
+
     private var standingsPanel: some View {
-        FactoryPanel(title: "Classificação da temporada", systemImage: "list.number") {
-            let rows = career.fantasyStandings
-            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+        FactoryPanel(title: "Liga dos amigos · privada fictícia", systemImage: "list.number") {
+            let rows = career.fantasyParticipants
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                DisclosureGroup {
+                    Text(row.bio).font(.caption)
+                    if let points = row.lastRoundPoints {
+                        Text(String(format: "Última rodada: %.1f · diferença para você: %+.1f", points,
+                                    points - (fantasy.history.first?.season == career.season ? fantasy.history.first?.points ?? 0 : 0)))
+                            .font(.caption.monospacedDigit())
+                    } else {
+                        Text("Comparação disponível após sua primeira rodada pontuada.").font(.caption)
+                    }
+                    if !row.isUser {
+                        Text("Participante recorrente fictício. Pontos simulados; não há escalação ou capitão registrado para comparar escolhas.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                } label: {
                 HStack {
                     Text("\(index + 1)").font(.caption.weight(.heavy)).frame(width: 20)
                     Text(row.name).font(.subheadline.weight(row.isUser ? .heavy : .regular)).foregroundStyle(row.isUser ? FootballTheme.accent : .primary)
                     Spacer()
                     Text(String(format: "%.1f", row.points)).font(.subheadline.monospacedDigit())
                 }
+                }
+                .accessibilityIdentifier("fantasy-participant-\(row.id)")
             }
-            Text("O campeão da temporada ganha 500 fichas.").font(.caption).foregroundStyle(.secondary)
+            Text("Consulta opcional, sem custo de entrada. O campeão da temporada ganha 500 fichas; compartilhar não paga novamente.").font(.caption).foregroundStyle(.secondary)
         }
     }
 
     private var historyPanel: some View {
         FactoryPanel(title: "Últimas rodadas", systemImage: "clock.arrow.circlepath") {
             if fantasy.history.isEmpty { Text("A pontuação sai depois de cada rodada.").font(.subheadline).foregroundStyle(.secondary) }
-            ForEach(fantasy.history.suffix(8).reversed()) { result in
+            ForEach(Array(fantasy.history.prefix(8))) { result in
+                VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("T\(result.season) · R\(result.round)").font(.caption.weight(.bold))
                     Text("Capitão \(result.captainName)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     Spacer()
                     Text(String(format: "%.1f pts · %dº", result.points, result.rank)).font(.caption.monospacedDigit())
+                }
+                Text(career.fantasyShareText(result)).font(.caption2).foregroundStyle(.secondary)
+                Button("Compartilhar no Chuteira") {
+                    if career.shareFantasyResult(result) != nil {
+                        onAlert("Resultado publicado no Chuteira. Nenhum prêmio fantasy foi reaplicado.")
+                    } else {
+                        onAlert(career.fantasyShareBlockReason(result) ?? "Publicação indisponível.")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(career.fantasyShareBlockReason(result) != nil)
+                .accessibilityIdentifier("fantasy-share-\(result.id)")
+                if let reason = career.fantasyShareBlockReason(result) {
+                    Text(reason).font(.caption2).foregroundStyle(.secondary)
+                } else {
+                    Text("Usa a publicação diária da Chuteira, com engajamento e risco de polêmica do tom bem-humorado.").font(.caption2).foregroundStyle(.secondary)
+                }
                 }
             }
         }

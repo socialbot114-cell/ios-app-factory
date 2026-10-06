@@ -15,30 +15,30 @@ final class FootballF5UITests: XCTestCase {
         XCTAssertTrue(reveal(element("league-head-to-head", in: app), in: app))
     }
 
-    /// LIG-01..03: tabela abre a ficha do clube, rodadas navegam, jogo abre o relatório/pré-jogo.
-    func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() throws {
-        // Pulado até ser reescrito: o FutOS usa cabeçalho próprio, então procurar `navigationBars["Ficha do clube"]` falha mesmo com a
-        // tela aberta. Reescrever com `staticTexts`/identificadores e voltar por `phone-home`. LIG-01..03 seguem em aberto no roadmap.
-        throw XCTSkip("Teste aguardando reescrita (cabeçalho do FutOS não é UINavigationBar); LIG-01..03 abertos.")
-        let app = openApp("app-league")
-        let clubRow = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "league-club-")).firstMatch
-        XCTAssertTrue(clubRow.waitForExistence(timeout: 8))
-        clubRow.tap()
-        XCTAssertTrue(app.navigationBars["Ficha do clube"].waitForExistence(timeout: 5), "A linha da tabela deve abrir a ficha do clube")
-        app.navigationBars.buttons.firstMatch.tap()
+    // LIG-01..03: jornada completa em FootballFlowUITests, usando IDs reais do FutOS.
 
-        let next = app.buttons["Próxima rodada"]
-        XCTAssertTrue(reveal(next, in: app))
-        let before = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Jogos · rodada")).firstMatch.label
-        next.tap()
-        let after = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Jogos · rodada")).firstMatch
-        XCTAssertTrue(after.waitForExistence(timeout: 4))
-        XCTAssertNotEqual(before, after.label, "Navegar para a próxima rodada deve trocar a rodada exibida")
-
-        let match = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "league-match-")).firstMatch
-        XCTAssertTrue(reveal(match, in: app))
-        match.tap()
-        XCTAssertTrue(app.navigationBars["Pré-jogo"].waitForExistence(timeout: 5) || app.navigationBars["Relatório"].exists)
+    func testBankSimulatorChangesProjectionAndResetRestoresIt() {
+        let app = openApp("app-bank")
+        let summary = element("budget-summary", in: app)
+        XCTAssertTrue(reveal(summary, in: app))
+        let before = summary.staticTexts.allElementsBoundByIndex.map(\.label)
+        XCTAssertFalse(before.isEmpty)
+        let simulator = element("budget-simulator", in: app)
+        XCTAssertTrue(reveal(simulator, in: app))
+        simulator.tap()
+        let preset = app.buttons["budget-roster-preset"]
+        XCTAssertTrue(reveal(preset, in: app))
+        preset.tap()
+        for _ in 0..<6 {
+            if summary.exists && summary.isHittable { break }
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)).press(forDuration: 0.05,
+                thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65)))
+        }
+        XCTAssertNotEqual(before, summary.staticTexts.allElementsBoundByIndex.map(\.label))
+        let reset = app.buttons["budget-reset"]
+        XCTAssertTrue(reveal(reset, in: app))
+        reset.tap()
+        XCTAssertEqual(before, summary.staticTexts.allElementsBoundByIndex.map(\.label))
     }
 
     func testFantasyShowsDeadlineAndFilters() {
@@ -58,6 +58,30 @@ final class FootballF5UITests: XCTestCase {
     }
 
     // MARK: Metas, Troféus e Ajustes
+
+    func testSettingsCanCreateAndRestoreCareerSlot() {
+        let app = openApp("app-settings")
+        XCTAssertTrue(reveal(element("settings-save-slots", in: app), in: app))
+        let create = app.buttons["settings-new-slot-1"]
+        XCTAssertTrue(reveal(create, in: app))
+        create.tap()
+        XCTAssertTrue(app.staticTexts["Seu primeiro contrato"].waitForExistence(timeout: 8))
+        let offer = app.buttons["choose-offer-0"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 8))
+        offer.tap()
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 8))
+        let settings = app.buttons["app-settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 8))
+        settings.tap()
+        XCTAssertTrue(reveal(element("settings-active-slot-1", in: app), in: app))
+        let restore = app.buttons["settings-load-slot-0"]
+        XCTAssertTrue(reveal(restore, in: app))
+        restore.tap()
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["app-settings"].waitForExistence(timeout: 8))
+        app.buttons["app-settings"].tap()
+        XCTAssertTrue(reveal(element("settings-active-slot-0", in: app), in: app))
+    }
 
     func testGoalsLetThePlayerChooseAndKeepHistory() {
         let app = openApp("app-quests")

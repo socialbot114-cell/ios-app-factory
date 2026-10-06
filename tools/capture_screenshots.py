@@ -24,6 +24,20 @@ CAPTURES = {
     "quebra-cabecas": ["home", "board"],
 }
 
+CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-league", "fantasy-share", "save-slots"]
+
+
+def requested_states(slug: str, selection: str) -> list[str]:
+    states = [state.strip() for state in selection.split(",") if state.strip()]
+    if not states:
+        return list(CAPTURES[slug])
+    unknown = set(states) - set(CAPTURES[slug])
+    if unknown:
+        raise ValueError(f"Unknown capture states for {slug}: {', '.join(sorted(unknown))}")
+    if len(states) != len(set(states)):
+        raise ValueError("Capture states must not be repeated")
+    return states
+
 
 def run(*args: str, check: bool = True, capture: bool = False) -> str:
     result = subprocess.run(args, check=False, text=True, stdout=subprocess.PIPE if capture else None,
@@ -164,6 +178,10 @@ def main() -> None:
     app = next((item for item in apps if item["slug"] == args.slug), None)
     if app is None or app["scheme"] != args.scheme or app["bundle"] != args.bundle:
         raise SystemExit("App identity does not match tools/apps.json")
+    try:
+        CAPTURES[args.slug] = requested_states(args.slug, os.environ.get("CAPTURE_STATES", ""))
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     app_path = Path(args.derived_data) / "Build/Products/Debug-iphonesimulator" / f"{args.scheme}.app"
     if not app_path.is_dir():
         raise SystemExit(f"Simulator app not found: {app_path}")

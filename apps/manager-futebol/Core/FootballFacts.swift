@@ -27,6 +27,8 @@ struct WorldFact: Codable, Equatable, Identifiable {
     var effects: [String]? = nil
     var commitmentIDs: [Int]? = nil
     var nextEvents: [String]? = nil
+    /// Snapshot técnico separado das frases de efeitos exibidas ao jogador.
+    var fantasySnapshot: FantasyRoundDetail? = nil
 }
 
 struct FactStore: Codable, Equatable {

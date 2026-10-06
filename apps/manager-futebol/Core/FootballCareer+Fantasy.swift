@@ -65,34 +65,7 @@ extension FootballCareer {
     // MARK: - Pontuação
 
     func fantasyPoints(for athlete: FootballPlayer, in fixture: LeagueFixture) -> Double {
-        guard fixture.isPlayed, let homeGoals = fixture.homeGoals, let awayGoals = fixture.awayGoals else { return 0 }
-        let isHome = fixture.home == athlete.teamID
-        guard isHome || fixture.away == athlete.teamID else { return 0 }
-        guard fixture.playedIDs.contains(athlete.id) else { return 0 }
-        var points = 1.0
-        let goals = (fixture.homeScorerIDs + fixture.awayScorerIDs).filter { $0 == athlete.id }.count
-        switch athlete.position {
-        case .forward: points += Double(goals) * 8
-        case .midfielder: points += Double(goals) * 10
-        case .defender: points += Double(goals) * 12
-        case .goalkeeper: points += Double(goals) * 15
-        }
-        points += Double(fixture.assistIDs.filter { $0 == athlete.id }.count) * 5
-        let conceded = isHome ? awayGoals : homeGoals
-        let scored = isHome ? homeGoals : awayGoals
-        if conceded == 0 {
-            switch athlete.position {
-            case .goalkeeper: points += 5
-            case .defender: points += 4
-            case .midfielder: points += 1
-            case .forward: break
-            }
-        }
-        if athlete.position == .goalkeeper { points -= Double(conceded) }
-        if scored > conceded { points += 1 }
-        points -= Double(fixture.yellowIDs.filter { $0 == athlete.id }.count) * 2
-        points -= Double(fixture.redIDs.filter { $0 == athlete.id }.count) * 5
-        return points
+        fantasyComponents(for: athlete, in: fixture).reduce(0) { $0 + $1.points }
     }
 
     /// Pontuação da escalação do usuário numa rodada da liga.
@@ -116,21 +89,30 @@ extension FootballCareer {
     /// Pontua a rodada que acabou de ser jogada, paga prêmios em fichas e atualiza o ranking.
     mutating func scoreFantasyRound(matchDay: Int) {
         guard let slot = calendar.indices.contains(matchDay) ? calendar[matchDay] : nil, let round = slot.leagueRound else { return }
+        guard round > world.fantasy.lastScoredRound,
+              !world.fantasy.history.contains(where: { $0.season == season && $0.round == round }) else { return }
+        let roundFixtures = fixtures.filter { $0.matchDay == matchDay && $0.competition.division != nil }
+        guard !roundFixtures.isEmpty, roundFixtures.allSatisfy({ $0.isPlayed }) else { return }
         ensureFantasyManagers()
         guard world.fantasy.lineup.count == 11 else { return }
         let points = fantasyRoundPoints(matchDay: matchDay)
-        var random = FootballRandom(seed: matchSeed(stream: .fantasy, id: matchDay + 100))
-        var scores: [Double] = []
+        let scores = fantasyRivalScores(matchDay: matchDay)
         for index in world.fantasy.managers.indices {
-            let value = max(0, 34 + Double(random.int(in: -120...120)) / 10 + Double(index) * 0.2)
-            world.fantasy.managers[index].points += value
-            scores.append(value)
+            world.fantasy.managers[index].points += scores[index]
         }
         let rank = scores.filter { $0 > points }.count + 1
         world.fantasy.seasonPoints += points
         world.fantasy.lastScoredRound = round
         let captainName = world.fantasy.captainID.flatMap { player($0)?.name } ?? "—"
         world.fantasy.history.insert(FantasyRoundResult(round: round, season: season, points: points, captainName: captainName, rank: rank), at: 0)
+        let detail = makeFantasyDetail(matchDay: matchDay, round: round)
+        // Mantém somente o snapshot mais recente, sem misturar JSON técnico com efeitos narrativos.
+        for index in factStore.facts.indices where factStore.facts[index].id.hasPrefix("fantasy-result-") {
+            factStore.facts[index].fantasySnapshot = nil
+        }
+        recordFact(WorldFact(id: "fantasy-result-\(season)-\(round)", source: .match, worldDay: worldDay,
+                             title: "Rodada Mágica \(round)", detail: "\(points) pontos · capitão \(captainName)",
+                             playerIDs: world.fantasy.lineup, effects: ["Pontuação da rodada: \(points)"], fantasySnapshot: detail))
         if world.fantasy.history.count > 40 { world.fantasy.history.removeLast(world.fantasy.history.count - 40) }
         let prize = rank == 1 ? 300 : (rank == 2 ? 150 : (rank == 3 ? 80 : max(0, Int(points / 2))))
         world.betting.fichas += prize

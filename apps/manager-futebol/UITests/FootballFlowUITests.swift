@@ -84,6 +84,127 @@ final class FootballFlowUITests: XCTestCase {
     }
 
 
+    /// LIG-01..03: usa entidades e estados da Liga, sem depender do header do FutOS.
+    func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+        tapWhenReady(app.buttons["choose-offer-0"], in: app)
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+
+        // Produz um relatório real; não aceita pré-jogo como substituto de partida histórica.
+        openFromHome("dock-manager", in: app)
+        leagueTap(app.buttons["play-match"], in: app)
+        XCTAssertTrue(leagueElement("live-scoreboard", in: app).waitForExistence(timeout: 10))
+        leagueTap(app.buttons["live-skip"], in: app)
+        XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
+        leagueTap(app.buttons["live-finish"], in: app)
+        if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
+        XCTAssertTrue(leagueElement("football-training-report", in: app).waitForExistence(timeout: 10))
+        goHome(app)
+        openFromHome("app-league", in: app)
+        XCTAssertTrue(app.staticTexts["league-section-state"].waitForExistence(timeout: 8))
+        let section = app.staticTexts["league-section-state"].label
+
+        let club = leagueFirst("league-club-", in: app)
+        leagueReveal(club, in: app)
+        let clubID = String(club.identifier.dropFirst("league-club-".count))
+        leagueTap(club, in: app)
+        XCTAssertTrue(app.staticTexts["league-club-profile-\(clubID)"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Forma na liga"].exists)
+        let player = leagueFirst("league-club-player-", in: app)
+        leagueReveal(player, in: app)
+        let playerID = String(player.identifier.dropFirst("league-club-player-".count))
+        leagueTap(player, in: app)
+        XCTAssertTrue(app.staticTexts["league-player-profile-\(playerID)"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Temporada · todas as competições"].exists)
+        leagueTap(app.buttons["league-player-back"], in: app)
+        XCTAssertTrue(app.staticTexts["league-club-profile-\(clubID)"].waitForExistence(timeout: 8))
+        leagueTap(app.buttons["league-club-back"], in: app)
+        XCTAssertTrue(app.staticTexts["league-section-state"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.staticTexts["league-section-state"].label, section)
+
+        let round = app.staticTexts["league-round-state"]
+        leagueReveal(round, in: app)
+        let pastRound = round.label
+        let pastMatch = leagueFirst("league-match-", in: app)
+        leagueReveal(pastMatch, in: app)
+        let pastID = String(pastMatch.identifier.dropFirst("league-match-".count))
+        XCTAssertEqual(pastMatch.value as? String, "Disputada")
+        leagueTap(app.buttons["league-round-next"], in: app)
+        let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", pastRound), object: round)
+        XCTAssertEqual(XCTWaiter().wait(for: [changed], timeout: 8), .completed)
+        let futureRound = round.label
+        let futureMatch = leagueFirst("league-match-", in: app)
+        leagueReveal(futureMatch, in: app)
+        let futureID = String(futureMatch.identifier.dropFirst("league-match-".count))
+        XCTAssertNotEqual(futureID, pastID)
+        XCTAssertEqual(futureMatch.value as? String, "Agendada")
+        leagueTap(futureMatch, in: app)
+        XCTAssertTrue(app.staticTexts["league-match-detail-\(futureID)"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.staticTexts["league-match-detail-\(futureID)"].label, "Partida agendada")
+        XCTAssertTrue(app.staticTexts["O resultado e os eventos estarão disponíveis após a partida."].exists)
+        leagueTap(app.buttons["league-match-back"], in: app)
+        leagueReveal(round, in: app)
+        XCTAssertEqual(round.label, futureRound)
+        leagueTap(app.buttons["league-round-previous"], in: app)
+        let restored = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", pastRound), object: round)
+        XCTAssertEqual(XCTWaiter().wait(for: [restored], timeout: 8), .completed)
+        let historical = leagueElement("league-match-\(pastID)", in: app)
+        leagueTap(historical, in: app)
+        XCTAssertTrue(app.staticTexts["league-match-detail-\(pastID)"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.staticTexts["league-match-detail-\(pastID)"].label, "Relatório da partida")
+        leagueReveal(leagueElement("match-report-shots", in: app), in: app)
+        XCTAssertTrue(leagueElement("match-report-shots", in: app).exists)
+        leagueReveal(leagueElement("match-report-possession", in: app), in: app)
+        XCTAssertTrue(leagueElement("match-report-possession", in: app).exists)
+        leagueTap(app.buttons["league-match-back"], in: app)
+        leagueReveal(round, in: app)
+        XCTAssertEqual(round.label, pastRound)
+
+        let sections = app.segmentedControls["league-section"]
+        leagueReveal(sections, in: app)
+        sections.buttons["Artilharia"].tap()
+        XCTAssertEqual(app.staticTexts["league-section-state"].label, "Artilharia")
+        let scorer = leagueFirst("league-scorer-", in: app)
+        leagueReveal(scorer, in: app)
+        let scorerID = String(scorer.identifier.dropFirst("league-scorer-".count))
+        leagueTap(scorer, in: app)
+        XCTAssertTrue(app.staticTexts["league-player-profile-\(scorerID)"].waitForExistence(timeout: 8))
+        leagueTap(app.buttons["league-player-back"], in: app)
+        XCTAssertTrue(app.staticTexts["league-section-state"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.staticTexts["league-section-state"].label, "Artilharia")
+        attachScreenshot(app, name: "league-navigation-restored")
+        goHome(app)
+    }
+
+    private func leagueElement(_ id: String, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: id).firstMatch
+    }
+
+    private func leagueFirst(_ prefix: String, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix)).firstMatch
+    }
+
+    /// Busca nos dois sentidos: destinos aninhados podem restaurar a rolagem anterior.
+    private func leagueReveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for direction in [true, false] {
+            for _ in 0..<16 {
+                if element.exists && element.isHittable { return }
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: direction ? 0.65 : 0.3))
+                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: direction ? 0.3 : 0.65))
+                start.press(forDuration: 0.05, thenDragTo: end)
+            }
+        }
+        attachScreenshot(app, name: "league-element-unreachable")
+        XCTFail("Elemento da Liga inacessível: \(element). Hierarquia:\n\(app.debugDescription)")
+    }
+
+    private func leagueTap(_ element: XCUIElement, in app: XCUIApplication) {
+        leagueReveal(element, in: app)
+        element.tap()
+    }
+
     // MARK: - Teste de fumaça de todos os apps
 
     private struct AppCheck {
@@ -163,7 +284,7 @@ final class FootballFlowUITests: XCTestCase {
                 picker.buttons["Difícil"].tap()
                 // Estrutura, comissão e patrocínio ficam no Clube; Ajustes só configura o app e a simulação.
                 XCTAssertFalse(app.buttons["settings-staff"].exists)
-                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "settings-notification-priority").firstMatch.waitForExistence(timeout: 6))
+                self.leagueReveal(app.descendants(matching: .any).matching(identifier: "settings-notification-priority").firstMatch, in: app)
             }
         ]
 
