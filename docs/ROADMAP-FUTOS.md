@@ -4,6 +4,29 @@ Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
 Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) enviado ao TestFlight em 5 de outubro de 2026 (run 37323855519). Veja a seção "Atualização — 5 de outubro" abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
 
+## Atualização — 6 de outubro de 2026 (2): organização do FutOS, passagem de dia, guia, chat e física da partida
+
+**Estado: implementado localmente, NÃO compilado e NÃO testado** (host Linux sem Swift; a imagem Docker `swift:5.9` valida só o Core). Só foram conferidos balanceamento de chaves e `tools/validate_factory.py`. Antes de qualquer coisa: build iOS, `swift test` e UI tests no CI; depois capturas e playtest no simulador. Descrição técnica em `docs/FUTOS-ARQUITETURA.md`.
+
+### Entregue
+
+- **Organização (OS):** `Sources/` dividido em `PhoneOS/` e `Apps/<App>/` (Gestor, Tática, Liga, Transfer, Clube, Mensagens, Chuteira, Palpite, Rodada, Vida, Negócios, Metas, Troféus, Alertas, Marca, Banco, Contatos, Ajustes, Partida, Elenco), mais `Compartilhado/` e `Capturas/`. Arquivos que misturavam apps foram separados. Duplicidades removidas do Clube (Finanças, Marketing/TV, Modos de jogo e Carreiras salvas agora só em Banco, Marca e Ajustes; Clube ganhou atalhos "Em outros apps"); Patrocínio passou para a Marca. `PhoneApp.purpose` descreve o dono de cada assunto e aparece na busca. `validate_factory.py` passou a ler `Sources` recursivamente.
+- **Calendário com datas:** `Core/FootballCalendarClock.swift` (domingo = liga, quarta = copa, temporada 1 em 2027). Datas na barra de status, Gestor, mensagens e prazos.
+- **Passagem de dia:** o celular bloqueia **só quando o dia muda** (não ao abrir o jogo). A tela de bloqueio rola data e hora dia a dia (faixa de fichas, noite → amanhecer, vibração) e entrega widgets: último jogo, próximo jogo com horário, contadores e **"Durante a noite"** com tudo que espera ação. Coletiva pendente abre só após desbloquear. "Reduzir movimento" pula a animação. UI test novo com `--lock-on-advance`.
+- **O que fazer agora:** `Core/FootballNextAction.swift` com pontuação (0 a 100+), categoria e "por quê"; prazo curto soma bônus; cobre coletiva, crise, decisões, escalação/preparação, promessas, contratos, mensagens (agrupadas), propostas, moral, elenco curto, dinheiro, patrocínio, energia/estresse, família e metas. "Depois" adia até o dia seguinte (urgentes não). Botão na tela inicial, notificação "Ir agora" que leva ao app/mensagem/decisão, notificação automática após a noite, dicas rotativas e **Plano do dia** no Gestor.
+- **Mensagens (chat):** `Core/FootballChat.swift`. Abas Jogadores, Comissão, Família e Clube; mensagens do sistema viram balões com os botões de resposta de antes; mensagens rápidas (elogiar, cobrar, "como você está?", relatórios da comissão, "o que fazer agora?", carinho para a família) com resposta e efeitos reais; uma por dia por conversa; histórico no save (campo opcional, saves antigos abrem).
+- **Chuteira:** histórias do dia, fotos nos posts (desenhadas pelo app por tipo), anexar foto ao publicar (+15% de curtidas), curtir e atalho para mensagens.
+- **Partida (física):** intervalo e apito final param o campo (bancos, bola no centro, "INTERVALO"/"FIM DE JOGO"); no 2º tempo o visitante dá a saída; faltas, cartões, lesões e impedimentos geram bola parada com cobrador; bola fora gera lateral/escanteio/tiro de meta; chute sai do ponto narrado; bola na trave rebate; no modo "Ver jogo" o relógio espera a jogada narrada terminar.
+- **Testes escritos (não executados):** `FootballCalendarClockTests`, `FootballChatAndGuideTests`; UITests ajustados (`club-management`, busca por trecho de "Bem-vindo, Treinador", novo teste de bloqueio).
+
+### Pendente / riscos
+
+- Compilar e rodar tudo (principal risco: erros de tipo Swift não detectáveis aqui, ex.: `contentTransition(.symbolEffect)`, sobrecargas de `showGuide`, inicializadores memberwise).
+- Pesos da pontuação do guia são estimativa; calibrar no playtest.
+- Física: intervalo da prorrogação e cobranças de pênalti ainda sem tratamento próprio; substituições não animadas.
+- Chat: sem digitação livre (só mensagens rápidas); conversas de mercado/empresário ainda só leitura.
+- Capturas novas (tela de bloqueio com noite, chat, Chuteira com fotos, Plano do dia) ainda não geradas.
+
 ## Atualização — 6 de outubro de 2026: revisão antes de lançamento
 
 - Novo incremento em validação: **Rodada Mágica com detalhe por atleta, liga dos amigos e compartilhamento contextual**, **simulador financeiro do Banco** e **carreiras salvas em Ajustes**.
@@ -530,6 +553,7 @@ Ordem das primeiras microações:
 | F2 — pedido de minutos | Em andamento | Compromissos, agenda e Mensagens integrados | Omissão com prazo e repercussões |
 | TestFlight 1.0 (5) | Concluído | Run 37234149295; READY_FOR_BETA_TESTING | Cadastrar tester e realizar playtest |
 | Auditoria em aparelho físico | Planejado | Grupo interno sem testers | Confirmar e-mail e acesso |
+| Organização FutOS, passagem de dia, guia, chat, Chuteira com fotos, física da partida | Implementado, não compilado | Seção "6 de outubro (2)" e `docs/FUTOS-ARQUITETURA.md` | Build + testes no CI, capturas e playtest |
 
 Atualizar este diário e as caixas a cada entrega verificada. Registrar mudanças de direção e itens adiados com motivo, preservando o histórico da jornada.
 

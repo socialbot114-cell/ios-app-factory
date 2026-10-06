@@ -16,6 +16,7 @@ struct FootballDashboardView: View {
             if let club = career.selectedClub {
                 ClubHeroCard(club: club, career: career)
                 attentionPanel
+                dayPlanPanel
                 if !career.promises.isEmpty {
                     FactoryPanel(title: "Compromissos com o elenco", systemImage: "handshake.fill") {
                         ForEach(career.promises) { promise in
@@ -75,6 +76,10 @@ struct FootballDashboardView: View {
         } message: {
             Text(career.agendaExpiringOnNextAdvance.map { "\($0.title): \($0.detail)" }.joined(separator: "\n\n"))
         }
+    }
+
+    private var dayPlanPanel: some View {
+        FootballDayPlanPanel(career: career, onShowPress: onShowPress, onNavigate: onNavigate)
     }
 
     private var agendaPanel: some View {
@@ -229,7 +234,6 @@ struct FootballDashboardView: View {
         let ownRating = career.teamRating(club.id)
         let rivalRating = career.teamRating(opponentID)
 
-        let slot = career.currentSlot
         let venue = fixture.home == club.id ? "Em casa" : "Fora de casa"
         return FactoryPanel(title: "Próxima partida", systemImage: "calendar") {
             HStack(spacing: 6) {
@@ -240,7 +244,7 @@ struct FootballDashboardView: View {
                 }
             }
             MatchupHeader(home: FootballSeason.team(fixture.home), away: FootballSeason.team(fixture.away), homeScore: nil, awayScore: nil)
-            Text("\(venue) · \(slot?.dayName ?? "") · semana \(slot?.week ?? 0)\(fixture.competition.isCup ? " · mata-mata, empate vai à prorrogação" : "")")
+            Text("\(venue) · \(FootballCalendarClock.longDate(career.gameDay)) · \(FootballCalendarClock.clock(FootballCalendarClock.kickoff(season: career.season, matchDay: career.matchDayIndex)))\(fixture.competition.isCup ? " · mata-mata, empate vai à prorrogação" : "")")
                 .font(.caption).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -493,7 +497,7 @@ struct ClubHeroCard: View {
             HStack(spacing: 14) {
                 ClubCrest(team: club, size: 56)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(career.userDivision?.name.uppercased() ?? "") · TEMPORADA \(career.season) · SEMANA \(career.currentSlot?.week ?? FootballSeason.calendar.last?.week ?? 0)")
+                    Text("\(career.userDivision?.name.uppercased() ?? "") · TEMPORADA \(career.season) · \(FootballCalendarClock.shortDate(career.gameDay).uppercased())")
                         .font(.caption2.weight(.heavy)).tracking(1.1)
                         .foregroundStyle(club.secondaryColor)
                     Text(club.name).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(.white)

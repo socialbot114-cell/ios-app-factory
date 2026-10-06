@@ -22,6 +22,8 @@ struct FootballLiveMatchView: View {
     @State private var quickFeedback = 0
     @State private var keyMoments: KeyMomentMode = .brief
     @State private var pitchExpanded = false
+    /// O movimento do campo mora aqui para o relógio esperar cada jogada terminar antes do próximo minuto.
+    @State private var pitchEngine = PitchEngine()
     @AppStorage("football.liveViewMode") private var viewModeRaw = LiveViewMode.narration.rawValue
 
     /// Como acompanhar a partida: texto (padrão) ou o campo animado.
@@ -253,7 +255,8 @@ struct FootballLiveMatchView: View {
 
     private func watchPanel(_ live: LiveMatchState) -> some View {
         VStack(alignment: .trailing, spacing: 6) {
-            FootballLivePitchView(live: live, career: career, running: running, speed: speed, height: pitchExpanded ? 340 : 230)
+            FootballLivePitchView(live: live, career: career, running: running, speed: speed, height: pitchExpanded ? 340 : 230,
+                                  phase: pitchPhase(live), engine: pitchEngine)
             Button {
                 withAnimation(.snappy) { pitchExpanded.toggle() }
             } label: {
@@ -551,6 +554,8 @@ struct FootballLiveMatchView: View {
             switch FactoryCapture.screen {
             case "match-final":
                 career.liveAdvance(minutes: 200)
+            case "match-halftime":
+                career.liveAdvance(to: 45)
             case "match-goal":
                 career.liveAdvance(to: 5)
                 while let sim = career.liveMatch?.sim, !sim.finished, sim.minute < 90 {
@@ -575,6 +580,25 @@ struct FootballLiveMatchView: View {
         tickTask?.cancel()
     }
 
+    /// Intervalo e apito final param o campo: a bola não rola enquanto o jogo está parado.
+    private func pitchPhase(_ live: LiveMatchState) -> PitchPhase {
+        if live.sim.finished { return .fullTime }
+        if live.sim.minute == 45, !running, live.sim.events.contains(where: { $0.kind == .halfTime }) { return .halftime }
+        return .live
+    }
+
+    /// No modo "Ver jogo", segura o relógio até o gol, a defesa ou a falta narrados terminarem no campo.
+    @MainActor private func waitForPitch() async {
+        guard viewMode == .watch, !staticPreview, !FactoryCapture.isUITesting else { return }
+        var waited = 0.0
+        while !Task.isCancelled, waited < 20 {
+            let count = career.liveMatch?.sim.events.count ?? 0
+            guard pitchEngine.isAnimating, pitchEngine.isShowingPlay(eventCount: count) else { return }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            waited += 0.1
+        }
+    }
+
     private func startClock() {
         tickTask?.cancel()
         guard !staticPreview, career.liveMatch?.sim.finished == false else { return }
@@ -582,6 +606,8 @@ struct FootballLiveMatchView: View {
         tickTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: tickNanoseconds)
+                if Task.isCancelled { return }
+                await waitForPitch()
                 if Task.isCancelled { return }
                 guard career.liveMatch?.sim.finished == false else {
                     running = false

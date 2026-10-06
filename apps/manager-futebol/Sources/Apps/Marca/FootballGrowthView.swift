@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Marketing, TV e cotas
+// MARK: - Marca: marketing, TV e patrocínio
 
 struct FootballGrowthView: View {
     @Binding var career: FootballCareer
@@ -17,10 +17,11 @@ struct FootballGrowthView: View {
             pressurePanel
             tvPanel
             FootballBrandHub(career: $career, onAlert: onAlert)
+            masterSponsorLink
             slotsPanel
         }
         .factoryPage()
-        .navigationTitle("Marketing e TV")
+        .navigationTitle("Marca, TV e patrocínio")
     }
 
     // MARK: Pressão
@@ -100,7 +101,29 @@ struct FootballGrowthView: View {
         }
     }
 
-    // MARK: Cotas de patrocínio
+    // MARK: Patrocínio
+
+    private var masterSponsorLink: some View {
+        NavigationLink {
+            FootballSponsorView(career: $career, onAlert: onAlert)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "megaphone.fill").frame(width: 28).foregroundStyle(FootballTheme.accent)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Patrocinador master").font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    Text("Contrato principal e propostas de camisa").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            }
+            .padding(14)
+            .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("brand-sponsor")
+    }
+
 
     private var slotsPanel: some View {
         FactoryPanel(title: "Cotas de patrocínio", systemImage: "rectangle.3.group.fill") {

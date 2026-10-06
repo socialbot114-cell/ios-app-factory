@@ -6,6 +6,7 @@ struct FootballSocialView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     @State private var lastNote: String?
+    var onOpenApp: (PhoneApp) -> Void = { _ in }
 
     private var social: SocialState { career.world.social }
 
@@ -16,6 +17,12 @@ struct FootballSocialView: View {
                               symbol: social.verified ? "checkmark.seal.fill" : "person.2.fill", tint: .pink)
                 FactoryMetric(label: "Polêmica", value: "\(social.controversy)", symbol: "flame.fill", tint: social.controversy >= 60 ? .red : .orange)
             }
+            SocialStoriesRow(stories: career.storyItems())
+            Button { onOpenApp(.messages) } label: {
+                Label("Mensagens diretas", systemImage: "paperplane.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("social-open-messages")
             if let crisis = social.crisis { crisisPanel(crisis) }
             if let lastNote {
                 Label(lastNote, systemImage: "bubble.left.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
@@ -141,8 +148,14 @@ struct FootballSocialView: View {
                         if post.viral { PillLabel(text: "VIRAL", systemImage: "flame.fill", tint: .red) }
                     }
                     Text(post.text).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                    if let photo = post.shownPhoto { SocialPhotoView(photo: photo, seed: post.id) }
                     HStack(spacing: 16) {
-                        Label(FootballFormat.compact(post.likes), systemImage: "heart")
+                        Button { career.toggleLike(postID: post.id) } label: {
+                            Label(FootballFormat.compact(post.likes), systemImage: career.hasLiked(post.id) ? "heart.fill" : "heart")
+                                .foregroundStyle(career.hasLiked(post.id) ? Color.pink : Color.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("like-\(post.id)")
                         Label(FootballFormat.compact(post.shares), systemImage: "arrow.2.squarepath")
                         Label(FootballFormat.compact(post.replies), systemImage: "bubble.left")
                         Spacer()

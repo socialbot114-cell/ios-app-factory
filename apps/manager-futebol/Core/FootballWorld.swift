@@ -290,6 +290,8 @@ struct SocialPost: Codable, Equatable, Identifiable {
     var stage: Int? = nil
     var tone: String? = nil
     var targetID: String? = nil
+    /// Foto anexada pelo treinador; opcional para saves antigos.
+    var photo: SocialPhoto? = nil
 }
 
 struct BrandDeal: Codable, Equatable, Identifiable {
@@ -327,6 +329,8 @@ struct SocialState: Codable, Equatable {
     var totalLikes = 0
     var viralPosts = 0
     var sponsoredStreak = 0
+    /// Posts curtidos pelo treinador; opcional para saves antigos.
+    var likedPostIDs: [Int]? = nil
 }
 
 // MARK: - Palpite+ (apostas com fichas fictícias)

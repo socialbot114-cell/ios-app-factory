@@ -18,7 +18,7 @@ for field in ("slug", "scheme", "bundle", "name"):
 
 for app in apps:
     base = ROOT / "apps" / app["slug"]
-    sources = list((base / "Sources").glob("*.swift"))
+    sources = list((base / "Sources").rglob("*.swift"))
     tests = list((base / "Tests").glob("*.swift"))
     ui_tests = list((base / "UITests").glob("*.swift"))
     if not sources:

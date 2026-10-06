@@ -107,6 +107,11 @@ struct PitchSlotInfo {
     let lateral: Double
 }
 
+/// Em que momento da partida o campo está: bola rolando, intervalo ou apito final.
+enum PitchPhase: Equatable {
+    case live, halftime, fullTime
+}
+
 struct PitchInput {
     var slots: [PitchSlotInfo]
     var homeShare: Double
@@ -114,6 +119,7 @@ struct PitchInput {
     var events: [MatchEvent]
     var homeTeamID: Int
     var finished: Bool
+    var phase: PitchPhase = .live
 }
 
 struct PitchBody {
@@ -154,9 +160,11 @@ final class PitchEngine {
         case loose(Double)
         case net
         case restart
+        /// Bola parada por falta, lesão ou impedimento: o jogo só recomeça quando o cobrador chega.
+        case dead(Double)
     }
 
-    private enum Outcome { case goal, save, miss }
+    private enum Outcome { case goal, save, miss, post, stoppage }
     private enum Phase { case approach, flight, aftermath }
 
     private struct Plan {
@@ -172,6 +180,9 @@ final class PitchEngine {
         var targetZ = 0.0
         var side = 1.0
         var resolved = false
+        /// Posição do lance contada na súmula (fração do comprimento até o gol e da largura), quando existir.
+        var eventX: Double?
+        var eventY: Double?
     }
 
     private(set) var bodies: [PitchBody] = []
@@ -198,6 +209,11 @@ final class PitchEngine {
     private var celebrationScorer = -1
     private var restartTimer = 0.0
     private var restartHome = true
+    private var deadTakerID: Int?
+    private var lastPhase = PitchPhase.live
+    private var breakSettled = false
+    private var settleTimer = 0.0
+    private var lastAdvanceWall: Date?
     private var random = PitchRandom(seed: 0xC0FFEE)
     private var input = PitchInput(slots: [], homeShare: 0.5, pressure: 0, events: [], homeTeamID: -1, finished: false)
 
@@ -212,7 +228,8 @@ final class PitchEngine {
         var before = base
         let goalIndex = base.events.lastIndex { $0.kind == .goal }
         if let goalIndex { before.events = Array(base.events[..<goalIndex]) }
-        run(before, seconds: 14, stopWhenCelebrating: false)
+        // No intervalo o campo precisa de mais tempo para os jogadores chegarem aos bancos.
+        run(before, seconds: base.phase == .live ? 14 : 30, stopWhenCelebrating: false)
         if goalIndex != nil { run(base, seconds: 12, stopWhenCelebrating: true) }
     }
 
@@ -231,8 +248,29 @@ final class PitchEngine {
     }
 
     /// Há jogada em andamento ou evento ainda por animar.
-    func isBusy(eventCount: Int) -> Bool {
-        plan != nil || !queue.isEmpty || celebratingHome != nil || restartTimer > 0 || consumed != eventCount
+    func isBusy(eventCount: Int, phase: PitchPhase = .live) -> Bool {
+        // Mudança de fase ainda não aplicada (intervalo/apito): o campo precisa redesenhar uma vez para reagir.
+        if phase != lastPhase { return true }
+        if input.phase == .halftime { return !breakSettled }
+        if input.phase == .fullTime { return settleTimer > 0 }
+        return plan != nil || !queue.isEmpty || celebratingHome != nil || restartTimer > 0 || deadBall || consumed != eventCount
+    }
+
+    /// Há uma jogada roteirizada (gol, defesa, falta…) ainda sendo mostrada. O relógio da partida espera por ela
+    /// para a narração e o campo contarem a mesma história.
+    func isShowingPlay(eventCount: Int) -> Bool {
+        input.phase == .live && (plan != nil || !queue.isEmpty || celebratingHome != nil || restartTimer > 0 || deadBall || consumed != eventCount)
+    }
+
+    /// O campo está sendo desenhado agora (a tela está visível); senão não há o que esperar.
+    var isAnimating: Bool {
+        guard let last = lastAdvanceWall else { return false }
+        return Date().timeIntervalSince(last) < 0.6
+    }
+
+    private var deadBall: Bool {
+        if case .dead = mode { return true }
+        return false
     }
 
     func body(_ id: Int) -> PitchBody? { bodies.first { $0.id == id } }
@@ -244,12 +282,91 @@ final class PitchEngine {
     func advance(now: Double, speed: Double, input newInput: PitchInput) {
         let elapsed = lastTime.map { now - $0 } ?? 0
         lastTime = now
+        lastAdvanceWall = Date()
         input = newInput
         sync()
+        applyPhaseChange()
         processEvents()
         let scaled = min(0.06, max(0, elapsed)) * speed
         let steps = max(1, Int((scaled / 0.03).rounded(.up)))
         for _ in 0..<steps { step(scaled / Double(steps)) }
+    }
+
+    // MARK: Intervalo e apito final
+
+    /// Dois centros de arremesso: o time da casa vai ao banco da esquerda e o visitante ao da direita.
+    private func dugoutSpot(_ body: PitchBody) -> PitchVector {
+        let side = body.home ? -1.0 : 1.0
+        let spread = Double(abs(body.id) % 7) - 3
+        return PitchVector(Self.length / 2 + side * 21 + spread * 1.6, Self.width + 4.2 + Double(abs(body.id) % 3) * 0.3)
+    }
+
+    private func applyPhaseChange() {
+        guard input.phase != lastPhase else { return }
+        let previous = lastPhase
+        lastPhase = input.phase
+        plan = nil
+        queue = []
+        celebratingHome = nil
+        deadTakerID = nil
+        trail = []
+        switch input.phase {
+        case .halftime:
+            breakSettled = false
+            mode = .restart
+            carrierID = nil
+            ballVel = .zero
+            restartTimer = 0
+        case .fullTime:
+            restartTimer = 0
+            settleTimer = 1.4
+            if case .restart = mode { mode = .loose(0) }
+            if deadBall { mode = .loose(0) }
+        case .live:
+            // Segundo tempo: os jogadores voltam do intervalo e o visitante dá a saída.
+            if previous == .halftime { startKickoff(homeKicks: false, walkBack: true) }
+        }
+    }
+
+    /// Todo mundo vai para o vestiário/banco e fica parado: a bola não anda enquanto o jogo está parado.
+    private func stepHalftime(_ dt: Double) {
+        time += dt
+        ballPos = PitchVector(Self.length / 2, Self.width / 2)
+        ballZ = 0
+        var allThere = true
+        for i in bodies.indices {
+            var body = bodies[i]
+            let target = dugoutSpot(body)
+            let toTarget = target - body.pos
+            let distance = toTarget.length
+            if distance > 0.6 {
+                allThere = false
+                let desired = toTarget.normalized * min(2.6, distance * 1.4)
+                body.vel = body.vel + (desired - body.vel) * min(1, 3.5 * dt)
+                body.pos = body.pos + body.vel * dt
+                if abs(body.vel.x) > 0.3 { body.facing = body.vel.x > 0 ? 1 : -1 }
+                body.stride += body.vel.length * dt * 1.6
+            } else {
+                body.vel = .zero
+            }
+            bodies[i] = body
+        }
+        breakSettled = allThere
+        let tunnel = PitchVector(Self.length / 2, Self.width + 3.5)
+        referee = referee + (tunnel - referee) * min(1, 0.8 * dt)
+    }
+
+    /// Apito final: o jogo para onde está; ninguém corre atrás da bola.
+    private func stepFullTime(_ dt: Double) {
+        time += dt
+        settleTimer = max(0, settleTimer - dt)
+        for i in bodies.indices {
+            bodies[i].vel = bodies[i].vel * max(0, 1 - 3.2 * dt)
+            bodies[i].pos = bodies[i].pos + bodies[i].vel * dt
+        }
+        ballPos = ballPos + ballVel * dt
+        ballVel = ballVel * max(0, 1 - 3 * dt)
+        ballZ = max(0, ballZ - 3 * dt)
     }
 
     // MARK: Sincronia com a partida
@@ -298,10 +415,16 @@ final class PitchEngine {
         guard consumed < events.count else { return }
         let fresh = Array(events[consumed...])
         consumed = events.count
-        if fresh.count > 6 || input.finished {
+        if input.finished || input.phase != .live {
+            plan = nil
+            queue = []
+            return
+        }
+        if fresh.count > 6 {
             plan = nil
             queue = []
             celebratingHome = nil
+            deadTakerID = nil
             startKickoff(homeKicks: possessionHome)
             return
         }
@@ -309,27 +432,52 @@ final class PitchEngine {
             let isHome = event.teamID == input.homeTeamID
             switch event.kind {
             case .goal:
-                if queue.count < 3 { queue.append(Plan(home: isHome, shooterID: event.playerID ?? -1, outcome: .goal, penalty: event.text.contains("pênalti"))) }
+                if queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .goal)) }
             case .save:
-                if queue.count < 2 { queue.append(Plan(home: isHome, shooterID: event.playerID ?? -1, outcome: .save, penalty: event.text.contains("pênalti"))) }
-            case .chance, .woodwork:
-                if event.x != nil, queue.count < 2 { queue.append(Plan(home: isHome, shooterID: event.playerID ?? -1, outcome: .miss, penalty: false)) }
+                if queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .save)) }
+            case .woodwork:
+                if event.x != nil, queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .post)) }
+            case .chance:
+                if event.x != nil, queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .miss)) }
             case .yellowCard, .redCard:
                 if let id = event.playerID, let i = index(of: id) {
                     cardMarks.append(PitchCardMark(pos: bodies[i].pos, red: event.kind == .redCard, until: time + 3.2))
                 }
-            case .halfTime:
-                startKickoff(homeKicks: false)
+                if queue.count < 5 { queue.append(stoppagePlan(offenderHome: isHome)) }
+            case .injury, .offside:
+                if queue.count < 5 { queue.append(stoppagePlan(offenderHome: isHome)) }
             default:
                 break
             }
         }
     }
 
+    private func shotPlan(_ event: MatchEvent, home: Bool, outcome: Outcome) -> Plan {
+        var plan = Plan(home: home, shooterID: event.playerID ?? -1, outcome: outcome, penalty: event.text.contains("pênalti"))
+        plan.eventX = event.x
+        plan.eventY = event.y
+        return plan
+    }
+
+    /// Falta, cartão, lesão ou impedimento: o time do infrator perde a bola e o rival cobra.
+    private func stoppagePlan(offenderHome: Bool) -> Plan {
+        Plan(home: !offenderHome, shooterID: -1, outcome: .stoppage, penalty: false)
+    }
+
     // MARK: Passo de simulação
 
     private func step(_ dt: Double) {
         guard dt > 0 else { return }
+        switch input.phase {
+        case .halftime:
+            stepHalftime(dt)
+            return
+        case .fullTime:
+            stepFullTime(dt)
+            return
+        case .live:
+            break
+        }
         time += dt
         cardMarks.removeAll { $0.until < time }
         if celebratingHome != nil, time > celebrationUntil {
@@ -340,8 +488,9 @@ final class PitchEngine {
             restartTimer -= dt
             if restartTimer <= 0 { beginPlayAfterRestart() }
         }
-        if plan == nil, !queue.isEmpty, celebratingHome == nil, restartTimer <= 0, !input.finished {
-            beginPlan(queue.removeFirst())
+        if plan == nil, !queue.isEmpty, celebratingHome == nil, restartTimer <= 0, !deadBall, !input.finished {
+            let next = queue.removeFirst()
+            if next.outcome == .stoppage { beginStoppage(next) } else { beginPlan(next) }
         }
         updateBall(dt)
         updatePlayers(dt)
@@ -367,6 +516,11 @@ final class PitchEngine {
         let goalX = next.home ? Self.length : 0
         if next.penalty {
             next.spot = PitchVector(goalX - dir * 11, Self.width / 2)
+        } else if let eventX = next.eventX {
+            // A súmula diz de onde saiu o chute: o jogador chega lá antes de finalizar.
+            let distance = max(7, min(40, eventX * Self.length))
+            let lateral = (next.eventY ?? 0.5) * Self.width
+            next.spot = PitchVector(goalX - dir * distance, max(6, min(Self.width - 6, lateral)))
         } else {
             next.spot = PitchVector(goalX - dir * random.range(11, 23), Self.width / 2 + random.range(-9, 9))
         }
@@ -403,6 +557,17 @@ final class PitchEngine {
                 targetY = goalY + next.side * random.range(0, 2.5)
                 targetZ = random.range(3.1, 4.6)
             }
+        case .post:
+            // Na trave: ou no poste, ou no travessão (2,44 m).
+            if random.next() < 0.6 {
+                targetY = goalY + next.side * Self.goalHalf
+                targetZ = random.range(0.6, 1.7)
+            } else {
+                targetY = goalY + next.side * random.range(0.5, 2.5)
+                targetZ = 2.4
+            }
+        case .stoppage:
+            break
         }
         next.target = PitchVector(goalX, targetY)
         next.targetZ = targetZ
@@ -425,6 +590,8 @@ final class PitchEngine {
             case .goal: reach = -next.side
             case .save: reach = next.side
             case .miss: reach = next.side * 0.3
+            case .post: reach = -next.side * 0.6
+            case .stoppage: reach = 0
             }
             bodies[keeperIndex].diveUntil = time + 0.9
             bodies[keeperIndex].diveSide = reach >= 0 ? 1 : -1
@@ -478,6 +645,15 @@ final class PitchEngine {
                 current.phase = .aftermath
                 current.timer = 0
                 plan = current
+            case .post:
+                // Bate e volta: a bola sai quicando para a frente da área.
+                ballVel = PitchVector(-dir * 9, current.side * 4.5)
+                ballVZ = 3.2
+                mode = .loose(1.6)
+                carrierID = nil
+                plan = nil
+            case .stoppage:
+                plan = nil
             }
             return
         }
@@ -561,8 +737,17 @@ final class PitchEngine {
             ballVZ -= 9.8 * dt
             ballZ += ballVZ * dt
             if ballZ < 0 { ballZ = 0; ballVZ = abs(ballVZ) * 0.35 }
-            ballPos.x = min(Self.length + 1, max(-1, ballPos.x))
-            ballPos.y = min(Self.width + 1, max(-1, ballPos.y))
+            if ballPos.x < 0 || ballPos.x > Self.length || ballPos.y < 0 || ballPos.y > Self.width {
+                // Bola fora: lateral, escanteio ou tiro de meta para quem não tocou por último.
+                ballPos.x = min(Self.length, max(0, ballPos.x))
+                ballPos.y = min(Self.width, max(0, ballPos.y))
+                ballVel = .zero
+                ballZ = 0
+                possessionHome.toggle()
+                deadTakerID = nearestPlayer(to: ballPos, home: possessionHome, outfieldOnly: true)
+                mode = .dead(2.2)
+                break
+            }
             if let nearest = nearestPlayer(to: ballPos, home: nil, outfieldOnly: false),
                let i = index(of: nearest), bodies[i].pos.distance(to: ballPos) < 1.8 || remaining <= 0 {
                 mode = .carried(nearest)
@@ -571,6 +756,26 @@ final class PitchEngine {
                 decisionTimer = random.range(0.8, 1.4)
             } else {
                 mode = .loose(remaining - dt)
+            }
+        case .dead(let remaining):
+            ballVel = ballVel * max(0, 1 - 4 * dt)
+            ballPos = ballPos + ballVel * dt
+            ballZ = max(0, ballZ - 3 * dt)
+            let left = remaining - dt
+            if left > 0 {
+                mode = .dead(left)
+            } else {
+                let taker = deadTakerID.flatMap { index(of: $0) != nil ? $0 : nil }
+                    ?? nearestPlayer(to: ballPos, home: possessionHome, outfieldOnly: true)
+                deadTakerID = nil
+                if let taker, let i = index(of: taker) {
+                    mode = .carried(taker)
+                    carrierID = taker
+                    possessionHome = bodies[i].home
+                    decisionTimer = random.range(0.7, 1.2)
+                } else {
+                    mode = .loose(1)
+                }
             }
         case .net:
             ballZ = max(0, ballZ - dt)
@@ -693,13 +898,24 @@ final class PitchEngine {
         return PitchVector(fraction * Self.length, body.lateral * Self.width)
     }
 
-    private func startKickoff(homeKicks: Bool) {
+    private func startKickoff(homeKicks: Bool, walkBack: Bool = false) {
         mode = .restart
         carrierID = nil
         restartHome = homeKicks
-        restartTimer = 1.6
+        restartTimer = walkBack ? 5.0 : 1.6
         ballVel = .zero
         trail = []
+    }
+
+    /// Bola parada: o time que sofreu a falta busca a bola enquanto o resto do campo respira.
+    private func beginStoppage(_ stop: Plan) {
+        ballVel = .zero
+        ballZ = 0
+        carrierID = nil
+        possessionHome = stop.home
+        let taker = nearestPlayer(to: ballPos, home: stop.home, outfieldOnly: true)
+        deadTakerID = taker
+        mode = .dead(3.4)
     }
 
     private func beginPlayAfterRestart() {
@@ -753,7 +969,16 @@ final class PitchEngine {
             }
             var target = formationTarget(body)
             var topSpeed = 5.0
-            if restartTimer > 0 {
+            if deadBall {
+                // Jogo parado: só o cobrador anda até a bola; os demais caminham devagar.
+                if body.id == deadTakerID {
+                    target = ballPos
+                    topSpeed = 6.5
+                } else {
+                    target = body.pos
+                    topSpeed = 1.0
+                }
+            } else if restartTimer > 0 {
                 target = kickoffSpot(body, homeKicks: restartHome)
                 topSpeed = 9
             } else if let celebrating = celebratingHome {
@@ -810,7 +1035,7 @@ final class PitchEngine {
                 bodies[b].pos = bodies[b].pos - push
             }
             bodies[a].pos.x = min(length + 2, max(-2, bodies[a].pos.x))
-            bodies[a].pos.y = min(width + 2, max(-2, bodies[a].pos.y))
+            bodies[a].pos.y = min(width + 5, max(-2, bodies[a].pos.y))
         }
     }
 
@@ -831,7 +1056,8 @@ final class PitchEngine {
 
     private func updateReferee(_ dt: Double) {
         let side = ballPos.y < Self.width / 2 ? 11.0 : -11.0
-        let target = PitchVector(ballPos.x - 6, max(4, min(Self.width - 4, ballPos.y + side)))
+        var target = PitchVector(ballPos.x - 6, max(4, min(Self.width - 4, ballPos.y + side)))
+        if deadBall { target = PitchVector(ballPos.x - 2.5, max(2, min(Self.width - 2, ballPos.y + (side > 0 ? 2.5 : -2.5)))) }
         referee = referee + (target - referee) * min(1, 1.1 * dt)
     }
 }

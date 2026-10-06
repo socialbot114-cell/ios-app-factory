@@ -11,6 +11,7 @@ struct FootballComposeDraftPanel: View {
     @State private var playerID: Int?
     @State private var rivalID = 1
     @State private var journalistID: String?
+    @State private var photo: SocialPhoto?
 
     private var subject: PostSubject {
         switch subjectKind {
@@ -22,7 +23,7 @@ struct FootballComposeDraftPanel: View {
     }
 
     var body: some View {
-        let draft = PostDraft(tone: tone, subject: subject)
+        let draft = PostDraft(tone: tone, subject: subject, photo: photo)
         let preview = career.previewPost(draft)
         FactoryPanel(title: "Nova publicação", systemImage: "square.and.pencil") {
             Text("Uma publicação por dia de jogo. Escolha o assunto, o alvo e o tom; a prévia mostra o texto, o alcance e os efeitos antes de publicar.")
@@ -61,6 +62,16 @@ struct FootballComposeDraftPanel: View {
             .accessibilityIdentifier("post-tone")
             Text(tone.summary).font(.caption).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 6) {
+                Text("Foto (+15% de curtidas)").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        photoChip(nil)
+                        ForEach(SocialPhoto.allCases) { photoChip($0) }
+                    }
+                }
+                if let photo { SocialPhotoView(photo: photo, seed: career.worldDay, height: 130) }
+            }
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Prévia").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
                 Text("“\(preview.text)”").font(.subheadline)
                 Label("Alcance \(FootballFormat.compact(preview.reachLow))–\(FootballFormat.compact(preview.reachHigh)) · risco de polêmica \(preview.risk)", systemImage: "chart.bar.fill")
@@ -86,6 +97,17 @@ struct FootballComposeDraftPanel: View {
             if let blocked = preview.blocked { Text(blocked).font(.caption).foregroundStyle(.orange) }
         }
         .onAppear { career.ensureProfiles() }
+    }
+
+    private func photoChip(_ option: SocialPhoto?) -> some View {
+        Button { photo = option } label: {
+            Label(option?.title ?? "Sem foto", systemImage: option?.symbol ?? "text.alignleft")
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(photo == option ? FootballTheme.accent.opacity(0.25) : Color.primary.opacity(0.06), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("post-photo-\(option?.rawValue ?? "none")")
     }
 }
 

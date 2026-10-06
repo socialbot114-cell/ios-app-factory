@@ -31,6 +31,7 @@ enum PostSubject: Codable, Equatable {
 struct PostDraft: Equatable {
     var tone: PostTone
     var subject: PostSubject = .team
+    var photo: SocialPhoto? = nil
 }
 
 struct PostPreview: Equatable {
@@ -273,6 +274,14 @@ extension FootballCareer {
         guard let published = publishPost(tone: draft.tone), let index = world.social.posts.firstIndex(where: { $0.id == published.id }) else { return nil }
         world.social.posts[index].text = text
         world.social.posts[index].profileID = profileID(forName: world.coach.name)
+        if let photo = draft.photo {
+            // Post com foto engaja mais: +15% das curtidas, agora e no resto do engajamento.
+            world.social.posts[index].photo = photo
+            let boosted = Int(Double(world.social.posts[index].likes) * 1.15)
+            world.social.totalLikes += max(0, boosted - world.social.posts[index].likes)
+            world.social.posts[index].likes = boosted
+            if let final = world.social.posts[index].finalLikes { world.social.posts[index].finalLikes = Int(Double(final) * 1.15) }
+        }
         let tone = draft.tone
         switch draft.subject {
         case .team:

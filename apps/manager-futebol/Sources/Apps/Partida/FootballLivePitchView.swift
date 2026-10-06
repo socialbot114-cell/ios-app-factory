@@ -8,8 +8,11 @@ struct FootballLivePitchView: View {
     let running: Bool
     let speed: Int
     var height: CGFloat = 230
+    /// Pausa que o campo respeita: intervalo (bola e jogadores param) ou fim de jogo.
+    var phase: PitchPhase = .live
 
-    @State private var engine = PitchEngine()
+    /// Dono do movimento: fica na tela da partida para o relógio esperar as jogadas e a bola não reiniciar ao trocar de aba.
+    let engine: PitchEngine
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     private var sim: MatchSimulation { live.sim }
@@ -71,10 +74,10 @@ struct FootballLivePitchView: View {
         let homeKeeperKit = PitchKit.keeper(avoiding: [homeKit.shirt, awayKit.shirt])
         let awayKeeperKit = PitchKit.keeper(avoiding: [homeKit.shirt, awayKit.shirt, homeKeeperKit.shirt])
         let input = PitchInput(slots: slots(), homeShare: sim.possessionShare, pressure: pressure, events: sim.events,
-                               homeTeamID: sim.home.teamID, finished: sim.finished)
+                               homeTeamID: sim.home.teamID, finished: sim.finished, phase: phase)
         if FactoryCapture.screen.map { FootballHome.liveMatchCaptures.contains($0) } == true, !engine.isWarmed, sim.minute > 0 { engine.warmUpForCapture(input: input) }
         let eventCount = sim.events.count
-        let busy = engine.isBusy(eventCount: eventCount)
+        let busy = engine.isBusy(eventCount: eventCount, phase: phase)
         let rates: [Int: Double] = [1: 1.0, 2: 1.5, 4: 2.2]
         let rate = running ? (rates[speed] ?? 1.0) : 1.0
         let crowd = min(1, max(0.35, 0.40 + Double(career.clubHype) / 160))
@@ -103,9 +106,19 @@ struct FootballLivePitchView: View {
                         .background(Color.black.opacity(0.7), in: Capsule())
                         .padding(.top, 8)
                         .transition(.scale.combined(with: .opacity))
+                } else if phase != .live {
+                    Label(phase == .halftime ? "INTERVALO" : "FIM DE JOGO", systemImage: phase == .halftime ? "pause.circle.fill" : "flag.checkered")
+                        .font(.headline.weight(.heavy))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 6)
+                        .background(Color.black.opacity(0.7), in: Capsule())
+                        .padding(.top, 8)
+                        .transition(.scale.combined(with: .opacity))
+                        .accessibilityIdentifier("live-pitch-phase")
                 }
             }
             .animation(.spring(duration: 0.35), value: celebrating)
+            .animation(.spring(duration: 0.35), value: phase)
             if let event = sim.events.last(where: { $0.kind != .tactic }) {
                 Text("\(event.minuteLabel) \(event.text)")
                     .font(.caption.weight(.medium))

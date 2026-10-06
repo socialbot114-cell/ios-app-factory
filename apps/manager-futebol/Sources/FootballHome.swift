@@ -12,7 +12,8 @@ struct FootballHome: View {
     @State private var didPrepare = false
     @State private var showPress = false
     @State private var booting = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
-    @State private var locked = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
+    /// O celular só bloqueia quando o calendário avança (troca de dia), nunca ao abrir o jogo.
+    @State private var locked = false
     @State private var showNotifications = false
     @State private var showSearch = false
     @State private var searchSeed = ""
@@ -22,7 +23,25 @@ struct FootballHome: View {
     @State private var notifiedMessage: SearchedPlayer?
     @State private var pendingMessageID: Int?
     @State private var pendingPlayerID: Int?
+    @State private var dayTransition: PhoneDayTransition?
+    @State private var lastDayKey: DayKey?
+    @State private var pressAfterUnlock = false
+    @State private var guideSuggestion: FootballSuggestion?
+    @State private var guideAfterUnlock = false
     @Environment(\.scenePhase) private var scenePhase
+
+    /// Dia do calendário em que a carreira está; quando muda, o FutOS bloqueia a tela e mostra a passagem do dia.
+    struct DayKey: Equatable {
+        let season: Int
+        let matchDay: Int
+    }
+
+    private var dayKey: DayKey { DayKey(season: career.season, matchDay: career.matchDayIndex) }
+
+    /// Os UI tests abrem o celular já desbloqueado; só testam a tela de bloqueio ao avançar com `--lock-on-advance`.
+    private var locksOnAdvance: Bool {
+        capture == nil && (!FactoryCapture.isUITesting || ProcessInfo.processInfo.arguments.contains("--lock-on-advance"))
+    }
 
     struct SearchedPlayer: Identifiable { let id: Int }
 
@@ -92,7 +111,10 @@ struct FootballHome: View {
         } message: {
             Text(alertMessage ?? "")
         }
-        .onAppear(perform: prepareInitialState)
+        .onAppear {
+            prepareInitialState()
+            lastDayKey = dayKey
+        }
         .task {
             guard booting else { return }
             try? await Task.sleep(nanoseconds: 1_300_000_000)
@@ -109,11 +131,24 @@ struct FootballHome: View {
             FootballSaveStore().save(career, slot: activeSlot)
             refreshSlots()
             if career.pendingPress != nil {
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 700_000_000)
-                    showPress = true
-                }
+                // Com a tela bloqueada, a coletiva espera o treinador desbloquear o celular.
+                if locked { pressAfterUnlock = true } else { presentPress(after: 700_000_000) }
             }
+        }
+        .onChange(of: dayKey) { _, newKey in
+            guard let previous = lastDayKey else { lastDayKey = newKey; return }
+            lastDayKey = newKey
+            guard newKey != previous, locksOnAdvance, !booting, career.selectedClubID != nil else { return }
+            showNotifications = false
+            showSearch = false
+            searchedPlayer = nil
+            notifiedMessage = nil
+            openApp = nil
+            dayTransition = PhoneDayTransition(fromSeason: previous.season, fromMatchDay: previous.matchDay,
+                                               toSeason: newKey.season, toMatchDay: newKey.matchDay)
+            guideSuggestion = nil
+            guideAfterUnlock = true
+            withAnimation(.easeOut(duration: 0.35)) { locked = true }
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active, capture == nil else { return }
@@ -126,21 +161,94 @@ struct FootballHome: View {
     private var phone: some View {
         ZStack {
             PhoneHomeScreen(career: career, onOpen: open, onNotifications: { showNotifications = true },
-                            onSearch: { searchSeed = ""; showSearch = true })
+                            onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() })
                 .accessibilityHidden(openApp != nil || locked)
             if let app = openApp {
                 appWindow(app)
                     .transition(.scale(scale: 0.88).combined(with: .opacity))
                     .zIndex(1)
             }
+            if let suggestion = guideSuggestion, !locked {
+                VStack {
+                    PhoneGuideBanner(suggestion: suggestion, onGo: { go(to: suggestion) }, onDismiss: { snoozeGuide(suggestion) })
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .task(id: suggestion.id) {
+                            try? await Task.sleep(nanoseconds: 12_000_000_000)
+                            if guideSuggestion?.id == suggestion.id { dismissGuide() }
+                        }
+                    Spacer()
+                }
+                .zIndex(3)
+            }
             if locked {
-                PhoneLockScreen(career: career, onUnlock: { withAnimation(.easeOut(duration: 0.3)) { locked = false } }, onOpen: { openApp = $0 }, onOpenMessage: openMessage,
-                                onOpenEvent: { id in withAnimation(.easeOut(duration: 0.3)) { locked = false }; focusedEventID = id; openApp = .alerts })
+                PhoneLockScreen(career: career, transition: dayTransition, onUnlock: unlock, onOpen: { openApp = $0 }, onOpenMessage: openMessage,
+                                onOpenEvent: { id in unlock(); focusedEventID = id; openApp = .alerts },
+                                onSuggestion: { go(to: $0) })
                     .transition(.move(edge: .top))
                     .zIndex(2)
             }
         }
         .animation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: openApp)
+    }
+
+    private func unlock() {
+        withAnimation(.easeOut(duration: 0.3)) { locked = false }
+        dayTransition = nil
+        if pressAfterUnlock {
+            pressAfterUnlock = false
+            if career.pendingPress != nil { presentPress(after: 450_000_000) }
+        } else if guideAfterUnlock {
+            // Depois da noite, uma notificação aponta a primeira coisa a fazer no novo dia.
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                if openApp == nil, !locked { showGuide(silentWhenEmpty: true) }
+            }
+        }
+        guideAfterUnlock = false
+    }
+
+    // MARK: O que fazer agora
+
+    private func showGuide() { showGuide(silentWhenEmpty: false) }
+
+    private func showGuide(silentWhenEmpty: Bool) {
+        guard let suggestion = career.nextBestAction() else {
+            if !silentWhenEmpty { alertMessage = "Tudo em dia por enquanto. Avance o calendário quando quiser." }
+            return
+        }
+        if silentWhenEmpty && suggestion.priority == 0 { return }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { guideSuggestion = suggestion }
+    }
+
+    /// "Depois": esconde a sugestão até o próximo dia de jogo.
+    private func snoozeGuide(_ suggestion: FootballSuggestion) {
+        career.snoozeSuggestion(suggestion.id)
+        dismissGuide()
+    }
+
+    private func dismissGuide() {
+        withAnimation(.easeOut(duration: 0.25)) { guideSuggestion = nil }
+    }
+
+    /// Leva ao app (e à mensagem ou decisão) que a sugestão indica.
+    private func go(to suggestion: FootballSuggestion) {
+        if locked { unlock() }
+        dismissGuide()
+        if let id = suggestion.messageID {
+            openMessage(id)
+        } else if let id = suggestion.eventID {
+            focusedEventID = id
+            openApp = .alerts
+        } else if let app = PhoneApp(rawValue: suggestion.appID) {
+            open(app)
+        }
+    }
+
+    private func presentPress(after nanoseconds: UInt64) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            showPress = true
+        }
     }
 
     private func open(_ app: PhoneApp) {
@@ -214,19 +322,10 @@ struct FootballHome: View {
             FootballMarketView(career: $career, onAlert: showAlert)
                 .onAppear { career.markTutorialSeen("market") }
         case .club:
-            FootballClubView(
-                career: $career,
-                onAlert: showAlert,
-                onStartChallenge: startChallenge,
-                activeSlot: activeSlot,
-                slotSummaries: slotSummaries,
-                onLoadSlot: loadSlot,
-                onNewCareer: startNewCareer,
-                onDeleteSlot: deleteSlot
-            )
+            FootballClubView(career: $career, onAlert: showAlert, onOpenApp: { openApp = $0 })
             .onAppear { career.markTutorialSeen("club") }
         case .messages: FootballInboxView(career: $career, onAlert: showAlert, onOpenApp: { openApp = $0 })
-        case .social: FootballSocialView(career: $career, onAlert: showAlert)
+        case .social: FootballSocialView(career: $career, onAlert: showAlert, onOpenApp: { openApp = $0 })
         case .betting: FootballBettingView(career: $career, onAlert: showAlert)
         case .fantasy: FootballFantasyView(career: $career, onAlert: showAlert)
         case .life: FootballCoachLifeView(career: $career, onAlert: showAlert)
@@ -243,9 +342,9 @@ struct FootballHome: View {
     }
 
     /// Rotas de captura que abrem a partida ao vivo (nome exato, para não confundir com rotas como `match-prep`).
-    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final"]
+    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final", "match-halftime"]
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -255,6 +354,10 @@ struct FootballHome: View {
                 FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: { _ in }, onNew: { _ in }, onDelete: { _ in })
             }.factoryPage().navigationTitle("Carreiras do FutOS")
         case "press": FootballPressView(career: $career)
+        case "day-plan":
+            ScrollView { FootballDayPlanPanel(career: career).padding(20) }
+        case "chat-player", "chat-family", "chat-staff":
+            FootballInboxView(career: $career, onAlert: showAlert, onOpenApp: { _ in }, initialThreadID: chatCaptureThread(name))
         case _ where FootballF4Captures.names.contains(name): FootballF4CaptureView(name: name, career: $career, onAlert: showAlert)
         case _ where FootballF5Captures.names.contains(name): FootballF5CaptureView(name: name, career: $career, onAlert: showAlert)
         case "public-sphere":
@@ -294,6 +397,26 @@ struct FootballHome: View {
         default:
             FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0, onAlert: showAlert)
         }
+    }
+
+    /// Conversa aberta nas capturas: já com uma troca de mensagens para o balão e a resposta aparecerem.
+    private func chatCaptureThread(_ name: String) -> String {
+        switch name {
+        case "chat-player":
+            return career.inbox.last(where: { $0.playerID != nil }).flatMap { $0.playerID }.map { "player-\($0)" } ?? "contact-family"
+        case "chat-staff":
+            return career.staff.first.map { "staff-\($0.role.rawValue)" } ?? "contact-family"
+        default:
+            return "contact-family"
+        }
+    }
+
+    private func prepareChatCapture(_ name: String) {
+        career.ensureContacts()
+        let thread = chatCaptureThread(name)
+        let quick: String
+        if thread.hasPrefix("player-") { quick = "praise" } else if thread.hasPrefix("staff-") { quick = "advice" } else { quick = "care" }
+        _ = career.sendChatQuick(threadID: thread, quickID: quick)
     }
 
     private func showAlert(_ message: String) {
@@ -339,6 +462,8 @@ struct FootballHome: View {
         FootballSaveStore().activeSlot = slot
         career = FootballCareer(seed: FactoryCapture.isUITesting ? 26 : FootballCareer.randomSeed())
         openApp = nil
+        lastDayKey = dayKey
+        dayTransition = nil
         refreshSlots()
     }
 
@@ -350,6 +475,8 @@ struct FootballHome: View {
         store.activeSlot = target
         career = FootballCareer.challenge(scenario)
         openApp = nil
+        lastDayKey = dayKey
+        dayTransition = nil
         refreshSlots()
     }
 
@@ -361,6 +488,8 @@ struct FootballHome: View {
         store.activeSlot = slot
         career = store.load(slot: slot) ?? FootballCareer(seed: FootballCareer.randomSeed())
         openApp = nil
+        lastDayKey = dayKey
+        dayTransition = nil
         refreshSlots()
     }
 
@@ -415,6 +544,7 @@ struct FootballHome: View {
             }
         }
         if capture == "agenda" || capture == "commitment" { career.simulateNextMatchDay() }
+        if capture == "chat-player" || capture == "chat-family" || capture == "chat-staff" { prepareChatCapture(capture) }
         if capture == "inbox-followup", let athlete = career.clubRoster.first(where: { !career.startingXI.contains($0.id) && !$0.isYouth }) {
             // Promessa quebrada: veredito, conversa de acompanhamento e memória do atleta.
             _ = career.promiseStarts(playerID: athlete.id)
@@ -483,6 +613,13 @@ struct FootballHome: View {
         case "agenda", "season-end": openApp = .manager
         case "commitment", "inbox-followup": openApp = .messages
         case "lock": locked = true
+        case "lock-night":
+            let from = career.latestUserFixture?.matchDay ?? max(0, career.matchDayIndex - 1)
+            dayTransition = PhoneDayTransition(fromSeason: career.season, fromMatchDay: from, toSeason: career.season, toMatchDay: career.matchDayIndex)
+            locked = true
+        case "guide-banner":
+            openApp = nil
+            guideSuggestion = career.nextBestAction()
         case "notifications": showNotifications = true
         case "spotlight":
             searchSeed = "Aur"

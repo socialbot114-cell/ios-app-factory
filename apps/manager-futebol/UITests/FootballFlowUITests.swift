@@ -74,8 +74,8 @@ final class FootballFlowUITests: XCTestCase {
         goHome(app)
 
         openFromHome("dock-club", in: app)
-        let newCareer = app.descendants(matching: .any).matching(identifier: "new-career").firstMatch
-        // A tela Clube ganhou painéis (estádio, caixa, projetos): o botão pode estar fora da viewport.
+        let newCareer = app.descendants(matching: .any).matching(identifier: "club-management").firstMatch
+        // A tela Clube ganhou painéis (estádio, diretoria, gestão): o painel de gestão pode estar fora da viewport.
         for _ in 0..<10 {
             if newCareer.exists { break }
             dragUp(app)
@@ -83,6 +83,30 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(newCareer.waitForExistence(timeout: 8))
     }
 
+
+    /// Avançar o calendário bloqueia o celular, mostra a nova data e só então libera as novidades do dia.
+    func testAdvancingTheCalendarLocksThePhoneWithTheNewDate() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--lock-on-advance"]
+        app.launch()
+        tapWhenReady(app.buttons["choose-offer-0"], in: app)
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+
+        openFromHome("dock-manager", in: app)
+        leagueTap(app.buttons["play-match"], in: app)
+        XCTAssertTrue(leagueElement("live-scoreboard", in: app).waitForExistence(timeout: 10))
+        leagueTap(app.buttons["live-skip"], in: app)
+        XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
+        leagueTap(app.buttons["live-finish"], in: app)
+
+        let unlock = app.buttons["phone-unlock"]
+        XCTAssertTrue(unlock.waitForExistence(timeout: 10), "A tela de bloqueio deve aparecer depois de avançar o dia")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lock-date").firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "lock-widget-next").firstMatch.waitForExistence(timeout: 5))
+        unlock.tap()
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+        if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
+    }
 
     /// LIG-01..03: usa entidades e estados da Liga, sem depender do header do FutOS.
     func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() {
@@ -239,10 +263,10 @@ final class FootballFlowUITests: XCTestCase {
                 XCTAssertTrue(app.descendants(matching: .any).matching(predicate).firstMatch.waitForExistence(timeout: 6))
             },
             AppCheck(id: "club", title: "Clube", dock: true) { app in
-                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "new-career").firstMatch.waitForExistence(timeout: 6))
+                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "club-management").firstMatch.waitForExistence(timeout: 6))
             },
             AppCheck(id: "messages", title: "Mensagens", dock: true) { app in
-                XCTAssertTrue(app.staticTexts["Bem-vindo, Treinador"].waitForExistence(timeout: 6))
+                XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Bem-vindo, Treinador")).firstMatch.waitForExistence(timeout: 6))
             },
             AppCheck(id: "social", title: "Chuteira", dock: true) { app in
                 self.tapWhenReady(app.buttons["post-publish"], in: app)
@@ -316,7 +340,7 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
         tapWhenReady(app.buttons["phone-notifications"], in: app)
         tapWhenReady(app.buttons["notification-inbox"], in: app)
-        XCTAssertTrue(app.staticTexts["Bem-vindo, Treinador"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Bem-vindo, Treinador")).firstMatch.waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Fechar"].waitForExistence(timeout: 5))
         attachScreenshot(app, name: "futos-contextual-message")
         app.buttons["Fechar"].tap()

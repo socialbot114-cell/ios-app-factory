@@ -49,6 +49,10 @@ struct PhoneState: Codable, Equatable {
     var actionLog: [ActionResult] = []
     var nextActionID = 1
     var difficultyChanges: [DifficultyChange] = []
+    /// Mensagens livres do chat; opcional para saves antigos.
+    var chat: ChatState? = nil
+    /// Sugestões adiadas: id → último dia de jogo em que ficam escondidas; opcional para saves antigos.
+    var snoozedSuggestions: [String: Int]? = nil
 }
 
 extension FootballCareer {

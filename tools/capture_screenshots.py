@@ -24,7 +24,8 @@ CAPTURES = {
     "quebra-cabecas": ["home", "board"],
 }
 
-CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-league", "fantasy-share", "save-slots"]
+CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-league", "fantasy-share", "save-slots",
+                                "lock-night", "guide-banner", "day-plan", "chat-player", "chat-family", "chat-staff", "match-halftime"]
 
 
 def requested_states(slug: str, selection: str) -> list[str]:
