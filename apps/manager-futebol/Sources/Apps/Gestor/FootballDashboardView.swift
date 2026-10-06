@@ -10,6 +10,7 @@ struct FootballDashboardView: View {
     var onOpenAgenda: ((FootballAgendaItem) -> Void)? = nil
     @State private var confirmsQuickSimulation = false
     @State private var showsPrepFlow = false
+    @State private var playAfterPrepDismiss = false
     @State private var agendaSort: AgendaSort = .deadline
 
     var body: some View {
@@ -71,14 +72,13 @@ struct FootballDashboardView: View {
         .factoryPage()
         .navigationTitle("Painel do treinador")
         .onAppear { career.markTutorialSeen("dashboard") }
-        .sheet(isPresented: $showsPrepFlow) {
-            FootballMatchPrepFlow(career: $career, onOpenSquad: { onNavigate(.squad) }, onPlay: {
-                // A partida abre depois que a folha termina de fechar; apresentar as duas ao mesmo tempo falha.
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 500_000_000)
-                    onPlayLive()
-                }
-            })
+        .sheet(isPresented: $showsPrepFlow, onDismiss: {
+            // A partida só abre depois que a folha terminou de fechar; um atraso fixo derruba a partida em simuladores lentos.
+            guard playAfterPrepDismiss else { return }
+            playAfterPrepDismiss = false
+            onPlayLive()
+        }) {
+            FootballMatchPrepFlow(career: $career, onOpenSquad: { onNavigate(.squad) }, onPlay: { playAfterPrepDismiss = true })
         }
         .confirmationDialog("Avançar e avaliar estes prazos?", isPresented: $confirmsQuickSimulation, titleVisibility: .visible) {
             Button("Simular e avançar o calendário") { runQuickSimulation() }
