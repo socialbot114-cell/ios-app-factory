@@ -514,8 +514,9 @@ struct ClubHeroCard: View {
             HStack(spacing: 14) {
                 ClubCrest(team: club, size: 56)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(career.userDivision?.name.uppercased() ?? "") · TEMPORADA \(career.season) · \(FootballCalendarClock.shortDate(career.gameDay).uppercased())")
+                    Text("\(career.userDivision?.name.uppercased() ?? "") · T\(career.season) · \(FootballCalendarClock.shortDate(career.gameDay).uppercased())")
                         .font(.caption2.weight(.heavy)).tracking(1.1)
+                        .lineLimit(1).minimumScaleFactor(0.7)
                         .foregroundStyle(club.secondaryColor)
                     Text(club.name).font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(.white)
                     Text(club.city).font(.subheadline).foregroundStyle(.white.opacity(0.8))

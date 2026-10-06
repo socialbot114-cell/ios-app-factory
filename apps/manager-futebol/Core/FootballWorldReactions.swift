@@ -37,15 +37,22 @@ extension FootballCareer {
             sent += 1
         }
 
-        // Família: sempre acompanha.
-        if sent < 2 {
-            let text: String
+        // Família: acompanha nos jogos que marcam (derrota, vitória grande ou de vez em quando), sem encher a conversa.
+        let notable = result == .loss || (result == .win && mine - theirs >= 2) || salt % 3 == 0
+        let pending = (world.phone.chat?.log ?? []).filter { $0.threadID == "contact-family" && $0.unread == true }
+        if sent < 2, notable, pending.count < 2 {
+            let pool: [String]
             switch result {
-            case .win: text = pick(["Vimos o jogo todo! Estamos muito orgulhosos de você.", "Que vitória! A casa inteira comemorou."], 3)
-            case .draw: text = pick(["Empate dá para melhorar. Descansa e vai de novo.", "Jogo duro contra o \(opponent). Seguimos juntos."], 3)
-            case .loss: text = pick(["Hoje não deu, mas amanhã é outro dia. Vem comer alguma coisa com a gente.", "Derrota faz parte. Cabeça erguida!"], 3)
+            case .win: pool = ["Vimos o jogo todo! Estamos muito orgulhosos de você.", "Que vitória! A casa inteira comemorou.",
+                               "Sua mãe chorou de emoção no segundo gol. Parabéns!", "Churrasco no domingo para comemorar?"]
+            case .draw: pool = ["Empate dá para melhorar. Descansa e vai de novo.", "Jogo duro contra o \(opponent). Seguimos juntos.",
+                                "O ponto pode valer ouro no fim do campeonato.", "Cuida do sono, que o próximo jogo vem aí."]
+            case .loss: pool = ["Hoje não deu, mas amanhã é outro dia. Vem comer alguma coisa com a gente.", "Derrota faz parte. Cabeça erguida!",
+                                "Não leia os comentários hoje. A gente confia em você.", "Liga quando puder. Ninguém aqui desistiu."]
             }
-            appendChat("contact-family", fromCoach: false, text, unread: true)
+            let last = (world.phone.chat?.log ?? []).last { $0.threadID == "contact-family" && !$0.fromCoach }?.text
+            let fresh = pool.filter { $0 != last }
+            appendChat("contact-family", fromCoach: false, fresh[(salt &+ 3) % max(1, fresh.count)], unread: true)
             sent += 1
         }
     }

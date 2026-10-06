@@ -118,7 +118,7 @@ extension FootballCareer {
                                     group: chatGroup(for: kind, playerID: conversation.playerID),
                                     symbol: conversation.playerID == nil ? kind.symbol : "figure.soccer",
                                     playerID: conversation.playerID)
-            thread.unread = conversation.unread
+            thread.unread = kind.isPassive ? 0 : conversation.unread
             thread.open = conversation.open
             thread.preview = newest?.title ?? ""
             thread.order = chatOrder(season: conversation.lastSeason, matchDay: conversation.lastMatchDay)

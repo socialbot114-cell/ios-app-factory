@@ -77,28 +77,21 @@ struct PhoneWallpaper: View {
             RadialGradient(colors: [Color.yellow.opacity(0.38), .clear], center: .topTrailing, startRadius: 10, endRadius: 420)
             Image(systemName: "sun.max.fill").font(.system(size: 110)).foregroundStyle(.yellow.opacity(0.22)).offset(x: 120, y: -270)
         case .matchNight:
-            LinearGradient(colors: [Color(red: 0.02, green: 0.05, blue: 0.22).opacity(0.78), .clear], startPoint: .top, endPoint: .bottom)
+            // Jogo à noite: luzes do estádio ligadas, mesmo com o relógio na manhã.
+            LinearGradient(colors: [Color(red: 0.05, green: 0.06, blue: 0.24).opacity(0.62), .clear], startPoint: .top, endPoint: .center)
             Canvas { context, size in
-                var state: UInt64 = 0x9E3779B97F4A7C15
-                func next() -> CGFloat {
-                    state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-                    return CGFloat((state >> 33) % 1000) / 1000
-                }
-                for _ in 0..<46 {
-                    let radius = 0.6 + next() * 1.4
-                    context.fill(Path(ellipseIn: CGRect(x: next() * size.width, y: next() * size.height * 0.45, width: radius, height: radius)),
-                                 with: .color(.white.opacity(0.35 + next() * 0.5)))
-                }
-                for x in [size.width * 0.18, size.width * 0.82] {
+                for x in [size.width * 0.16, size.width * 0.84] {
                     var beam = Path()
                     beam.move(to: CGPoint(x: x, y: 0))
-                    beam.addLine(to: CGPoint(x: x - 70, y: size.height * 0.5))
-                    beam.addLine(to: CGPoint(x: x + 70, y: size.height * 0.5))
+                    beam.addLine(to: CGPoint(x: x - 55, y: size.height * 0.42))
+                    beam.addLine(to: CGPoint(x: x + 55, y: size.height * 0.42))
                     beam.closeSubpath()
-                    context.fill(beam, with: .color(.white.opacity(0.07)))
+                    context.fill(beam, with: .linearGradient(Gradient(colors: [.white.opacity(0.16), .clear]),
+                                                             startPoint: CGPoint(x: x, y: 0), endPoint: CGPoint(x: x, y: size.height * 0.42)))
+                    context.fill(Path(ellipseIn: CGRect(x: x - 9, y: 6, width: 18, height: 18)), with: .color(.white.opacity(0.85)))
                 }
             }
-            Image(systemName: "moon.stars.fill").font(.system(size: 70)).foregroundStyle(.white.opacity(0.22)).offset(x: 120, y: -270)
+            Image(systemName: "sportscourt.fill").font(.system(size: 80)).foregroundStyle(.white.opacity(0.12)).offset(x: 110, y: -265)
         }
     }
 }

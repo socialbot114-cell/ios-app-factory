@@ -134,7 +134,7 @@ extension FootballCareer {
             if best.saves > 0 { parts.append("\(best.saves) defesa(s)") }
             if best.tackles > 0 { parts.append("\(best.tackles) desarme(s)") }
             if parts.isEmpty { parts.append("\(best.shotsOnTarget) chute(s) no alvo") }
-            digest.starLine = "\(athlete.name): \(parts.joined(separator: ", "))"
+            digest.starLine = "\(athlete.name) · \(parts.joined(separator: ", "))"
         }
         if user.yellowCards + user.redCards > 0 {
             digest.cardsLine = "\(user.yellowCards) amarelo(s), \(user.redCards) vermelho(s) no seu time"

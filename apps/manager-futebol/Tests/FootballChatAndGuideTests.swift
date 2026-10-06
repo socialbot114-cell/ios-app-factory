@@ -206,3 +206,22 @@ final class FootballShootoutRevealTests: XCTestCase {
         XCTAssertNotNil(outcome.homePenalties)
     }
 }
+
+final class FootballReactionQualityTests: XCTestCase {
+    func testFamilyRepliesStayRareVariedAndNeverPileUp() {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        for _ in 0..<20 where career.canPlay || career.canAdvanceWithoutPlaying { _ = career.simulateNextMatchDay(); career.skipPress() }
+        let family = (career.world.phone.chat?.log ?? []).filter { $0.threadID == "contact-family" && !$0.fromCoach }
+        XCTAssertLessThanOrEqual(family.filter { $0.unread == true }.count, 2, "Sem acúmulo de não lidas")
+        for pair in zip(family, family.dropFirst()) { XCTAssertNotEqual(pair.0.text, pair.1.text, "Sem repetir a mesma frase em sequência") }
+        XCTAssertLessThan(family.count, 20, "Nem todo jogo gera mensagem")
+    }
+
+    func testNewsThreadsNeverShowUnreadBadges() {
+        var career = FootballCareer(seed: 7)
+        XCTAssertTrue(career.chooseClub(0))
+        career.addInbox(.news, title: "Zebra na copa", body: "x")
+        XCTAssertEqual(career.chatThreads().first { $0.id == "kind-news" }?.unread, 0)
+    }
+}
