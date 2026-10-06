@@ -38,6 +38,9 @@ struct FootballInboxView: View {
             career.markTutorialSeen("inbox")
             if openThreadID == nil, let initialThreadID { openThreadID = initialThreadID }
         }
+        .onChange(of: initialThreadID) { _, newValue in
+            if let newValue { openThreadID = newValue }
+        }
         .sheet(item: $selected) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
         }
