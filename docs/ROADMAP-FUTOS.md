@@ -659,6 +659,97 @@ Hoje: a tela mostra relógio, data, resumo da noite, próximo jogo, contadores, 
 2. Tela de bloqueio: TLB-01, TLB-02 e TLB-05, que mudam o modelo de aviso uma vez só.
 3. Pastas e abas: GRP-01, GRP-02 e GRP-05, antes de mexer nas telas de Mercado, Base e Banco para não redesenhá-las duas vezes.
 
+## 5d. Ciclo 2 — Realismo do celular, personalização, agenda e fluxo
+
+Pontos de partida levantados no código em outubro de 2026.
+
+### 27 — Notificações e vida do celular
+
+**Objetivo:** o celular parece usado por uma pessoa de verdade, com coisas acontecendo enquanto ela joga.
+
+Hoje: o conteúdo é gerado uma vez por dia de jogo (eventos com 30% de chance, posts após a partida do clube); contatos só reagem, nunca puxam conversa; nada acontece em tempo real; não há banner de mensagem recebida com o celular em uso (só a dica "o que fazer agora"); a barra de status mostra a data do jogo, a torcida como sinal e a energia como bateria.
+
+- [ ] REA-01 Motor de "pushes" aleatórios: durante o dia de jogo, em intervalos reais de segundos, chegam mensagens de contatos, posts, notícias, propostas e lembretes com banners no topo, som opcional e vibração. Quantidade e tom controlados por preferências e por energia.
+- [ ] REA-02 Contatos puxam conversa sozinhos (família pergunta do jogo, o vice avisa de um problema, o agente traz uma proposta), com resposta rápida no próprio banner.
+- [ ] REA-03 Reações ao jogo em tempo quase real: depois de gol, derrota ou lesão, chegam mensagens, prints e posts nos minutos seguintes.
+- [ ] REA-04 Banner no topo com toque para abrir, deslizar para dispensar e agrupamento por conversa; nunca mais de um banner por vez e nunca durante a partida ao vivo, só depois.
+- [ ] REA-05 Barra de status viva: hora do dia, wifi e operadora fictícios, bateria que cai e carrega, modo economia de energia e modo não perturbe (silencia tudo menos contatos favoritos).
+- [ ] REA-06 Aplicativos de rotina para dar vida ao aparelho: tempo e clima do dia do jogo, galeria com fotos de momentos marcantes, e chamadas e mensagens de voz curtas em cenas importantes.
+- [ ] REA-07 Ruído de realidade: mensagem de grupo, boato, notícia falsa para desmentir, sequestro de atenção por uma polêmica e spam de patrocinador, tudo com limite diário e sempre ignorável.
+- [ ] REA-08 Notificações locais reais do iOS (UserNotifications) opcionais, para lembrar prazos e avisar que o clube precisa do técnico; desligadas por padrão e sem pedir permissão no primeiro uso.
+
+**Aceite:** em dois minutos de uso o jogador vê pelo menos uma mensagem chegar sem ter provocado nada; nenhum push interrompe uma decisão ou a partida ao vivo; tudo respeita o modo não perturbe.
+
+### 28 — Personalização do celular
+
+**Objetivo:** o jogador sente o aparelho como seu.
+
+Hoje: o papel de parede é um degradê gerado com a cor do clube e uma atmosfera automática (manhã, tarde de jogo, noite de jogo); não dá para escolher outro; não existe ajuste de tema claro ou escuro (só o que o sistema dita, com partes fixas no escuro); a posição dos ícones e o dock são fixos; os widgets não mudam; os recursos de imagem de estádio existem, mas não são usados.
+
+- [ ] PER-01 Seletor de papel de parede nos Ajustes: degradê do clube, estádios do jogo, momentos (manhã, tarde, noite), cores sólidas e fotos próprias do usuário, com prévia ao vivo.
+- [ ] PER-02 Papel de parede separado para a tela de bloqueio e para a tela inicial.
+- [ ] PER-03 Tema claro, escuro ou automático, com cor de destaque à escolha (cores do clube e algumas fixas). Todas as telas respeitam o tema; as que hoje forçam o escuro passam a ter versão clara.
+- [ ] PER-04 Reorganizar ícones: segurar e arrastar para mudar de lugar, esconder, mover para o dock e criar pastas (usa GRP-01), com a disposição salva na carreira.
+- [ ] PER-05 Várias páginas na tela inicial com indicador, e uma pasta de apps escondidos que a busca ainda encontra.
+- [ ] PER-06 Widgets configuráveis: escolher quais aparecem na tela inicial e na de bloqueio (próximo jogo, caixa, diretoria, pressão, agenda, artilharia) e o tamanho de cada um.
+- [ ] PER-07 Nome do aparelho, toque e vibração por tipo de aviso, tamanho de fonte e ajustes de acessibilidade.
+- [ ] PER-08 Restaurar o padrão com um toque e desfazer a última mudança.
+
+**Aceite:** escolhas de tema, fundo e ícones sobrevivem a fechar o app e à troca de temporada; nenhuma tela fica ilegível em tema claro ou escuro.
+
+### 29 — Agenda clara e útil
+
+**Objetivo:** saber o que fazer hoje e o que vence em breve, num app só.
+
+Hoje: não existe um app de agenda; a agenda é um painel dentro do Gestor, no meio de uma rolagem longa, ordenada por prazo, importância ou responsável, sem dias de calendário, sem badge na tela inicial, sem completar, adiar ou dispensar um item, e sem ação direta.
+
+- [ ] AGD-01 Novo app Agenda no celular, com ícone e badge de itens que vencem hoje.
+- [ ] AGD-02 Visão "Hoje": o que fazer agora, o que vence amanhã e o que está atrasado, em cartões grandes e com cores de urgência.
+- [ ] AGD-03 Visão semana e mês com datas de verdade do calendário do jogo: jogos, prazos de contrato, janelas de transferência, eventos de patrocinador e compromissos pessoais.
+- [ ] AGD-04 Ações no próprio item: abrir, aceitar ou recusar quando simples, adiar e marcar como feito (usa o modelo de ação TLB-01).
+- [ ] AGD-05 Criar lembretes e compromissos próprios e vinculá-los a um jogador, contrato ou jogo.
+- [ ] AGD-06 Linha do tempo da temporada com marcos e fases (pré-temporada, janela, mata-mata, reta final), com destaque do dia atual.
+- [ ] AGD-07 Filtros (jogos, contratos, mercado, pessoal) e preferência de visão salva.
+- [ ] AGD-08 Atalho no widget da tela de bloqueio e na tela inicial.
+
+**Aceite:** em cinco segundos o jogador responde "o que eu preciso resolver hoje?"; nenhum prazo vence sem ter aparecido na Agenda e no badge.
+
+### 30 — Variedade visual dos apps
+
+**Objetivo:** cada app tem personalidade, sem perder a coerência do FutOS.
+
+- [ ] VIS-01 Guia de linguagem visual por app: cor, densidade e tipo de componente principal (Banco com gráficos e números grandes, Agenda com calendário, Social com feed estilo rede, Mercado com cartas de jogador, Tática com campo).
+- [ ] VIS-02 Diagramações diferentes por app: grade de cartas (Mercado, Elenco), feed vertical (Social, Mensagens), calendário (Agenda), painéis métricos (Banco, Negócios) e mapa ou campo (Tática), em vez de listas de painéis em todos.
+- [ ] VIS-03 Cabeçalhos próprios, transições de entrada e ícones de seção por app.
+- [ ] VIS-04 Componentes compartilhados revisados (cartão de jogador, linha de dado, gráfico) para servir a todas as diagramações.
+- [ ] VIS-05 Revisão de contraste e legibilidade em tema claro e escuro, com captura de tela por app.
+
+**Aceite:** dois apps lado a lado são reconhecíveis só pelo layout; a revisão de captura não aponta texto ilegível.
+
+### 31 — Melhorias gerais no fluxo
+
+**Objetivo:** menos toques entre o jogador e o que importa, sem perder o ritmo e a imersão.
+
+Hoje: depois de cada dia o celular bloqueia e a animação leva até 3,1 s, com a necessidade de deslizar; simulação rápida termina em um alerta bloqueante; há vários modais sem coordenação (partida, resumo, coletiva, avisos, busca, ficha, mensagem e alerta); o banner de guia aparece cerca de 0,9 s depois do desbloqueio e pode cobrir o topo do app; avançar um dia custa quatro toques.
+
+- [ ] FLX-01 Fila única de apresentação: um coordenador decide a ordem e evita modais empilhados (coletiva, resumo, mensagem, alerta e guia entram um por vez).
+- [ ] FLX-02 Substituir o alerta bloqueante da simulação rápida por um resumo que se desfaz sozinho e pode ser reaberto no histórico.
+- [ ] FLX-03 Dia de jogo em menos toques: botão "Próximo passo" fixo que leva ao que falta (preparar, jogar, coletiva, avançar), em vez de cada decisão exigir abrir apps.
+- [ ] FLX-04 Tela de bloqueio opcional ao virar o dia: modo rápido que mostra só o resumo e some sozinho, mantendo a versão completa para quem gosta.
+- [ ] FLX-05 Guia de próxima ação que não cobre conteúdo, aparece uma vez por situação e some ao se resolver.
+- [ ] FLX-06 Retomar de onde parou: ao abrir o jogo, voltar ao app, à aba e à rolagem em que o jogador estava (fecha OS-05 e OS-08).
+- [ ] FLX-07 Confirmações só para ações irreversíveis; o resto ganha "desfazer" curto.
+- [ ] FLX-08 Medição simples de toques por jornada (avançar dia, jogar partida, contratar) nas capturas de revisão, com meta máxima por jornada.
+
+**Aceite:** avançar um dia e jogar uma partida custam o menor número de toques acordado, sem modais empilhados e sem perder decisão importante.
+
+### Sequência sugerida (realismo e fluxo)
+
+1. Fluxo: FLX-01, FLX-02 e FLX-03, que tiram atrito antes de acrescentar mais conteúdo.
+2. Agenda: AGD-01, AGD-02 e AGD-04 (depende do modelo de ação TLB-01).
+3. Personalização: PER-01, PER-03 e PER-04 (as pastas GRP-01 vêm junto).
+4. Realismo: REA-01, REA-02 e REA-04; as notificações do iOS (REA-08) ficam por último, porque exigem permissão e cuidado de produto.
+
 ## 6. Critérios globais de conclusão
 
 Para cada incremento funcional:
