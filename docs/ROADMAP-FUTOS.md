@@ -809,6 +809,94 @@ Itens levantados na conversa de lançamento. Os marcados como obrigatórios bloq
 3. LAN-05 (som): custo baixo para a imersão.
 4. WID-01 a WID-04: só depois de resolver a assinatura da extensão no workflow do TestFlight.
 
+## 5f. Ciclo 2 — Pilares de design, carreira, mercado simples, rede social e movimento
+
+### 35 — Pilares de design (herança Elifoot e Brasfoot)
+
+**Objetivo:** o jogo parece leve e direto, com profundidade só para quem quer. Estas regras valem para todas as outras frentes.
+
+- [ ] PIL-01 Toda tela leva a uma decisão útil: auditoria de cada app e tela; cada uma tem uma ação principal visível sem rolar (botão, escolha ou atalho) e nenhuma é beco sem saída.
+- [ ] PIL-02 Ritmo: nada de menus lentos, onboarding longo ou burocracia. Chegar a uma decisão custa no máximo dois toques; confirmações só para ações irreversíveis; o onboarding continua curto e pulável.
+- [ ] PIL-03 Modo de ritmo nos Ajustes e na escolha de dificuldade: "Clássico" (rápido: animações curtas, ritual de virada resumido em um painel de decisões, tela de bloqueio resumida) e "Imersivo" (cenas completas, como hoje). O padrão é decidido em playtest. Isso resolve a tensão entre imersão e leveza.
+- [ ] PIL-04 Sessão curta: em poucos minutos o jogador abre o app, resolve duas ou três pendências, joga uma rodada e sente progresso. Jornada de referência: tela "Hoje" (AGD-02), botão "Próximo passo" fixo (FLX-03) e resumo ao fim da rodada.
+- [ ] PIL-05 Sensação de progresso a cada rodada: faixa de resumo ("subiu uma posição, caixa +R$, meta da diretoria em 60%") na volta ao Gestor.
+- [ ] PIL-06 Nostalgia de manager raiz: tabelas densas e legíveis, classificação com cores de zona (título, acesso, rebaixamento), ranking, histórico de temporadas, notícias curtas de uma linha e janelas simples de decisão (sim ou não).
+- [ ] PIL-07 Orçamento de toques por jornada, medido nas capturas (FLX-08): avançar uma rodada em no máximo 3 toques; contratar em no máximo 5; vender em no máximo 3.
+- [ ] PIL-08 Toda animação nova é pulável com um toque e respeita o modo de ritmo e "reduzir movimento" (ANI-08).
+
+**Aceite:** um jogador novo termina uma rodada completa em menos de cinco minutos sem consultar ajuda; a auditoria PIL-01 não encontra tela sem ação.
+
+### 36 — Ranking e carreira
+
+**Objetivo:** dar vontade de subir de time, ganhar títulos, bater recordes e virar lenda.
+
+Hoje já existem histórico de temporadas, lendas do clube, reputação e conquistas; faltam telas que reúnam isso como carreira e dêem metas longas.
+
+- [ ] CAR-01 Hall da fama do treinador: títulos, acessos, temporadas, recordes e pontos de carreira em uma tela.
+- [ ] CAR-02 Recordes do treinador e do clube (maior goleada, maior sequência, artilheiro histórico, maior público), com aviso e comemoração ao bater um.
+- [ ] CAR-03 Histórico de temporadas em tabela (ano, divisão, posição, copa, artilheiro, campeão), legível como as tabelas antigas.
+- [ ] CAR-04 Ranking de treinadores por reputação, comparando com treinadores fictícios da liga e com os próprios recordes; patamares do Aprendiz à Lenda.
+- [ ] CAR-05 Subir de clube: propostas melhores conforme a reputação e um mapa da trajetória (clubes por onde passou, anos e resultados).
+- [ ] CAR-06 Metas de carreira longas (ganhar a Série A, cinco títulos, treinar três clubes, virar lenda) com progresso sempre visível, integradas aos marcos (MRC-01).
+- [ ] CAR-07 Tela "Lenda" no fim de uma carreira ou aposentadoria: resumo, recordes e cartão de compartilhar (NAR-03).
+
+**Aceite:** depois de três temporadas o jogador consegue dizer onde está na carreira e qual é a próxima meta, sem abrir mais de uma tela.
+
+### 37 — Mercado simples, prazeroso e movimentado
+
+**Objetivo:** entender um jogador de relance e sentir o mercado vivo. Soma-se à frente 19.
+
+- [ ] MER-09 Linha de jogador padrão com os cinco dados que importam: força, idade, valor, salário e potencial de revenda, com selo ("bom negócio", "caro") e ordenação por qualquer um.
+- [ ] MER-10 Potencial de revenda explícito: projeção do valor em uma, duas e três temporadas, com seta de alta ou queda.
+- [ ] MER-11 Comprar e vender em dois toques ("Comprar por X", "Vender por X") com janela simples de decisão; negociação detalhada só em camada opcional.
+- [ ] MER-12 Janela de transferências com clima: contagem regressiva, dia final com negócios acelerados e rumores no celular, sendo alguns falsos.
+- [ ] MER-13 Mundo que negocia sozinho: clubes da liga compram, vendem e emprestam entre si, com notícias de uma linha e "cláusula paga" por seus alvos.
+- [ ] MER-14 Leilões e disputas com decisão do jogador por salário, projeto ou torcida; chegada e despedida com cerimônia curta.
+- [ ] MER-15 Pressão no mercado: torcida pede reforço, diretoria pede venda e jogador pede para sair, sempre com uma decisão clara.
+
+**Aceite:** comparar dois jogadores e fechar uma compra custa no máximo cinco toques; em uma janela completa o jogador vê pelo menos cinco negócios de outros clubes.
+
+### 38 — Rede social integrada ao jogo
+
+**Objetivo:** o app social vira um segundo palco do jogo, e o que o jogador faz nele tem consequência.
+
+- [ ] SOC-01 Feed que reage a tudo (gol, expulsão, entrevista, transferência, crise, título) com torcedores, jornalistas, jogadores e rivais de personalidades diferentes.
+- [ ] SOC-02 Perfil que cresce: seguidores, engajamento e "fase" (querido, polêmico, discreto), afetando patrocinadores, pressão da torcida e diretoria.
+- [ ] SOC-03 Respostas e polêmicas: provocações do rival e da imprensa com tom à escolha (humor, firme, ironia) e consequência.
+- [ ] SOC-04 Trends, hashtags do clube e memes que viram campanhas de patrocinador.
+- [ ] SOC-05 Mensagens diretas e grupo do vestiário, cujo clima muda com os resultados.
+- [ ] SOC-06 Ligação com o resto: patrocinadores reagem ao perfil, a diretoria cobra declarações e o Livro da carreira (NAR-02) guarda os posts marcantes.
+- [ ] SOC-07 Por último: stories e vídeos curtos de gols e comemorações.
+
+**Aceite:** depois de uma partida, o feed mostra pelo menos três reações ligadas ao que aconteceu; nenhuma decisão social é sem efeito.
+
+### 39 — Movimento, carregamentos e recursos visuais
+
+**Objetivo:** tudo mais fluido, bonito e coerente.
+
+- [ ] MOV-01 Biblioteca única de movimento (durações, molas, curvas) e de componentes (cartão, número animado, esqueleto, transições), usada por todas as telas.
+- [ ] MOV-02 Carregamentos com personalidade: dica de jogo, curiosidade do clube e frase do rival no lugar do spinner, sempre curtos.
+- [ ] MOV-03 Esqueletos que brilham em listas e gráficos enquanto os dados chegam.
+- [ ] MOV-04 Transições a partir do elemento tocado (a carta cresce até a ficha, a linha abre o detalhe).
+- [ ] MOV-05 Campo mais rico: replay curto do gol, linha de passes e mapa de calor ao fim da partida.
+- [ ] MOV-06 Cartas e fichas animadas: brilho conforme a forma, moral com rosto e barras que enchem com mola.
+- [ ] MOV-07 Tema do clube com fundo animado leve nas telas principais, em tema claro e escuro (PER-03).
+- [ ] MOV-08 Desempenho: 60 quadros por segundo em iPhone e iPad de gerações anteriores, medido em capturas, e nenhuma animação sem opção de pular.
+
+**Aceite:** nenhuma tela mostra spinner sem texto ou esqueleto; a rolagem das listas principais não perde quadros em aparelho antigo.
+
+### Ordem de entrega proposta
+
+Cada entrega é uma versão do TestFlight e só avança com CI verde e capturas revisadas.
+
+1. **Entrega A — Ritmo e recompensa:** PIL-01 a PIL-05 e PIL-07, FLX-01 a FLX-03, ANI-01 a ANI-03, MRC-01 e BAN-07 a BAN-09.
+2. **Entrega B — Mercado e base:** MER-01, MER-02, MER-07, MER-09 a MER-11, BAS-01, BAS-02 e BAS-04.
+3. **Entrega C — Carreira e história:** CAR-01 a CAR-04, NAR-01 a NAR-03 e SOC-01 a SOC-03.
+4. **Entrega D — Mundo vivo:** REA-01 a REA-04, MER-12 e MER-13, AGD-01, AGD-02 e AGD-04, PER-01, PER-03 e PER-04.
+5. **Entrega E — Lançamento:** LAN-01 a LAN-05, DIA-01 a DIA-03 e MOV-01 a MOV-04; widgets (WID) só depois de resolver a assinatura da extensão.
+
+Regra de corte: se uma entrega ficar grande demais, o que sair vai para a seguinte; os pilares PIL-01 a PIL-08 não saem de nenhuma entrega.
+
 ## 6. Critérios globais de conclusão
 
 Para cada incremento funcional:
