@@ -103,7 +103,7 @@ final class FootballFlowUITests: XCTestCase {
         leagueTap(app.buttons["play-match"], in: app)
         XCTAssertTrue(leagueElement("live-scoreboard", in: app).waitForExistence(timeout: 10))
         leagueTap(app.buttons["live-skip"], in: app)
-        XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
+        waitForLiveFinish(in: app)
         leagueTap(app.buttons["live-finish"], in: app)
 
         let unlock = app.buttons["phone-unlock"]
@@ -427,6 +427,18 @@ final class FootballFlowUITests: XCTestCase {
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
         start.press(forDuration: 0.05, thenDragTo: end)
+    }
+
+    /// Espera o botão de concluir; prorrogação e pênaltis pedem outro avanço, e o botão pode estar fora da viewport.
+    private func waitForLiveFinish(in app: XCUIApplication) {
+        let finish = app.buttons["live-finish"]
+        for _ in 0..<6 {
+            if finish.waitForExistence(timeout: 6) { return }
+            let skip = app.buttons["live-skip"]
+            if skip.exists, skip.isHittable { skip.tap() } else { dragUp(app) }
+        }
+        attachScreenshot(app, name: "live-finish-missing")
+        XCTFail("O botão de concluir a partida não apareceu. Hierarquia:\n\(app.debugDescription)")
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {
