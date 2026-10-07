@@ -45,7 +45,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | 1.1 (11) | Craques eternos (pacote só no fim da temporada, com convidado por partida no modo Fácil), onboarding, ritual de virada | Aprovada e no TestFlight interno | 07/out 02:53 |
 | 1.1 (12) | Lenda inicial, abertura do app (menu), onboarding. Teste: telas desproporcionais, lendas fora de um app | Aprovada e no TestFlight interno | 07/out 09:59 |
 | 1.1 (13) | Correção de layout (abertura e onboarding), app Lendas, confete de vitória | Testes aprovados; enviado ao App Store Connect (11:49); ativação interna cancelada (11:51), a confirmar | 07/out 11:49 |
-| 1.1 (14) | Sala de espera (perfis, digital, ilha), avisos de ambiente que reagem à carreira, goleada e título, caixa que conta, sequência de dias | Código escrito, aguardando teste do 13 e disparo | a combinar |
+| 1.1 (14) | Sala de espera integrada ao FutOS (perfis, digital, ilha, notificações reais), avisos de ambiente que reagem à carreira, puxar do topo no celular, goleada e título, caixa que conta, sequência de dias | Em validação: run 37650467959, disparado 07/out 13:14 | a definir |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
 | Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
