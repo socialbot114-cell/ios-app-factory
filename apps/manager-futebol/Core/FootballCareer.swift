@@ -101,6 +101,7 @@ struct FootballCareer: Codable, Equatable {
         case challenge
         case achievements
         case counters
+        case unlockQueue
         case tutorialSeen
         case tutorialDismissed
         case iconState
@@ -207,6 +208,8 @@ struct FootballCareer: Codable, Equatable {
     /// Conquistas desbloqueadas: id e temporada em que saiu.
     var achievements: [String: Int] = [:]
     var counters: [String: Int] = [:]
+    /// Conquistas e metas concluídas esperando a faixa do celular, da mais antiga para a mais nova (MRC-01).
+    var unlockQueue: [UnlockNotice] = []
     var tutorialSeen: [String] = []
     var tutorialDismissed = false
     var iconState = IconState()
@@ -357,6 +360,7 @@ struct FootballCareer: Codable, Equatable {
         legends = try container.decodeIfPresent([LegendEntry].self, forKey: .legends) ?? []
         reputation = try container.decodeIfPresent(Int.self, forKey: .reputation) ?? 35
         invitations = try container.decodeIfPresent([JobInvitation].self, forKey: .invitations) ?? []
+        unlockQueue = try container.decodeIfPresent([UnlockNotice].self, forKey: .unlockQueue) ?? []
         leaderID = try container.decodeIfPresent(Int.self, forKey: .leaderID)
         lastProtestMatchDay = try container.decodeIfPresent(Int.self, forKey: .lastProtestMatchDay) ?? -10
         difficulty = try container.decodeIfPresent(Difficulty.self, forKey: .difficulty) ?? .normal
@@ -466,6 +470,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encodeIfPresent(challenge, forKey: .challenge)
         try container.encode(achievements, forKey: .achievements)
         try container.encode(counters, forKey: .counters)
+        try container.encode(unlockQueue, forKey: .unlockQueue)
         try container.encode(tutorialSeen, forKey: .tutorialSeen)
         try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
         try container.encode(iconState, forKey: .iconState)

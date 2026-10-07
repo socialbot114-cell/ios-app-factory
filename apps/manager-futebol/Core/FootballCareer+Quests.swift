@@ -81,6 +81,7 @@ extension FootballCareer {
             if quest.reward.reputation > 0 { changeReputation(quest.reward.reputation) }
             world.social.coachFollowers += quest.reward.followers
             addInbox(.general, title: "Missão cumprida: \(quest.title)", body: "Recompensa: \(quest.reward.text).")
+            queueQuestUnlock(quest)
         }
     }
 }

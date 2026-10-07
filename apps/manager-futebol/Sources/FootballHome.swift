@@ -49,6 +49,12 @@ struct FootballHome: View {
         capture == nil && (!FactoryCapture.isUITesting || ProcessInfo.processInfo.arguments.contains("--lock-on-advance"))
     }
 
+    /// Tela bloqueada ou folha por cima do celular: a faixa de desbloqueio espera, para não expirar escondida.
+    private var phoneIsCovered: Bool {
+        locked || showLiveMatch || showPress || showNotifications || showSearch
+            || searchedPlayer != nil || notifiedMessage != nil || seasonSummary != nil
+    }
+
     struct SearchedPlayer: Identifiable { let id: Int }
 
     private var capture: String? { FactoryCapture.screen }
@@ -220,6 +226,16 @@ struct FootballHome: View {
                 }
                 .zIndex(3)
             }
+            // Acima da janela de app aberta: a conquista aparece mesmo logo depois da partida, com o Gestor aberto.
+            if let notice = career.unlockQueue.first, !phoneIsCovered, guideSuggestion == nil {
+                VStack {
+                    PhoneUnlockBanner(notice: notice, onOpen: { openUnlock(notice) }, onDismiss: { career.finishUnlock(id: notice.id) },
+                                      onPull: { showNotifications = true })
+                        .id(notice.id)
+                    Spacer()
+                }
+                .zIndex(4)
+            }
             if locked {
                 PhoneLockScreen(career: career, transition: dayTransition, onUnlock: unlock, onOpen: { openApp = $0 }, onOpenMessage: openMessage,
                                 onOpenEvent: { id in unlock(); focusedEventID = id; openApp = .alerts },
@@ -296,6 +312,12 @@ struct FootballHome: View {
         focusedContactID = nil
         focusedEventID = nil
         openApp = app
+    }
+
+    /// Toque na faixa de desbloqueio: tira o aviso da fila e abre Troféus ou Metas.
+    private func openUnlock(_ notice: UnlockNotice) {
+        career.finishUnlock(id: notice.id)
+        if let app = PhoneApp(rawValue: notice.appID) { open(app) }
     }
 
     private func openMessage(_ id: Int) {

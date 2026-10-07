@@ -112,6 +112,7 @@ extension FootballCareer {
             recordTrophy(achievement, fixture: fixture, record: record)
             unlocked.append(achievement)
             addInbox(.general, title: "Conquista: \(achievement.title)", body: achievement.detail)
+            queueAchievementUnlock(achievement)
         }
         return unlocked
     }
