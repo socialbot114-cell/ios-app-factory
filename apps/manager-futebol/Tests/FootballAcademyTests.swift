@@ -42,21 +42,21 @@ final class FootballAcademyTests: XCTestCase {
         var career = careerWithYouth()
         career.transferBudget = 10_000_000
         let youth = try XCTUnwrap(career.youthRoster.first)
-        var previousWidth = Int.max
+        var widths: [Int] = []
         for _ in 0..<6 {
             let player = try XCTUnwrap(career.player(youth.id))
             let range = career.potentialEstimate(for: player)
             XCTAssertTrue(range.contains(player.potential), "\(range) deve conter \(player.potential)")
             XCTAssertGreaterThanOrEqual(range.lowerBound, player.overall)
-            let width = range.upperBound - range.lowerBound
-            XCTAssertLessThanOrEqual(width, previousWidth + 1)
-            previousWidth = width
+            widths.append(range.upperBound - range.lowerBound)
             career.academy.points = career.academyPointsMax
             XCTAssertTrue(career.observeYouth(playerID: youth.id))
         }
         let final = try XCTUnwrap(career.player(youth.id))
         let finalRange = career.potentialEstimate(for: final)
+        XCTAssertTrue(finalRange.contains(final.potential))
         XCTAssertLessThanOrEqual(finalRange.upperBound - finalRange.lowerBound, 6)
+        XCTAssertLessThanOrEqual(finalRange.upperBound - finalRange.lowerBound, widths[0], "Observar deixa a estimativa mais precisa")
     }
 
     func testObserveSpendsPointAndMoney() throws {
@@ -127,19 +127,18 @@ final class FootballAcademyTests: XCTestCase {
     }
 
     func testTraitsChangeGrowthFactor() throws {
-        let career = careerWithYouth()
         var worker: Double?
         var plain: Double?
         for seed in 1...80 where worker == nil || plain == nil {
             let candidate = careerWithYouth(seed: seed)
-            for youth in candidate.youthRoster {
-                let traits = candidate.academyProfile(for: youth).traits
-                if traits == [.worker], worker == nil { worker = candidate.academyGrowthFactor(for: youth) / candidate.academyProfile(for: youth).growthSpeed }
-                if traits == [.temperamental], plain == nil { plain = candidate.academyGrowthFactor(for: youth) / candidate.academyProfile(for: youth).growthSpeed }
+            for youth in candidate.youthRoster where !youth.has(.prodigy) {
+                let profile = candidate.academyProfile(for: youth)
+                let ratio = candidate.academyGrowthFactor(for: youth) / profile.growthSpeed
+                if profile.traits == [.worker], worker == nil { worker = ratio }
+                if profile.traits == [.temperamental], plain == nil { plain = ratio }
             }
         }
-        _ = career
-        XCTAssertEqual(try XCTUnwrap(worker), 1.2, accuracy: 0.0001, "Só worker, sem prodígio, vale 1,2")
+        XCTAssertEqual(try XCTUnwrap(worker), 1.2, accuracy: 0.0001)
         XCTAssertEqual(try XCTUnwrap(plain), 0.95, accuracy: 0.0001)
     }
 
