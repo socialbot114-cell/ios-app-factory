@@ -583,6 +583,82 @@ Hoje: projeção com gráfico, simulador de contratação ou obra, extratos do c
 
 Frentes 2 e 3 alteram regras centrais e saves: cada mudança de modelo precisa de `decodeIfPresent` e teste de save antigo, como nas demais.
 
+## 5c. Ciclo 2 — Organização dos apps, recompensas visuais e tela de bloqueio
+
+Pontos de partida levantados no código em outubro de 2026.
+
+### 23 — Pastas de apps e telas paginadas
+
+**Objetivo:** o celular fica mais limpo e o app do time deixa de ser uma rolagem infinita.
+
+Hoje: 18 apps em uma grade plana de 4 colunas, sem noção de pasta; o Gestor tem 766 linhas e cerca de 14 painéis empilhados; Tática junta escalação, plano, instruções, papéis e treino em uma só rolagem; a ficha do atleta tem 8 painéis; a galeria de Metas e as listas de agenda, mensagens e relatório de partida mostram tudo de uma vez.
+
+- [ ] GRP-01 Criar o conceito de pasta no FutOS (`PhoneFolder`): ícone com miniaturas dos apps, abertura animada e selo que soma os avisos de todos os apps dentro dela.
+- [ ] GRP-02 Pasta "Equipe": Tática e Clube, com Elenco como seção própria (hoje o elenco só existe dentro da Tática e da ficha do atleta).
+- [ ] GRP-03 Demais pastas, a revisar com o jogador: Dinheiro (Banco, Negócios, Marca e Vida), Social (Chuteira, Contatos e Mensagens), Metas e Troféus, Jogos (Palpite+ e Rodada) e Mercado (Transfer e Liga). Apps de uso diário continuam soltos no dock.
+- [ ] GRP-04 A busca do FutOS e os avisos continuam abrindo o destino exato dentro de uma pasta.
+- [ ] GRP-05 Dividir o Gestor em abas ou páginas (Hoje, Agenda, Clube, Histórico), deixando no topo só o estado do dia e a próxima ação.
+- [ ] GRP-06 Dividir a Tática em abas: Escalação, Plano de jogo, Papéis e Treino.
+- [ ] GRP-07 Paginar ou agrupar listas longas: agenda, relatório de partida (resumo e "ver todos os lances"), galeria de Metas por categoria, atributos da ficha do atleta e listas do ritual de virada.
+- [ ] GRP-08 Preservar a aba e a rolagem ao trocar de app (fecha o item OS-05).
+
+**Aceite:** cada app abre mostrando o essencial sem rolar mais de duas telas; nenhum atalho existente perde o destino.
+
+### 24 — Animações e recompensas visuais
+
+**Objetivo:** vitórias, títulos e marcos dão uma pequena dose de prazer imediata, sem atrasar quem quer jogar.
+
+Hoje: não há confete nem partículas em lugar nenhum. A vitória aparece só como o rótulo verde "VITÓRIA" na tela de bloqueio e nos cartões de fim de jogo, sem animação. O resumo da temporada é uma rolagem estática. As conquistas são calculadas, mas o resultado não chega à tela: não há aviso nem vibração. O pacote de craque eterno é o único reveal rico que existe.
+
+- [ ] ANI-01 Componentes compartilhados de comemoração: confete e faíscas, brilho passando, contador numérico animado, pulso de ícone e vibração, todos respeitando "reduzir movimento" (o confete do app Hall das Lendas serve de base).
+- [ ] ANI-02 Vitória: cartão de fim de jogo com entrada animada, placar que sobe, vibração de sucesso e confete leve.
+- [ ] ANI-03 Goleada e vitória grande (saldo de 3 ou mais, virada, clássico ou título): versão maior, com confete, faixa "GOLEADA" e narração de uma linha.
+- [ ] ANI-04 Derrota e rebaixamento sem comemoração, mas com transição própria, para o contraste valer.
+- [ ] ANI-05 Resumo da temporada em cenas reveladas aos poucos (posição, prêmios, artilheiro, troféu), como o ritual de virada, com ápice no título ou no acesso.
+- [ ] ANI-06 Encerrar temporada: transição própria ao fechar a temporada e ao abrir a nova.
+- [ ] ANI-07 Microanimações de interface: botões com mola, listas que entram em cascata, números que contam, selos que pulsam ao ganhar aviso.
+- [ ] ANI-08 Orçamento de movimento: nenhuma animação passa de 2,5 s sem poder ser tocada para pular; UI tests e capturas usam o estado final.
+
+**Aceite:** qualquer animação pode ser pulada com um toque, nada trava o jogo, e a opção "reduzir movimento" troca tudo por estados finais.
+
+### 25 — Marcos e conquistas
+
+**Objetivo:** completar uma meta ou conquista é um acontecimento visível.
+
+Hoje: `checkAchievements` devolve as conquistas novas ao fechar uma partida ou uma temporada, mas nada as mostra; Troféus é uma lista estática e as Metas só mudam de cor ao concluir.
+
+- [ ] MRC-01 Fila de desbloqueios: guardar as conquistas e metas recém-concluídas e exibir uma faixa no topo do celular, uma por vez, com vibração e confete leve.
+- [ ] MRC-02 Cartão de conquista com ícone, raridade e texto de uma linha; toque abre a conquista na galeria.
+- [ ] MRC-03 Barras de progresso animadas nas Metas e contagem regressiva visual para o próximo marco.
+- [ ] MRC-04 Marcos de carreira (primeira vitória, 10 vitórias, primeiro título, 100 jogos, craque eterno) com tela de comemoração própria e entrada no Livro da carreira (NAR-02).
+- [ ] MRC-05 Galeria de Troféus com estados: bloqueado em silhueta, a meio caminho com progresso, desbloqueado com brilho; filtro por categoria.
+- [ ] MRC-06 Recompensas concretas e pequenas por marco (energia, bônus de moral, cartão do dia extra), sem criar compra.
+
+**Aceite:** nenhuma conquista é desbloqueada sem o jogador ver; a fila nunca empilha mais de um aviso ao mesmo tempo.
+
+### 26 — Tela de bloqueio e ações diretas
+
+**Objetivo:** responder e resolver pequenas coisas sem sair da tela de bloqueio.
+
+Hoje: a tela mostra relógio, data, resumo da noite, próximo jogo, contadores, dica e as três primeiras notificações. Qualquer toque desbloqueia e abre o app; as notificações são calculadas a partir do estado (não há ação, resposta, adiar nem marcar como lida), e o Centro de Notificações é uma lista simples.
+
+- [ ] TLB-01 Modelo de ação na notificação: cada aviso passa a carregar suas ações possíveis (responder, aceitar, recusar, adiar, marcar como lida).
+- [ ] TLB-02 Resposta rápida a mensagens com as opções que o chat já tem, direto no aviso, e confirmação visual de que foi enviada.
+- [ ] TLB-03 Ofertas e eventos com aceitar e recusar no próprio aviso quando a decisão é simples; decisões grandes continuam abrindo o app.
+- [ ] TLB-04 Deslizar para adiar ou dispensar, e pressionar e segurar para ver o detalhe sem desbloquear.
+- [ ] TLB-05 Marcar como lida sem abrir o app; selos e contadores se atualizam na hora.
+- [ ] TLB-06 Revisar a lógica de prioridade e agrupamento: agrupar por assunto, mostrar o que vence primeiro, limitar o ruído e reaproveitar o resumo da noite.
+- [ ] TLB-07 Mesmas ações disponíveis no Centro de Notificações com deslizar.
+- [ ] TLB-08 Desfazer curto (alguns segundos) depois de uma ação direta, para evitar toque errado.
+
+**Aceite:** responder uma mensagem e aceitar uma oferta simples sem sair da tela de bloqueio; toda ação direta registra o mesmo efeito de fazê-la dentro do app.
+
+### Sequência sugerida (ciclo 2, em conjunto)
+
+1. Recompensas visuais: ANI-01, ANI-02, ANI-03 e MRC-01 (os componentes compartilhados já servem à Narrativa e ao Hall das Lendas).
+2. Tela de bloqueio: TLB-01, TLB-02 e TLB-05, que mudam o modelo de aviso uma vez só.
+3. Pastas e abas: GRP-01, GRP-02 e GRP-05, antes de mexer nas telas de Mercado, Base e Banco para não redesenhá-las duas vezes.
+
 ## 6. Critérios globais de conclusão
 
 Para cada incremento funcional:
