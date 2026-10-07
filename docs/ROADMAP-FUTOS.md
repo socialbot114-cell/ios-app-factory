@@ -750,6 +750,65 @@ Hoje: depois de cada dia o celular bloqueia e a animação leva até 3,1 s, com 
 3. Personalização: PER-01, PER-03 e PER-04 (as pastas GRP-01 vêm junto).
 4. Realismo: REA-01, REA-02 e REA-04; as notificações do iOS (REA-08) ficam por último, porque exigem permissão e cuidado de produto.
 
+## 5e. Lançamento — widgets, recompensa diária e preparação de loja
+
+### 32 — Widgets reais do iOS e Live Activity | diferencial
+
+**Objetivo:** o jogo aparece na tela inicial do iPhone e no dia a dia do jogador, e dá motivo para voltar.
+
+Hoje: os widgets existem só dentro do FutOS (tela inicial e de bloqueio do celular do jogo). Não há extensão de widget, Live Activity nem compartilhamento de dados com o sistema.
+
+- [ ] WID-01 Extensão de widget com dados compartilhados por App Group: um resumo gravado pelo jogo (próximo jogo, adversário, data, caixa, confiança da diretoria, posição na tabela) que o widget lê sem abrir o app.
+- [ ] WID-02 Widgets pequeno, médio e de tela de bloqueio: "Próximo jogo", "Situação do clube" e "Agenda de hoje", com atualização quando o jogo muda de dia ou de estado.
+- [ ] WID-03 Toque no widget abre o destino exato (jogo, agenda, mercado), reaproveitando a navegação por busca e avisos do FutOS.
+- [ ] WID-04 Live Activity durante a partida ao vivo: placar, minuto e último lance na tela de bloqueio e na Dynamic Island, atualizados pelo próprio app enquanto a partida roda; encerra no apito final com o resultado.
+- [ ] WID-05 Widget ou Live Activity do ritual de virada ("Pré-temporada: falta escolher o patrocinador"), como lembrete de decisão pendente.
+- [ ] WID-06 Preferências para ligar e desligar cada widget e a Live Activity nos Ajustes, e respeito ao modo não perturbe do FutOS (REA-05).
+- [ ] WID-07 Dados do widget sem informação sensível além do que a tela do jogo já mostra, e limpos ao apagar a carreira.
+
+Dependências e riscos:
+- O pipeline de assinatura (`tools/football_signing.py` e o workflow do TestFlight) hoje assina um único bundle. Uma extensão de widget precisa de bundle id próprio, perfil de provisionamento próprio, a capacidade de App Group nos dois perfis e entradas novas no `ExportOptions`. Isso exige segredos novos e uma etapa nova no workflow.
+- Live Activity exige a chave `NSSupportsLiveActivities` no `Info.plist` e só atualiza enquanto o app está ativo ou com tempo de fundo curto. Como a partida é simulada no aparelho, o desenho funciona; atualizações com o app fechado não são possíveis sem servidor de push.
+- Testar widgets e Live Activity só é possível em simulador ou aparelho; os UI tests atuais não cobrem isso.
+
+**Aceite:** com o app fechado, o widget mostra o próximo jogo correto e abre o destino certo; a Live Activity acompanha a partida e termina no resultado final.
+
+### 33 — Recompensa diária e sequência | retenção
+
+**Objetivo:** dar um motivo leve para abrir o jogo todo dia, sem castigar quem pula um dia.
+
+Hoje: só existe o bônus diário de apostas, liberado a cada 4 dias do mundo do jogo (`claimDailyBonus`), e a conquista "Embalado" para cinco vitórias seguidas. Não há conceito de dia real, sequência de acessos ou evento diário.
+
+- [ ] DIA-01 Recompensa diária por dia real do calendário, com um cartão ao abrir o jogo (uma vez por dia), animação curta de coleta e vibração.
+- [ ] DIA-02 Sequência de dias com marcos (3, 7, 14 e 30 dias), com recompensas crescentes e visuais: energia, moral do grupo, cartão do dia extra, moldura de perfil.
+- [ ] DIA-03 Perdão: um dia perdido não zera a sequência, ele usa "folga" (uma por semana); quebrar a sequência só reinicia o contador, sem remover o que já foi ganho.
+- [ ] DIA-04 Evento do dia (NAR-06) integrado: a recompensa diária e o evento do dia aparecem juntos, em um minuto de jogo.
+- [ ] DIA-05 Integração com o Hall das Lendas: o cartão do dia gratuito entra como parte da sequência, sem criar compra nem sorteio pago.
+- [ ] DIA-06 Painel de sequência no celular (e widget WID-01) com o próximo prêmio e a contagem.
+- [ ] DIA-07 Preferência para desligar lembretes e a própria sequência, e nenhum texto de pressão ("não perca", "última chance").
+- [ ] DIA-08 Hora e dia reais vêm do relógio do aparelho com proteção contra mudar a data para trás; mudança suspeita só pausa a coleta do dia, sem punir.
+
+**Aceite:** abrir o jogo em dias seguidos entrega a recompensa uma única vez por dia; pular um dia usa a folga e não zera a sequência; nenhuma recompensa é paga nem aleatória por dinheiro.
+
+### 34 — Preparação para publicar
+
+Itens levantados na conversa de lançamento. Os marcados como obrigatórios bloqueiam a publicação.
+
+- [ ] LAN-01 Obrigatório: direitos de imagem e nome. Licenciar as cartas de pessoas reais ou trocá-las por lendas fictícias inspiradas nelas, deixando o catálogo do Hall das Lendas pronto para receber licenças depois.
+- [ ] LAN-02 Obrigatório: pacote de loja. Ícone do Hall das Lendas, screenshots finais, política de privacidade, classificação etária, descrição e revisão do tema de apostas (Palpite+) e das compras.
+- [ ] LAN-03 Obrigatório: salvar na nuvem. Backup no iCloud ou exportar e importar a carreira.
+- [ ] LAN-04 Obrigatório: estabilidade e métricas. Relatório de falhas e métricas básicas (abandono no onboarding, temporadas jogadas, uso das recompensas), sem dados pessoais.
+- [ ] LAN-05 Diferencial: som e música. Torcida, apito, som de aviso, trilha leve nos menus e narração curta em gols, com controle de volume e modo silencioso.
+- [ ] LAN-06 Alcance: acessibilidade (texto maior, leitura por voz dos gráficos, contraste).
+- [ ] LAN-07 Depois do lançamento: inglês e espanhol, e desafio da semana com ranking de amigos (NAR-07, exige servidor).
+
+### Sequência sugerida (lançamento)
+
+1. LAN-01 a LAN-04, em paralelo às frentes de jogabilidade, porque dependem de decisões e de contas, não de código.
+2. DIA-01 a DIA-03: baixo risco, alto retorno de retenção.
+3. LAN-05 (som): custo baixo para a imersão.
+4. WID-01 a WID-04: só depois de resolver a assinatura da extensão no workflow do TestFlight.
+
 ## 6. Critérios globais de conclusão
 
 Para cada incremento funcional:
