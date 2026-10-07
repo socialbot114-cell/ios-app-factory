@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 07:46 (Brasília; conferência horária: nenhum run novo desde o 1.1 (11)). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 08:40 (Brasília; run do 1.1 (12) em andamento). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -15,7 +15,8 @@ Atualizado em 07/out/2026, 07:46 (Brasília; conferência horária: nenhum run n
 |---|---|
 | 1.1 (10) | Aprovado e no TestFlight desde 06/out 22:29. Linha de base. |
 | 1.1 (11) | **Aprovado e enviado ao TestFlight interno em 07/out às 02:53** (branch `ccr-020b52d1-16pkkp`, commit `2dfaa10`, run `37572402802`). Já dá para testar. Contém: craques eternos (pacote só no fim da temporada; no modo Fácil, convidado por partida), onboarding, ritual de virada. NÃO tem a lenda inicial nem a tela de abertura. |
-| Entrega A (próximo build) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
+| 1.1 (12) | **Em validação**: run `37615474193` (run nº 22), disparado em 07/out às 08:38, ref `feature/entrega-a-ritmo`, commit `23b78dd` (o código é o mesmo da Entrega A; commits seguintes só mexem em docs). Previsão do gate: cerca de 10:05. Não disparar outro enquanto isso. |
+| Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
 
 Regras que valem para todos os prompts:
