@@ -54,6 +54,12 @@ struct PhoneHomeScreen: View {
             }
             .padding(.horizontal, 16)
         }
+        // Puxar do topo para baixo abre o centro de notificações, como no iPhone.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 30).onEnded { value in
+                if value.startLocation.y < 70, value.translation.height > 70 { onNotifications() }
+            }
+        )
     }
 
     // MARK: O que fazer agora

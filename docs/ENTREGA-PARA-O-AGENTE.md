@@ -70,7 +70,7 @@ Antes de disparar, confirme que não há outro run do mesmo workflow em andament
 Acompanhe o run até o fim. NÃO altere código.
 Se passar: responda "1.1 (14) enviado" com o horário de Brasília.
 Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro e a hierarquia anexada, e o número de testes que passaram. O build 14 continua livre nesse caso.
-O que há de novo: sala de espera com perfis e digital, ilha e centro de notificações de ambiente, avisos que reagem aos resultados, celebração de goleada e título, números do caixa que contam, sequência de dias.
+O que há de novo: sala de espera integrada ao FutOS (papel de parede, barra de status e relógio do celular, perfis com nome do treinador e escudo, digital para desbloquear, ilha e centro de notificações com as notificações reais da carreira ativa mais avisos de ambiente), puxar do topo para baixo no celular abre as notificações, avisos que reagem aos resultados, celebração de goleada e título, números do caixa que contam, sequência de dias.
 ```
 
 ## Prompt C — Capturas de tela (iPhone e iPad)

@@ -53,4 +53,18 @@ final class FootballAmbientTests: XCTestCase {
         XCTAssertTrue(career.chooseClub(0))
         XCTAssertNil(career.ambientContext.lastResult)
     }
+
+    func testSlotSummaryDecodesWithoutCoachName() throws {
+        let json = Data(#"{"slot":0,"clubID":1,"season":2,"matchDay":3,"division":1,"updatedAt":0}"#.utf8)
+        let summary = try JSONDecoder().decode(SaveSlotSummary.self, from: json)
+        XCTAssertNil(summary.coachName)
+        XCTAssertEqual(summary.season, 2)
+    }
+
+    func testSlotSummaryKeepsCoachNameInRoundTrip() throws {
+        let summary = SaveSlotSummary(slot: 1, clubID: 3, season: 1, matchDay: 0, division: .serieB, updatedAt: Date(timeIntervalSince1970: 0), coachName: "Marina")
+        let decoded = try JSONDecoder().decode(SaveSlotSummary.self, from: JSONEncoder().encode(summary))
+        XCTAssertEqual(decoded, summary)
+        XCTAssertEqual(decoded.coachName, "Marina")
+    }
 }

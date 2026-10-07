@@ -8,6 +8,8 @@ struct SaveSlotSummary: Codable, Equatable {
     let matchDay: Int
     let division: Division?
     let updatedAt: Date
+    /// Nome do treinador, para o perfil na sala de espera. Saves antigos não têm e mostram "Treinador".
+    var coachName: String? = nil
 }
 
 /// Saves em arquivo (Application Support), com slots, resumo por slot e backup de arquivos ilegíveis.
@@ -62,7 +64,8 @@ struct FootballSaveStore {
         do {
             try data.write(to: careerURL(slot: slot), options: .atomic)
             let summary = SaveSlotSummary(slot: slot, clubID: career.selectedClubID, season: career.season,
-                                          matchDay: career.matchDayIndex, division: career.userDivision, updatedAt: now)
+                                          matchDay: career.matchDayIndex, division: career.userDivision, updatedAt: now,
+                                          coachName: career.selectedClubID == nil ? nil : career.world.coach.name)
             if let summaryData = try? JSONEncoder().encode(summary) {
                 try summaryData.write(to: summaryURL(slot: slot), options: .atomic)
             }

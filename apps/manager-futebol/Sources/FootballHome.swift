@@ -63,19 +63,17 @@ struct FootballHome: View {
                 FootballLoadingView()
             } else if showsTitle {
                 FootballProfileRoom(activeSlot: activeSlot, summaries: slotSummaries,
+                                    pending: career.selectedClubID == nil ? [] : career.phoneNotifications,
                                     onEnter: { slot in
                                         if slot != activeSlot { loadSlot(slot) }
-                                        showsTitle = false
+                                        withAnimation(.easeOut(duration: 0.4)) { showsTitle = false }
                                     },
                                     onCreate: { slot in
-                                        if slot == activeSlot && career.selectedClubID == nil {
-                                            showsTitle = false
-                                        } else {
-                                            startNewCareer(slot: slot)
-                                            showsTitle = false
-                                        }
+                                        if !(slot == activeSlot && career.selectedClubID == nil) { startNewCareer(slot: slot) }
+                                        withAnimation(.easeOut(duration: 0.4)) { showsTitle = false }
                                     },
                                     onOptions: { refreshSlots(); showsTitleOptions = true })
+                    .transition(.move(edge: .top).combined(with: .opacity))
             } else if career.selectedClubID == nil {
                 if showsOnboarding {
                     FootballOnboardingView(career: $career) {
@@ -406,13 +404,14 @@ struct FootballHome: View {
             }.factoryPage().navigationTitle("Carreiras do FutOS")
         case "loading": FootballLoadingView()
         case "title":
-            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date()),
-                                                           SaveSlotSummary(slot: 1, clubID: 3, season: 1, matchDay: 3, division: .serieB, updatedAt: Date()), nil],
+            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date(), coachName: "Rafael"),
+                                                           SaveSlotSummary(slot: 1, clubID: 3, season: 1, matchDay: 3, division: .serieB, updatedAt: Date(), coachName: "Marina"), nil],
                                 onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
         case "title-new":
             FootballProfileRoom(activeSlot: 0, summaries: [nil, nil, nil], onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
         case "title-shade":
-            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date()), nil, nil],
+            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date(), coachName: "Rafael"), nil, nil],
+                                pending: [PhoneNotification(id: "press", title: "Coletiva de imprensa", detail: "Os jornalistas esperam suas respostas.", symbol: "mic.fill", app: .manager, priority: 3)],
                                 startsWithShade: true, onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
         case "onboarding": FootballOnboardingView(career: $career, startPage: 0) {}
         case "onboarding-mode": FootballOnboardingView(career: $career, startPage: 4) {}
