@@ -18,6 +18,9 @@ struct FootballMarketView: View {
     @State private var section: MarketSection = .free
     @State private var filter: FootballPosition?
     @State private var clubFilter: Int?
+    /// Busca, ordenação e página de cada aba de atletas (MER-01).
+    @State private var freeList = FootballMarketList()
+    @State private var clubList = FootballMarketList()
     @State private var pendingSigning: FootballPlayer?
     @State private var selected: PlayerSelection?
     @State private var missionPosition: FootballPosition?
@@ -61,6 +64,11 @@ struct FootballMarketView: View {
             }
         }
         .factoryPage()
+        .onChange(of: filter) { _, _ in
+            freeList.resetPage()
+            clubList.resetPage()
+        }
+        .onChange(of: clubFilter) { _, _ in clubList.resetPage() }
         .navigationTitle("Mercado")
         .sheet(item: $selected) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
@@ -93,15 +101,50 @@ struct FootballMarketView: View {
         .accessibilityIdentifier("market-filter")
     }
 
+    /// Busca por nome e ordenação de uma lista de atletas (MER-01).
+    private func listControls(_ list: Binding<FootballMarketList>, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Buscar por nome", text: list.query)
+                    .autocorrectionDisabled()
+                    .accessibilityLabel("Buscar atleta por nome")
+                    .accessibilityIdentifier("\(identifier)-search")
+            }
+            .padding(10)
+            .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            HStack {
+                Text("Ordenar por").font(.subheadline.weight(.semibold))
+                Spacer()
+                Picker("Ordenar por", selection: list.sort) {
+                    ForEach(FootballMarketSort.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.menu)
+                .accessibilityIdentifier("\(identifier)-sort")
+            }
+        }
+    }
+
+    /// Botão que soma mais uma página de atletas à lista.
+    private func showMoreButton(remaining: Int, identifier: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label("Mostrar mais (\(remaining) restantes)", systemImage: "chevron.down").frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityIdentifier(identifier)
+    }
+
     // MARK: Agentes livres
 
     private var freeAgents: some View {
-        let visible = career.marketPlayers.filter { filter == nil || $0.position == filter }
+        let pool = career.marketPlayers.filter { filter == nil || $0.position == filter }
+        let page = freeList.page(of: pool)
         return VStack(alignment: .leading, spacing: 14) {
             positionFilter
-            FactoryPanel(title: "Agentes livres · \(visible.count)", systemImage: "person.crop.circle.badge.plus") {
-                if visible.isEmpty { Text("Nenhum atleta disponível com este filtro.").font(.subheadline).foregroundStyle(.secondary) }
-                ForEach(visible.prefix(40)) { player in
+            listControls($freeList, identifier: "market-free")
+            FactoryPanel(title: "Agentes livres · \(page.total)", systemImage: "person.crop.circle.badge.plus") {
+                if page.players.isEmpty { Text(freeList.isSearching ? "Nenhum atleta encontrado com esse nome." : "Nenhum atleta disponível com este filtro.").font(.subheadline).foregroundStyle(.secondary) }
+                ForEach(page.players) { player in
                     HStack(spacing: 10) {
                         Button { selected = PlayerSelection(id: player.id) } label: { PlayerRow(player: player, showValue: true) }
                             .buttonStyle(.plain)
@@ -111,7 +154,10 @@ struct FootballMarketView: View {
                             .accessibilityLabel("Contratar \(player.name)")
                             .accessibilityIdentifier("contract-player-\(player.id)")
                     }
-                    if player.id != visible.prefix(40).last?.id { Divider() }
+                    if player.id != page.players.last?.id { Divider() }
+                }
+                if page.remaining > 0 {
+                    showMoreButton(remaining: page.remaining, identifier: "market-free-more") { freeList.showMore() }
                 }
                 Text(career.clubRoster.count >= FootballCareer.rosterLimit
                      ? "Elenco completo. Venda ou dispense um atleta para abrir vaga."
@@ -127,8 +173,7 @@ struct FootballMarketView: View {
         let pool = career.players
             .filter { $0.teamID != nil && $0.teamID != career.selectedClubID && !$0.isYouth && !$0.onLoan }
             .filter { (filter == nil || $0.position == filter) && (clubFilter == nil || $0.teamID == clubFilter) }
-            .sorted { $0.overall > $1.overall }
-            .prefix(30)
+        let page = clubList.page(of: pool)
         return VStack(alignment: .leading, spacing: 14) {
             positionFilter
             HStack {
@@ -140,10 +185,12 @@ struct FootballMarketView: View {
                 }
                 .pickerStyle(.menu)
             }
+            listControls($clubList, identifier: "market-club")
             FactoryPanel(title: "Atletas de outros clubes", systemImage: "arrow.left.arrow.right") {
                 Text("Toque no atleta para ver a ficha, observar e fazer proposta. O rating aparece em faixa até o olheiro conhecer o jogador.")
                     .font(.caption).foregroundStyle(.secondary)
-                ForEach(Array(pool)) { player in
+                if page.players.isEmpty { Text(clubList.isSearching ? "Nenhum atleta encontrado com esse nome." : "Nenhum atleta disponível com este filtro.").font(.subheadline).foregroundStyle(.secondary) }
+                ForEach(page.players) { player in
                     Button { selected = PlayerSelection(id: player.id) } label: {
                         HStack(spacing: 10) {
                             let range = career.visibleOverallRange(of: player.id)
@@ -163,6 +210,9 @@ struct FootballMarketView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("club-player-\(player.id)")
+                }
+                if page.remaining > 0 {
+                    showMoreButton(remaining: page.remaining, identifier: "market-club-more") { clubList.showMore() }
                 }
             }
         }
