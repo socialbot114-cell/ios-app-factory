@@ -214,11 +214,17 @@ enum YouthProgram: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-enum YouthCategory: String, CaseIterable, Identifiable {
-    case under17, under20
+enum YouthCategory: String, Codable, CaseIterable, Identifiable {
+    case under15, under17, under20
 
     var id: String { rawValue }
-    var title: String { self == .under17 ? "Sub-17" : "Sub-20" }
+    var title: String {
+        switch self {
+        case .under15: return "Sub-15"
+        case .under17: return "Sub-17"
+        case .under20: return "Sub-20"
+        }
+    }
 }
 
 struct GrowthState: Codable, Equatable {
@@ -384,7 +390,10 @@ extension FootballCareer {
 
     // MARK: Categorias de base
 
-    func youthCategory(of player: FootballPlayer) -> YouthCategory { player.age <= 17 ? .under17 : .under20 }
+    func youthCategory(of player: FootballPlayer) -> YouthCategory {
+        if player.age <= 15 { return .under15 }
+        return player.age <= 17 ? .under17 : .under20
+    }
 
     func youth(in category: YouthCategory) -> [FootballPlayer] {
         youthRoster.filter { youthCategory(of: $0) == category }

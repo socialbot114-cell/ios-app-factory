@@ -423,7 +423,10 @@ extension FootballCareer {
         processDueItems()
         progressScouting(using: &postRandom)
         marketCalendarEvents()
-        if matchDayIndex == Self.youthCupMatchDay { runYouthCup(using: &postRandom) }
+        if matchDayIndex == Self.youthCupMatchDay {
+            runYouthCup(using: &postRandom)
+            runYouthLeague(using: &postRandom)
+        }
         if let cupRound = slot?.cupRound { progressCup(after: cupRound) }
         offers.removeAll { $0.expiresAfterRound <= matchDayIndex }
         generateOffers(using: &postRandom)

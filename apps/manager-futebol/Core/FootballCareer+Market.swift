@@ -540,7 +540,16 @@ extension FootballCareer {
     /// Chegada anual da base. Retorna os ids dos jovens promovidos à categoria.
     mutating func runYouthIntake(using random: inout FootballRandom) {
         guard let selectedClubID else { return }
-        let count = 3 + (youthAcademyLevel >= 4 ? 1 : 0) + random.int(in: 0...2)
+        let baseCount = 3 + (youthAcademyLevel >= 4 ? 1 : 0) + random.int(in: 0...2)
+        // Candidatos do clube na região do clube; cada parceria traz mais candidatos da sua região e cobra manutenção.
+        var regions = Array(repeating: selectedClub?.region ?? 0, count: baseCount)
+        for partnership in academy.partnerships {
+            regions += Array(repeating: partnership.region, count: partnership.kind.bonusCandidates)
+            book(.academy, -partnership.kind.upkeep, "Manutenção: \(partnership.kind.title)")
+        }
+        // Os minutos acumulam dentro da temporada: a chegada anual começa outra conta.
+        academy.minutes = [:]
+        let count = regions.count
         lastYouthIntake = []
         // Abre espaço removendo os mais fracos quando a base está cheia.
         var current = youthRoster
@@ -554,10 +563,13 @@ extension FootballCareer {
         }
         let strength = (selectedClub?.strength ?? 65) + (division(of: selectedClubID) == .serieA ? 2 : -2)
         let template: [FootballPosition] = [.goalkeeper, .defender, .defender, .midfielder, .midfielder, .forward, .forward, .defender]
-        for offset in 0..<count {
+        for (offset, region) in regions.enumerated() {
             let position = template[(offset + random.int(in: 0...3)) % template.count]
             var youth = FootballSeason.makeYouth(id: nextPlayerID, position: position, teamStrength: strength, teamID: selectedClubID,
                                                  season: season, quality: youthAcademyLevel + staffBonus(.youthCoach), using: &random)
+            youth.region = region
+            // Parte da chegada é Sub-15 (15 ou 16 anos); o resto entra com 17 a 19.
+            if random.chance(0.3) { youth.age = random.int(in: 15...16) }
             if random.chance(0.04 + 0.02 * Double(youthAcademyLevel)) {
                 // Joia da base.
                 let overall = random.int(in: 55...63)

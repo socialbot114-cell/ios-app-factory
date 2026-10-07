@@ -29,6 +29,8 @@ struct FootballAcademyView: View {
             .accessibilityIdentifier("academy-metrics")
             programPanel
             tryoutPanel
+            scoutingPanel
+            competitionPanel
             ForEach(YouthCategory.allCases) { category in categoryPanel(category) }
             ForEach(career.youthCupHistory.suffix(3).reversed()) { result in
                 Text("Copinha T\(result.season): \(result.userResult) · campeão \(FootballSeason.teamName(result.winnerID))")
@@ -75,6 +77,64 @@ struct FootballAcademyView: View {
             .buttonStyle(.bordered)
             .accessibilityIdentifier("academy-tryout")
             Text("Uma peneira por temporada traz 2 jovens da região escolhida.").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var scoutingPanel: some View {
+        FactoryPanel(title: "Captação e parcerias", systemImage: "map.fill") {
+            if career.academy.partnerships.isEmpty {
+                Text("Sem parcerias: a base recebe só os candidatos da região do clube.").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(career.academy.partnerships) { partnership in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(partnership.kind.title).font(.subheadline.weight(.semibold))
+                        Text("\(LeagueTeam.regionNames[partnership.region]) · manutenção \(FootballFormat.money(partnership.kind.upkeep)) por ano")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Encerrar", role: .destructive) { career.cancelPartnership(id: partnership.id) }
+                        .buttonStyle(.bordered)
+                        .font(.caption.weight(.bold))
+                }
+            }
+            ForEach(PartnershipKind.allCases) { kind in
+                Menu {
+                    ForEach(Array(LeagueTeam.regionNames.enumerated()), id: \.offset) { index, name in
+                        Button("\(name) · \(FootballFormat.money(kind.signCost))") {
+                            if let reason = career.canSignPartnership(kind: kind, region: index) {
+                                onAlert(reason)
+                            } else {
+                                career.signPartnership(kind: kind, region: index)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Nova parceria: \(kind.title)", systemImage: "plus.circle")
+                }
+                .accessibilityIdentifier("academy-partner-\(kind.rawValue)")
+            }
+            Text("Cada parceria traz candidatos da sua região a cada chegada anual. \(PartnershipKind.school.summary) \(PartnershipKind.club.summary)")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var competitionPanel: some View {
+        FactoryPanel(title: "Campeonatos de base", systemImage: "trophy.fill") {
+            let results = Array(career.academy.leagueResults.suffix(6).reversed())
+            if results.isEmpty {
+                Text("O campeonato de cada categoria acontece na metade da temporada.").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(results) { result in
+                HStack {
+                    Text("\(result.category.title) · temporada \(result.season)").font(.subheadline)
+                    Spacer()
+                    Text(result.champion ? "Campeão" : "\(result.position)º · \(result.wins) vitórias")
+                        .font(.caption.weight(.bold))
+                }
+            }
+            Text("Os 11 melhores de cada categoria jogam 900 minutos e evoluem mais. Quem fica no banco joga 150.")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -175,6 +235,8 @@ struct FootballYouthDetailView: View {
                 }
                 .pickerStyle(.menu)
                 mentorRow(player, followUp: followUp)
+                Text("Minutos de jogo nesta temporada: \(career.academy.minutes[player.id, default: 0]).")
+                    .font(.caption.weight(.semibold))
                 Text("Mentor e observação gastam ações (\(career.academy.points)/\(career.academyPointsMax)). Uma ação volta a cada dia de jogo.")
                     .font(.caption).foregroundStyle(.secondary)
             }

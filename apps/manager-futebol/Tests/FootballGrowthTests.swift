@@ -110,7 +110,7 @@ final class FootballGrowthTests: XCTestCase {
 
     func testYouthCategoriesPartitionTheAcademy() {
         let career = started()
-        let total = career.youth(in: .under17).count + career.youth(in: .under20).count
+        let total = career.youth(in: .under15).count + career.youth(in: .under17).count + career.youth(in: .under20).count
         XCTAssertEqual(total, career.youthRoster.count)
     }
 

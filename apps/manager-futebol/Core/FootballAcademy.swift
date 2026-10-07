@@ -74,17 +74,26 @@ struct AcademyState: Codable, Equatable {
     var followUps: [YouthFollowUp] = []
     /// Ações de formação disponíveis: voltam uma por dia de jogo, até o máximo da academia.
     var points = 3
+    /// Parcerias de captação ativas (cada uma cobra manutenção a cada chegada anual).
+    var partnerships: [YouthPartnership] = []
+    /// Resultado do campeonato de cada categoria, por temporada.
+    var leagueResults: [YouthLeagueResult] = []
+    /// Minutos de jogo de cada jovem nesta temporada (zerados na chegada anual).
+    var minutes: [Int: Int] = [:]
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case followUps, points
+        case followUps, points, partnerships, leagueResults, minutes
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         followUps = try container.decodeIfPresent([YouthFollowUp].self, forKey: .followUps) ?? []
         points = try container.decodeIfPresent(Int.self, forKey: .points) ?? 3
+        partnerships = try container.decodeIfPresent([YouthPartnership].self, forKey: .partnerships) ?? []
+        leagueResults = try container.decodeIfPresent([YouthLeagueResult].self, forKey: .leagueResults) ?? []
+        minutes = try container.decodeIfPresent([Int: Int].self, forKey: .minutes) ?? [:]
     }
 }
 
@@ -199,6 +208,8 @@ extension FootballCareer {
             }
         }
         if player.has(.prodigy) { factor *= 1.15 }
+        // Jogar importa: até +25% com 3000 minutos (o teto impede que a base dependa só de minutos).
+        factor *= 1 + min(0.25, Double(academy.minutes[player.id, default: 0]) / 3000)
         if let mentorID = academyFollowUp(for: player.id)?.mentorID, isValidMentor(mentorID) { factor *= 1.15 }
         return factor
     }
