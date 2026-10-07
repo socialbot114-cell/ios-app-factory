@@ -170,6 +170,15 @@ final class FootballAcademyTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(AcademyState.self, from: Data("{}".utf8)), AcademyState())
     }
 
+    func testYouthReadyForDecisionOnlyAfterEveryTraitIsRevealed() throws {
+        var career = careerWithYouth()
+        let youth = try XCTUnwrap(career.youthRoster.first)
+        XCTAssertFalse(career.youthReadyForDecision.contains { $0.id == youth.id })
+        var random = FootballRandom(seed: 9)
+        for _ in 0..<13 { career.tickYouthDevelopment(using: &random) }
+        XCTAssertTrue(career.youthReadyForDecision.contains { $0.id == youth.id })
+    }
+
     func testYouthStillNeverExceedsPotentialWithTheNewGrowthFactors() {
         var career = careerWithYouth()
         career.setYouthProgram(.mental)

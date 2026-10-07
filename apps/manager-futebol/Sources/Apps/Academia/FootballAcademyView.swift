@@ -22,9 +22,9 @@ struct FootballAcademyView: View {
                 accent: FootballTheme.accent
             )
             HStack(spacing: 12) {
-                FactoryMetric(label: "Nível", value: "\(career.youthAcademyLevel)", symbol: "building.columns.fill", tint: FootballTheme.accent)
-                FactoryMetric(label: "Ações", value: "\(career.academy.points)/\(career.academyPointsMax)", symbol: "bolt.fill", tint: .orange)
-                FactoryMetric(label: "Jovens", value: "\(career.youthRoster.count)/\(FootballCareer.youthRosterLimit)", symbol: "person.3.fill", tint: .blue)
+                FactoryMetric(label: "Nível", value: "\(career.youthAcademyLevel)", symbol: "building.columns.fill", tint: FootballTheme.accent, animatesValue: true)
+                FactoryMetric(label: "Ações", value: "\(career.academy.points)/\(career.academyPointsMax)", symbol: "bolt.fill", tint: .orange, animatesValue: true)
+                FactoryMetric(label: "Jovens", value: "\(career.youthRoster.count)/\(FootballCareer.youthRosterLimit)", symbol: "person.3.fill", tint: .blue, animatesValue: true)
             }
             .accessibilityIdentifier("academy-metrics")
             programPanel
@@ -83,7 +83,8 @@ struct FootballAcademyView: View {
     private var scoutingPanel: some View {
         FactoryPanel(title: "Captação e parcerias", systemImage: "map.fill") {
             if career.academy.partnerships.isEmpty {
-                Text("Sem parcerias: a base recebe só os candidatos da região do clube.").font(.caption).foregroundStyle(.secondary)
+                Text("Sem parcerias ainda. Uma escola (\(FootballFormat.money(PartnershipKind.school.signCost))) ou um clube parceiro (\(FootballFormat.money(PartnershipKind.club.signCost))) traz candidatos da região a cada chegada anual. Sem parceria, a base recebe só os candidatos da região do clube.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             ForEach(career.academy.partnerships) { partnership in
                 HStack {
@@ -123,7 +124,8 @@ struct FootballAcademyView: View {
         FactoryPanel(title: "Campeonatos de base", systemImage: "trophy.fill") {
             let results = Array(career.academy.leagueResults.suffix(6).reversed())
             if results.isEmpty {
-                Text("O campeonato de cada categoria acontece na metade da temporada.").font(.caption).foregroundStyle(.secondary)
+                Text("Ainda sem campeonato. Cada categoria joga na metade da temporada, com oito equipes, todos contra todos. O resultado aparece aqui.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             ForEach(results) { result in
                 HStack {
@@ -142,7 +144,7 @@ struct FootballAcademyView: View {
         let players = career.youth(in: category).sorted { $0.overall > $1.overall }
         return FactoryPanel(title: "\(category.title) · \(players.count)", systemImage: category == .under17 ? "person.crop.circle" : "person.crop.circle.fill") {
             if players.isEmpty {
-                Text("Nenhum atleta nesta categoria.").font(.subheadline).foregroundStyle(.secondary)
+                Text(Self.emptyHint(category)).font(.subheadline).foregroundStyle(.secondary)
             }
             ForEach(players) { player in
                 Button { selected = YouthSelection(id: player.id) } label: { row(player) }
@@ -150,6 +152,15 @@ struct FootballAcademyView: View {
                     .accessibilityIdentifier("academy-row-\(player.id)")
                 if player.id != players.last?.id { Divider() }
             }
+        }
+    }
+
+    /// O que esperar numa categoria vazia: quem chega a cada faixa de idade.
+    private static func emptyHint(_ category: YouthCategory) -> String {
+        switch category {
+        case .under15: return "Ainda sem atletas de até 15 anos. Algumas chegadas anuais trazem jovens dessa idade."
+        case .under17: return "Ainda sem atletas de 16 e 17 anos. Eles chegam nas janelas anuais de captação."
+        case .under20: return "Ainda sem atletas de 18 e 19 anos. Eles chegam nas janelas anuais de captação."
         }
     }
 
@@ -308,6 +319,9 @@ struct FootballYouthDetailView: View {
             }
             .disabled(career.mentorCandidates.isEmpty)
             .accessibilityIdentifier("academy-mentor")
+            if career.mentorCandidates.isEmpty {
+                Text("Nenhum veterano de 27 anos ou mais disponível para ser mentor.").font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 

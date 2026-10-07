@@ -209,7 +209,8 @@ struct FootballDashboardView: View {
         let hasPress = career.pendingPress != nil
         let crisis = career.world.social.crisis != nil
         let invites = career.invitations.count
-        if hasPress || events > 0 || unread > 0 || crisis || invites > 0 || career.shouldShowTutorial {
+        let academyReady = career.youthReadyForDecision.count
+        if hasPress || events > 0 || unread > 0 || crisis || invites > 0 || academyReady > 0 || career.shouldShowTutorial {
             FactoryPanel(title: "Precisa da sua atenção", systemImage: "bell.badge.fill") {
                 if hasPress {
                     attentionRow("Coletiva de imprensa aguardando", "mic.fill", .orange, id: "attention-press", action: onShowPress)
@@ -225,6 +226,9 @@ struct FootballDashboardView: View {
                 }
                 if invites > 0 {
                     attentionRow("\(invites) convite(s) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
+                }
+                if academyReady > 0 {
+                    attentionRow("\(academyReady) jovem(ns) pronto(s) para decidir na Academia", "graduationcap.fill", PhoneApp.academy.tint, id: "attention-academy") { onNavigate(.academy) }
                 }
                 if career.shouldShowTutorial {
                     let progress = career.tutorialProgress

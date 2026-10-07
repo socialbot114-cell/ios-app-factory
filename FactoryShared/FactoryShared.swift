@@ -98,6 +98,10 @@ struct FactoryMetric: View {
     let value: String
     let symbol: String
     let tint: Color
+    /// Quando o valor muda, os algarismos rolam para o novo número. Com "Reduzir movimento", troca direto.
+    var animatesValue = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -109,6 +113,8 @@ struct FactoryMetric: View {
                 .foregroundStyle(.primary)
                 .minimumScaleFactor(0.75)
                 .lineLimit(1)
+                .contentTransition(animatesValue && !reduceMotion ? ContentTransition.numericText() : ContentTransition.identity)
+                .animation(animatesValue && !reduceMotion ? Animation.snappy : nil, value: value)
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)

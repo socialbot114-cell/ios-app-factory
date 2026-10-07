@@ -146,6 +146,15 @@ extension FootballCareer {
         academyFollowUp(for: playerID)?.observedWeeks ?? 0
     }
 
+    /// Jovens com o perfil inteiro revelado (todos os traços e pelo menos uma semana de observação).
+    /// São os que já dá para decidir: promover, manter, emprestar ou dispensar. O atalho do Gestor usa esta lista.
+    var youthReadyForDecision: [FootballPlayer] {
+        youthRoster.filter { player in
+            guard observedWeeks(for: player.id) > 0 else { return false }
+            return revealedTraits(for: player).count >= academyProfile(for: player).traits.count
+        }
+    }
+
     private mutating func updateFollowUp(_ playerID: Int, _ change: (inout YouthFollowUp) -> Void) {
         if let index = academy.followUps.firstIndex(where: { $0.playerID == playerID }) {
             change(&academy.followUps[index])
