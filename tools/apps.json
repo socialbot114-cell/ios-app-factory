@@ -7,5 +7,6 @@
   {"slug":"leitor-pdf-bolso","scheme":"LeitorPdfBolso","bundle":"br.com.socialbot114.factory.leitorpdf","name":"Leitor PDF de Bolso"},
   {"slug":"brasilia-politica-contexto","scheme":"BrasiliaPolitica","bundle":"br.com.socialbot114.factory.brasiliapolitica","name":"Brasília Política"},
   {"slug":"diario-sono","scheme":"DiarioSono","bundle":"br.com.socialbot114.factory.diariosono","name":"Diário do Sono"},
-  {"slug":"quebra-cabecas","scheme":"QuebraCabecas","bundle":"br.com.socialbot114.factory.quebracabecas","name":"Quebra-Cabeças"}
+  {"slug":"quebra-cabecas","scheme":"QuebraCabecas","bundle":"br.com.socialbot114.factory.quebracabecas","name":"Quebra-Cabeças"},
+  {"slug":"hall-das-lendas","scheme":"HallDasLendas","bundle":"br.com.socialbot114.factory.halldaslendas","name":"Hall das Lendas"}
 ]

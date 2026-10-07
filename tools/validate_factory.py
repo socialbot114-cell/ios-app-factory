@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 apps = json.loads((ROOT / "tools/apps.json").read_text(encoding="utf-8"))
 errors: list[str] = []
 
-if len(apps) != 9:
-    errors.append(f"Expected 9 apps, found {len(apps)}")
+if len(apps) != 10:
+    errors.append(f"Expected 10 apps, found {len(apps)}")
 for field in ("slug", "scheme", "bundle", "name"):
     values = [app[field] for app in apps]
     if len(set(values)) != len(values):

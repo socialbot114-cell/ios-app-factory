@@ -1,0 +1,16 @@
+{
+  "identifier" : "A1B2C3D4",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    { "displayPrice" : "14.90", "familyShareable" : false, "internalID" : "C1000001", "localizations" : [ { "description" : "Lev Yashin, carta Eterna.", "displayName" : "Lev Yashin", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.card.yashin", "referenceName" : "Yashin", "type" : "NonConsumable" },
+    { "displayPrice" : "14.90", "familyShareable" : false, "internalID" : "C1000002", "localizations" : [ { "description" : "Mané Garrincha, carta Eterna.", "displayName" : "Mané Garrincha", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.card.garrincha", "referenceName" : "Garrincha", "type" : "NonConsumable" },
+    { "displayPrice" : "8.90", "familyShareable" : false, "internalID" : "C1000003", "localizations" : [ { "description" : "Zagallo, carta Ouro raro.", "displayName" : "Zagallo", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.card.zagallo", "referenceName" : "Zagallo", "type" : "NonConsumable" },
+    { "displayPrice" : "11.90", "familyShareable" : false, "internalID" : "C1000004", "localizations" : [ { "description" : "Franz Beckenbauer, carta Lendária.", "displayName" : "Franz Beckenbauer", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.card.beckenbauer", "referenceName" : "Beckenbauer", "type" : "NonConsumable" },
+    { "displayPrice" : "11.90", "familyShareable" : false, "internalID" : "C1000005", "localizations" : [ { "description" : "Sir Bobby Charlton, carta Lendária.", "displayName" : "Sir Bobby Charlton", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.card.charlton", "referenceName" : "Charlton", "type" : "NonConsumable" },
+    { "displayPrice" : "14.90", "familyShareable" : false, "internalID" : "C1000006", "localizations" : [ { "description" : "Eusébio, carta Eterna.", "displayName" : "Eusébio", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.card.eusebio", "referenceName" : "Eusebio", "type" : "NonConsumable" },
+    { "displayPrice" : "49.90", "familyShareable" : false, "internalID" : "C1000007", "localizations" : [ { "description" : "As seis lendas de uma vez.", "displayName" : "Coleção Eterna", "locale" : "pt_BR" } ], "productID" : "br.com.socialbot114.factory.halldaslendas.complete", "referenceName" : "Colecao Eterna", "type" : "NonConsumable" }
+  ],
+  "settings" : {},
+  "subscriptionGroups" : [],
+  "version" : { "major" : 3, "minor" : 0 }
+}

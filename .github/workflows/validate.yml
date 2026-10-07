@@ -30,6 +30,7 @@ on:
           - brasilia-politica-contexto
           - diario-sono
           - quebra-cabecas
+          - hall-das-lendas
 
 permissions:
   contents: read
