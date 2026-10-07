@@ -104,6 +104,7 @@ struct FootballCareer: Codable, Equatable {
         case tutorialSeen
         case tutorialDismissed
         case iconState
+        case academy
         case offseason
         case world
     }
@@ -209,6 +210,7 @@ struct FootballCareer: Codable, Equatable {
     var tutorialSeen: [String] = []
     var tutorialDismissed = false
     var iconState = IconState()
+    var academy = AcademyState()
     /// Ritual de virada de temporada em andamento (nil fora dele); bloqueia jogar e avançar o calendário.
     var offseason: OffseasonState? = nil
     var world = WorldState()
@@ -364,6 +366,7 @@ struct FootballCareer: Codable, Equatable {
         tutorialSeen = try container.decodeIfPresent([String].self, forKey: .tutorialSeen) ?? []
         tutorialDismissed = try container.decodeIfPresent(Bool.self, forKey: .tutorialDismissed) ?? false
         iconState = try container.decodeIfPresent(IconState.self, forKey: .iconState) ?? IconState()
+        academy = try container.decodeIfPresent(AcademyState.self, forKey: .academy) ?? AcademyState()
         offseason = try container.decodeIfPresent(OffseasonState.self, forKey: .offseason)
         world = try container.decodeIfPresent(WorldState.self, forKey: .world) ?? WorldState()
         if version < 3 { migrateToWorldV3() }
@@ -466,6 +469,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(tutorialSeen, forKey: .tutorialSeen)
         try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
         try container.encode(iconState, forKey: .iconState)
+        try container.encode(academy, forKey: .academy)
         try container.encodeIfPresent(offseason, forKey: .offseason)
         try container.encode(world, forKey: .world)
     }

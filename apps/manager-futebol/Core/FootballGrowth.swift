@@ -396,9 +396,10 @@ extension FootballCareer {
     mutating func tickYouthDevelopment(using random: inout FootballRandom) {
         guard let selectedClubID else { return }
         let chance = 0.03 + 0.01 * Double(youthAcademyLevel) + 0.005 * Double(max(0, (staffAbility(.youthCoach) ?? 6) - 6))
-        let program = world.growth.youthProgram
         for index in players.indices where players[index].isYouth && players[index].teamID == selectedClubID {
-            guard players[index].overall < players[index].potential, random.chance(chance) else { continue }
+            let personal = min(0.6, chance * academyGrowthFactor(for: players[index]))
+            guard players[index].overall < players[index].potential, random.chance(personal) else { continue }
+            let program = academyFollowUp(for: players[index].id)?.focus ?? world.growth.youthProgram
             if program != .balanced, let kind = random.pick(program.attributes), players[index].attributes[kind] < 20 {
                 players[index].attributes[kind] += 1
                 players[index].overall = players[index].attributes.overall(for: players[index].position)
@@ -406,6 +407,7 @@ extension FootballCareer {
                 players[index].setOverall(players[index].overall + 1)
             }
         }
+        tickAcademy()
     }
 
     var tryoutCost: Int { Self.tryoutBaseCost + 20_000 * youthAcademyLevel }
