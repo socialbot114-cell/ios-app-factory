@@ -1,24 +1,5 @@
 import SwiftUI
 
-// MARK: - Inicialização do sistema
-
-struct PhoneBootView: View {
-    @State private var progress = 0.0
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            VStack(spacing: 28) {
-                Image(systemName: "soccerball.inverse").font(.system(size: 64)).foregroundStyle(.white)
-                Text("FutOS").font(.system(size: 34, weight: .heavy, design: .rounded)).foregroundStyle(.white)
-                ProgressView(value: progress).tint(.white).frame(width: 160)
-            }
-        }
-        .onAppear { withAnimation(.easeInOut(duration: 1.1)) { progress = 1 } }
-        .accessibilityLabel("Iniciando o FutOS")
-    }
-}
-
 // MARK: - Barra de status
 
 struct PhoneStatusBar: View {

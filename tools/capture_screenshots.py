@@ -27,7 +27,7 @@ CAPTURES = {
 
 CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-league", "fantasy-share", "save-slots",
                                 "lock-night", "guide-banner", "day-plan", "chat-player", "chat-family", "chat-staff", "match-halftime",
-                                "prep-flow", "halftime-talk", "wallpaper-night", "onboarding", "onboarding-mode",
+                                "prep-flow", "halftime-talk", "wallpaper-night", "onboarding", "onboarding-mode", "loading", "title", "title-new",
                                 "offseason-recap", "offseason-contracts", "offseason-review", "offseason-pack", "offseason-holiday",
                                 "offseason-sponsor", "offseason-preseason", "offseason-kickoff"]
 

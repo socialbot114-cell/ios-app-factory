@@ -43,7 +43,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 |---|---|---|---|
 | 1.1 (10) | Linha de base | Aprovada | 06/out 22:29 |
 | 1.1 (11) | Craques eternos, onboarding, ritual de virada | Em validação (run `37572402802`) | a confirmar |
-| Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada | Código iniciado na branch `feature/entrega-a-ritmo` | a combinar |
+| Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
 | Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
 | Entrega D | Mundo vivo: pushes, agenda, personalização | Planejada | a combinar |
@@ -936,6 +936,23 @@ Hoje já existem histórico de temporadas, lendas do clube, reputação e conqui
 - [ ] MOV-08 Desempenho: 60 quadros por segundo em iPhone e iPad de gerações anteriores, medido em capturas, e nenhuma animação sem opção de pular.
 
 **Aceite:** nenhuma tela mostra spinner sem texto ou esqueleto; a rolagem das listas principais não perde quadros em aparelho antigo.
+
+### 40 — Abertura do app (experiência de jogo) | Entrega A
+
+**Objetivo:** abrir o app tem cara de jogo: carregamento, uma tela de entrada e as opções de sempre.
+
+Hoje (antes desta frente): o app abria numa tela preta com a barra "FutOS" e entrava direto na carreira ou nas propostas de clube.
+
+- [ ] TIT-01 Carregamento com logo, barra de progresso dourada e uma dica de jogo (implementado em `FootballLoadingView`; aguardando CI).
+- [ ] TIT-02 Tela de entrada com fundo animado, logo com brilho e três botões em cascata: Continuar (mostra clube e temporada), Novo jogo e Opções (implementado em `FootballTitleScreen`; aguardando CI).
+- [ ] TIT-03 Novo jogo sem perder a carreira atual: usa o primeiro espaço de save livre, com confirmação, e avisa se os três espaços estão ocupados (implementado; aguardando CI).
+- [ ] TIT-04 Opções da abertura: carreiras salvas (carregar, nova, apagar) e "Reduzir movimento" (implementado; aguardando CI).
+- [ ] TIT-05 UI tests e capturas entram direto no jogo; capturas `loading`, `title` e `title-new` para revisão visual (implementado).
+- [ ] TIT-06 Som de abertura e música da tela de entrada (depende de LAN-05).
+- [ ] TIT-07 Continuar mostra o último dia jogado e a próxima ação sugerida ("Próximo jogo: domingo contra o Aurora").
+- [ ] TIT-08 Opções completas: dificuldade, modo de ritmo (PIL-03), tema (PER-03) e rever a introdução.
+
+**Aceite:** do toque no ícone até o primeiro jogo em no máximo três toques (Continuar, Gestor, Jogar); quem não tem carreira cai no onboarding.
 
 ### Ordem de entrega proposta
 

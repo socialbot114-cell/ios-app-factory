@@ -10,6 +10,10 @@ struct FootballHome: View {
     @State private var showLiveMatch = false
     @State private var seasonSummary: SeasonRecord?
     @State private var showsOnboarding = FootballOnboardingGate.shouldShow
+    /// Menu de entrada (Continuar, Novo jogo, Opções); UI tests e capturas entram direto no jogo.
+    @State private var showsTitle = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
+    @State private var showsTitleOptions = false
+    @State private var confirmsNewGame = false
     @State private var didPrepare = false
     @State private var showPress = false
     @State private var booting = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
@@ -56,7 +60,10 @@ struct FootballHome: View {
             } else if let capture, Self.deepCaptures.contains(capture) {
                 NavigationStack { deepCapture(capture).tint(FootballTheme.accent) }
             } else if booting {
-                PhoneBootView()
+                FootballLoadingView()
+            } else if showsTitle {
+                FootballTitleScreen(continueSubtitle: continueSubtitle, onContinue: { showsTitle = false },
+                                    onNewGame: startNewFromTitle, onOptions: { refreshSlots(); showsTitleOptions = true })
             } else if career.selectedClubID == nil {
                 if showsOnboarding {
                     FootballOnboardingView(career: $career) {
@@ -73,6 +80,18 @@ struct FootballHome: View {
         .tint(FootballTheme.accent)
         .fullScreenCover(isPresented: $showLiveMatch) {
             FootballLiveMatchView(career: $career, staticPreview: false) { showLiveMatch = false }
+        }
+        .sheet(isPresented: $showsTitleOptions) {
+            FootballTitleOptionsSheet(career: $career, activeSlot: activeSlot, summaries: slotSummaries,
+                                      onLoad: { loadSlot($0); showsTitleOptions = false; showsTitle = false },
+                                      onNew: { startNewCareer(slot: $0); showsTitleOptions = false; showsTitle = false },
+                                      onDelete: deleteSlot)
+        }
+        .confirmationDialog("Começar uma nova carreira?", isPresented: $confirmsNewGame, titleVisibility: .visible) {
+            Button("Começar nova carreira") { confirmNewGame() }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("A carreira atual continua salva. Dá para voltar a ela em Opções.")
         }
         .sheet(item: $seasonSummary) { record in
             FootballSeasonSummaryView(record: record, career: career)
@@ -362,7 +381,7 @@ struct FootballHome: View {
         "offseason-holiday": .holiday, "offseason-sponsor": .sponsor, "offseason-preseason": .preseason, "offseason-kickoff": .kickoff,
     ]
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow", "onboarding", "onboarding-mode"])
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow", "onboarding", "onboarding-mode", "loading", "title", "title-new"])
         .union(FootballF4Captures.names).union(FootballF5Captures.names).union(offseasonCaptures.keys)
 
     @ViewBuilder
@@ -372,6 +391,9 @@ struct FootballHome: View {
             VStack(alignment: .leading, spacing: 16) {
                 FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: { _ in }, onNew: { _ in }, onDelete: { _ in })
             }.factoryPage().navigationTitle("Carreiras do FutOS")
+        case "loading": FootballLoadingView()
+        case "title": FootballTitleScreen(continueSubtitle: "Aurora FC · temporada 2", onContinue: {}, onNewGame: {}, onOptions: {})
+        case "title-new": FootballTitleScreen(continueSubtitle: nil, onContinue: {}, onNewGame: {}, onOptions: {})
         case "onboarding": FootballOnboardingView(career: $career, startPage: 0) {}
         case "onboarding-mode": FootballOnboardingView(career: $career, startPage: 4) {}
         case let name where Self.offseasonCaptures[name] != nil:
@@ -483,6 +505,29 @@ struct FootballHome: View {
             return
         }
         showLiveMatch = true
+    }
+
+    private var continueSubtitle: String? {
+        guard let club = career.selectedClub else { return nil }
+        return "\(club.name) · temporada \(career.season)"
+    }
+
+    private func startNewFromTitle() {
+        if career.selectedClubID == nil {
+            showsTitle = false
+        } else {
+            confirmsNewGame = true
+        }
+    }
+
+    private func confirmNewGame() {
+        let store = FootballSaveStore()
+        if let slot = (0..<FootballSaveStore.slotCount).first(where: { $0 != activeSlot && store.summary(slot: $0) == nil }) {
+            startNewCareer(slot: slot)
+            showsTitle = false
+        } else {
+            alertMessage = "Todos os espaços de carreira estão ocupados. Apague uma carreira em Opções para começar outra."
+        }
     }
 
     private func startNewCareer(slot: Int) {
