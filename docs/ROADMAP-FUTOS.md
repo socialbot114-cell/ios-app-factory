@@ -2,7 +2,7 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual (07/out/2026, 11:55, horário de Brasília): **build 1.1 (13): testes aprovados (430 de domínio, UI sem falhas, 3 skips documentados) e upload ao App Store Connect concluído em 07/out às 11:49 (run 37627792257), mas o passo "Activate internal TestFlight" foi CANCELADO às 11:51 e a ativação interna não foi confirmada; conferir no App Store Connect se o 13 está disponível ao grupo interno. Contém layout corrigido nas telas de abertura e onboarding, app Lendas e confete de vitória. Antes: 1.1 (12) às 09:59 e 1.1 (11) às 02:53. Próximo build: 1.1 (14), a partir da branch `feature/entrega-a-ritmo` (sala de espera, avisos de ambiente, celebrações, sequência de dias). O plano do ciclo 2 (seções 5b a 5f), o plano de testes (`docs/PLANO-DE-TESTES.md`) e o pacote para o outro agente (`docs/ENTREGA-PARA-O-AGENTE.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+Status atual (07/out/2026, 15:00, horário de Brasília): **build 1.1 (14) aprovado e no TestFlight interno desde as 14:22 (run 37650467959; elogiado pelo usuário: "ótimo, perfeito como eu queria"), com a sala de espera integrada ao FutOS, ilha e notificações, avisos que reagem à carreira, celebrações, caixa que conta e sequência de dias. Próxima frente decidida: Academia (base) e Comissão como apps dedicados (itens 42 e 43). Antes: build 1.1 (13): testes aprovados (430 de domínio, UI sem falhas, 3 skips documentados) e upload ao App Store Connect concluído em 07/out às 11:49 (run 37627792257), mas o passo "Activate internal TestFlight" foi CANCELADO às 11:51 e a ativação interna não foi confirmada; conferir no App Store Connect se o 13 está disponível ao grupo interno. Contém layout corrigido nas telas de abertura e onboarding, app Lendas e confete de vitória. Antes: 1.1 (12) às 09:59 e 1.1 (11) às 02:53. Próximo build: 1.1 (14), a partir da branch `feature/entrega-a-ritmo` (sala de espera, avisos de ambiente, celebrações, sequência de dias). O plano do ciclo 2 (seções 5b a 5f), o plano de testes (`docs/PLANO-DE-TESTES.md`) e o pacote para o outro agente (`docs/ENTREGA-PARA-O-AGENTE.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
 
 Convenção de datas: todos os horários deste documento estão em horário de Brasília (UTC−3). Os runs do GitHub Actions registram UTC; a conversão está na tabela de builds.
 
@@ -45,7 +45,9 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | 1.1 (11) | Craques eternos (pacote só no fim da temporada, com convidado por partida no modo Fácil), onboarding, ritual de virada | Aprovada e no TestFlight interno | 07/out 02:53 |
 | 1.1 (12) | Lenda inicial, abertura do app (menu), onboarding. Teste: telas desproporcionais, lendas fora de um app | Aprovada e no TestFlight interno | 07/out 09:59 |
 | 1.1 (13) | Correção de layout (abertura e onboarding), app Lendas, confete de vitória | Testes aprovados; enviado ao App Store Connect (11:49); ativação interna cancelada (11:51), a confirmar | 07/out 11:49 |
-| 1.1 (14) | Sala de espera integrada ao FutOS (perfis, digital, ilha, notificações reais), avisos de ambiente que reagem à carreira, puxar do topo no celular, goleada e título, caixa que conta, sequência de dias | Em validação: run 37650467959, disparado 07/out 13:14 | a definir |
+| 1.1 (14) | Sala de espera integrada ao FutOS (perfis, digital, ilha, notificações reais), avisos de ambiente que reagem à carreira, puxar do topo no celular, goleada e título, caixa que conta, sequência de dias | Aprovada e no TestFlight interno | 07/out 14:22 |
+| Entrega F | Academia: app dedicado da base com motor de formação de jogadores (itens 20 e 42) | Planejada, aguardando decisões | a combinar |
+| Entrega G | Comissão técnica: app dedicado para staff e contratações (item 43) | Planejada | a combinar |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
 | Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
@@ -1078,3 +1080,45 @@ Estado atualizado: motor e interface passaram por compilação/testes iOS no wor
 ### Integração FutOS — navegação e captura
 
 Notificação passou a abrir a mensagem com ações no componente real de Mensagens. Agenda passou a abrir atleta/contrato ou mensagem de proposta específica. Busca de atleta aguarda o dismiss antes de apresentar outra ficha. Rotas de captura `agenda`/`commitment` e jornada UI contextual adicionadas. Parser, checks locais e execução UI no iPhone/iPad aprovados. Geração das novas capturas e playtest físico permanecem pendentes.
+
+### 42 — Academia: app dedicado da base e motor de formação | Entrega F
+
+Pedido de 07/out, após o 14: a base é de onde vêm grande parte dos craques; precisa de um app próprio, com profundidade de ações (tempo e dinheiro) e de um motor que gera jogadores. Substitui e aprofunda o item 20 (BAS-01 a BAS-08).
+
+**Ponto de partida no código (conferido em 07/out).** A base hoje é um grupo de até 12 jovens (`isYouth`), separado só na exibição em Sub-17 e Sub-20; entrada anual de 3 a 5 jovens; uma peneira por temporada (2 jovens, custo base + 20 mil por nível); programa de foco (equilibrado, técnica, físico, mental); evolução diária por sorteio ligada ao nível da academia e ao técnico da base; Copinha simulada; promover e dispensar (dispensar remove na hora). A tela vive dentro do Transfer, as melhorias no app Clube, e o técnico da base é um dos 7 cargos da comissão.
+
+**O motor de formação (o que há de novo).**
+- *Dois potenciais.* Cada jovem tem potencial real (oculto) e potencial estimado pelo clube, com ruído que cai conforme o tempo de observação, o olheiro e o técnico da base. O jogador vê "estimado 78 ± 6", não o número verdadeiro.
+- *Traços e perfil.* Arquétipos como joia rara, trabalhador, temperamental, de crescimento tardio, líder, frágil. Cada traço muda a curva de crescimento, o risco de lesão ou o humor, e aparece na ficha aos poucos.
+- *Curva de crescimento individual.* Em vez de um sorteio diário igual para todos: pico e idade do pico por jogador, com surtos de crescimento e estagnações; minutos jogados e mentor pesam.
+- *Cauda longa calibrada.* O nível da academia e da comissão sobe a *qualidade da cauda* (mais chance de uma joia), não só a média. Meta de calibragem a testar por simulação: cerca de 1 em 12 jovens vira titular e cerca de 1 em 100 vira craque numa academia média.
+- *Origem.* As cinco regiões já existem; cada carreira sorteia, na semente, tendências de posição por região (sem estereótipos do mundo real).
+- *Determinismo.* Sorteios com semente por (temporada, turma, vaga), para testes reproduzíveis; testes estatísticos de distribuição em unidade.
+- *História.* Nome, cidade e família; o destino reaparece no futuro como rival ou ídolo (BAS-08).
+
+**O app Academia (telas).**
+1. *Visão geral:* nível, orçamento da base, jovem em destaque do mês, pendências.
+2. *Categorias:* Sub-15, Sub-17 e Sub-20 reais, cada uma com elenco, treinador e capacidade.
+3. *Ficha do jovem:* potencial estimado, traços, relatórios, minutos, histórico, mentor.
+4. *Captação:* peneiras por região, parcerias com escolas e clubes, olheiros regionais.
+5. *Competições:* campeonato de base e Copinha com resultados simulados e minutos por jovem.
+6. *Contratos e saídas:* bolsa, empréstimo, venda com revenda, compensação.
+7. *Estrutura:* melhorias da academia, alojamento, escola.
+
+**Ações com tempo e dinheiro (por semana).** Foco individual de treino; mentor entre os veteranos do elenco principal; minutos em jogo; tutor escolar; visita à família; custo de bolsa e de melhorias. Tempo vira o recurso escasso: o treinador tem horas na agenda para a base.
+
+**Riscos.** Compatibilidade de saves (a base atual migra por idade para as categorias); equilíbrio da cauda (por isso a simulação estatística antes da interface); volume de telas sem compilador local.
+
+**Versões propostas.**
+- F1 (1.1 (15)): app Academia v1, categorias reais, novo motor (potencial estimado, traços, curva), relatórios, promover, manter, emprestar e dispensar. Migração de saves.
+- F2 (1.1 (16)): captação (peneiras por região, parcerias, olheiros) e competições de base.
+- F3 (1.1 (17)): contratos e bolsas, empréstimo, venda com revenda, compensação, destino futuro.
+
+### 43 — Comissão: app dedicado de staff e contratações | Entrega G
+
+**Ponto de partida.** Sete cargos (auxiliar, preparador físico, olheiro-chefe, médico, treinador de goleiros, técnico da base, analista); mercado de candidatos por cargo; contratar e demitir; tarefas delegadas (estudar rival, plano de recuperação, observação dirigida, revisão médica, relatório de desempenho, avaliação da base). Tudo dentro do app Clube.
+
+**O que muda.** App próprio *Comissão*: organograma; mercado com perfis (habilidade, especialidade, personalidade, ambição, clube de origem); negociação de salário e contrato; reputação da comissão; conflitos e saídas; tarefas delegadas com prazo; cargos novos ligados à Academia (coordenador da base, olheiros regionais) e ao dia a dia (psicólogo, nutricionista). Efeitos visíveis: precisão dos relatórios, velocidade de evolução, risco de lesão.
+
+**Versão proposta (1.1 (18)):** Comissão v1 com organograma, mercado com perfis e negociação, e os cargos da Academia. A Academia v1 já usa técnico da base e olheiro-chefe existentes, então não depende da Comissão para sair primeiro.
+
