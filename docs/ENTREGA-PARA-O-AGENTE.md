@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 02:56 (Brasília). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 03:50 (Brasília; conferência horária: nenhum run novo desde o 1.1 (11)). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
