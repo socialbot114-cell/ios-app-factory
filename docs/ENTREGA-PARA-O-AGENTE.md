@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 02:47 (Brasília). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 02:56 (Brasília). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -14,7 +14,7 @@ Atualizado em 07/out/2026, 02:47 (Brasília). A rotina horária mantém este arq
 | Item | Estado |
 |---|---|
 | 1.1 (10) | Aprovado e no TestFlight desde 06/out 22:29. Linha de base. |
-| 1.1 (11) | Branch `ccr-020b52d1-16pkkp`, commit `2dfaa10`, run `37572402802` iniciado 07/out 01:38. Em validação às 02:47. O número 11 só é consumido quando o upload termina. |
+| 1.1 (11) | **Aprovado e enviado ao TestFlight interno em 07/out às 02:53** (branch `ccr-020b52d1-16pkkp`, commit `2dfaa10`, run `37572402802`). Já dá para testar. Contém: craques eternos (pacote só no fim da temporada; no modo Fácil, convidado por partida), onboarding, ritual de virada. NÃO tem a lenda inicial nem a tela de abertura. |
 | Entrega A (próximo build) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
 
@@ -26,20 +26,20 @@ Regras que valem para todos os prompts:
 
 ---
 
-## Prompt A — Fechar o build 1.1 (11)
+## Prompt A — Confirmar o build 1.1 (11) no TestFlight
+
+O run `37572402802` já terminou com sucesso (upload e ativação às 02:53). Este prompt só confirma que o build está disponível para os testadores.
 
 ```
 Projeto socialbot114-cell/ios-app-factory, workflow "Football TestFlight".
-1. Veja o resultado do run 37572402802 (branch ccr-020b52d1-16pkkp, commit 2dfaa10, version 1.1, build 11).
-2. Se terminou com sucesso e o passo "Upload TestFlight" e "Activate internal TestFlight after Apple processing" concluíram, responda apenas: "1.1 (11) enviado" com o horário de término (horário de Brasília, UTC-3).
-3. Se falhou, NÃO altere código. Traga: nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro e, se houver, a hierarquia de acessibilidade anexada ao log (procure "Hierarquia:" no log do passo "Test iPhone and iPad"). Liste também os testes que passaram em número ("N testes, M falhas").
-4. Se ainda estiver em andamento, diga em qual passo está e há quanto tempo, e volte a verificar a cada 15 minutos.
-Não dispare outro run enquanto este não terminar.
+Confirme o resultado do run 37572402802 (version 1.1, build 11): todos os passos devem estar em sucesso, incluindo "Upload TestFlight" e "Activate internal TestFlight after Apple processing". Se tiver acesso ao App Store Connect, confirme que o build 1.1 (11) está "Pronto para testar" no grupo interno. Responda em duas linhas: resultado e horário (Brasília, UTC-3). NÃO dispare nada e NÃO altere código.
 ```
+
+---
 
 ## Prompt B — Próximo build: 1.1 (12), com a Entrega A
 
-Só depois de A estar resolvido (11 enviado ou barrado e corrigido).
+O 1.1 (11) já foi enviado. Dispare o B quando quiser; um build novo só deve sair depois que o 11 tiver sido testado por dois dias (até 09/out às 02:53), a menos que você prefira antecipar.
 
 ```
 Projeto socialbot114-cell/ios-app-factory. Dispare o workflow "Football TestFlight" (football-testflight.yml) com:
@@ -79,7 +79,15 @@ Relate: iPhone e iPad separadamente, quantos testes de domínio e de interface p
 
 ---
 
-## O que você testa (quando o build chegar ao TestFlight)
+## Já dá para testar agora: build 1.1 (11)
+
+Este build está no TestFlight interno desde 07/out às 02:53. Teste o que ele tem:
+1. **Onboarding:** instalar limpo (ou apagar o app). Esperado: cinco páginas, escolha de dificuldade, depois as propostas de clube.
+2. **Ritual de fim de temporada:** simular até o fim e tocar "Encerrar temporada". Passar por todas as etapas (apito, contratos, balanço, pacote, férias, patrocinador, pré-temporada, estreia); fechar o app no meio e voltar pelo painel "Entre temporadas".
+3. **Craque eterno:** no ritual chega o pacote da primeira lenda; abrir e conferir no elenco. No modo Fácil (Ajustes), o Gestor mostra "Convidar um craque" para uma partida. Isso muda no build 12: lá a lenda vem no começo da carreira e o convidado deixa de existir.
+4. **Qualquer erro ou travada:** anotar o que estava fazendo e tirar captura de tela.
+
+## O que você testa (build 12, quando chegar ao TestFlight)
 
 Roteiros completos em `docs/PLANO-DE-TESTES.md`, seção 5. Resumo para a primeira noite:
 

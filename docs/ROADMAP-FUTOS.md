@@ -2,7 +2,7 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual (07/out/2026, 01:59, horário de Brasília): **build 1.1 (10) aprovado e no TestFlight desde 06/out às 22:29; build 1.1 (11) em validação no CI (run 37572402802, iniciado 07/out às 01:38) com craques eternos, onboarding e ritual de virada de temporada. O plano do ciclo 2 (seções 5b a 5f) e o plano de testes (`docs/PLANO-DE-TESTES.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+Status atual (07/out/2026, 02:55, horário de Brasília): **build 1.1 (11) aprovado e enviado ao TestFlight interno em 07/out às 02:53 (run 37572402802), com craques eternos, onboarding e ritual de virada de temporada. O 1.1 (10) segue como build anterior. Próximo build: 1.1 (12), a partir da branch `feature/entrega-a-ritmo`. O plano do ciclo 2 (seções 5b a 5f), o plano de testes (`docs/PLANO-DE-TESTES.md`) e o pacote para o outro agente (`docs/ENTREGA-PARA-O-AGENTE.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
 
 Convenção de datas: todos os horários deste documento estão em horário de Brasília (UTC−3). Os runs do GitHub Actions registram UTC; a conversão está na tabela de builds.
 
@@ -10,7 +10,7 @@ Convenção de datas: todos os horários deste documento estão em horário de B
 
 ### Onde estamos
 
-- **Linha estável:** branch `ccr-020b52d1-16pkkp`, que parte da `manager-futebol/phases-2-7`. Contém o que foi aprovado no build 1.1 (10) e tudo o que está sendo validado no 1.1 (11).
+- **Linha estável:** branch `ccr-020b52d1-16pkkp` (commit `2dfaa10`), que parte da `manager-futebol/phases-2-7`. É exatamente o que está no TestFlight no build 1.1 (11); não recebe mais código novo.
 - **Próxima entrega:** branch `feature/entrega-a-ritmo` (a partir do mesmo commit do 1.1 (11)), com as lendas ajustadas. A linha estável não recebe código novo enquanto o 1.1 (11) é validado.
 - **Hall das Lendas** (app novo, vitrine premium de cartas com compra por carta): branch `feature/hall-das-lendas`, já unido à linha estável. Fora do TestFlight do Football; validado pelo workflow "iOS app validation".
 - **Testes de domínio no último run completo (1.1 (11), tentativa 1):** 430 testes, zero falhas, incluindo os novos de craques eternos e ritual de virada.
@@ -24,7 +24,7 @@ Convenção de datas: todos os horários deste documento estão em horário de B
 | 1.1 (9) | `37545283666` | 06/out 20:13 | Barrado: o intervalo passou (a partida agora abre no `onDismiss` da folha); falhou `contact-family` fora da viewport em Contatos. |
 | **1.1 (10)** | `37549938172` | 06/out 21:04 | **Aprovado: gate verde em iPhone e iPad, assinatura, upload e ativação no TestFlight interno. Concluído 06/out às 22:29.** |
 | 1.1 (11), tentativa 1 | `37567530198` | 07/out 00:36 | Barrado às 01:21: 430 testes de domínio verdes; falhou um UI test (`testAdvancingTheCalendarLocksThePhoneWithTheNewDate`, botão `live-finish` não apareceu em 30 s). Nada enviado. |
-| 1.1 (11), tentativa 2 | `37572402802` | 07/out 01:38 | **Em validação** às 01:59 (testes de iPhone e iPad em andamento), com o UI test acima tornado robusto e com diagnóstico. O número 11 segue livre: só é consumido no upload. |
+| **1.1 (11)**, tentativa 2 | `37572402802` | 07/out 01:38 | **Aprovado: gate verde em iPhone e iPad (testes de 01:48 a 02:45), assinatura, upload e ativação no TestFlight interno. Concluído 07/out às 02:53.** O UI test que falhou na tentativa 1 passou com a espera robusta. |
 
 ### Entregue desde 06/out
 
@@ -42,7 +42,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | Versão | Conteúdo | Estado | Data real |
 |---|---|---|---|
 | 1.1 (10) | Linha de base | Aprovada | 06/out 22:29 |
-| 1.1 (11) | Craques eternos, onboarding, ritual de virada | Em validação (run `37572402802`) | a confirmar |
+| 1.1 (11) | Craques eternos (pacote só no fim da temporada, com convidado por partida no modo Fácil), onboarding, ritual de virada | Aprovada e no TestFlight interno | 07/out 02:53 |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
 | Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
@@ -51,7 +51,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 
 ### Pendências de teste
 
-- Camadas 2 a 4 do plano de testes para o 1.1 (11): capturas de iPhone e iPad (`onboarding*`, `offseason-*`), roteiros 5.1 a 5.4 e dois dias de uso interno.
+- Camadas 2 a 4 do plano de testes para o 1.1 (11), já no TestFlight: capturas de iPhone e iPad (`onboarding*`, `offseason-*`), roteiros 5.1 a 5.4 e dois dias de uso interno (a contar de 07/out 02:53).
 - UI tests pulados que precisam voltar antes da Entrega C: `testBankSimulatorChangesProjectionAndResetRestoresIt`, `testSettingsCanCreateAndRestoreCareerSlot` e `testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate`.
 - UI tests curtos de onboarding e ritual de virada, só depois que as telas estabilizarem.
 - Hall das Lendas: criar os produtos no App Store Connect, ícone e capturas; direitos de imagem das cartas (LAN-01) antes de qualquer versão pública ou venda.
