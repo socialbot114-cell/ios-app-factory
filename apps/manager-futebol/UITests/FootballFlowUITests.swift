@@ -66,7 +66,14 @@ final class FootballFlowUITests: XCTestCase {
         goHome(app)
 
         tapWhenReady(app.buttons["app-contacts"], in: app)
-        XCTAssertTrue(app.buttons["contact-family"].waitForExistence(timeout: 6))
+        // Os painéis de contato cresceram (assuntos de conversa): o botão pode estar fora da viewport e fora da árvore de acessibilidade.
+        let family = app.buttons["contact-family"]
+        for _ in 0..<8 {
+            if family.waitForExistence(timeout: 2) { break }
+            dragUp(app)
+        }
+        if !family.exists { attachScreenshot(app, name: "contact-family-missing") }
+        XCTAssertTrue(family.exists, "Contato da família ausente. Hierarquia:\n\(app.debugDescription)")
         goHome(app)
 
         tapWhenReady(app.buttons["app-betting"], in: app)
