@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 19:33 (Brasília). 1.1 (15) aprovado pelo usuário às 18:37 (enviado às 16:33); 1.1 (16) com o conteúdo commitado na branch (Academia v2, HUD real, mercado com busca, ordenação e paginação, atalho de decisão na Academia e estados vazios), ainda não disparado. Nenhum run novo desde as 16:34 (último: run 25, build 15, sucesso). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 19:46 (Brasília). Nenhum run em andamento; último run: 26 (build 16), falhou em 19:22 (ver a linha 1.1 (16)). 1.1 (15) aprovado pelo usuário às 18:37 (enviado às 16:33); 1.1 (16) com o conteúdo commitado na branch (Academia v2, HUD real, mercado com busca, ordenação e paginação, atalho de decisão na Academia e estados vazios), ainda não disparado. Nenhum run novo desde as 16:34 (último: run 25, build 15, sucesso). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
