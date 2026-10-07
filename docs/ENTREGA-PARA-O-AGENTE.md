@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 08:40 (Brasília; run do 1.1 (12) em andamento). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 10:30 (Brasília; 1.1 (12) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -15,7 +15,7 @@ Atualizado em 07/out/2026, 08:40 (Brasília; run do 1.1 (12) em andamento). A ro
 |---|---|
 | 1.1 (10) | Aprovado e no TestFlight desde 06/out 22:29. Linha de base. |
 | 1.1 (11) | **Aprovado e enviado ao TestFlight interno em 07/out às 02:53** (branch `ccr-020b52d1-16pkkp`, commit `2dfaa10`, run `37572402802`). Já dá para testar. Contém: craques eternos (pacote só no fim da temporada; no modo Fácil, convidado por partida), onboarding, ritual de virada. NÃO tem a lenda inicial nem a tela de abertura. |
-| 1.1 (12) | **Em validação**: run `37615474193` (run nº 22), disparado em 07/out às 08:38, ref `feature/entrega-a-ritmo`, commit `23b78dd` (o código é o mesmo da Entrega A; commits seguintes só mexem em docs). Previsão do gate: cerca de 10:05. Não disparar outro enquanto isso. |
+| 1.1 (12) | **Aprovado e enviado ao TestFlight interno em 07/out às 09:59** (run `37615474193`, commit `23b78dd`). Testado: o menu da abertura e o onboarding saíram desproporcionais e as lendas apareciam num painel, não num app. Corrigido no 13. |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
@@ -39,20 +39,20 @@ Confirme o resultado do run 37572402802 (version 1.1, build 11): todos os passos
 
 ---
 
-## Prompt B — Próximo build: 1.1 (12), com a Entrega A
+## Prompt B — Próximo build: 1.1 (13), com as correções de tela e o app Lendas
 
-O 1.1 (11) já foi enviado. Dispare o B quando quiser; um build novo só deve sair depois que o 11 tiver sido testado por dois dias (até 09/out às 02:53), a menos que você prefira antecipar.
+O 1.1 (12) já foi enviado. O 13 corrige o layout do onboarding e da abertura, cria o app **Lendas** e traz a comemoração de vitória.
 
 ```
 Projeto socialbot114-cell/ios-app-factory. Dispare o workflow "Football TestFlight" (football-testflight.yml) com:
   ref: feature/entrega-a-ritmo
   version: 1.1
-  build: 12
-Antes de disparar, confirme que não há outro run do mesmo workflow em andamento e que o build 12 ainda não foi usado (nome do artefato football-release-1.1-12 não pode existir em runs anteriores).
+  build: 13
+Antes de disparar, confirme que não há outro run do mesmo workflow em andamento e que o build 13 ainda não foi usado (artefato football-release-1.1-13 não pode existir em runs anteriores).
 Acompanhe o run até o fim. NÃO altere código.
-Se passar: responda "1.1 (12) enviado" com o horário de Brasília.
-Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro e a hierarquia anexada (procure "Hierarquia:" no log), e o número de testes que passaram. O build 12 continua livre nesse caso.
-O que há de novo neste build: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura com Continuar, Novo jogo e Opções, carregamento com dicas.
+Se passar: responda "1.1 (13) enviado" com o horário de Brasília.
+Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro e a hierarquia anexada (procure "Hierarquia:" no log), e o número de testes que passaram. O build 13 continua livre nesse caso.
+O que há de novo: fundo das telas de abertura e onboarding sem desproporção, app Lendas no celular (vitrine das seis cartas, pacote e craque da temporada), confete na vitória da partida ao vivo.
 ```
 
 ## Prompt C — Capturas de tela (iPhone e iPad)
@@ -89,16 +89,18 @@ Este build está no TestFlight interno desde 07/out às 02:53. Teste o que ele t
 3. **Craque eterno:** no ritual chega o pacote da primeira lenda; abrir e conferir no elenco. No modo Fácil (Ajustes), o Gestor mostra "Convidar um craque" para uma partida. Isso muda no build 12: lá a lenda vem no começo da carreira e o convidado deixa de existir.
 4. **Qualquer erro ou travada:** anotar o que estava fazendo e tirar captura de tela.
 
-## O que você testa (build 12, quando chegar ao TestFlight)
+## O que você testa (build 13, quando chegar ao TestFlight)
 
 Roteiros completos em `docs/PLANO-DE-TESTES.md`, seção 5. Resumo para a primeira noite:
 
-1. **Abertura (build 12):** abrir o app. Esperado: carregamento com dica, depois a tela com Continuar, Novo jogo e Opções. Tocar em Opções e abrir "Reduzir movimento" e as carreiras salvas.
+1. **Abertura (build 13, layout corrigido):** abrir o app. Esperado: carregamento com dica, depois a tela com Continuar, Novo jogo e Opções. Tocar em Opções e abrir "Reduzir movimento" e as carreiras salvas.
 2. **Primeira abertura limpa:** apagar o app e instalar de novo. Esperado: Novo jogo, onboarding de cinco páginas, escolha de dificuldade, proposta de clube.
 3. **Lenda inicial (build 12):** aceitar um clube. Esperado: o pacote de craque eterno abre sozinho na primeira visita ao Gestor; abrir e tocar "Escalar o craque". Fechar o app antes de abrir o pacote e reabrir: o pacote continua esperando.
 4. **Jornada diária:** abrir o Gestor, jogar uma rodada ao vivo, ver o resultado. Contar toques. Anotar onde ficou perdido.
 5. **Fim de temporada (ritual):** simular até o fim (ou usar um save perto do fim) e tocar "Encerrar temporada". Passar por todas as etapas, inclusive fechar o app no meio e voltar pelo painel "Entre temporadas". Esperado: um novo pacote de lenda chega no ritual.
-6. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
+6. **App Lendas (novo no 13):** abrir o app "Lendas" (coroa dourada) na grade do celular. Esperado: seis cartas (as ainda não ganhas aparecem bloqueadas), o pacote esperando no topo e a lenda da temporada. Tocar numa carta abre o detalhe com os números. No Gestor, só um atalho pequeno.
+7. **Vitória:** ganhar uma partida ao vivo. Esperado: confete curto no banner de vitória (não aparece com "Reduzir movimento").
+8. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
 
 ## Relatório que o agente devolve para mim
 

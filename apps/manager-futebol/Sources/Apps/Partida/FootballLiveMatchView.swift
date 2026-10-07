@@ -427,6 +427,9 @@ struct FootballLiveMatchView: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(tint.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                if result == .win && !staticPreview && !FactoryCapture.isUITesting { FootballCelebrationBurst() }
+            }
     }
 
     // MARK: - Lance a lance
