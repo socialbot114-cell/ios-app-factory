@@ -55,46 +55,33 @@ final class FootballIconTests: XCTestCase {
         XCTAssertEqual(career.player(card.playerID)?.name, card.name, "Relatórios antigos ainda mostram o nome")
     }
 
-    func testGuestIsOnlyAvailableInEasyMode() throws {
+    func testStartingPackIsGrantedOnlyOnceAtTheBeginning() throws {
         var career = career()
-        career.difficulty = .normal
-        XCTAssertFalse(career.canPickGuest)
-        XCTAssertFalse(career.selectGuest(.yashin))
-        career.difficulty = .easy
-        XCTAssertTrue(career.canPickGuest)
-        XCTAssertTrue(career.selectGuest(.yashin))
-        XCTAssertEqual(career.iconState.guest, .yashin)
-        XCTAssertTrue(career.startingXI.contains(IconCard.yashin.playerID))
-
-        XCTAssertTrue(career.selectGuest(.eusebio), "Trocar de convidado remove o anterior")
-        XCTAssertEqual(career.iconState.guest, .eusebio)
-        XCTAssertFalse(career.players.contains { $0.id == IconCard.yashin.playerID })
-
-        XCTAssertTrue(career.selectGuest(nil))
-        XCTAssertNil(career.iconState.guest)
-        XCTAssertFalse(career.players.contains { $0.id == IconCard.eusebio.playerID })
-        XCTAssertEqual(career.startingXI.count, 11)
+        XCTAssertNil(career.iconState.pendingPack)
+        career.grantStartingIconPack()
+        let card = try XCTUnwrap(career.iconState.pendingPack)
+        XCTAssertTrue(career.iconState.startingPackGranted)
+        XCTAssertEqual(career.openIconPack(), card)
+        career.grantStartingIconPack()
+        XCTAssertNil(career.iconState.pendingPack, "A lenda inicial só vem uma vez por carreira")
+        XCTAssertEqual(career.iconState.seasonIcon, card)
     }
 
-    func testGuestCannotDuplicateTheSeasonIcon() throws {
+    func testAnUnopenedPackIsKeptInsteadOfBeingReplaced() throws {
         var career = career()
-        career.difficulty = .easy
         career.grantIconPack()
-        let card = try XCTUnwrap(career.openIconPack())
-        XCTAssertFalse(career.guestChoices.contains(card))
-        XCTAssertFalse(career.selectGuest(card))
+        let first = try XCTUnwrap(career.iconState.pendingPack)
+        career.grantIconPack()
+        XCTAssertEqual(career.iconState.pendingPack, first)
     }
 
-    func testGuestPlaysOneMatchAndThenLeaves() throws {
-        var career = career()
-        career.difficulty = .easy
-        XCTAssertTrue(career.selectGuest(.garrincha))
-        XCTAssertTrue(career.beginMatchDay())
-        XCTAssertFalse(career.canPickGuest, "Durante a partida não dá para trocar o convidado")
-        XCTAssertTrue(career.finishMatchDay())
-        XCTAssertNil(career.iconState.guest)
-        XCTAssertFalse(career.players.contains { $0.id == IconCard.garrincha.playerID })
-        XCTAssertEqual(career.startingXI.count, 11)
+    func testOldIconStateDecodesWithDefaultsAndIgnoresTheRemovedGuest() throws {
+        let empty = try JSONDecoder().decode(IconState.self, from: Data("{}".utf8))
+        XCTAssertEqual(empty, IconState())
+        let old = try JSONDecoder().decode(IconState.self, from: Data(#"{"guest":"yashin","collected":["yashin"]}"#.utf8))
+        XCTAssertEqual(old.collected, [.yashin])
+        XCTAssertNil(old.seasonIcon)
+        XCTAssertFalse(old.startingPackGranted)
     }
 
     func testIconStateSurvivesSaveAndOldSavesHaveNone() throws {

@@ -731,6 +731,9 @@ struct FootballClubSelectionView: View {
                     Button {
                         if !career.acceptCareerOffer(clubID: offer.clubID, coachName: coachName) {
                             onAlert("Não foi possível fechar esta proposta.")
+                        } else if !FactoryCapture.isUITesting {
+                            // A primeira lenda chega junto com o contrato; os UI tests mantêm o Gestor como sempre foi.
+                            career.grantStartingIconPack()
                         }
                     } label: {
                         offerCard(offer, club: club)

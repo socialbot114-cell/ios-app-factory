@@ -71,11 +71,13 @@ Interrupções a testar: fechar o app no meio de cada etapa e reabrir. Esperado:
 Casos extremos: ser demitido na virada (o ritual termina e as propostas de emprego aparecem); elenco com 0 contratos vencendo (etapa é pulada).
 
 ### 5.3 Craques eternos no jogo
-1. Abrir o pacote no ritual (ver 5.2) e confirmar: salário zero, não pode ser vendido nem dispensado, joga como titular.
-2. Jogar uma partida com o craque e ver o nome nos lances e no relatório.
-3. Em Ajustes, mudar para Fácil; no Gestor aparece "Convidar um craque". Escolher um, jogar a partida e confirmar que ele sai depois.
-4. Mudar de clube com um craque (demissão e nova proposta). Esperado: o craque da temporada acompanha o treinador; o convidado não.
-5. No fim da temporada o craque some do elenco antes do envelhecimento, mas o nome continua nos relatórios antigos.
+1. Começar uma carreira nova e aceitar a proposta de um clube. Esperado: ao abrir o Gestor pela primeira vez aparece sozinho o pacote de craque eterno (uma vez só); abrir, ver o giro e o brilho e tocar "Escalar o craque".
+2. Conferir: salário zero, não pode ser vendido nem dispensado, joga como titular e aparece no painel "Craque eterno da temporada".
+3. Fechar o app antes de abrir o pacote e reabrir. Esperado: o pacote continua esperando no painel do Gestor.
+4. Jogar uma partida com o craque e ver o nome nos lances e no relatório.
+5. Mudar de clube (demissão e nova proposta). Esperado: o craque da temporada acompanha o treinador.
+6. No fim da temporada o craque some do elenco antes do envelhecimento e um novo pacote chega no ritual de virada; o nome do antigo continua nos relatórios antigos.
+7. Regra: só uma lenda por temporada, mais a do começo da carreira. Não existe escolha de convidado por partida.
 
 ### 5.4 Jornada diária (ritmo)
 Cronometrar e contar toques: abrir o app, resolver duas ou três pendências, jogar uma rodada (ao vivo e na simulação rápida), ver o resultado. Referência: avançar uma rodada em até 3 toques; jogar ao vivo e fechar sem modal preso. Anotar qualquer lugar onde o jogador não sabe o que fazer.

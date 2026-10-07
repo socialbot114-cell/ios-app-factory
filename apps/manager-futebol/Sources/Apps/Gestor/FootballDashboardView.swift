@@ -76,7 +76,14 @@ struct FootballDashboardView: View {
         }
         .factoryPage()
         .navigationTitle("Painel do treinador")
-        .onAppear { career.markTutorialSeen("dashboard") }
+        .onAppear {
+            career.markTutorialSeen("dashboard")
+            // Pacote de craque eterno esperando (começo da carreira): abre sozinho, uma vez, fora de testes e capturas.
+            if career.iconState.pendingPack != nil, career.offseason == nil, career.liveMatch == nil,
+               !FactoryCapture.isUITesting, FactoryCapture.screen == nil {
+                showsIconPack = true
+            }
+        }
         .sheet(isPresented: $showsPrepFlow, onDismiss: {
             // A partida só abre depois que a folha terminou de fechar; um atraso fixo derruba a partida em simuladores lentos.
             guard playAfterPrepDismiss else { return }

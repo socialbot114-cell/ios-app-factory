@@ -446,7 +446,6 @@ extension FootballCareer {
         if let summaryBefore, let userFixtureIndex, let summary = buildPostMatchSummary(fixture: fixtures[userFixtureIndex], before: summaryBefore) {
             fixtures[userFixtureIndex].summary = summary
         }
-        if userFixtureIndex != nil { expireGuestIcon() }
     }
 
     mutating func developAIPlayers(using random: inout FootballRandom) {

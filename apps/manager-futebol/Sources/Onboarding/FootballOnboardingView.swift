@@ -56,7 +56,7 @@ struct FootballOnboardingView: View {
                     Row(symbol: "person.2.wave.2.fill", title: "Intervalo", detail: "A conversa de vestiário muda o segundo tempo.")]),
         Page(symbol: "sun.horizon.fill", title: "Entre as temporadas, decisões",
              body: "Quando o campeonato acaba, o ritmo muda: uma etapa por vez, sem pular nenhuma.",
-             rows: [Row(symbol: "crown.fill", title: "Craque eterno", detail: "Todo fim de temporada chega um pacote com uma lenda que joga a temporada seguinte com você."),
+             rows: [Row(symbol: "crown.fill", title: "Craque eterno", detail: "Você começa a carreira com uma lenda e ganha outra a cada temporada. Cada uma joga o ano inteiro com você."),
                     Row(symbol: "beach.umbrella.fill", title: "Férias e pré-temporada", detail: "Descanso ou ritmo? Cada escolha tem preço."),
                     Row(symbol: "building.2.fill", title: "Patrocinador", detail: "Segurança ou risco na camisa do clube.")]),
         Page(symbol: "gauge.with.dots.needle.67percent", title: "Escolha o seu desafio",
@@ -236,13 +236,6 @@ struct FootballOnboardingView: View {
                 .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.3 + Double(offset) * 0.12), value: visible)
                 .accessibilityAddTraits(selected ? .isSelected : [])
                 .accessibilityIdentifier("onboarding-difficulty-\(level.rawValue)")
-            }
-            if career.difficulty == .easy {
-                Label("No Fácil, antes de cada partida você pode convidar um craque eterno para jogar.", systemImage: "star.circle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(FootballTheme.gold)
-                    .multilineTextAlignment(.leading)
-                    .transition(.opacity)
             }
         }
     }

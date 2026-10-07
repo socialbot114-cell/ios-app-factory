@@ -16,38 +16,6 @@ struct FootballIconCardImage: View {
     }
 }
 
-// MARK: - Faíscas
-
-/// Estouro curto de faíscas douradas ao redor do centro da vista.
-private struct FootballIconSparkBurst: View {
-    var count = 10
-    var radius: CGFloat = 52
-    @State private var out = false
-    @State private var opacity = 0.0
-
-    var body: some View {
-        ZStack {
-            ForEach(0..<count, id: \.self) { index in
-                let angle = Double(index) / Double(count) * 2 * Double.pi
-                Circle()
-                    .fill(FootballTheme.gold)
-                    .frame(width: 5, height: 5)
-                    .offset(x: out ? CGFloat(cos(angle)) * radius : 0, y: out ? CGFloat(sin(angle)) * radius : 0)
-                    .opacity(opacity)
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-        .onAppear {
-            opacity = 1
-            withAnimation(.easeOut(duration: 0.6)) {
-                out = true
-                opacity = 0
-            }
-        }
-    }
-}
-
 // MARK: - Abertura do pacote
 
 /// Cerimônia curta: o pacote dourado treme, estoura em faíscas, vira e revela a carta com brilho e os seis números.
@@ -265,59 +233,9 @@ struct FootballIconPackView: View {
     }
 }
 
-// MARK: - Convidado da partida (modo Fácil)
-
-struct FootballIconGuestPicker: View {
-    @Binding var career: FootballCareer
-    @State private var burst = 0
-
-    private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(career.guestChoices) { card in
-                cell(card)
-            }
-        }
-        .sensoryFeedback(.impact(weight: .medium), trigger: burst)
-    }
-
-    private func cell(_ card: IconCard) -> some View {
-        let selected = career.iconState.guest == card
-        let anySelected = career.iconState.guest != nil
-        return Button {
-            if career.selectGuest(selected ? nil : card) { burst += 1 }
-        } label: {
-            ZStack {
-                Image(card.assetName)
-                    .resizable()
-                    .scaledToFit()
-                    .shadow(color: selected ? FootballTheme.gold.opacity(0.9) : .clear, radius: selected ? 12 : 0)
-                    .scaleEffect(selected ? 1.07 : 1)
-                    .saturation(selected || !anySelected ? 1 : 0.55)
-                    .overlay(alignment: .topTrailing) {
-                        if selected {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(.white, FootballTheme.accent)
-                                .symbolEffect(.bounce, value: burst)
-                                .offset(x: 4, y: -4)
-                        }
-                    }
-                if selected { FootballIconSparkBurst() }
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(card.accessibilityText)
-        .accessibilityValue(selected ? "Convidado desta partida" : "")
-        .accessibilityIdentifier("icon-guest-\(card.rawValue)")
-        .animation(.spring(response: 0.32, dampingFraction: 0.52), value: selected)
-    }
-}
-
 // MARK: - Painel do Gestor
 
-/// Aparece só quando há algo a fazer: pacote fechado, craque da temporada ou escolha de convidado no modo Fácil.
+/// Aparece só quando há algo a fazer: pacote fechado ou craque da temporada.
 struct FootballIconPanel: View {
     @Binding var career: FootballCareer
     let onOpenPack: () -> Void
@@ -326,13 +244,12 @@ struct FootballIconPanel: View {
         Group {
             if career.iconState.pendingPack != nil && !career.isFired { packPanel }
             if let icon = career.iconState.seasonIcon { seasonPanel(icon) }
-            if career.canPickGuest { guestPanel }
         }
     }
 
     private var packPanel: some View {
         FactoryPanel(title: "Pacote de craque eterno", systemImage: "gift.fill") {
-            Text("Chegou um pacote do fim da temporada. Abra para ver quem joga a próxima temporada inteira com você.")
+            Text("Chegou um pacote de craque eterno. Abra para descobrir quem joga a temporada inteira com você.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button { onOpenPack() } label: {
                 Label("Abrir pacote", systemImage: "sparkles").frame(maxWidth: .infinity)
@@ -355,14 +272,5 @@ struct FootballIconPanel: View {
             }
         }
         .accessibilityIdentifier("icon-season-panel")
-    }
-
-    private var guestPanel: some View {
-        FactoryPanel(title: "Convidar um craque", systemImage: "star.circle.fill") {
-            Text("Modo Fácil: escolha 1 craque para jogar só a próxima partida. Toque de novo para dispensar.")
-                .font(.caption).foregroundStyle(.secondary)
-            FootballIconGuestPicker(career: $career)
-        }
-        .accessibilityIdentifier("icon-guest-panel")
     }
 }

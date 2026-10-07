@@ -2,8 +2,8 @@ import Foundation
 
 // MARK: - Craques eternos
 
-/// Seis cartas lendárias: uma chega em pacote a cada fim de temporada (joga a temporada seguinte inteira) e, no modo Fácil,
-/// o usuário também pode convidar uma delas para uma única partida.
+/// Seis cartas lendárias: uma chega em pacote quando a carreira começa e outra a cada fim de temporada;
+/// cada uma joga a temporada inteira com o treinador.
 enum IconCard: String, Codable, CaseIterable, Identifiable {
     case yashin, garrincha, zagallo, beckenbauer, charlton, eusebio
 
@@ -116,12 +116,27 @@ enum IconCard: String, Codable, CaseIterable, Identifiable {
 struct IconState: Codable, Equatable {
     /// Carta de um pacote fechado, esperando o usuário abrir.
     var pendingPack: IconCard? = nil
-    /// Craque da temporada atual (vem do pacote do fim da temporada anterior).
+    /// Craque da temporada atual.
     var seasonIcon: IconCard? = nil
-    /// Convidado de uma única partida (modo Fácil).
-    var guest: IconCard? = nil
     /// Cartas que já passaram pelo clube, para o pacote priorizar as que faltam.
     var collected: [IconCard] = []
+    /// A primeira lenda da carreira já foi entregue.
+    var startingPackGranted = false
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case pendingPack, seasonIcon, collected, startingPackGranted
+    }
+
+    /// Saves anteriores não têm todos os campos (e podem trazer o antigo convidado, que é ignorado).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        pendingPack = try container.decodeIfPresent(IconCard.self, forKey: .pendingPack)
+        seasonIcon = try container.decodeIfPresent(IconCard.self, forKey: .seasonIcon)
+        collected = try container.decodeIfPresent([IconCard].self, forKey: .collected) ?? []
+        startingPackGranted = try container.decodeIfPresent(Bool.self, forKey: .startingPackGranted) ?? false
+    }
 }
 
 extension FootballPlayer {
@@ -129,16 +144,6 @@ extension FootballPlayer {
 }
 
 extension FootballCareer {
-    /// Cartas que o usuário pode chamar como convidado agora (o craque da temporada já está no elenco).
-    var guestChoices: [IconCard] {
-        IconCard.allCases.filter { $0 != iconState.seasonIcon }
-    }
-
-    /// Só no modo Fácil, com o clube ativo e fora de uma partida em andamento.
-    var canPickGuest: Bool {
-        difficulty == .easy && selectedClubID != nil && liveMatch == nil && !isFired
-    }
-
     // MARK: Elenco
 
     func makeIconPlayer(_ card: IconCard, teamID: Int?) -> FootballPlayer {
@@ -186,16 +191,24 @@ extension FootballCareer {
         repairLineup()
     }
 
-    // MARK: Pacote de fim de temporada
+    // MARK: Pacotes
 
     /// Sorteia a carta do pacote, priorizando as que o clube ainda não teve.
     mutating func grantIconPack() {
+        guard iconState.pendingPack == nil else { return }
         var random = FootballRandom(seed: matchSeed(stream: .offseason, id: 700 + season))
         let missing = IconCard.allCases.filter { !iconState.collected.contains($0) }
         iconState.pendingPack = random.pick(missing.isEmpty ? IconCard.allCases : missing)
-        if let card = iconState.pendingPack {
-            addInbox(.news, title: "Pacote de craque eterno", body: "Um pacote com \(card.name) chegou ao clube. Abra no painel do Gestor: ele joga a temporada inteira com você.")
+        if iconState.pendingPack != nil {
+            addInbox(.news, title: "Pacote de craque eterno", body: "Um pacote de craque eterno chegou ao clube. Abra no painel do Gestor para descobrir quem joga a temporada inteira com você.")
         }
+    }
+
+    /// Ao começar a carreira o clube já ganha a primeira lenda; só acontece uma vez por carreira.
+    mutating func grantStartingIconPack() {
+        guard !iconState.startingPackGranted, selectedClubID != nil, iconState.seasonIcon == nil, iconState.pendingPack == nil else { return }
+        iconState.startingPackGranted = true
+        grantIconPack()
     }
 
     /// Abre o pacote: o craque entra no elenco pela temporada.
@@ -205,56 +218,22 @@ extension FootballCareer {
         iconState.pendingPack = nil
         iconState.seasonIcon = card
         if !iconState.collected.contains(card) { iconState.collected.append(card) }
-        if iconState.guest == card { iconState.guest = nil }
         installIcon(card)
         return card
     }
 
     /// Fim da temporada: o craque do pacote se despede antes do envelhecimento e das aposentadorias.
     mutating func expireSeasonIcon() {
-        if let guest = iconState.guest {
-            iconState.guest = nil
-            removeIcon(guest)
-        }
         if let card = iconState.seasonIcon {
             iconState.seasonIcon = nil
             removeIcon(card)
         }
     }
 
-    // MARK: Convidado de uma partida (modo Fácil)
-
-    /// Escolhe (ou troca, ou tira com `nil`) o craque convidado da próxima partida.
-    @discardableResult
-    mutating func selectGuest(_ card: IconCard?) -> Bool {
-        guard canPickGuest else { return false }
-        if let card, card == iconState.seasonIcon { return false }
-        if let current = iconState.guest {
-            iconState.guest = nil
-            removeIcon(current)
-        }
-        guard let card else { return true }
-        iconState.guest = card
-        if !iconState.collected.contains(card) { iconState.collected.append(card) }
-        installIcon(card)
-        return true
-    }
-
-    /// Troca de clube: o convidado vai embora e o craque da temporada acompanha o treinador.
+    /// Troca de clube: o craque da temporada acompanha o treinador.
     mutating func followManager(toClub clubID: Int) {
-        if let guest = iconState.guest {
-            iconState.guest = nil
-            players.removeAll { $0.id == guest.playerID }
-        }
         if let card = iconState.seasonIcon, let index = players.firstIndex(where: { $0.id == card.playerID }) {
             players[index].teamID = clubID
         }
-    }
-
-    /// O convidado vale uma partida: sai do elenco quando o dia de jogo termina.
-    mutating func expireGuestIcon() {
-        guard let guest = iconState.guest else { return }
-        iconState.guest = nil
-        removeIcon(guest)
     }
 }
