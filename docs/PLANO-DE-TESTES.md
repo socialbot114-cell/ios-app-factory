@@ -50,7 +50,7 @@ Cada roteiro tem passos e resultado esperado. Marque OK, falha ou observação, 
 1. Instalar limpo (ou apagar o app) e abrir. Esperado: cinco páginas, a primeira com fundo animado, ícone que "pula" e linhas que entram em cascata.
 2. Deslizar e usar "Continuar". Esperado: ponto da página acompanha, vibração leve a cada página.
 3. Tocar "Pular" na página 1. Esperado: vai direto à escolha de dificuldade.
-4. Escolher Fácil, Normal e Difícil. Esperado: cartão selecionado com contorno dourado; no Fácil aparece o aviso do craque convidado.
+4. Escolher Fácil, Normal e Difícil. Esperado: cartão selecionado com contorno dourado.
 5. Tocar "Escolher meu clube". Esperado: tela de propostas; ao fechar e abrir o app depois, o onboarding não volta.
 6. Ligar "Reduzir movimento" no iOS e repetir. Esperado: conteúdo aparece sem animação.
 Tempo: do início até aceitar uma proposta em até 2 minutos.
@@ -93,7 +93,7 @@ Cronometrar e contar toques: abrir o app, resolver duas ou três pendências, jo
 
 Antes de distribuir: confirmar no App Store Connect que o build processou e está em "Pronto para testar", e adicionar o grupo de testadores internos.
 
-Roteiro do testador (2 dias de uso real): jogar uma carreira nova até o fim da primeira temporada, passar pelo ritual inteiro, abrir o pacote de craque e testar o modo Fácil. Enviar feedback pelo próprio TestFlight (captura de tela incluída).
+Roteiro do testador (2 dias de uso real): jogar uma carreira nova até o fim da primeira temporada, passar pelo ritual inteiro, abrir o pacote de craque e conferir a regra de uma lenda por temporada. Enviar feedback pelo próprio TestFlight (captura de tela incluída).
 
 Dados a coletar de cada testador: aparelho e versão do iOS, build, o que estava fazendo e uma captura de tela ou gravação.
 
