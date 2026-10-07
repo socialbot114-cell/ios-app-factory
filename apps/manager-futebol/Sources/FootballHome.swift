@@ -62,8 +62,20 @@ struct FootballHome: View {
             } else if booting {
                 FootballLoadingView()
             } else if showsTitle {
-                FootballTitleScreen(continueSubtitle: continueSubtitle, onContinue: { showsTitle = false },
-                                    onNewGame: startNewFromTitle, onOptions: { refreshSlots(); showsTitleOptions = true })
+                FootballProfileRoom(activeSlot: activeSlot, summaries: slotSummaries,
+                                    onEnter: { slot in
+                                        if slot != activeSlot { loadSlot(slot) }
+                                        showsTitle = false
+                                    },
+                                    onCreate: { slot in
+                                        if slot == activeSlot && career.selectedClubID == nil {
+                                            showsTitle = false
+                                        } else {
+                                            startNewCareer(slot: slot)
+                                            showsTitle = false
+                                        }
+                                    },
+                                    onOptions: { refreshSlots(); showsTitleOptions = true })
             } else if career.selectedClubID == nil {
                 if showsOnboarding {
                     FootballOnboardingView(career: $career) {
@@ -382,7 +394,7 @@ struct FootballHome: View {
         "offseason-holiday": .holiday, "offseason-sponsor": .sponsor, "offseason-preseason": .preseason, "offseason-kickoff": .kickoff,
     ]
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow", "onboarding", "onboarding-mode", "loading", "title", "title-new"])
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow", "onboarding", "onboarding-mode", "loading", "title", "title-new", "title-shade"])
         .union(FootballF4Captures.names).union(FootballF5Captures.names).union(offseasonCaptures.keys)
 
     @ViewBuilder
@@ -393,8 +405,15 @@ struct FootballHome: View {
                 FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: { _ in }, onNew: { _ in }, onDelete: { _ in })
             }.factoryPage().navigationTitle("Carreiras do FutOS")
         case "loading": FootballLoadingView()
-        case "title": FootballTitleScreen(continueSubtitle: "Aurora FC · temporada 2", onContinue: {}, onNewGame: {}, onOptions: {})
-        case "title-new": FootballTitleScreen(continueSubtitle: nil, onContinue: {}, onNewGame: {}, onOptions: {})
+        case "title":
+            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date()),
+                                                           SaveSlotSummary(slot: 1, clubID: 3, season: 1, matchDay: 3, division: .serieB, updatedAt: Date()), nil],
+                                onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
+        case "title-new":
+            FootballProfileRoom(activeSlot: 0, summaries: [nil, nil, nil], onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
+        case "title-shade":
+            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date()), nil, nil],
+                                startsWithShade: true, onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
         case "onboarding": FootballOnboardingView(career: $career, startPage: 0) {}
         case "onboarding-mode": FootballOnboardingView(career: $career, startPage: 4) {}
         case let name where Self.offseasonCaptures[name] != nil:

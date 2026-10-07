@@ -954,6 +954,16 @@ Hoje (antes desta frente): o app abria numa tela preta com a barra "FutOS" e ent
 
 **Aceite:** do toque no ícone até o primeiro jogo em no máximo três toques (Continuar, Gestor, Jogar); quem não tem carreira cai no onboarding.
 
+### 41 — Sala de espera: perfis, digital e notificações de ambiente | Entrega A
+
+Pedido de 07/out: a primeira tela depois do carregamento deve parecer um celular, não um menu. Substitui o menu Continuar/Novo jogo/Opções do item 40.
+
+- **TIT-09 Perfis como janelinhas.** Cada carreira salva é um perfil com o escudo do clube como avatar; espaços livres são janelinhas tracejadas para criar um novo jogo. Entrar: escolher o perfil e segurar a digital (botão fictício com anel de progresso, haptic de sucesso). Espaço livre: botão "Criar carreira aqui".
+- **TIT-10 Ilha e centro de notificações de ambiente.** Uma ilha translúcida no topo troca de aviso a cada 6 s. Arrastar do topo para baixo (ou tocar na ilha) abre o centro de notificações; arrastar para cima, tocar fora ou "Fechar" fecha. Os avisos são de ambiente: não vêm da carreira e não levam a lugar nenhum.
+- **TIT-11 Variedade e continuidade.** Cinco avisos por vez, de tipos diferentes (mensagem, anúncio de patrocinador fictício, meme, notícia da liga, Rodada Mágica, banco, rede social, tempo, sistema), sorteados com semente que muda a cada 90 s, para a sala parecer viva sem repetir. Algumas prévias aparecem ocultas ("Conteúdo oculto"), como num celular bloqueado.
+- **TIT-12 (próximo).** Mesmo sistema dentro do jogo: mensagens de ambiente ocasionais no centro de notificações do FutOS, marcas fictícias dos patrocinadores da carreira e memes ligados a resultados reais. Reduzir movimento desliga a troca animada.
+- **Estado:** TIT-09 a TIT-11 escritos na `feature/entrega-a-ritmo`, sem compilador; capturas `title`, `title-new` e `title-shade`. Sem testes de interface por enquanto (a sala é desligada nos UI tests, como a abertura).
+
 ### Ordem de entrega proposta
 
 Cada entrega é uma versão do TestFlight e só avança com CI verde e capturas revisadas.
