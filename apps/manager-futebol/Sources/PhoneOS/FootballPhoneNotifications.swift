@@ -112,6 +112,27 @@ struct PhoneNotificationCenter: View {
                     }
                     .accessibilityIdentifier("notification-\(item.id)")
                 }
+                if !FactoryCapture.isUITesting {
+                    Section {
+                        ForEach(AmbientFeed.batch(context: career.ambientContext)) { notice in
+                            HStack(spacing: 12) {
+                                Image(systemName: notice.symbol).frame(width: 30).foregroundStyle(notice.tint)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(notice.title).font(.subheadline.weight(.semibold))
+                                    Text(notice.hidden ? "Conteúdo oculto" : notice.body)
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(notice.app).font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            .accessibilityIdentifier("ambient-\(notice.id)")
+                        }
+                    } header: {
+                        Text("No celular hoje")
+                    } footer: {
+                        Text("Avisos de ambiente: não fazem parte da sua carreira.")
+                    }
+                }
             }
             .navigationTitle("Notificações")
             .navigationBarTitleDisplayMode(.inline)

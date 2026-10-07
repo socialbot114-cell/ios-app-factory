@@ -21,6 +21,7 @@ struct FootballProfileRoom: View {
     @State private var drift = false
     @State private var shown = false
     @State private var impact = 0
+    @State private var streak = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let ticker = Timer.publish(every: 6, on: .main, in: .common).autoconnect()
@@ -65,6 +66,15 @@ struct FootballProfileRoom: View {
             Text("Quem vai entrar?")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
+            if streak >= 2 {
+                Label("\(streak) dias seguidos", systemImage: "flame.fill")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(FootballTheme.gold)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .background(FootballTheme.gold.opacity(0.16), in: Capsule())
+                    .padding(.top, 8)
+                    .accessibilityIdentifier("profile-streak")
+            }
             HStack(alignment: .top, spacing: 12) {
                 ForEach(slots, id: \.self) { slot in tile(slot) }
             }
@@ -108,6 +118,7 @@ struct FootballProfileRoom: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { noticeIndex += 1 }
         }
         .onAppear {
+            streak = FootballVisitStreak.register()
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) { shown = true }
             if !reduceMotion { drift = true }
         }

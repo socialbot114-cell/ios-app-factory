@@ -573,6 +573,8 @@ struct ClubHeroCard: View {
     private func heroMetric(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value).font(.headline.monospacedDigit()).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.5), value: value)
             Text(title).font(.caption2).foregroundStyle(.white.opacity(0.75))
         }
         .padding(.horizontal, 12)

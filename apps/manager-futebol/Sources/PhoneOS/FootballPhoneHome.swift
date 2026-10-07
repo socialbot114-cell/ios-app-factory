@@ -127,6 +127,8 @@ struct PhoneHomeScreen: View {
             VStack(alignment: .leading, spacing: 4) {
                 Image(systemName: symbol).font(.caption).foregroundStyle(.white.opacity(0.8))
                 Text(value).font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+                    .animation(.snappy(duration: 0.5), value: value)
                 Text(title).font(.caption2).foregroundStyle(.white.opacity(0.75))
             }
             .padding(12)

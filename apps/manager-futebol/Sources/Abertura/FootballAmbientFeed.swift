@@ -15,6 +15,37 @@ struct AmbientNotice: Identifiable {
     let body: String
     /// Prévia oculta, como no celular com a tela bloqueada.
     let hidden: Bool
+    /// Quando preenchido, o aviso só aparece se a carreira estiver nessa situação.
+    var mood: Mood? = nil
+
+    enum Mood: String {
+        case win, draw, loss, lowCash
+    }
+}
+
+/// O que a carreira conta para os avisos de ambiente reagirem (sem nunca levar a lugar nenhum).
+struct AmbientContext: Equatable {
+    var lastResult: FootballResult? = nil
+    var lowCash = false
+
+    var moods: [AmbientNotice.Mood] {
+        var result: [AmbientNotice.Mood] = []
+        switch lastResult {
+        case .win: result.append(.win)
+        case .draw: result.append(.draw)
+        case .loss: result.append(.loss)
+        case nil: break
+        }
+        if lowCash { result.append(.lowCash) }
+        return result
+    }
+}
+
+extension FootballCareer {
+    var ambientContext: AmbientContext {
+        let result = selectedClubID.flatMap { latestUserFixture?.result(for: $0) }
+        return AmbientContext(lastResult: result, lowCash: selectedClubID != nil && transferBudget < 0)
+    }
 }
 
 enum AmbientFeed {
@@ -57,10 +88,34 @@ enum AmbientFeed {
                       title: "Bateria em 20%", body: "Conecte o carregador antes do jogo.", hidden: false),
         AmbientNotice(id: 18, kind: .system, app: "Sistema", symbol: "arrow.down.circle.fill", tint: .gray,
                       title: "Atualização disponível", body: "FutOS tem novidades para o seu celular.", hidden: false),
+        AmbientNotice(id: 19, kind: .meme, app: "Chuteira", symbol: "face.smiling.inverse", tint: .pink,
+                      title: "Torcedor feliz", body: "Hoje ninguém quer ouvir a palavra crise.", hidden: false, mood: .win),
+        AmbientNotice(id: 20, kind: .news, app: "Liga", symbol: "list.number", tint: .indigo,
+                      title: "Time embalado", body: "A vitória reacendeu a briga pelo topo da tabela.", hidden: false, mood: .win),
+        AmbientNotice(id: 21, kind: .social, app: "Chuteira", symbol: "bubble.left.and.bubble.right.fill", tint: .pink,
+                      title: "Assunto do momento", body: "A torcida pôs o seu nome nos assuntos mais comentados.", hidden: false, mood: .win),
+        AmbientNotice(id: 22, kind: .sponsor, app: "Anúncio", symbol: "megaphone.fill", tint: .orange,
+                      title: "Cerveja Gol de Placa", body: "Vitória pede brinde. Rodada por nossa conta.", hidden: false, mood: .win),
+        AmbientNotice(id: 23, kind: .meme, app: "Chuteira", symbol: "face.smiling.inverse", tint: .pink,
+                      title: "Resenha", body: "Quando o técnico diz que o time jogou bem e perdeu de três.", hidden: false, mood: .loss),
+        AmbientNotice(id: 24, kind: .news, app: "Liga", symbol: "list.number", tint: .indigo,
+                      title: "Pressão", body: "Torcida pede explicações depois da derrota.", hidden: false, mood: .loss),
+        AmbientNotice(id: 25, kind: .message, app: "Mensagens", symbol: "tray.full.fill", tint: .green,
+                      title: "Mãe", body: "Vi o jogo. Come alguma coisa, filho.", hidden: false, mood: .loss),
+        AmbientNotice(id: 26, kind: .social, app: "Chuteira", symbol: "bubble.left.and.bubble.right.fill", tint: .pink,
+                      title: "Fórum da torcida", body: "O tópico Professor, e agora? já tem 2 mil respostas.", hidden: false, mood: .loss),
+        AmbientNotice(id: 27, kind: .meme, app: "Chuteira", symbol: "face.smiling.inverse", tint: .pink,
+                      title: "Um ponto", body: "O empate que ninguém comemorou.", hidden: false, mood: .draw),
+        AmbientNotice(id: 28, kind: .news, app: "Liga", symbol: "list.number", tint: .indigo,
+                      title: "Tabela", body: "Mais um empate: a briga fica para a próxima rodada.", hidden: false, mood: .draw),
+        AmbientNotice(id: 29, kind: .bank, app: "Banco", symbol: "banknote.fill", tint: Color(red: 0.10, green: 0.50, blue: 0.40),
+                      title: "Saldo curto", body: "Confira o Banco antes de contratar.", hidden: false, mood: .lowCash),
+        AmbientNotice(id: 30, kind: .message, app: "Mensagens", symbol: "tray.full.fill", tint: .green,
+                      title: "Empresário", body: "Tem proposta boa na mesa, mas olha o caixa antes.", hidden: false, mood: .lowCash),
     ]
 
-    /// Cinco avisos de tipos diferentes; a seleção troca a cada 90 segundos.
-    static func batch(at date: Date = Date(), count: Int = 5) -> [AmbientNotice] {
+    /// Avisos de tipos diferentes; a seleção troca a cada 90 segundos. Com contexto, até dois avisos reagem à carreira.
+    static func batch(at date: Date = Date(), count: Int = 5, context: AmbientContext? = nil) -> [AmbientNotice] {
         var state = UInt64(max(0, date.timeIntervalSince1970 / 90)) &* 6364136223846793005 &+ 1442695040888963407
         func next() -> Int {
             state = state &* 6364136223846793005 &+ 1442695040888963407
@@ -74,9 +129,17 @@ enum AmbientFeed {
         }
         var used = Set<AmbientNotice.Kind>()
         var result: [AmbientNotice] = []
+        // Primeiro os avisos que reagem à carreira (no máximo dois), depois os de ambiente puro.
+        let moods = context?.moods ?? []
+        if !moods.isEmpty {
+            for index in order where result.count < 2 {
+                let notice = pool[index]
+                if let mood = notice.mood, moods.contains(mood), used.insert(notice.kind).inserted { result.append(notice) }
+            }
+        }
         for index in order where result.count < count {
             let notice = pool[index]
-            if used.insert(notice.kind).inserted { result.append(notice) }
+            if notice.mood == nil, used.insert(notice.kind).inserted { result.append(notice) }
         }
         return result
     }

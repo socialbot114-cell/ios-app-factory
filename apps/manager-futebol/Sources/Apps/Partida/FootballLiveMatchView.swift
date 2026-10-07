@@ -372,7 +372,7 @@ struct FootballLiveMatchView: View {
         let rivalGoals = live.userIsHome ? live.awayGoals : live.homeGoals
         let result: FootballResult = userGoals > rivalGoals ? .win : (userGoals == rivalGoals ? .draw : .loss)
         return VStack(alignment: .leading, spacing: 12) {
-            resultBanner(result, penalties: live.sim.needsShootout)
+            resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals)
             if career.canRevealShootout {
                 Button { career.revealLiveShootout() } label: { Label("Ver os pênaltis", systemImage: "scope").frame(maxWidth: .infinity) }
                     .buttonStyle(.borderedProminent)
@@ -407,13 +407,13 @@ struct FootballLiveMatchView: View {
         return copy.hypeTitle
     }
 
-    private func resultBanner(_ result: FootballResult, penalties: Bool) -> some View {
+    private func resultBanner(_ result: FootballResult, penalties: Bool, margin: Int = 0) -> some View {
         let text: String
         let tint: Color
         switch result {
         case .win:
-            text = "Vitória! Três pontos para a conta."
-            tint = .green
+            text = margin >= 3 ? "Goleada! Que atuação, professor." : "Vitória! Três pontos para a conta."
+            tint = margin >= 3 ? Color(red: 0.05, green: 0.55, blue: 0.25) : .green
         case .draw:
             text = penalties ? "Empate no tempo regulamentar: a decisão vai aos pênaltis." : "Empate. Um ponto na tabela."
             tint = .gray
@@ -428,7 +428,9 @@ struct FootballLiveMatchView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(tint.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
-                if result == .win && !staticPreview && !FactoryCapture.isUITesting { FootballCelebrationBurst() }
+                if result == .win && !staticPreview && !FactoryCapture.isUITesting {
+                    FootballCelebrationBurst(count: margin >= 3 ? 64 : 34)
+                }
             }
     }
 
@@ -953,6 +955,11 @@ struct FootballSeasonSummaryView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
+                        .overlay {
+                            if (record.championID == record.clubID || record.promoted) && !FactoryCapture.isUITesting {
+                                FootballCelebrationBurst(count: 70)
+                            }
+                        }
                     }
                     FactoryPanel(title: "Sua campanha", systemImage: "chart.line.uptrend.xyaxis") {
                         summaryRow("Posição final", "\(record.position)º · \(record.points) pts")
