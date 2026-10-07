@@ -2,7 +2,7 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual (07/out/2026, 02:55, horário de Brasília): **build 1.1 (11) aprovado e enviado ao TestFlight interno em 07/out às 02:53 (run 37572402802), com craques eternos, onboarding e ritual de virada de temporada. O 1.1 (10) segue como build anterior. Próximo build: 1.1 (12), a partir da branch `feature/entrega-a-ritmo`. O plano do ciclo 2 (seções 5b a 5f), o plano de testes (`docs/PLANO-DE-TESTES.md`) e o pacote para o outro agente (`docs/ENTREGA-PARA-O-AGENTE.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+Status atual (07/out/2026, 11:55, horário de Brasília): **build 1.1 (13) aprovado e enviado ao TestFlight interno em 07/out às 11:51 (run 37627792257; 430 testes de domínio, UI sem falhas e 3 skips documentados), com layout corrigido nas telas de abertura e onboarding, app Lendas e confete de vitória. Antes: 1.1 (12) às 09:59 e 1.1 (11) às 02:53. Próximo build: 1.1 (14), a partir da branch `feature/entrega-a-ritmo` (sala de espera, avisos de ambiente, celebrações, sequência de dias). O plano do ciclo 2 (seções 5b a 5f), o plano de testes (`docs/PLANO-DE-TESTES.md`) e o pacote para o outro agente (`docs/ENTREGA-PARA-O-AGENTE.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
 
 Convenção de datas: todos os horários deste documento estão em horário de Brasília (UTC−3). Os runs do GitHub Actions registram UTC; a conversão está na tabela de builds.
 
@@ -43,6 +43,9 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 |---|---|---|---|
 | 1.1 (10) | Linha de base | Aprovada | 06/out 22:29 |
 | 1.1 (11) | Craques eternos (pacote só no fim da temporada, com convidado por partida no modo Fácil), onboarding, ritual de virada | Aprovada e no TestFlight interno | 07/out 02:53 |
+| 1.1 (12) | Lenda inicial, abertura do app (menu), onboarding. Teste: telas desproporcionais, lendas fora de um app | Aprovada e no TestFlight interno | 07/out 09:59 |
+| 1.1 (13) | Correção de layout (abertura e onboarding), app Lendas, confete de vitória | Aprovada e no TestFlight interno | 07/out 11:51 |
+| 1.1 (14) | Sala de espera (perfis, digital, ilha), avisos de ambiente que reagem à carreira, goleada e título, caixa que conta, sequência de dias | Código escrito, aguardando teste do 13 e disparo | a combinar |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
 | Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
@@ -51,7 +54,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 
 ### Pendências de teste
 
-- Camadas 2 a 4 do plano de testes para o 1.1 (11), já no TestFlight: capturas de iPhone e iPad (`onboarding*`, `offseason-*`), roteiros 5.1 a 5.4 e dois dias de uso interno (a contar de 07/out 02:53).
+- Camadas 2 a 4 do plano de testes para o 1.1 (13), já no TestFlight: capturas de iPhone e iPad (`onboarding*`, `offseason-*`, `title*`), roteiros 5.1 a 5.4 e dois dias de uso interno (a contar de 07/out 11:51).
 - UI tests pulados que precisam voltar antes da Entrega C: `testBankSimulatorChangesProjectionAndResetRestoresIt`, `testSettingsCanCreateAndRestoreCareerSlot` e `testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate`.
 - UI tests curtos de onboarding e ritual de virada, só depois que as telas estabilizarem.
 - Hall das Lendas: criar os produtos no App Store Connect, ícone e capturas; direitos de imagem das cartas (LAN-01) antes de qualquer versão pública ou venda.

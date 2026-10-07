@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 10:25 (Brasília; run do 1.1 (13) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 11:55 (Brasília; 1.1 (13) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -16,7 +16,7 @@ Atualizado em 07/out/2026, 10:25 (Brasília; run do 1.1 (13) em andamento) envia
 | 1.1 (10) | Aprovado e no TestFlight desde 06/out 22:29. Linha de base. |
 | 1.1 (11) | **Aprovado e enviado ao TestFlight interno em 07/out às 02:53** (branch `ccr-020b52d1-16pkkp`, commit `2dfaa10`, run `37572402802`). Já dá para testar. Contém: craques eternos (pacote só no fim da temporada; no modo Fácil, convidado por partida), onboarding, ritual de virada. NÃO tem a lenda inicial nem a tela de abertura. |
 | 1.1 (12) | **Aprovado e enviado ao TestFlight interno em 07/out às 09:59** (run `37615474193`, commit `23b78dd`). Testado: o menu da abertura e o onboarding saíram desproporcionais e as lendas apareciam num painel, não num app. Corrigido no 13. |
-| 1.1 (13) | **Em validação**: run `37627792257`, disparado em 07/out às 10:21 (Brasília), ref `feature/entrega-a-ritmo`, commit `3d7407e`. Previsão do gate: cerca de 11:45. Não disparar outro enquanto isso. |
+| 1.1 (13) | **Aprovado e enviado ao TestFlight interno em 07/out às 11:51** (run `37627792257`, commit `3d7407e`; 430 testes de domínio, UI sem falhas, 3 skips documentados). Já dá para testar: layout corrigido, app Lendas, confete de vitória. |
 | Próximo (1.1 (14)) | Na `feature/entrega-a-ritmo`, commit `660e957`: sala de espera com perfis, digital, ilha e centro de notificações de ambiente; avisos de ambiente dentro do FutOS que reagem à carreira; goleada e título com celebração; números do caixa que contam; sequência de dias. Escrito sem compilador. Só disparar depois que o 13 terminar e for testado (Prompt E). |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
