@@ -36,6 +36,7 @@ extension FootballCareer {
     mutating func takeOverClub(_ clubID: Int, budgetFraction: Double, confidence: Int) {
         guard let club = FootballSeason.team(clubID) else { return }
         selectedClubID = club.id
+        followManager(toClub: club.id)
         transferBudget = Int(Double(club.startingBudget) * budgetFraction)
         boardConfidence = confidence
         isFired = false

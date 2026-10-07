@@ -168,7 +168,7 @@ extension FootballCareer {
     /// O clube consegue abrir mão do atleta sem perder o elenco mínimo nem a formação.
     func canRelease(playerID: Int) -> Bool {
         guard let selectedClubID, liveMatch == nil, !isFired,
-              let player = player(playerID), player.teamID == selectedClubID else { return false }
+              let player = player(playerID), player.teamID == selectedClubID, !player.isIcon else { return false }
         if player.isYouth { return true }
         guard clubRoster.count > Self.minimumRoster else { return false }
         let remaining = clubRoster.filter { $0.id != playerID }

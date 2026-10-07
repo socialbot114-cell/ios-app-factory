@@ -11,6 +11,7 @@ struct FootballDashboardView: View {
     @State private var confirmsQuickSimulation = false
     @State private var showsPrepFlow = false
     @State private var playAfterPrepDismiss = false
+    @State private var showsIconPack = false
     @State private var agendaSort: AgendaSort = .deadline
 
     var body: some View {
@@ -43,6 +44,7 @@ struct FootballDashboardView: View {
                 } else if career.canAdvanceWithoutPlaying {
                     restDayPanel
                 }
+                FootballIconPanel(career: $career, onOpenPack: { showsIconPack = true })
                 cupPanel
                 agendaPanel
                 preparationPanel
@@ -79,6 +81,9 @@ struct FootballDashboardView: View {
             onPlayLive()
         }) {
             FootballMatchPrepFlow(career: $career, onOpenSquad: { onNavigate(.squad) }, onPlay: { playAfterPrepDismiss = true })
+        }
+        .fullScreenCover(isPresented: $showsIconPack) {
+            FootballIconPackView(career: $career) { showsIconPack = false }
         }
         .confirmationDialog("Avançar e avaliar estes prazos?", isPresented: $confirmsQuickSimulation, titleVisibility: .visible) {
             Button("Simular e avançar o calendário") { runQuickSimulation() }

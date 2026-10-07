@@ -103,6 +103,7 @@ struct FootballCareer: Codable, Equatable {
         case counters
         case tutorialSeen
         case tutorialDismissed
+        case iconState
         case world
     }
 
@@ -206,6 +207,7 @@ struct FootballCareer: Codable, Equatable {
     var counters: [String: Int] = [:]
     var tutorialSeen: [String] = []
     var tutorialDismissed = false
+    var iconState = IconState()
     var world = WorldState()
     /// Titulares do jogo em andamento (usado para as promessas aos atletas).
     var startingXIAtKickoff: Set<Int> = []
@@ -358,6 +360,7 @@ struct FootballCareer: Codable, Equatable {
         counters = try container.decodeIfPresent([String: Int].self, forKey: .counters) ?? [:]
         tutorialSeen = try container.decodeIfPresent([String].self, forKey: .tutorialSeen) ?? []
         tutorialDismissed = try container.decodeIfPresent(Bool.self, forKey: .tutorialDismissed) ?? false
+        iconState = try container.decodeIfPresent(IconState.self, forKey: .iconState) ?? IconState()
         world = try container.decodeIfPresent(WorldState.self, forKey: .world) ?? WorldState()
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
@@ -458,6 +461,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(counters, forKey: .counters)
         try container.encode(tutorialSeen, forKey: .tutorialSeen)
         try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
+        try container.encode(iconState, forKey: .iconState)
         try container.encode(world, forKey: .world)
     }
 
@@ -686,7 +690,8 @@ struct FootballCareer: Codable, Equatable {
     }
 
     func player(_ id: Int) -> FootballPlayer? {
-        players.first { $0.id == id }
+        // Craque eterno que já deixou o elenco continua com nome nos relatórios de partidas antigas.
+        players.first { $0.id == id } ?? IconCard.card(forPlayerID: id).map { makeIconPlayer($0, teamID: nil) }
     }
 
     func players(forTeam teamID: Int) -> [FootballPlayer] {

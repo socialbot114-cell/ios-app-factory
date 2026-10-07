@@ -71,6 +71,7 @@ extension FootballCareer {
         finance.summaries.append(finance.summary(season: season, closingCash: transferBudget))
         wageCap = Int(Double(wageCap) * (objectiveMet ? 1.05 : 0.97) * (wasPromoted ? 1.2 : 1) * (wasRelegated ? 0.8 : 1))
 
+        expireSeasonIcon()
         var random = FootballRandom(seed: matchSeed(stream: .offseason, id: 0))
         closeSeasonClub(objectiveMet: objectiveMet, champion: champion == selectedClubID || (clubDivision == .serieB && position == 1), using: &random)
         finance.summaries[finance.summaries.count - 1] = finance.summary(season: season, closingCash: transferBudget)
@@ -156,6 +157,7 @@ extension FootballCareer {
         evaluateChallenge(after: record)
         checkAchievements(record: record)
         cancelOrphanedCommitments()
+        grantIconPack()
         return record
     }
 
