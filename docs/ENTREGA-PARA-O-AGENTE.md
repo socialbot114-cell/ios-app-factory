@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 16:35 (Brasília; 1.1 (15) aprovado e enviado; 1.1 (16) pronto para disparar) em validação; 1.1 (16) pronto na branch) em validação) aprovado; Academia v1 pronta para o 15) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 16:53 (Brasília). 1.1 (15) aprovado e enviado às 16:33; 1.1 (16) pronto na branch (Academia v2 e HUD real), ainda não disparado. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -19,6 +19,7 @@ Atualizado em 07/out/2026, 16:35 (Brasília; 1.1 (15) aprovado e enviado; 1.1 (1
 | 1.1 (13) | **Upload concluído (11:49), ativação interna NÃO confirmada.** Run `37627792257`: testes passaram (430 de domínio, UI sem falhas, 3 skips), "Upload TestFlight" com sucesso, mas "Activate internal TestFlight after Apple processing" foi cancelado às 11:51 (depois de ~2 min). Conferir no App Store Connect (TestFlight, build 13): se estiver processado, adicionar ao grupo interno à mão. O número 13 está consumido: não reenviar o 13. |
 | 1.1 (14) | **Aprovado e no TestFlight interno desde 07/out às 14:22** (run `37650467959`, commit `1b11dda`; upload e ativação concluídos). Aprovado pelo usuário. Linha de base atual. |
 | 1.1 (15) | **Aprovado e enviado ao TestFlight interno (16:33 Brasília).** Run `37663919522` (nº 25), commit `e5439a3`: todos os passos concluídos, incluindo "Activate internal TestFlight". Academia v1 liberada para teste. |
+| 1.1 (16) | **Pronto na branch, NÃO disparado.** Academia v2 (Sub-15, parcerias de captação, campeonato de base com minutos, linha BALANCE) e HUD real: a bateria do celular é a energia do treinador, o sinal é o humor da torcida, e data, hora do jogo e escudo vêm da carreira. Na sala de espera, cada perfil mostra o último save. Commits `6cf10b3` (Academia v2) e `070e5da` (HUD). Disparar só com a sua decisão (Prompt G). Pelo intervalo de 2 dias entre builds, liberado a partir de 09/out às 16:33 (Brasília), ou antes se você decidir. |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
@@ -102,7 +103,7 @@ Acompanhe o run até o fim e NÃO cancele nenhum passo, em especial "Activate in
 Quando o passo "Test iPhone and iPad" terminar, procure no log do job a linha que começa com "BALANCE" e copie a linha inteira na resposta.
 Se passar: responda "1.1 (16) enviado e ativado", o horário de Brasília e a linha BALANCE.
 Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro, a hierarquia anexada (se houver) e o número de testes que passaram. O build 16 continua livre nesse caso.
-O que há de novo: Sub-15 na base, parcerias de captação com escola e clube parceiro, campeonato de base simulado com minutos, painéis de captação e campeonatos no app Academia.
+O que há de novo: Sub-15 na base, parcerias de captação com escola e clube parceiro, campeonato de base simulado com minutos, painéis de captação e campeonatos no app Academia, e o HUD real (bateria, sinal, data, hora e escudo na barra do celular e na sala de espera).
 ```
 
 ## Prompt C — Capturas de tela (iPhone e iPad)
@@ -152,6 +153,7 @@ Roteiros completos em `docs/PLANO-DE-TESTES.md`, seção 5. Resumo para a primei
 7. **Vitória:** ganhar uma partida ao vivo. Esperado: confete curto no banner de vitória (não aparece com "Reduzir movimento").
 8. **Build 14, sala de espera:** abrir o app. Esperado: relógio, perfis com escudo, digital (segurar 0,7 s para entrar), espaço livre tracejado, ilha no topo trocando de aviso, arrastar do topo para baixo abre o centro. Abrir de novo no dia seguinte: selo "2 dias seguidos".
 9. **Build 14, vida:** no celular, abrir o centro de notificações e ver a seção "No celular hoje". Depois de ganhar, perder ou empatar, os avisos devem reagir. Goleada (3 gols de diferença) mostra "Goleada!" com mais confete. Título ou acesso mostra confete no resumo da temporada. O caixa muda contando os números.
+10. **HUD real (build 16):** na sala de espera, tocar num perfil com carreira. Esperado: data e hora do jogo, escudo do clube, barras de sinal e bateria com o percentual da energia do treinador (verde acima de 60, amarela de 30 a 59, vermelha abaixo de 30). Perfil vazio: data do aparelho, bateria apagada e traço no lugar do percentual. Entrar na carreira: a bateria do celular mostra a mesma energia. Gastar energia (uma conversa ou uma ação), mandar o app para o segundo plano (isso salva a carreira) e abrir de novo: a bateria da sala deve mostrar o novo valor. Carreira salva antes do 16: traços até o próximo save.
 11. **Academia v2 (build 16):** no app Academia, conferir Sub-15 na lista, o painel de Captação e parcerias (contratar uma escola ou clube e ver o aviso de caixa), o painel de Campeonatos (resultado no meio da temporada) e, na ficha de um jovem, os minutos de jogo.
 12. **Academia (build 15):** no celular, abrir o app Academia (capelo azul). Esperado: nível, ações e jovens; programa de formação; peneira; jovens por categoria com "Potencial 72–84" (faixa, não número exato). Tocar num jovem: ficha com faixa de potencial, perfil, foco, mentor, observar, promover, dispensar. Observar gasta 1 ação e R$ 15 mil e estreita a faixa; os traços aparecem aos poucos (6 e 12 semanas de observação). Uma ação volta a cada dia de jogo.
 13. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
