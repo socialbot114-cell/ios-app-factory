@@ -504,6 +504,85 @@ As fases indicam quando começar. Concluir uma fase não implica concluir automa
 
 **Meta:** navegar no celular parece acompanhar uma carreira; uma notificação não obriga a procurar novamente o assunto dentro do app.
 
+## 5b. Ciclo 2 — Mercado, Base, Banco e Narrativa
+
+Pontos de partida levantados no código em outubro de 2026. Cada bloco é uma frente independente: abrir uma branch por frente e validar no CI antes de unir.
+
+### 19 — Mercado | ciclo 2
+
+**Objetivo:** comprar e vender com informação, escolha e risco, sem gargalos de tela.
+
+Hoje: cinco abas (Livres, Clubes, Olheiros, Base, Histórico), proposta direta, negociação em etapas, empréstimos, olheiros e briefings. Faltam busca e ordenação; a aba Clubes mostra só os 30 melhores e a Livres só 40; o bônus por gols é fixo em 10; o empréstimo custa 8% fixos; há dois caminhos de compra que se sobrepõem.
+
+- [ ] MER-01 Busca por nome e ordenação por geral, potencial, idade, valor e fim de contrato nas abas Livres e Clubes, com paginação no lugar dos tetos de 30 e 40.
+- [ ] MER-02 Filtros por idade, faixa de valor, fim de contrato, região e divisão, salvos por aba.
+- [ ] MER-03 Cláusulas de contrato: multa rescisória, percentual de revenda, direito de recompra e bônus por jogos e por gols configuráveis.
+- [ ] MER-04 Empréstimo negociado: taxa, divisão de salário, opção ou obrigação de compra, em vez dos 8% fixos.
+- [ ] MER-05 Unificar o caminho de compra: o toque único da aba Livres e a proposta direta seguem as mesmas etapas, ou deixam claro quando pulam alguma.
+- [ ] MER-06 Concorrência real: clubes rivais disputam o mesmo alvo, o jogador compara propostas e existe comissão de agente.
+- [ ] MER-07 Ficha de transferência: histórico de valor, comparação lado a lado e custo real (taxa, salário, bônus e agente) antes de fechar.
+- [ ] MER-08 Venda ativa: listar atleta com preço pedido, receber ofertas com contraproposta e prazo.
+
+**Aceite:** achar um alvo em menos de três toques; o custo total mostrado é exatamente o que o Banco lança; nenhuma cláusula cria ou apaga dinheiro sem lançamento.
+
+### 20 — Base (categorias) | ciclo 2
+
+**Objetivo:** a base vira uma história própria, com categorias, jogos e promessas que crescem.
+
+Hoje: jovens são atletas com um marcador de base; há um único grupo de até 12 com divisão apenas de exibição entre Sub-17 e Sub-20, entrada anual de 3 a 5, peneira uma vez por temporada, Copinha simulada por força média, e a tela vive dentro do Transfer. Não há Sub-15, jogos de base, empréstimo ou venda de jovens.
+
+- [ ] BAS-01 Tela dedicada à Academia no app Clube: visão geral, nível, treinadores, orçamento e melhorias.
+- [ ] BAS-02 Categorias reais Sub-15, Sub-17 e Sub-20, cada uma com elenco, treinador e capacidade próprios.
+- [ ] BAS-03 Competições de base: campeonato por categoria e Copinha jogável; jovens ganham minutos e evoluem pelos jogos.
+- [ ] BAS-04 Promoção entre categorias com avaliação periódica e decisão do treinador: promover, manter, emprestar ou dispensar.
+- [ ] BAS-05 Contratos e bolsas de base, empréstimo a clubes menores e venda com percentual de revenda.
+- [ ] BAS-06 Relatórios individuais e olheiros da base: potencial estimado com ruído, traços e perfil do jovem; as joias ganham narrativa própria.
+- [ ] BAS-07 Peneiras em várias regiões e parcerias com escolas e clubes, com custo e retorno visíveis.
+- [ ] BAS-08 Saída com compensação no lugar da remoção instantânea; o destino do jovem reaparece no futuro, como rival ou ídolo.
+
+**Aceite:** acompanhar um jovem de 15 a 20 anos até a promoção, a venda ou a dispensa, com histórico legível; ninguém passa de categoria sem registro.
+
+### 21 — Banco | refinamento, ciclo 2
+
+**Objetivo:** o Banco deixa de ser uma lista de linhas e passa a responder "estou bem ou mal, e por quê?".
+
+Hoje: projeção com gráfico, simulador de contratação ou obra, extratos do clube e do treinador, empréstimos do treinador, juros e bloqueio de contratações no vermelho, teto salarial. Os painéis de categoria e de mês são texto simples, o ícone de pizza não tem gráfico, o patrocínio fica fora do Banco, não há empréstimo bancário nem fair play, e o extrato não tem busca.
+
+- [ ] BAN-07 Visão geral redesenhada: saldo, fôlego em meses, receitas e despesas do mês com tendência e alerta de risco.
+- [ ] BAN-08 Gráficos reais: receita por origem em rosca, despesas por categoria, evolução do saldo e comparação entre temporadas.
+- [ ] BAN-09 Orçamento dividido entre transferências, folha, estrutura e base, com meta e aviso ao estourar.
+- [ ] BAN-10 Receitas por fonte (TV, bilheteria, sócios, patrocínio, naming, marca e vendas) com projeção e comparação com o ano anterior.
+- [ ] BAN-11 Produtos financeiros: empréstimo bancário e cheque especial com juros, garantia e nota de crédito do clube ligada à diretoria.
+- [ ] BAN-12 Fair play financeiro: limite de prejuízo e relação folha por receita, com aviso antes da punição.
+- [ ] BAN-13 Extrato com busca e filtros por categoria, período e valor; resumo mensal para além de 700 lançamentos.
+- [ ] BAN-14 Simulador em linguagem simples: modo básico ("posso contratar?") com resposta direta antes dos números, e modo detalhado.
+- [ ] BAN-15 Estados vazios e textos refinados; gráficos com leitura por voz.
+
+**Aceite:** em dez segundos o jogador diz se o clube está saudável e o que mais pesa; saldos e gráficos reconciliam com o extrato.
+
+### 22 — Narrativa e viralização | ciclo 2
+
+**Objetivo:** cada temporada deixa história para lembrar e motivo para mostrar a alguém.
+
+- [ ] NAR-01 Treinador rival com nome, declarações na imprensa e rivalidade entre confrontos.
+- [ ] NAR-02 Livro da carreira: gols decisivos, viradas, títulos e rebaixamentos viram cartões com uma linha de narração.
+- [ ] NAR-03 Cartão de compartilhar com a carreira, os troféus e o craque eterno, reaproveitando o compartilhamento do Palpite+.
+- [ ] NAR-04 Arcos de temporada: promessa da diretoria e cenas curtas ao longo das rodadas.
+- [ ] NAR-05 Dilemas com consequência de longo prazo, que voltam temporadas depois.
+- [ ] NAR-06 Evento do dia e gancho entre dias na tela de bloqueio.
+- [ ] NAR-07 Desafio da semana com semente comum (exige servidor; avaliar antes de começar).
+
+**Aceite:** ao fim de uma temporada o jogador gera um cartão que conta o que aconteceu, sem texto genérico.
+
+### Sequência sugerida
+
+1. Banco: BAN-07, BAN-08 e BAN-09 (alta visibilidade, risco baixo, só leitura).
+2. Base: BAS-01, BAS-02 e BAS-04 (a tela dedicada e as categorias abrem o resto da frente).
+3. Mercado: MER-01, MER-02 e MER-07 antes das cláusulas (MER-03 a MER-06), que mexem em regras e no Banco.
+4. Narrativa: NAR-01, NAR-02 e NAR-03.
+
+Frentes 2 e 3 alteram regras centrais e saves: cada mudança de modelo precisa de `decodeIfPresent` e teste de save antigo, como nas demais.
+
 ## 6. Critérios globais de conclusão
 
 Para cada incremento funcional:
