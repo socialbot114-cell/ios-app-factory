@@ -1122,3 +1122,15 @@ Pedido de 07/out, após o 14: a base é de onde vêm grande parte dos craques; p
 
 **Versão proposta (1.1 (18)):** Comissão v1 com organograma, mercado com perfis e negociação, e os cargos da Academia. A Academia v1 já usa técnico da base e olheiro-chefe existentes, então não depende da Comissão para sair primeiro.
 
+
+### 44 — Apps com abas e tela inicial própria (padrão de app) | Entrega F
+
+Ideia do usuário em 07/out: cada app deixa de ser uma página única rolável e vira um app de verdade, com abas e uma tela inicial com botões, sem repetir os mesmos componentes e sem depender só de rolar.
+
+**Como é hoje (conferido no código).** `appWindow` abre cada app dentro de uma `NavigationStack` com botão "Início" no topo e a barra de início embaixo. Quase todo app é uma única coluna rolável; as seções ficam em seletores segmentados (por exemplo no Transfer: Livres, Clubes, Olheiros, Base, Histórico). Não existe nenhuma aba. Os maiores apps têm 300 a 800 linhas por tela.
+
+**Proposta.** Um componente `FootballAppShell` reutilizável: barra de abas própria (até 5), por cima da barra de início, com uma aba "Início" que mostra cartões e botões grandes com selos e atalhos, e as demais abas com o conteúdo. Cada aba guarda o seu estado e a sua navegação. Abas próprias e não o `TabView` do sistema, para controlar o visual e conviver com a barra de início.
+
+**Ordem.** (1) Criar o componente já com a Academia v1, que é nova e não tem testes de interface antigos. (2) Migrar Clube, Transfer, Banco e Liga, um por vez. (3) Comissão já nasce nesse padrão.
+
+**Riscos.** Testes de interface existentes procuram elementos na tela rolável atual; mudar a aba inicial pode escondê-los, então cada migração leva o ajuste dos testes junto. Sem compilador local, o primeiro componente é validado só pelo CI e pelo aparelho.
