@@ -104,6 +104,7 @@ struct FootballCareer: Codable, Equatable {
         case tutorialSeen
         case tutorialDismissed
         case iconState
+        case offseason
         case world
     }
 
@@ -208,6 +209,8 @@ struct FootballCareer: Codable, Equatable {
     var tutorialSeen: [String] = []
     var tutorialDismissed = false
     var iconState = IconState()
+    /// Ritual de virada de temporada em andamento (nil fora dele); bloqueia jogar e avançar o calendário.
+    var offseason: OffseasonState? = nil
     var world = WorldState()
     /// Titulares do jogo em andamento (usado para as promessas aos atletas).
     var startingXIAtKickoff: Set<Int> = []
@@ -361,6 +364,7 @@ struct FootballCareer: Codable, Equatable {
         tutorialSeen = try container.decodeIfPresent([String].self, forKey: .tutorialSeen) ?? []
         tutorialDismissed = try container.decodeIfPresent(Bool.self, forKey: .tutorialDismissed) ?? false
         iconState = try container.decodeIfPresent(IconState.self, forKey: .iconState) ?? IconState()
+        offseason = try container.decodeIfPresent(OffseasonState.self, forKey: .offseason)
         world = try container.decodeIfPresent(WorldState.self, forKey: .world) ?? WorldState()
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
@@ -462,6 +466,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(tutorialSeen, forKey: .tutorialSeen)
         try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
         try container.encode(iconState, forKey: .iconState)
+        try container.encodeIfPresent(offseason, forKey: .offseason)
         try container.encode(world, forKey: .world)
     }
 
@@ -656,12 +661,12 @@ struct FootballCareer: Codable, Equatable {
     }
 
     var canPlay: Bool {
-        selectedClubID != nil && !isSeasonComplete && !isFired && nextUserFixture != nil
+        selectedClubID != nil && !isSeasonComplete && !isFired && offseason == nil && nextUserFixture != nil
     }
 
     /// Há um dia de jogo em que o usuário não entra em campo (fase da copa sem o clube).
     var canAdvanceWithoutPlaying: Bool {
-        selectedClubID != nil && !isSeasonComplete && !isFired && liveMatch == nil && nextUserFixture == nil
+        selectedClubID != nil && !isSeasonComplete && !isFired && offseason == nil && liveMatch == nil && nextUserFixture == nil
     }
 
     var objectiveText: String { Self.objectiveText(target: boardTarget, division: userDivision ?? .serieA) }

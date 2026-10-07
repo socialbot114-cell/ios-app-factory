@@ -12,6 +12,7 @@ struct FootballDashboardView: View {
     @State private var showsPrepFlow = false
     @State private var playAfterPrepDismiss = false
     @State private var showsIconPack = false
+    @State private var showsOffseason = false
     @State private var agendaSort: AgendaSort = .deadline
 
     var body: some View {
@@ -35,6 +36,8 @@ struct FootballDashboardView: View {
                 }
                 if career.isFired {
                     jobOffersPanel
+                } else if career.offseason != nil {
+                    offseasonPanel
                 } else if career.liveMatch != nil {
                     resumePanel
                 } else if let fixture = career.nextUserFixture {
@@ -84,6 +87,12 @@ struct FootballDashboardView: View {
         }
         .fullScreenCover(isPresented: $showsIconPack) {
             FootballIconPackView(career: $career) { showsIconPack = false }
+        }
+        .fullScreenCover(isPresented: $showsOffseason) {
+            FootballOffseasonView(career: $career) {
+                showsOffseason = false
+                if career.isFired, let record = career.history.last { onSeasonEnded(record) }
+            }
         }
         .confirmationDialog("Avançar e avaliar estes prazos?", isPresented: $confirmsQuickSimulation, titleVisibility: .visible) {
             Button("Simular e avançar o calendário") { runQuickSimulation() }
@@ -435,14 +444,25 @@ struct FootballDashboardView: View {
                 }
             }
             Button {
-                if let record = career.startNextSeason() {
-                    onSeasonEnded(record)
-                }
+                if career.beginOffseason() { showsOffseason = true }
             } label: {
                 Label("Encerrar temporada", systemImage: "arrow.right.circle.fill")
             }
             .buttonStyle(FactoryPrimaryButtonStyle())
             .accessibilityIdentifier("end-season")
+        }
+    }
+
+    private var offseasonPanel: some View {
+        FactoryPanel(title: "Entre temporadas", systemImage: "sun.horizon.fill") {
+            Text(career.offseason.map { "Você está na etapa \"\($0.step.title)\". A nova temporada só começa depois da pré-temporada." }
+                 ?? "")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Button { showsOffseason = true } label: {
+                Label("Continuar", systemImage: "play.fill")
+            }
+            .buttonStyle(FactoryPrimaryButtonStyle())
+            .accessibilityIdentifier("resume-offseason")
         }
     }
 

@@ -9,6 +9,7 @@ struct FootballHome: View {
     @State private var alertMessage: String?
     @State private var showLiveMatch = false
     @State private var seasonSummary: SeasonRecord?
+    @State private var showsOnboarding = FootballOnboardingGate.shouldShow
     @State private var didPrepare = false
     @State private var showPress = false
     @State private var booting = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
@@ -57,7 +58,14 @@ struct FootballHome: View {
             } else if booting {
                 PhoneBootView()
             } else if career.selectedClubID == nil {
-                NavigationStack { FootballClubSelectionView(career: $career, onAlert: showAlert) }
+                if showsOnboarding {
+                    FootballOnboardingView(career: $career) {
+                        FootballOnboardingGate.markSeen()
+                        showsOnboarding = false
+                    }
+                } else {
+                    NavigationStack { FootballClubSelectionView(career: $career, onAlert: showAlert) }
+                }
             } else {
                 phone
             }
@@ -348,7 +356,14 @@ struct FootballHome: View {
     /// Rotas de captura que abrem a partida ao vivo (nome exato, para não confundir com rotas como `match-prep`).
     static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final", "match-halftime", "halftime-talk"]
 
-    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow"]).union(FootballF4Captures.names).union(FootballF5Captures.names)
+    /// Etapas do ritual de virada de temporada que podem ser capturadas isoladamente.
+    static let offseasonCaptures: [String: OffseasonStep] = [
+        "offseason-recap": .endOfSeason, "offseason-contracts": .contracts, "offseason-review": .review, "offseason-pack": .iconPack,
+        "offseason-holiday": .holiday, "offseason-sponsor": .sponsor, "offseason-preseason": .preseason, "offseason-kickoff": .kickoff,
+    ]
+
+    static let deepCaptures: Set<String> = Set(["player", "staff", "press", "renewal", "post-summary", "tactical-plans", "story-arc", "public-sphere", "save-slots", "day-plan", "chat-player", "chat-family", "chat-staff", "prep-flow", "onboarding", "onboarding-mode"])
+        .union(FootballF4Captures.names).union(FootballF5Captures.names).union(offseasonCaptures.keys)
 
     @ViewBuilder
     private func deepCapture(_ name: String) -> some View {
@@ -357,6 +372,10 @@ struct FootballHome: View {
             VStack(alignment: .leading, spacing: 16) {
                 FootballSaveSlotsView(activeSlot: activeSlot, summaries: slotSummaries, onLoad: { _ in }, onNew: { _ in }, onDelete: { _ in })
             }.factoryPage().navigationTitle("Carreiras do FutOS")
+        case "onboarding": FootballOnboardingView(career: $career, startPage: 0) {}
+        case "onboarding-mode": FootballOnboardingView(career: $career, startPage: 4) {}
+        case let name where Self.offseasonCaptures[name] != nil:
+            FootballOffseasonCaptureHost(step: Self.offseasonCaptures[name] ?? .kickoff)
         case "press": FootballPressView(career: $career)
         case "prep-flow":
             FootballMatchPrepFlow(career: $career, onOpenSquad: {}, onPlay: {})
@@ -455,6 +474,10 @@ struct FootballHome: View {
     }
 
     private func startLiveMatch() {
+        if career.offseason != nil {
+            alertMessage = "Termine a pré-temporada antes da estreia."
+            return
+        }
         if career.liveMatch == nil && !career.beginMatchDay() {
             alertMessage = "Não foi possível iniciar a partida. Confira a escalação e tente novamente."
             return
