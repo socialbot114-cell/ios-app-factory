@@ -72,9 +72,7 @@ struct FootballOnboardingView: View {
     private var isLast: Bool { page == pages.count - 1 }
 
     var body: some View {
-        ZStack {
-            background
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 HStack {
                     Spacer()
                     if !isLast {
@@ -100,11 +98,12 @@ struct FootballOnboardingView: View {
                 }
                 .buttonStyle(FactoryPrimaryButtonStyle())
                 .padding(.horizontal, 22)
+                .frame(maxWidth: 520)
                 .padding(.top, 14)
                 .padding(.bottom, 20)
                 .accessibilityIdentifier("onboarding-continue")
-            }
         }
+        .background { FootballBackdrop(drift: drift, imageOpacity: 0.5, zoom: 1.14, topShade: 0.35, glow: 0.18) }
         .preferredColorScheme(.dark)
         .sensoryFeedback(.selection, trigger: page)
         .onAppear {
@@ -115,23 +114,6 @@ struct FootballOnboardingView: View {
             shown.insert(newPage)
         }
         .accessibilityIdentifier("onboarding")
-    }
-
-    // MARK: Fundo
-
-    private var background: some View {
-        ZStack {
-            Image("MatchSceneV2")
-                .resizable()
-                .scaledToFill()
-                .scaleEffect(drift ? 1.14 : 1.0)
-                .animation(.easeInOut(duration: 16).repeatForever(autoreverses: true), value: drift)
-                .opacity(0.5)
-            LinearGradient(colors: [Color.black.opacity(0.35), Color.black.opacity(0.92)], startPoint: .top, endPoint: .bottom)
-            RadialGradient(colors: [FootballTheme.gold.opacity(0.18), .clear], center: .top, startRadius: 10, endRadius: 380)
-        }
-        .ignoresSafeArea()
-        .clipped()
     }
 
     private var dots: some View {
@@ -156,7 +138,7 @@ struct FootballOnboardingView: View {
             VStack(spacing: 18) {
                 Spacer(minLength: 24)
                 Image(systemName: content.symbol)
-                    .font(.system(size: 64))
+                    .font(.system(size: 52))
                     .foregroundStyle(FootballTheme.gold)
                     .shadow(color: FootballTheme.gold.opacity(0.5), radius: 20)
                     .symbolEffect(.bounce, value: page == index)
@@ -164,7 +146,8 @@ struct FootballOnboardingView: View {
                     .opacity(visible ? 1 : 0)
                     .animation(.spring(response: 0.55, dampingFraction: 0.6), value: visible)
                 Text(content.title)
-                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
@@ -172,7 +155,7 @@ struct FootballOnboardingView: View {
                     .offset(y: visible ? 0 : 12)
                     .animation(.easeOut(duration: 0.5).delay(0.1), value: visible)
                 Text(content.body)
-                    .font(.body)
+                    .font(.callout)
                     .foregroundStyle(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .opacity(visible ? 1 : 0)
@@ -199,6 +182,8 @@ struct FootballOnboardingView: View {
                 Spacer(minLength: 12)
             }
             .padding(.horizontal, 24)
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
     }

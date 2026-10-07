@@ -89,9 +89,7 @@ struct FootballTitleScreen: View {
     }
 
     var body: some View {
-        ZStack {
-            background
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 Spacer(minLength: 36)
                 logo
                 Spacer(minLength: 24)
@@ -106,13 +104,14 @@ struct FootballTitleScreen: View {
                                index: 2, identifier: "title-options", action: onOptions)
                 }
                 .padding(.horizontal, 28)
+                .frame(maxWidth: 460)
                 Spacer(minLength: 28)
                 Text(versionText)
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.45))
                     .padding(.bottom, 18)
-            }
         }
+        .background { FootballBackdrop(drift: drift, imageOpacity: 0.55, zoom: 1.16, topShade: 0.25, glow: 0.22, seconds: 18) }
         .preferredColorScheme(.dark)
         .sensoryFeedback(.impact(weight: .light), trigger: taps)
         .onAppear {
@@ -122,21 +121,6 @@ struct FootballTitleScreen: View {
             withAnimation(.easeInOut(duration: 1.6).delay(0.5)) { shine = 1.4 }
         }
         .accessibilityIdentifier("title-screen")
-    }
-
-    private var background: some View {
-        ZStack {
-            Image("MatchSceneV2")
-                .resizable()
-                .scaledToFill()
-                .scaleEffect(drift ? 1.16 : 1.0)
-                .animation(.easeInOut(duration: 18).repeatForever(autoreverses: true), value: drift)
-                .opacity(0.55)
-            LinearGradient(colors: [Color.black.opacity(0.25), Color.black.opacity(0.92)], startPoint: .top, endPoint: .bottom)
-            RadialGradient(colors: [FootballTheme.gold.opacity(0.22), .clear], center: .top, startRadius: 10, endRadius: 420)
-        }
-        .ignoresSafeArea()
-        .clipped()
     }
 
     private var logo: some View {
