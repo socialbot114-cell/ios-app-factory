@@ -46,7 +46,8 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | 1.1 (12) | Lenda inicial, abertura do app (menu), onboarding. Teste: telas desproporcionais, lendas fora de um app | Aprovada e no TestFlight interno | 07/out 09:59 |
 | 1.1 (13) | Correção de layout (abertura e onboarding), app Lendas, confete de vitória | Testes aprovados; enviado ao App Store Connect (11:49); ativação interna cancelada (11:51), a confirmar | 07/out 11:49 |
 | 1.1 (14) | Sala de espera integrada ao FutOS (perfis, digital, ilha, notificações reais), avisos de ambiente que reagem à carreira, puxar do topo no celular, goleada e título, caixa que conta, sequência de dias | Aprovada e no TestFlight interno | 07/out 14:22 |
-| Entrega F | Academia: app dedicado da base com motor de formação de jogadores (itens 20 e 42) | Planejada, aguardando decisões | a combinar |
+| 1.1 (15) | Academia v1 (item 42): app dedicado, potencial estimado, traços, mentor, observação, foco individual; abas por app ficam para depois (item 44) | Código escrito e publicado (d9d1722), aguardando disparo | a combinar |
+| Entrega F | Academia: captação, competições de base, contratos e saídas, Sub-15 (itens 20 e 42, fases F2 e F3) | Planejada | a combinar |
 | Entrega G | Comissão técnica: app dedicado para staff e contratações (item 43) | Planejada | a combinar |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
@@ -1134,3 +1135,12 @@ Ideia do usuário em 07/out: cada app deixa de ser uma página única rolável e
 **Ordem.** (1) Criar o componente já com a Academia v1, que é nova e não tem testes de interface antigos. (2) Migrar Clube, Transfer, Banco e Liga, um por vez. (3) Comissão já nasce nesse padrão.
 
 **Riscos.** Testes de interface existentes procuram elementos na tela rolável atual; mudar a aba inicial pode escondê-los, então cada migração leva o ajuste dos testes junto. Sem compilador local, o primeiro componente é validado só pelo CI e pelo aparelho.
+
+### Academia v1 — o que entrou e o que ficou (07/out)
+
+Decisões assumidas com as recomendações do plano, por falta de resposta explícita: jovens com resultados simulados (sem partida ao vivo da base), Sub-15 na fase F2, equilíbrio de 1 em 12 titulares e 1 em 100 craques como meta a calibrar por simulação.
+
+**Entrou na v1.** App Academia (`PhoneApp.academy`). Perfil derivado da semente da carreira e do id do atleta (cidade fictícia por região, 1 a 2 traços, ritmo de crescimento oculto de 0,85 a 1,20), sem alterar a geração atual de jovens. Potencial estimado com margem de erro que cai com as semanas de observação, o olheiro-chefe e o técnico da base (a faixa sempre contém o valor real). Traços revelados aos poucos (6 e 12 semanas). Crescimento individual: traço, ritmo, promessa precoce, mentor e foco próprio mudam a chance diária de evoluir. Ações da academia: observar (R$ 15 mil e 1 ação), foco individual, mentor entre veteranos de 27 anos ou mais (no máximo 2 pupilos), com ações que voltam uma por dia de jogo até o máximo (3 a 6, pelo técnico da base). Estado novo `academy` no save, tolerante a saves antigos. Testes: `FootballAcademyTests` (12).
+
+**Ficou para depois.** Sub-15 (muda a idade de entrada e os testes de equilíbrio atuais), minutos e competições de base, contratos e bolsas, empréstimo e venda, destino futuro, cauda longa calibrada por simulação estatística, e o padrão de abas (item 44). A seção Base do Transfer continua como está até a Academia substituí-la.
+

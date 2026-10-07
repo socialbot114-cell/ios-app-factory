@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 15:00 (Brasília; 1.1 (14) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 16:30 (Brasília; 1.1 (14) aprovado; Academia v1 pronta para o 15) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -18,7 +18,7 @@ Atualizado em 07/out/2026, 15:00 (Brasília; 1.1 (14) aprovado; próxima frente:
 | 1.1 (12) | **Aprovado e enviado ao TestFlight interno em 07/out às 09:59** (run `37615474193`, commit `23b78dd`). Testado: o menu da abertura e o onboarding saíram desproporcionais e as lendas apareciam num painel, não num app. Corrigido no 13. |
 | 1.1 (13) | **Upload concluído (11:49), ativação interna NÃO confirmada.** Run `37627792257`: testes passaram (430 de domínio, UI sem falhas, 3 skips), "Upload TestFlight" com sucesso, mas "Activate internal TestFlight after Apple processing" foi cancelado às 11:51 (depois de ~2 min). Conferir no App Store Connect (TestFlight, build 13): se estiver processado, adicionar ao grupo interno à mão. O número 13 está consumido: não reenviar o 13. |
 | 1.1 (14) | **Aprovado e no TestFlight interno desde 07/out às 14:22** (run `37650467959`, commit `1b11dda`; upload e ativação concluídos). Aprovado pelo usuário. Linha de base atual. |
-| Próxima frente | Academia (base) e Comissão como apps dedicados: plano nos itens 42 e 43 do roadmap. Sem build novo até as decisões do usuário e o código da Academia v1. |
+| Próximo (1.1 (15)) | Na `feature/entrega-a-ritmo`, commit `d9d1722`: **app Academia v1** (base como app dedicado: potencial estimado com margem de erro, traços que se revelam com a observação, foco individual, mentor entre veteranos, ação de observar, peneira por região) e crescimento individual dos jovens. Escrito sem compilador; 12 testes novos. Só disparar quando o usuário quiser (Prompt F). As abas por app ficaram para depois (item 44). |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
@@ -74,6 +74,20 @@ Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a me
 O que há de novo: sala de espera integrada ao FutOS (papel de parede, barra de status e relógio do celular, perfis com nome do treinador e escudo, digital para desbloquear, ilha e centro de notificações com as notificações reais da carreira ativa mais avisos de ambiente), puxar do topo para baixo no celular abre as notificações, avisos que reagem aos resultados, celebração de goleada e título, números do caixa que contam, sequência de dias.
 ```
 
+## Prompt F — Build 1.1 (15), Academia v1
+
+```
+Projeto socialbot114-cell/ios-app-factory. Dispare o workflow "Football TestFlight" (football-testflight.yml) com:
+  ref: feature/entrega-a-ritmo
+  version: 1.1
+  build: 15
+Antes de disparar, confirme que não há outro run do mesmo workflow em andamento e que o build 15 ainda não foi usado (artefato football-release-1.1-15 não pode existir em runs anteriores).
+Acompanhe o run até o fim e NÃO cancele nenhum passo, em especial "Activate internal TestFlight after Apple processing" (ele espera a Apple processar, de 2 a 15 minutos). NÃO altere código.
+Se passar: responda "1.1 (15) enviado e ativado" com o horário de Brasília.
+Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro e a hierarquia anexada, e o número de testes que passaram. O build 15 continua livre nesse caso.
+O que há de novo: app Academia (base), potencial estimado, traços, mentor, observação, foco individual, peneira por região.
+```
+
 ## Prompt C — Capturas de tela (iPhone e iPad)
 
 Pode rodar junto com B (workflow diferente).
@@ -121,7 +135,8 @@ Roteiros completos em `docs/PLANO-DE-TESTES.md`, seção 5. Resumo para a primei
 7. **Vitória:** ganhar uma partida ao vivo. Esperado: confete curto no banner de vitória (não aparece com "Reduzir movimento").
 8. **Build 14, sala de espera:** abrir o app. Esperado: relógio, perfis com escudo, digital (segurar 0,7 s para entrar), espaço livre tracejado, ilha no topo trocando de aviso, arrastar do topo para baixo abre o centro. Abrir de novo no dia seguinte: selo "2 dias seguidos".
 9. **Build 14, vida:** no celular, abrir o centro de notificações e ver a seção "No celular hoje". Depois de ganhar, perder ou empatar, os avisos devem reagir. Goleada (3 gols de diferença) mostra "Goleada!" com mais confete. Título ou acesso mostra confete no resumo da temporada. O caixa muda contando os números.
-10. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
+11. **Academia (build 15):** no celular, abrir o app Academia (capelo azul). Esperado: nível, ações e jovens; programa de formação; peneira; jovens por categoria com "Potencial 72–84" (faixa, não número exato). Tocar num jovem: ficha com faixa de potencial, perfil, foco, mentor, observar, promover, dispensar. Observar gasta 1 ação e R$ 15 mil e estreita a faixa; os traços aparecem aos poucos (6 e 12 semanas de observação). Uma ação volta a cada dia de jogo.
+12. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
 
 ## Relatório que o agente devolve para mim
 
