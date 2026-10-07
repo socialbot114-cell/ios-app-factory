@@ -11,7 +11,8 @@ final class FootballYouthBalanceTests: XCTestCase {
     static let gemPotential = 86
 
     func testYouthPipelineBalanceReport() {
-        var snapshots: [Int: FootballPlayer] = [:]
+        // Os ids dos jovens recomeçam em cada carreira: a chave inclui a semente, senão carreiras diferentes se sobrescrevem.
+        var snapshots: [String: FootballPlayer] = [:]
         for seed in 1...30 {
             var career = FootballCareer(seed: seed * 313)
             XCTAssertTrue(career.chooseClub(10))
@@ -21,7 +22,7 @@ final class FootballYouthBalanceTests: XCTestCase {
                 career.runYouthIntake(using: &random)
                 XCTAssertLessThanOrEqual(career.youthRoster.count, FootballCareer.youthRosterLimit)
                 for _ in 0..<FootballSeason.matchDaysPerSeason { career.tickYouthDevelopment(using: &random) }
-                for youth in career.youthRoster { snapshots[youth.id] = youth }
+                for youth in career.youthRoster { snapshots["\(seed)-\(youth.id)"] = youth }
                 for index in career.players.indices where career.players[index].isYouth { career.players[index].age += 1 }
                 career.retireOverageYouth()
             }
