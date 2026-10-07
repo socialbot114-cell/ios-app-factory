@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 15:10 (Brasília; 1.1 (15) em validação) aprovado; Academia v1 pronta para o 15) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 16:10 (Brasília; 1.1 (15) em validação; 1.1 (16) pronto na branch) em validação) aprovado; Academia v1 pronta para o 15) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -88,6 +88,23 @@ Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a me
 O que há de novo: app Academia (base), potencial estimado, traços, mentor, observação, foco individual, peneira por região.
 ```
 
+## Prompt G — Build 1.1 (16), Academia v2 e relatório de equilíbrio
+
+Só depois que o 1.1 (15) terminar e for testado.
+
+```
+Projeto socialbot114-cell/ios-app-factory. Dispare o workflow "Football TestFlight" (football-testflight.yml) com:
+  ref: feature/entrega-a-ritmo
+  version: 1.1
+  build: 16
+Antes de disparar, confirme que não há outro run do mesmo workflow em andamento e que o build 16 ainda não foi usado (artefato football-release-1.1-16 não pode existir em runs anteriores).
+Acompanhe o run até o fim e NÃO cancele nenhum passo, em especial "Activate internal TestFlight after Apple processing". NÃO altere código.
+Quando o passo "Test iPhone and iPad" terminar, procure no log do job a linha que começa com "BALANCE" e copie a linha inteira na resposta.
+Se passar: responda "1.1 (16) enviado e ativado", o horário de Brasília e a linha BALANCE.
+Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro, a hierarquia anexada (se houver) e o número de testes que passaram. O build 16 continua livre nesse caso.
+O que há de novo: Sub-15 na base, parcerias de captação com escola e clube parceiro, campeonato de base simulado com minutos, painéis de captação e campeonatos no app Academia.
+```
+
 ## Prompt C — Capturas de tela (iPhone e iPad)
 
 Pode rodar junto com B (workflow diferente).
@@ -135,8 +152,9 @@ Roteiros completos em `docs/PLANO-DE-TESTES.md`, seção 5. Resumo para a primei
 7. **Vitória:** ganhar uma partida ao vivo. Esperado: confete curto no banner de vitória (não aparece com "Reduzir movimento").
 8. **Build 14, sala de espera:** abrir o app. Esperado: relógio, perfis com escudo, digital (segurar 0,7 s para entrar), espaço livre tracejado, ilha no topo trocando de aviso, arrastar do topo para baixo abre o centro. Abrir de novo no dia seguinte: selo "2 dias seguidos".
 9. **Build 14, vida:** no celular, abrir o centro de notificações e ver a seção "No celular hoje". Depois de ganhar, perder ou empatar, os avisos devem reagir. Goleada (3 gols de diferença) mostra "Goleada!" com mais confete. Título ou acesso mostra confete no resumo da temporada. O caixa muda contando os números.
-11. **Academia (build 15):** no celular, abrir o app Academia (capelo azul). Esperado: nível, ações e jovens; programa de formação; peneira; jovens por categoria com "Potencial 72–84" (faixa, não número exato). Tocar num jovem: ficha com faixa de potencial, perfil, foco, mentor, observar, promover, dispensar. Observar gasta 1 ação e R$ 15 mil e estreita a faixa; os traços aparecem aos poucos (6 e 12 semanas de observação). Uma ação volta a cada dia de jogo.
-12. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
+11. **Academia v2 (build 16):** no app Academia, conferir Sub-15 na lista, o painel de Captação e parcerias (contratar uma escola ou clube e ver o aviso de caixa), o painel de Campeonatos (resultado no meio da temporada) e, na ficha de um jovem, os minutos de jogo.
+12. **Academia (build 15):** no celular, abrir o app Academia (capelo azul). Esperado: nível, ações e jovens; programa de formação; peneira; jovens por categoria com "Potencial 72–84" (faixa, não número exato). Tocar num jovem: ficha com faixa de potencial, perfil, foco, mentor, observar, promover, dispensar. Observar gasta 1 ação e R$ 15 mil e estreita a faixa; os traços aparecem aos poucos (6 e 12 semanas de observação). Uma ação volta a cada dia de jogo.
+13. **Qualquer erro, travada ou texto estranho:** anotar o que estava fazendo e tirar captura de tela.
 
 ## Relatório que o agente devolve para mim
 

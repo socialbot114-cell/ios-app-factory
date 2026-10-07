@@ -47,7 +47,8 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | 1.1 (13) | Correção de layout (abertura e onboarding), app Lendas, confete de vitória | Testes aprovados; enviado ao App Store Connect (11:49); ativação interna cancelada (11:51), a confirmar | 07/out 11:49 |
 | 1.1 (14) | Sala de espera integrada ao FutOS (perfis, digital, ilha, notificações reais), avisos de ambiente que reagem à carreira, puxar do topo no celular, goleada e título, caixa que conta, sequência de dias | Aprovada e no TestFlight interno | 07/out 14:22 |
 | 1.1 (15) | Academia v1 (item 42): app dedicado, potencial estimado, traços, mentor, observação, foco individual; abas por app ficam para depois (item 44) | Em validação: run 37663919522, disparado 07/out 15:03 | a combinar |
-| Entrega F | Academia: captação, competições de base, contratos e saídas, Sub-15 (itens 20 e 42, fases F2 e F3) | Planejada | a combinar |
+| 1.1 (16) | Academia v2: Sub-15, parcerias de captação com manutenção, campeonato de base simulado com minutos (teto de +25% na evolução), relatório de equilíbrio (linha BALANCE) | Código escrito e publicado (6cf10b3), aguardando o 15 | a combinar |
+| Entrega F | Academia: contratos e bolsas, empréstimo e venda, destino futuro (fase F3) | Planejada | a combinar |
 | Entrega G | Comissão técnica: app dedicado para staff e contratações (item 43) | Planejada | a combinar |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
@@ -1143,4 +1144,14 @@ Decisões assumidas com as recomendações do plano, por falta de resposta expl�
 **Entrou na v1.** App Academia (`PhoneApp.academy`). Perfil derivado da semente da carreira e do id do atleta (cidade fictícia por região, 1 a 2 traços, ritmo de crescimento oculto de 0,85 a 1,20), sem alterar a geração atual de jovens. Potencial estimado com margem de erro que cai com as semanas de observação, o olheiro-chefe e o técnico da base (a faixa sempre contém o valor real). Traços revelados aos poucos (6 e 12 semanas). Crescimento individual: traço, ritmo, promessa precoce, mentor e foco próprio mudam a chance diária de evoluir. Ações da academia: observar (R$ 15 mil e 1 ação), foco individual, mentor entre veteranos de 27 anos ou mais (no máximo 2 pupilos), com ações que voltam uma por dia de jogo até o máximo (3 a 6, pelo técnico da base). Estado novo `academy` no save, tolerante a saves antigos. Testes: `FootballAcademyTests` (12).
 
 **Ficou para depois.** Sub-15 (muda a idade de entrada e os testes de equilíbrio atuais), minutos e competições de base, contratos e bolsas, empréstimo e venda, destino futuro, cauda longa calibrada por simulação estatística, e o padrão de abas (item 44). A seção Base do Transfer continua como está até a Academia substituí-la.
+
+### Academia v2 — o que entrou no 16 (07/out)
+
+Decisões usadas: resultados simulados (sem partida ao vivo da base), Sub-15 entrou nesta versão, captação com parcerias e competições simuladas no mesmo build, conforme pedido do usuário ("tudo direto no 16").
+
+**Entrou.** Categoria Sub-15 (jovens de 15 e 16 anos chegam em 30% dos casos; categorias por idade: até 15, 16 a 17, 18 a 19). Parcerias de captação: escola de futebol (R$ 20 mil para contratar, R$ 15 mil de manutenção por ano, um candidato extra) e clube parceiro (R$ 40 mil, R$ 30 mil por ano, dois candidatos extras), por região, até 4 parcerias. Campeonato de base simulado na metade da temporada, 8 equipes, todos contra todos, por categoria. Minutos: os 11 melhores de cada categoria jogam 900 minutos, os demais 150; os minutos zeram na chegada anual e aceleram a evolução em até 25% (teto em 3000 minutos). Painéis novos no app Academia e minutos na ficha do jovem.
+
+**Ainda sem calibragem medida.** As metas de equilíbrio (1 em 12 titulares, 1 em 100 craques) não foram medidas. O teste `FootballYouthBalanceTests` imprime a linha `BALANCE` no log do CI. A primeira leitura sai no log deste build; o ajuste fino fica para o 17, com esse número.
+
+**Não entrou.** Copinha jogável ao vivo (continua simulada), contratos e bolsas, empréstimo e venda, destino futuro, e o padrão de abas (item 44).
 
