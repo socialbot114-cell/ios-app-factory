@@ -70,6 +70,7 @@ extension FootballCareer {
         case .quests: return world.quests.active.filter { !$0.completed }.count
         case .alerts: return world.events.pending.count
         case .brand: return world.growth.tv == nil ? 1 : 0
+        case .legends: return iconState.pendingPack != nil ? 1 : 0
         default: return 0
         }
     }

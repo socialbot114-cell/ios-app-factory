@@ -233,44 +233,56 @@ struct FootballIconPackView: View {
     }
 }
 
-// MARK: - Painel do Gestor
+// MARK: - Atalho no Gestor
 
-/// Aparece só quando há algo a fazer: pacote fechado ou craque da temporada.
+/// Aparece só quando há algo a fazer: pacote fechado ou craque da temporada. O app Lendas guarda o resto.
 struct FootballIconPanel: View {
     @Binding var career: FootballCareer
     let onOpenPack: () -> Void
+    let onOpenApp: () -> Void
 
     var body: some View {
         Group {
             if career.iconState.pendingPack != nil && !career.isFired { packPanel }
-            if let icon = career.iconState.seasonIcon { seasonPanel(icon) }
+            else if let icon = career.iconState.seasonIcon { seasonRow(icon) }
         }
     }
 
     private var packPanel: some View {
-        FactoryPanel(title: "Pacote de craque eterno", systemImage: "gift.fill") {
-            Text("Chegou um pacote de craque eterno. Abra para descobrir quem joga a temporada inteira com você.")
-                .font(.subheadline).foregroundStyle(.secondary)
-            Button { onOpenPack() } label: {
-                Label("Abrir pacote", systemImage: "sparkles").frame(maxWidth: .infinity)
+        HStack(spacing: 12) {
+            Image(systemName: "gift.fill").font(.title2).foregroundStyle(FootballTheme.gold)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pacote de craque eterno").font(.subheadline.weight(.bold))
+                Text("Abra para descobrir sua lenda.").font(.caption).foregroundStyle(.secondary)
             }
-            .buttonStyle(FactoryPrimaryButtonStyle())
-            .accessibilityIdentifier("icon-pack-open-panel")
+            Spacer(minLength: 8)
+            Button("Abrir") { onOpenPack() }
+                .buttonStyle(.borderedProminent)
+                .tint(FootballTheme.gold)
+                .foregroundStyle(.black)
+                .accessibilityIdentifier("icon-pack-open-panel")
         }
+        .padding(14)
+        .background(FootballTheme.gold.opacity(0.14), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private func seasonPanel(_ icon: IconCard) -> some View {
-        FactoryPanel(title: "Craque eterno da temporada", systemImage: "crown.fill") {
-            HStack(alignment: .center, spacing: 14) {
-                FootballIconCardImage(card: icon, width: 84)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(icon.name).font(.headline)
-                    Text("\(icon.detail.title) · geral \(icon.overall)").font(.caption).foregroundStyle(.secondary)
-                    Text("Joga com você até o fim desta temporada. Não pode ser vendido nem dispensado.")
-                        .font(.caption).foregroundStyle(.secondary)
+    private func seasonRow(_ icon: IconCard) -> some View {
+        Button { onOpenApp() } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "crown.fill").font(.title3).foregroundStyle(FootballTheme.gold)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lenda da temporada: \(icon.shortName)").font(.subheadline.weight(.bold)).foregroundStyle(.primary)
+                    Text("\(icon.detail.title) · geral \(icon.overall) · toque para ver no app Lendas")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
             }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
+        .buttonStyle(.plain)
         .accessibilityIdentifier("icon-season-panel")
     }
 }

@@ -5,7 +5,7 @@ import SwiftUI
 /// Cada app é uma micro-realidade do jogo; todos leem e escrevem na mesma carreira.
 enum PhoneApp: String, CaseIterable, Identifiable {
     case manager, squad, league, market, club, messages, social, betting, fantasy
-    case life, business, quests, trophies, alerts, brand, bank, contacts, settings
+    case life, business, quests, trophies, alerts, brand, bank, contacts, settings, legends
 
     var id: String { rawValue }
 
@@ -29,6 +29,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .bank: return "Banco"
         case .contacts: return "Contatos"
         case .settings: return "Ajustes"
+        case .legends: return "Lendas"
         }
     }
 
@@ -52,6 +53,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .bank: return "banknote.fill"
         case .contacts: return "person.crop.circle.fill"
         case .settings: return "gearshape.fill"
+        case .legends: return "crown.fill"
         }
     }
 
@@ -75,6 +77,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .bank: return Color(red: 0.10, green: 0.50, blue: 0.40)
         case .contacts: return Color(red: 0.25, green: 0.55, blue: 0.65)
         case .settings: return Color(red: 0.45, green: 0.47, blue: 0.52)
+        case .legends: return Color(red: 0.78, green: 0.58, blue: 0.08)
         }
     }
 
@@ -99,6 +102,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .bank: return "Caixa do clube, folha salarial, extratos e projeções"
         case .contacts: return "Pessoas próximas e conversas"
         case .settings: return "Carreiras salvas, dificuldade, desafios, avisos e tutorial"
+        case .legends: return "Craques eternos: pacote, craque da temporada e coleção"
         }
     }
 

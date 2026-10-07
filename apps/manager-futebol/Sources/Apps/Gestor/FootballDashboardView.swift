@@ -47,7 +47,7 @@ struct FootballDashboardView: View {
                 } else if career.canAdvanceWithoutPlaying {
                     restDayPanel
                 }
-                FootballIconPanel(career: $career, onOpenPack: { showsIconPack = true })
+                FootballIconPanel(career: $career, onOpenPack: { showsIconPack = true }, onOpenApp: { onNavigate(.legends) })
                 cupPanel
                 agendaPanel
                 preparationPanel
