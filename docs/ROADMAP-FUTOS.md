@@ -2,7 +2,59 @@
 
 Referência de continuidade: **Manager-futebol bugs e melhorias**.
 
-Status atual: **roadmap implementado em quase todas as frentes; build 1.1 (6) enviado ao TestFlight em 5 de outubro de 2026 (run 37323855519). Veja a seção "Atualização — 5 de outubro" abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+Status atual (07/out/2026, 01:59, horário de Brasília): **build 1.1 (10) aprovado e no TestFlight desde 06/out às 22:29; build 1.1 (11) em validação no CI (run 37572402802, iniciado 07/out às 01:38) com craques eternos, onboarding e ritual de virada de temporada. O plano do ciclo 2 (seções 5b a 5f) e o plano de testes (`docs/PLANO-DE-TESTES.md`) estão escritos. Veja a atualização de 7 de outubro abaixo, `docs/BASELINE-FUTOS.md` e `docs/ORQUESTRACAO.md`**.
+
+Convenção de datas: todos os horários deste documento estão em horário de Brasília (UTC−3). Os runs do GitHub Actions registram UTC; a conversão está na tabela de builds.
+
+## Atualização — 7 de outubro de 2026, 01:59 (Brasília)
+
+### Onde estamos
+
+- **Linha estável:** branch `ccr-020b52d1-16pkkp`, que parte da `manager-futebol/phases-2-7`. Contém o que foi aprovado no build 1.1 (10) e tudo o que está sendo validado no 1.1 (11).
+- **Próxima entrega:** branch `feature/entrega-a-ritmo` (a partir do mesmo commit do 1.1 (11)), com as lendas ajustadas. A linha estável não recebe código novo enquanto o 1.1 (11) é validado.
+- **Hall das Lendas** (app novo, vitrine premium de cartas com compra por carta): branch `feature/hall-das-lendas`, já unido à linha estável. Fora do TestFlight do Football; validado pelo workflow "iOS app validation".
+- **Testes de domínio no último run completo (1.1 (11), tentativa 1):** 430 testes, zero falhas, incluindo os novos de craques eternos e ritual de virada.
+
+### Builds do TestFlight (1.1)
+
+| Build | Run | Início (Brasília) | Resultado |
+|---|---|---|---|
+| 1.1 (7) | `37503016476` | 06/out 14:22 | Barrado: 4 UI tests (halftime-talk, perfil do clube, simulador do Banco, slot em Ajustes). Causa do intervalo: a partida abria 0,5 s depois da folha e o fechamento derrubava a tela. |
+| 1.1 (8) | `37538496780` | 06/out 19:07 | Barrado: o teste do intervalo ainda falhou; hierarquia anexada mostrou a partida pausada no minuto 0. Três UI tests novos pulados com motivo escrito. |
+| 1.1 (9) | `37545283666` | 06/out 20:13 | Barrado: o intervalo passou (a partida agora abre no `onDismiss` da folha); falhou `contact-family` fora da viewport em Contatos. |
+| **1.1 (10)** | `37549938172` | 06/out 21:04 | **Aprovado: gate verde em iPhone e iPad, assinatura, upload e ativação no TestFlight interno. Concluído 06/out às 22:29.** |
+| 1.1 (11), tentativa 1 | `37567530198` | 07/out 00:36 | Barrado às 01:21: 430 testes de domínio verdes; falhou um UI test (`testAdvancingTheCalendarLocksThePhoneWithTheNewDate`, botão `live-finish` não apareceu em 30 s). Nada enviado. |
+| 1.1 (11), tentativa 2 | `37572402802` | 07/out 01:38 | **Em validação** às 01:59 (testes de iPhone e iPad em andamento), com o UI test acima tornado robusto e com diagnóstico. O número 11 segue livre: só é consumido no upload. |
+
+### Entregue desde 06/out
+
+- **Craques eternos** (`Core/FootballIcons.swift`, `Sources/Apps/Gestor/FootballIconViews.swift`): seis cartas redimensionadas (cerca de 1 MB no total), pacote com animação de abertura, craque salvo como atleta real (salário zero, protegido de venda). Regra atual na branch `feature/entrega-a-ritmo`: uma lenda ao começar a carreira e outra a cada fim de temporada, sem convidado por partida; pacote não aberto é mantido; saves antigos abrem.
+- **Onboarding** (`Sources/Onboarding/FootballOnboardingView.swift`): cinco páginas e escolha de dificuldade, uma vez por instalação; desligado em UI tests e capturas.
+- **Ritual de virada de temporada** (`Core/FootballOffseason.swift`, `Sources/Apps/Gestor/FootballOffseasonView.swift`): apito final, contratos que vencem, balanço, pacote, férias, patrocinador, pré-temporada e estreia, com decisões obrigatórias e ritmo controlado; jogar fica bloqueado até o fim.
+- **Hall das Lendas** (`apps/hall-das-lendas`): vitrine em carrossel, coleção com filtro de raridade, detalhe com inclinação 3D, cartão do dia gratuito, compra única por carta ou pacote da coleção (StoreKit 2, com loja simulada em testes), restaurar compras; registrado na fábrica (agora 10 apps).
+- **Correções:** a partida do pré-jogo abre pelo `onDismiss`; o botão da família em Contatos é buscado com rolagem; testes de temporada inteira protegem a confiança da diretoria.
+- **Documentos:** plano do ciclo 2 (seções 5b a 5f), plano de testes (`docs/PLANO-DE-TESTES.md`), e esta atualização.
+
+### Calendário de versões (teste por versão)
+
+Cada versão é um build do TestFlight, só avança com gate verde e capturas revisadas, e tem pelo menos dois dias de uso interno (critérios completos em `docs/PLANO-DE-TESTES.md`, seção 9). Datas-alvo são combinadas com o usuário a cada versão; as datas reais entram aqui quando acontecem.
+
+| Versão | Conteúdo | Estado | Data real |
+|---|---|---|---|
+| 1.1 (10) | Linha de base | Aprovada | 06/out 22:29 |
+| 1.1 (11) | Craques eternos, onboarding, ritual de virada | Em validação (run `37572402802`) | a confirmar |
+| Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada | Código iniciado na branch `feature/entrega-a-ritmo` | a combinar |
+| Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
+| Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
+| Entrega D | Mundo vivo: pushes, agenda, personalização | Planejada | a combinar |
+| Entrega E | Lançamento: som, recompensa diária, pacote de loja, widgets | Planejada | a combinar |
+
+### Pendências de teste
+
+- Camadas 2 a 4 do plano de testes para o 1.1 (11): capturas de iPhone e iPad (`onboarding*`, `offseason-*`), roteiros 5.1 a 5.4 e dois dias de uso interno.
+- UI tests pulados que precisam voltar antes da Entrega C: `testBankSimulatorChangesProjectionAndResetRestoresIt`, `testSettingsCanCreateAndRestoreCareerSlot` e `testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate`.
+- UI tests curtos de onboarding e ritual de virada, só depois que as telas estabilizarem.
+- Hall das Lendas: criar os produtos no App Store Connect, ícone e capturas; direitos de imagem das cartas (LAN-01) antes de qualquer versão pública ou venda.
 
 ## Atualização — 6 de outubro de 2026 (2): organização do FutOS, passagem de dia, guia, chat e física da partida
 
