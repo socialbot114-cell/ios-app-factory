@@ -334,6 +334,7 @@ extension FootballCareer {
         _ = career.chooseClub(0)
         var days = 0
         while !career.isSeasonComplete, days < FootballSeason.matchDaysPerSeason + 5 {
+            career.boardConfidence = 100
             if !career.simulateNextMatchDay() { break }
             days += 1
         }
