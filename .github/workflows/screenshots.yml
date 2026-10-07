@@ -19,6 +19,7 @@ on:
           - brasilia-politica-contexto
           - diario-sono
           - quebra-cabecas
+          - hall-das-lendas
       states:
         description: Estados separados por vírgula (vazio captura todos)
         required: false

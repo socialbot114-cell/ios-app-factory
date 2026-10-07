@@ -173,6 +173,26 @@ targets:
     sources: [apps/diario-sono/UITests]
     dependencies: [{target: DiarioSono}]
     settings: {base: {TEST_TARGET_NAME: DiarioSono}}
+  HallDasLendas:
+    type: application
+    platform: iOS
+    sources: [FactoryShared, apps/hall-das-lendas/Sources, apps/hall-das-lendas/Resources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.socialbot114.factory.halldaslendas
+        INFOPLIST_KEY_CFBundleDisplayName: Hall das Lendas
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+  HallDasLendasTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [apps/hall-das-lendas/Tests]
+    dependencies: [{target: HallDasLendas}]
+  HallDasLendasUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [apps/hall-das-lendas/UITests]
+    dependencies: [{target: HallDasLendas}]
+    settings: {base: {TEST_TARGET_NAME: HallDasLendas}}
   QuebraCabecas:
     type: application
     platform: iOS
@@ -220,3 +240,6 @@ schemes:
   QuebraCabecas:
     build: {targets: {QuebraCabecas: all, QuebraCabecasTests: [test], QuebraCabecasUITests: [test]}}
     test: {targets: [QuebraCabecasTests, QuebraCabecasUITests]}
+  HallDasLendas:
+    build: {targets: {HallDasLendas: all, HallDasLendasTests: [test], HallDasLendasUITests: [test]}}
+    test: {targets: [HallDasLendasTests, HallDasLendasUITests]}

@@ -1,6 +1,6 @@
 # iOS App Factory
 
-Nove protótipos SwiftUI para avaliação em iPhone e iPad. Os projetos usam XcodeGen, deployment target iOS 17+ e dados locais demonstrativos.
+Dez protótipos SwiftUI para avaliação em iPhone e iPad. Os projetos usam XcodeGen, deployment target iOS 17+ e dados locais demonstrativos.
 
 ## Apps
 
@@ -13,6 +13,7 @@ Nove protótipos SwiftUI para avaliação em iPhone e iPad. Os projetos usam Xco
 7. Brasília Política — Contexto
 8. Diário do Sono
 9. Quebra-Cabeças de Bolso
+10. Hall das Lendas
 
 ## Executar no Mac
 
@@ -39,5 +40,6 @@ Os artifacts são temporários de revisão, não screenshots finais de App Store
 - Core Motion precisa de verificação adicional em aparelho físico.
 - O QR Pix cria um payload estático demonstrativo; não confirma pagamentos nem substitui leitura/validação em apps bancários reais.
 - O Leitor PDF inclui um documento local de exemplo; OCR não faz parte do protótipo.
+- O Hall das Lendas usa imagens de cartas com rostos e nomes de pessoas reais: é demonstração. Antes de vender qualquer carta é preciso licença de uso de imagem e nome. Os produtos de compra (`apps/hall-das-lendas/StoreKit/Products.storekit`) precisam ser criados no App Store Connect com os mesmos identificadores.
 
 Consulte [`specs/README.md`](specs/README.md) para o mapa das especificações de origem.

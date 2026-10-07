@@ -22,6 +22,7 @@ CAPTURES = {
     "brasilia-politica-contexto": ["home", "article", "saved"],
     "diario-sono": ["home", "active"],
     "quebra-cabecas": ["home", "board"],
+    "hall-das-lendas": ["showcase", "collection", "shop", "detail", "pack"],
 }
 
 CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-league", "fantasy-share", "save-slots",
