@@ -46,7 +46,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | 1.1 (12) | Lenda inicial, abertura do app (menu), onboarding. Teste: telas desproporcionais, lendas fora de um app | Aprovada e no TestFlight interno | 07/out 09:59 |
 | 1.1 (13) | Correção de layout (abertura e onboarding), app Lendas, confete de vitória | Testes aprovados; enviado ao App Store Connect (11:49); ativação interna cancelada (11:51), a confirmar | 07/out 11:49 |
 | 1.1 (14) | Sala de espera integrada ao FutOS (perfis, digital, ilha, notificações reais), avisos de ambiente que reagem à carreira, puxar do topo no celular, goleada e título, caixa que conta, sequência de dias | Aprovada e no TestFlight interno | 07/out 14:22 |
-| 1.1 (15) | Academia v1 (item 42): app dedicado, potencial estimado, traços, mentor, observação, foco individual; abas por app ficam para depois (item 44) | Em validação: run 37663919522, disparado 07/out 15:03 | a combinar |
+| 1.1 (15) | Academia v1 (item 42): app dedicado, potencial estimado, traços, mentor, observação, foco individual; abas por app ficam para depois (item 44) | Aprovada e no TestFlight interno (16:33, run 37663919522) | 07/out 16:33 |
 | 1.1 (16) | Academia v2: Sub-15, parcerias de captação com manutenção, campeonato de base simulado com minutos (teto de +25% na evolução), relatório de equilíbrio (linha BALANCE) | Código escrito e publicado (6cf10b3), aguardando o 15 | a combinar |
 | Entrega F | Academia: contratos e bolsas, empréstimo e venda, destino futuro (fase F3) | Planejada | a combinar |
 | Entrega G | Comissão técnica: app dedicado para staff e contratações (item 43) | Planejada | a combinar |

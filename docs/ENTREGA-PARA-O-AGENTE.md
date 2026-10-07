@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 16:10 (Brasília; 1.1 (15) em validação; 1.1 (16) pronto na branch) em validação) aprovado; Academia v1 pronta para o 15) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 16:35 (Brasília; 1.1 (15) aprovado e enviado; 1.1 (16) pronto para disparar) em validação; 1.1 (16) pronto na branch) em validação) aprovado; Academia v1 pronta para o 15) aprovado; próxima frente: Academia) em validação) enviado ao App Store Connect, ativação interna a confirmar) enviado) em andamento) enviado; 1.1 (13) pronto para disparar). A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -18,7 +18,7 @@ Atualizado em 07/out/2026, 16:10 (Brasília; 1.1 (15) em validação; 1.1 (16) p
 | 1.1 (12) | **Aprovado e enviado ao TestFlight interno em 07/out às 09:59** (run `37615474193`, commit `23b78dd`). Testado: o menu da abertura e o onboarding saíram desproporcionais e as lendas apareciam num painel, não num app. Corrigido no 13. |
 | 1.1 (13) | **Upload concluído (11:49), ativação interna NÃO confirmada.** Run `37627792257`: testes passaram (430 de domínio, UI sem falhas, 3 skips), "Upload TestFlight" com sucesso, mas "Activate internal TestFlight after Apple processing" foi cancelado às 11:51 (depois de ~2 min). Conferir no App Store Connect (TestFlight, build 13): se estiver processado, adicionar ao grupo interno à mão. O número 13 está consumido: não reenviar o 13. |
 | 1.1 (14) | **Aprovado e no TestFlight interno desde 07/out às 14:22** (run `37650467959`, commit `1b11dda`; upload e ativação concluídos). Aprovado pelo usuário. Linha de base atual. |
-| 1.1 (15) | **Em validação**: run `37663919522` (nº 25), disparado em 07/out às 15:03 (Brasília), ref `feature/entrega-a-ritmo`, commit `e5439a3` (Academia v1 incluída). Previsão do gate: cerca de 16:30; depois upload e ativação interna (não cancelar). |
+| 1.1 (15) | **Aprovado e enviado ao TestFlight interno (16:33 Brasília).** Run `37663919522` (nº 25), commit `e5439a3`: todos os passos concluídos, incluindo "Activate internal TestFlight". Academia v1 liberada para teste. |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
