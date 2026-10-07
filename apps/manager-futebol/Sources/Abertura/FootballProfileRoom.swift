@@ -156,22 +156,34 @@ struct FootballProfileRoom: View {
 
     // MARK: Barra de status e relógio (mesmo visual do celular)
 
+    /// Barra de status com o último estado salvo do perfil selecionado (o mesmo HUD do celular dentro da carreira).
+    /// Perfil vazio mostra a data do aparelho e a bateria apagada, porque ainda não há carreira.
     private var statusBar: some View {
-        HStack(spacing: 10) {
-            Text(Date().formatted(.dateTime.day().month(.abbreviated)))
+        let info = summary(selected)
+        return HStack(spacing: 10) {
+            Text(statusDate)
                 .font(.caption.weight(.bold).monospacedDigit())
             Spacer()
-            Text("FutOS").font(.caption.weight(.heavy)).tracking(1.5)
-            Spacer()
-            HStack(spacing: 3) {
-                ForEach(0..<4, id: \.self) { index in
-                    Capsule().fill(Color.white).frame(width: 3, height: CGFloat(5 + index * 3))
-                }
+            if selectedIsFilled, let club = team(selected) {
+                ClubCrest(team: club, size: 16)
+            } else {
+                Text("FutOS").font(.caption.weight(.heavy)).tracking(1.5)
             }
-            Image(systemName: "battery.100").font(.caption)
+            Spacer()
+            PhoneSignal(fanMood: info?.fanMood)
+            PhoneBattery(level: info?.energy)
+            Text(info?.energy.map { "\($0)%" } ?? "—")
+                .font(.caption2.weight(.bold).monospacedDigit())
         }
         .foregroundStyle(.white)
         .accessibilityHidden(true)
+    }
+
+    /// Dia e hora do jogo no último save. Save antigo, sem esses dados, mostra traço.
+    private var statusDate: String {
+        guard selectedIsFilled else { return Date().formatted(.dateTime.day().month(.abbreviated)) }
+        guard let info = summary(selected), let day = info.gameDay, let moment = info.gameMoment else { return "—" }
+        return "\(FootballCalendarClock.shortDate(day)) · \(FootballCalendarClock.clock(moment))"
     }
 
     private var clock: some View {

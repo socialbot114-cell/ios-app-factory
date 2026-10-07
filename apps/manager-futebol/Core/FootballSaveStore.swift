@@ -10,6 +10,12 @@ struct SaveSlotSummary: Codable, Equatable {
     let updatedAt: Date
     /// Nome do treinador, para o perfil na sala de espera. Saves antigos não têm e mostram "Treinador".
     var coachName: String? = nil
+    /// HUD real da sala de espera, copiado do último save: energia (a bateria do celular), humor da torcida
+    /// (as barras de sinal), dia e hora do jogo. Saves antigos não têm; a barra mostra traços até o próximo save.
+    var energy: Int? = nil
+    var fanMood: Int? = nil
+    var gameDay: Date? = nil
+    var gameMoment: Date? = nil
 }
 
 /// Saves em arquivo (Application Support), com slots, resumo por slot e backup de arquivos ilegíveis.
@@ -63,9 +69,14 @@ struct FootballSaveStore {
         guard let data = try? JSONEncoder().encode(career) else { return false }
         do {
             try data.write(to: careerURL(slot: slot), options: .atomic)
+            let hasClub = career.selectedClubID != nil
             let summary = SaveSlotSummary(slot: slot, clubID: career.selectedClubID, season: career.season,
                                           matchDay: career.matchDayIndex, division: career.userDivision, updatedAt: now,
-                                          coachName: career.selectedClubID == nil ? nil : career.world.coach.name)
+                                          coachName: hasClub ? career.world.coach.name : nil,
+                                          energy: hasClub ? career.world.coach.energy : nil,
+                                          fanMood: hasClub ? career.fanMood : nil,
+                                          gameDay: hasClub ? career.gameDay : nil,
+                                          gameMoment: hasClub ? career.gameMoment : nil)
             if let summaryData = try? JSONEncoder().encode(summary) {
                 try summaryData.write(to: summaryURL(slot: slot), options: .atomic)
             }

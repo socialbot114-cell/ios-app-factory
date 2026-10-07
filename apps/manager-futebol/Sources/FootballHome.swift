@@ -405,7 +405,8 @@ struct FootballHome: View {
             }.factoryPage().navigationTitle("Carreiras do FutOS")
         case "loading": FootballLoadingView()
         case "title":
-            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date(), coachName: "Rafael"),
+            FootballProfileRoom(activeSlot: 0, summaries: [SaveSlotSummary(slot: 0, clubID: 1, season: 2, matchDay: 8, division: .serieA, updatedAt: Date(), coachName: "Rafael",
+                                                                           energy: 72, fanMood: 58, gameDay: FootballCalendarClock.day(season: 2, matchDay: 8), gameMoment: FootballCalendarClock.moment(season: 2, matchDay: 8)),
                                                            SaveSlotSummary(slot: 1, clubID: 3, season: 1, matchDay: 3, division: .serieB, updatedAt: Date(), coachName: "Marina"), nil],
                                 onEnter: { _ in }, onCreate: { _ in }, onOptions: {})
         case "title-new":
