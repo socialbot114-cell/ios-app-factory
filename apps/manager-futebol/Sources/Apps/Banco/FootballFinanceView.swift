@@ -34,6 +34,13 @@ struct FootballFinanceView: View {
             FactoryPanel(title: "Despesas por categoria", systemImage: "chart.bar.xaxis") {
                 Self.barRows(FootballBankBreakdown.expenses(entries), empty: "Sem despesas registradas nesta temporada.")
             }
+            let totals = FootballBankTrends.seasonTotals(summaries: career.finance.summaries, book: career.finance, currentSeason: career.season)
+            FactoryPanel(title: "Temporadas em comparação", systemImage: "arrow.left.arrow.right") {
+                Self.barRows(FootballBankTrends.seasonBars(totals), empty: "A comparação aparece quando alguma temporada tiver receitas ou despesas.")
+            }
+            FactoryPanel(title: "Evolução do saldo", systemImage: "chart.line.uptrend.xyaxis") {
+                Self.balanceTrail(career.monthReports(season: career.season))
+            }
             HStack(spacing: 12) {
                 FactoryMetric(label: "Folha salarial", value: FootballFormat.money(career.wageBill), symbol: "person.3.fill", tint: .orange)
                 FactoryMetric(label: "Teto da folha", value: FootballFormat.money(career.wageCap), symbol: "lock.fill", tint: .gray)
@@ -95,6 +102,56 @@ struct FootballFinanceView: View {
         }
         .factoryPage()
         .navigationTitle("Finanças")
+    }
+
+    /// Linha do saldo de fechamento de cada mês. Precisa de dois meses fechados para ter inclinação.
+    @ViewBuilder
+    private static func balanceTrail(_ reports: [MonthReport]) -> some View {
+        if reports.count < 2 {
+            Text("A linha aparece depois de dois meses fechados.").font(.subheadline).foregroundStyle(.secondary)
+        } else {
+            let values = reports.map(\.closingCash)
+            let top = max(values.max() ?? 0, 0)
+            let bottom = min(values.min() ?? 0, 0)
+            let span = CGFloat(max(top - bottom, 1))
+            VStack(alignment: .leading, spacing: 8) {
+                GeometryReader { proxy in
+                    let width = proxy.size.width
+                    let height = proxy.size.height
+                    let points: [CGPoint] = values.indices.map { index in
+                        CGPoint(x: width * CGFloat(index) / CGFloat(values.count - 1),
+                                y: height * CGFloat(top - values[index]) / span)
+                    }
+                    ZStack(alignment: .topLeading) {
+                        // Linha do zero: traço fino e discreto, para ver quando o saldo fica negativo.
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.4))
+                            .frame(height: 1)
+                            .offset(y: height * CGFloat(top) / span)
+                        Path { path in
+                            path.move(to: points[0])
+                            for point in points.dropFirst() { path.addLine(to: point) }
+                        }
+                        .stroke(FootballTheme.accent, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        ForEach(points.indices, id: \.self) { index in
+                            Circle()
+                                .fill(FootballTheme.accent)
+                                .frame(width: 8, height: 8)
+                                .position(points[index])
+                        }
+                    }
+                }
+                .frame(height: 120)
+                HStack {
+                    Text("Início: \(FootballFormat.money(values.first ?? 0))")
+                    Spacer()
+                    Text("Agora: \(FootballFormat.money(values.last ?? 0))")
+                }
+                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Evolução do saldo: de \(FootballFormat.money(values.first ?? 0)) para \(FootballFormat.money(values.last ?? 0)) em \(values.count) meses")
+        }
     }
 
     /// Barras horizontais com o valor ao lado. Uma série só, na cor de destaque; a lista de categorias abaixo continua sendo a tabela.
