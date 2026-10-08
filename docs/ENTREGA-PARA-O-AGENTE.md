@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 20:46 (Brasília). 1.1 (15) aprovado pelo usuário às 18:37. 1.1 (16) falhou no teste de equilíbrio (run 26, 19:22) e foi substituído pelo 1.1 (17), disparado pelo usuário às 20:09 (run 27, `37700560177`, commit `73f3df1`): validação ao vivo passou às 20:19; testes de iPhone e iPad em andamento desde 20:20. Não disparar outro build enquanto este não terminar. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 21:32 (Brasília). 1.1 (15) aprovado pelo usuário às 18:37. 1.1 (16) falhou no teste de equilíbrio (run 26, 19:22) e foi substituído pelo 1.1 (17), disparado pelo usuário às 20:09 (run 27, `37700560177`, commit `73f3df1`): passou em todos os passos e foi enviado e ativado no TestFlight interno às 21:29 (artefato `football-release-1.1-17`). Próximo: 1.1 (18), vitrine da Loja (item 45), só depois de dois dias de teste do 17 (até 09/out às 21:29), salvo decisão do usuário. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
@@ -20,8 +20,8 @@ Atualizado em 07/out/2026, 20:46 (Brasília). 1.1 (15) aprovado pelo usuário à
 | 1.1 (14) | **Aprovado e no TestFlight interno desde 07/out às 14:22** (run `37650467959`, commit `1b11dda`; upload e ativação concluídos). Aprovado pelo usuário. Linha de base atual. |
 | 1.1 (15) | **Aprovado pelo usuário às 18:37 (Brasília).** Enviado ao TestFlight interno às 16:33. Run `37663919522` (nº 25), commit `e5439a3`: todos os passos concluídos, incluindo "Activate internal TestFlight". Academia v1 liberada para teste. |
 | 1.1 (16) | **Falhou no passo de testes (run `37690905790`, commit `62ed950`, terminou 19:22).** Os testes de interface passaram. Falhou só `FootballYouthBalanceTests.testYouthPipelineBalanceReport` (medição por id, corrigida em `ee481d8`). Não foi enviado ao TestFlight. Substituído pelo 1.1 (17). O artefato `football-release-1.1-16` (ID 11515456607) ficou no run 26 e não interfere no 17. |
-| 1.1 (17) | **Run 27 (`37700560177`, commit `73f3df1`, disparado às 20:09) em andamento.** Mesmo conteúdo do 16: Academia v2 (Sub-15, parcerias de captação, campeonato de base com minutos, linha BALANCE), HUD real (bateria, sinal, data, hora e escudo vindos da carreira; a sala de espera mostra o último save de cada perfil), estados vazios da Academia, contadores que rolam, atalho "jovem pronto para decidir" no Gestor, mercado com busca, ordenação e "Mostrar mais", e a fila de desbloqueios no topo do celular. Mais a correção do teste de equilíbrio (`ee481d8`). Commits `6cf10b3`, `070e5da`, `c75c058`, `5388264`, `bdd01b8` e `ee481d8`. Em teste no CI (run 27). |
-| 1.1 (18) | **Em preparação, NÃO disparar.** Vitrine da Loja (módulos Pro em mistério, sem cobrança) e o catálogo testado (item 45 do roadmap). Só dispara depois que o 1.1 (17) for testado por dois dias (ou barrado) e o usuário decidir. |
+| 1.1 (17) | **Enviado e ativado no TestFlight interno às 21:29 (Brasília): run 27 (`37700560177`, commit `73f3df1`), todos os passos verdes.** Mesmo conteúdo do 16: Academia v2 (Sub-15, parcerias de captação, campeonato de base com minutos, linha BALANCE), HUD real (bateria, sinal, data, hora e escudo vindos da carreira; a sala de espera mostra o último save de cada perfil), estados vazios da Academia, contadores que rolam, atalho "jovem pronto para decidir" no Gestor, mercado com busca, ordenação e "Mostrar mais", e a fila de desbloqueios no topo do celular. Mais a correção do teste de equilíbrio (`ee481d8`). Commits `6cf10b3`, `070e5da`, `c75c058`, `5388264`, `bdd01b8` e `ee481d8`. Artefato `football-release-1.1-17` (ID 11520219563). Linha BALANCE: o teste passou, mas o número não sai pela API (fica longe do fim do log); procure `BALANCE` na página do job: https://github.com/socialbot114-cell/ios-app-factory/actions/runs/37700560177/job/113062736648 . |
+| 1.1 (18) | **Em preparação, NÃO disparar.** Vitrine da Loja (módulos Pro em mistério, sem cobrança) e o catálogo testado (item 45 do roadmap). Só dispara depois que o 1.1 (17) for testado por dois dias, até 09/out às 21:29 (Brasília), salvo decisão do usuário antes. |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
@@ -92,6 +92,8 @@ O que há de novo: app Academia (base), potencial estimado, traços, mentor, obs
 ```
 
 ## Prompt G — Build 1.1 (17), Academia v2, HUD real e relatório de equilíbrio
+
+**Concluído:** o run 27 enviou e ativou o build 17 às 21:29 (Brasília). Não reenviar este prompt.
 
 O 1.1 (15) já está aprovado. O 1.1 (16) falhou no teste de equilíbrio e foi substituído por este 17: use só este prompt.
 
