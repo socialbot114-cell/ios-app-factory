@@ -28,12 +28,38 @@ struct AdvancePauses: Codable, Equatable {
     var offers = true
 }
 
+/// Ritmo do FutOS. "Clássico" pede animações curtas e rituais resumidos; "Imersivo" mantém as cenas completas, como sempre foi.
+/// Por enquanto a escolha só fica salva; os efeitos entram nas próximas fatias.
+enum FootballRhythm: String, Codable, CaseIterable, Identifiable {
+    case classic, immersive
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .classic: return "Clássico"
+        case .immersive: return "Imersivo"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .classic: return "Animações curtas e rituais resumidos."
+        case .immersive: return "Cenas completas, como sempre foi."
+        }
+    }
+}
+
 struct PhonePreferences: Codable, Equatable {
     /// 1 = todos os avisos, 2 = importantes e urgentes, 3 = só urgentes.
     var minimumPriority = 1
     var mutedApps: [String] = []
     var reduceMotion = false
     var pauses = AdvancePauses()
+    /// Ritmo escolhido; opcional para saves antigos, que ficam em Imersivo.
+    var rhythm: FootballRhythm? = nil
+
+    var rhythmMode: FootballRhythm { rhythm ?? .immersive }
 
     /// Avisos urgentes (prioridade 3) nunca são silenciados: perder uma coletiva ou crise tem custo no jogo.
     func allows(appID: String, priority: Int) -> Bool {

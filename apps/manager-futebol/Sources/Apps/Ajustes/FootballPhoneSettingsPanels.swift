@@ -4,6 +4,10 @@ import SwiftUI
 struct FootballPhonePreferencesPanel: View {
     @Binding var career: FootballCareer
 
+    private var rhythm: Binding<FootballRhythm> {
+        Binding(get: { career.world.phone.preferences.rhythmMode }, set: { career.world.phone.preferences.rhythm = $0 })
+    }
+
     private var preferences: Binding<PhonePreferences> {
         Binding(get: { career.world.phone.preferences }, set: { career.world.phone.preferences = $0 })
     }
@@ -32,6 +36,13 @@ struct FootballPhonePreferencesPanel: View {
             Divider()
             Toggle("Reduzir movimento", isOn: preferences.reduceMotion).font(.subheadline)
                 .accessibilityIdentifier("settings-reduce-motion")
+            Divider()
+            Picker("Ritmo", selection: rhythm) {
+                ForEach(FootballRhythm.allCases) { option in Text(option.title).tag(option) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("settings-rhythm")
+            Text(rhythm.wrappedValue.detail).font(.caption).foregroundStyle(.secondary)
         }
     }
 }
