@@ -25,7 +25,9 @@ enum MatchdayStep: Equatable {
 extension FootballCareer {
     /// O próximo passo do dia de jogo. Nil quando não há nada a fazer agora (sem clube, temporada encerrada, demissão ou entressafra).
     var matchdayStep: MatchdayStep? {
-        MatchdayStep.next(hasPendingPress: pendingPress != nil,
+        // Partida em andamento tem a própria faixa de retomada: não é um passo do dia.
+        guard liveMatch == nil else { return nil }
+        return MatchdayStep.next(hasPendingPress: pendingPress != nil,
                           hasUserMatch: canPlay,
                           lineupWarnings: lineupWarnings.count,
                           canAdvanceWithoutPlaying: canAdvanceWithoutPlaying)

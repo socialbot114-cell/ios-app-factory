@@ -75,6 +75,12 @@ struct FootballDashboardView: View {
             }
         }
         .factoryPage()
+        // O próximo passo do dia de jogo fica fixo embaixo do painel (FLX-03).
+        .safeAreaInset(edge: .bottom) {
+            if career.liveMatch == nil, let step = career.matchdayStep {
+                nextStepBar(step)
+            }
+        }
         .navigationTitle("Painel do treinador")
         .onAppear {
             career.markTutorialSeen("dashboard")
@@ -200,6 +206,37 @@ struct FootballDashboardView: View {
         let next = career.agenda.first.map { "\($0.title) · \($0.deadlineText)" }
         // O resumo também vai para o histórico de ações (FLX-02): o aviso continua bloqueante até a próxima fatia.
         onAlert(career.logQuickSimulation(days: days, nextPriority: next))
+    }
+
+    // MARK: - Próximo passo (FLX-03)
+
+    /// Barra fixa com o que falta no dia de jogo: responder, revisar a escalação, jogar ou avançar.
+    private func nextStepBar(_ step: MatchdayStep) -> some View {
+        let label = nextStepLabel(step)
+        return Button {
+            switch step {
+            case .press: onShowPress()
+            case .prepare: onNavigate(.squad)
+            case .play: onPlayLive()
+            case .advance: requestQuickSimulation()
+            }
+        } label: {
+            Label(label.title, systemImage: label.symbol).frame(maxWidth: .infinity)
+        }
+        .buttonStyle(FactoryPrimaryButtonStyle())
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+        .accessibilityIdentifier("next-step")
+    }
+
+    private func nextStepLabel(_ step: MatchdayStep) -> (title: String, symbol: String) {
+        switch step {
+        case .press: return ("Responder a coletiva", "mic.fill")
+        case .prepare: return ("Revisar a escalação", "person.3.fill")
+        case .play: return ("Jogar a partida", "play.fill")
+        case .advance: return ("Avançar o dia", "forward.fill")
+        }
     }
 
     // MARK: - Atenção do treinador
