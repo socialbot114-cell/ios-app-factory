@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 21:48 (Brasília). 1.1 (15) aprovado pelo usuário às 18:37. 1.1 (16) falhou no teste de equilíbrio (run 26, 19:22) e foi substituído pelo 1.1 (17), disparado pelo usuário às 20:09 (run 27, `37700560177`, commit `73f3df1`): passou em todos os passos e foi enviado e ativado no TestFlight interno às 21:29 (artefato `football-release-1.1-17`). Próximo: 1.1 (18), vitrine da Loja (item 45), só depois de dois dias de teste do 17 (até 09/out às 21:29), salvo decisão do usuário. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 22:14 (Brasília). Checagem horária: nenhum run novo desde o 1.1 (17) (run 27, ativado às 21:29); o 1.1 (18) ainda não foi disparado. 1.1 (15) aprovado pelo usuário às 18:37. 1.1 (16) falhou no teste de equilíbrio (run 26, 19:22) e foi substituído pelo 1.1 (17), disparado pelo usuário às 20:09 (run 27, `37700560177`, commit `73f3df1`): passou em todos os passos e foi enviado e ativado no TestFlight interno às 21:29 (artefato `football-release-1.1-17`). Próximo: 1.1 (18), vitrine da Loja (item 45), só depois de dois dias de teste do 17 (até 09/out às 21:29), salvo decisão do usuário. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
