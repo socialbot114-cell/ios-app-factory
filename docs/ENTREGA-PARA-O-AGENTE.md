@@ -46,7 +46,7 @@ Confirme o resultado do run 37572402802 (version 1.1, build 11): todos os passos
 
 ---
 
-## Prompt B — Próximo build: 1.1 (13), com as correções de tela e o app Lendas
+## Prompt B — Build 1.1 (13), histórico: não usar (número consumido; ver "Estado agora")
 
 O 1.1 (12) já foi enviado. O 13 corrige o layout do onboarding e da abertura, cria o app **Lendas** e traz a comemoração de vitória.
 
