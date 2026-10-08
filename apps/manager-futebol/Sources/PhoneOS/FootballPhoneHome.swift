@@ -27,7 +27,7 @@ struct PhoneHomeScreen: View {
                 }
                 .padding(.top, 4)
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 10) {
                         // Guia e busca na mesma linha: sobra espaço para todos os ícones caberem sem rolar.
                         HStack(spacing: 10) {
                             guideButton
@@ -43,10 +43,10 @@ struct PhoneHomeScreen: View {
                             .accessibilityIdentifier("phone-search")
                         }
                         widgets
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 10) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                             ForEach(PhoneApp.grid) { app in icon(app, id: "app-\(app.rawValue)") }
                         }
-                        Color.clear.frame(height: 8)
+                        Color.clear.frame(height: 16)
                     }
                     .padding(.horizontal, 4)
                 }
@@ -149,12 +149,12 @@ struct PhoneHomeScreen: View {
 
     private func icon(_ app: PhoneApp, id: String) -> some View {
         Button { onOpen(app) } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: app.symbol)
                         .font(.system(size: 26, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
+                        .frame(width: 56, height: 56)
                         .background(LinearGradient(colors: [app.tint, app.tint.opacity(0.7)], startPoint: .top, endPoint: .bottom),
                                     in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                     let badge = career.badge(for: app)

@@ -227,7 +227,8 @@ struct FootballHome: View {
                 .zIndex(3)
             }
             // Acima da janela de app aberta: a conquista aparece mesmo logo depois da partida, com o Gestor aberto.
-            if let notice = career.unlockQueue.first, !phoneIsCovered, guideSuggestion == nil {
+            // Em captura, a faixa só aparece na própria captura de desbloqueio; as outras telas não podem ser cobertas por ela.
+            if let notice = career.unlockQueue.first, capture == nil || capture == "unlock", !phoneIsCovered, guideSuggestion == nil {
                 VStack {
                     PhoneUnlockBanner(notice: notice, onOpen: { openUnlock(notice) }, onDismiss: { career.finishUnlock(id: notice.id) },
                                       onPull: { showNotifications = true })
@@ -749,6 +750,8 @@ struct FootballHome: View {
         case "store": openApp = .store
         case "unlock":
             openApp = nil
+            // Só este aviso na fila: o celular de demonstração já acumulou conquistas de outros dias.
+            career.unlockQueue = []
             career.enqueueUnlock(UnlockNotice(id: "conquista-leagueTitle", title: "Campeão da liga", detail: "Primeiro lugar ao fim da temporada",
                                               symbol: "trophy.fill", appID: "trophies"))
         default: openApp = .manager

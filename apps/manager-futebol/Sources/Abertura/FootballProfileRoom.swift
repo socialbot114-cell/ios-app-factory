@@ -345,11 +345,11 @@ struct FootballProfileRoom: View {
             HStack(spacing: 8) {
                 Image(systemName: line?.symbol ?? "bell.fill").font(.footnote).foregroundStyle(line?.tint ?? .white)
                 Text(line.map { "\($0.title): \($0.detail)" } ?? "Sem novidades")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
+                    .font(.caption.weight(.semibold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
             }
             .padding(.horizontal, 14)
             .frame(height: 34)
-            .frame(maxWidth: 320)
+            .frame(maxWidth: 340)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay { Capsule().strokeBorder(Color.white.opacity(0.2), lineWidth: 1) }
             .id(line?.id ?? "none")
