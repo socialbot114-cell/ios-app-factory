@@ -6,6 +6,7 @@ struct FootballStoryView: View {
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     @State private var confirmResign = false
+    @State private var invitationToAccept: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -20,13 +21,20 @@ struct FootballStoryView: View {
                             if let team = FootballSeason.team(invitation.clubID) { ClubCrest(team: team, size: 30) }
                             Text(FootballSeason.teamName(invitation.clubID)).font(.subheadline.weight(.semibold))
                             Spacer()
-                            Button("Aceitar") {
-                                if !career.acceptInvitation(invitation.clubID) { onAlert("Não é possível mudar de clube agora.") }
-                            }
+                            Button("Aceitar") { invitationToAccept = invitation.clubID }
                             .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
                         }
                     }
                     Text("Aceitar troca o seu clube, mantendo reputação e patrimônio.").font(.caption).foregroundStyle(.secondary)
+                }
+                .confirmationDialog("Trocar de clube?", isPresented: Binding(get: { invitationToAccept != nil }, set: { if !$0 { invitationToAccept = nil } }), titleVisibility: .visible) {
+                    Button("Trocar de clube") {
+                        if let clubID = invitationToAccept, !career.acceptInvitation(clubID) { onAlert("Não é possível mudar de clube agora.") }
+                        invitationToAccept = nil
+                    }
+                    Button("Cancelar", role: .cancel) { }
+                } message: {
+                    Text("Aceitar troca o seu clube, mantendo reputação e patrimônio.")
                 }
             }
             recordsPanel

@@ -3,6 +3,7 @@ import SwiftUI
 /// Aportes do treinador como empréstimo: saldo, parcelas, adiamentos e perdão (BAN-05).
 struct FootballCoachLoanPanel: View {
     @Binding var career: FootballCareer
+    @State private var loanToForgive: Int?
 
     var body: some View {
         let loans = career.coachLoans.filter { $0.clubID == career.selectedClubID }.suffix(4).reversed()
@@ -22,7 +23,7 @@ struct FootballCoachLoanPanel: View {
                              + (loan.postponed > 0 ? " · adiada \(loan.postponed)× por falta de caixa" : ""))
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         if loan.status == .active {
-                            Button("Perdoar o saldo") { career.forgiveCoachLoan(loan.id) }
+                            Button("Perdoar o saldo") { loanToForgive = loan.id }
                                 .buttonStyle(.bordered).font(.caption.weight(.semibold))
                                 .accessibilityIdentifier("forgive-loan-\(loan.id)")
                         }
@@ -31,6 +32,17 @@ struct FootballCoachLoanPanel: View {
                 }
             }
             .accessibilityIdentifier("coach-loans")
+            .confirmationDialog("Perdoar este aporte?", isPresented: Binding(get: { loanToForgive != nil }, set: { if !$0 { loanToForgive = nil } }), titleVisibility: .visible) {
+                Button("Perdoar o saldo", role: .destructive) {
+                    if let id = loanToForgive { _ = career.forgiveCoachLoan(id) }
+                    loanToForgive = nil
+                }
+                Button("Cancelar", role: .cancel) { }
+            } message: {
+                if let id = loanToForgive, let loan = career.coachLoans.first(where: { $0.id == id }) {
+                    Text("Você abre mão de \(FootballFormat.money(loan.outstanding)) que o clube ainda devolveria a você.")
+                }
+            }
         }
     }
 

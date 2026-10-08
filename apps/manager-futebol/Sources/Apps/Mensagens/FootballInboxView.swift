@@ -17,6 +17,8 @@ struct FootballInboxView: View {
     @State private var openThreadID: String?
     @State private var query = ""
     @State private var showNewChat = false
+    /// Proposta de venda à espera de confirmação (mensagem e oferta).
+    @State private var pendingOffer: (offerID: Int, messageID: Int)?
 
     struct Selection: Identifiable { let id: Int }
 
@@ -48,6 +50,19 @@ struct FootballInboxView: View {
             FootballRenewalSheet(career: $career, playerID: selection.id)
         }
         .sheet(isPresented: $showNewChat) { newChatSheet }
+        .confirmationDialog("Aceitar esta proposta?", isPresented: Binding(get: { pendingOffer != nil }, set: { if !$0 { pendingOffer = nil } }), titleVisibility: .visible) {
+            Button("Aceitar proposta") {
+                if let pending = pendingOffer {
+                    if career.acceptOffer(pending.offerID) { career.resolveInboxMessage(id: pending.messageID) } else { onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
+                }
+                pendingOffer = nil
+            }
+            Button("Cancelar", role: .cancel) { }
+        } message: {
+            if let pending = pendingOffer, let offer = career.offers.first(where: { $0.id == pending.offerID }) {
+                Text("\(FootballFormat.money(offer.amount)) entram no caixa e o elenco muda.")
+            }
+        }
     }
 
     /// Conversa recém-aberta que ainda não aparece na lista (ex.: atleta sem mensagens).
@@ -397,7 +412,7 @@ struct FootballInboxView: View {
             case .offer:
                 if let offerID = message.offerID, career.offers.contains(where: { $0.id == offerID }) {
                     action("Aceitar", "checkmark", prominent: true, id: "msg-accept-\(message.id)") {
-                        if career.acceptOffer(offerID) { career.resolveInboxMessage(id: message.id) } else { onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
+                        pendingOffer = (offerID: offerID, messageID: message.id)
                     }
                     action("Recusar", "xmark", id: "msg-reject-\(message.id)") {
                         career.rejectOffer(offerID)
