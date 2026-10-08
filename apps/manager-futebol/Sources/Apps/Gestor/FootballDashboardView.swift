@@ -14,6 +14,9 @@ struct FootballDashboardView: View {
     @State private var showsIconPack = false
     @State private var showsOffseason = false
     @State private var agendaSort: AgendaSort = .deadline
+    /// Resumo da última simulação rápida, que some sozinho (FLX-02 v2).
+    @State private var quickSummary: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -81,6 +84,7 @@ struct FootballDashboardView: View {
                 nextStepBar(step)
             }
         }
+        .overlay(alignment: .top) { quickSummaryToast }
         .navigationTitle("Painel do treinador")
         .onAppear {
             career.markTutorialSeen("dashboard")
@@ -204,8 +208,40 @@ struct FootballDashboardView: View {
         }
         let days = career.worldDay - previousDay
         let next = career.agenda.first.map { "\($0.title) · \($0.deadlineText)" }
-        // O resumo também vai para o histórico de ações (FLX-02): o aviso continua bloqueante até a próxima fatia.
-        onAlert(career.logQuickSimulation(days: days, nextPriority: next))
+        // O resumo também vai para o histórico de ações (FLX-02 v1) e aparece numa faixa que se desfaz sozinha (FLX-02 v2).
+        let summary = career.logQuickSimulation(days: days, nextPriority: next)
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) { quickSummary = summary }
+    }
+
+    /// Faixa com o resumo da simulação rápida (FLX-02 v2). Some sozinha em uns 4 segundos; tocar fecha antes.
+    /// Erros continuam em alerta, porque pedem uma ação do treinador.
+    @ViewBuilder
+    private var quickSummaryToast: some View {
+        if let text = quickSummary {
+            Button {
+                quickSummary = nil
+            } label: {
+                Label(text, systemImage: "forward.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .task(id: text) {
+                // Na captura de tela a faixa fica parada, para o print mostrar o resumo.
+                guard FactoryCapture.screen == nil else { return }
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                guard !Task.isCancelled else { return }
+                quickSummary = nil
+            }
+            .accessibilityIdentifier("quick-summary")
+        }
     }
 
     // MARK: - Próximo passo (FLX-03)
