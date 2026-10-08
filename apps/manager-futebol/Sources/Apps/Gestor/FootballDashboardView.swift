@@ -196,8 +196,10 @@ struct FootballDashboardView: View {
             onAlert("Não foi possível avançar. Confira a escalação e tente novamente.")
             return
         }
-        let priority = career.agenda.first.map { " Próxima prioridade: \($0.title) · \($0.deadlineText)." } ?? " Agenda sem pendências com prazo."
-        onAlert("\(career.worldDay - previousDay) dia(s) de calendário simulado(s). Resultados, treino e prazos atualizados." + priority)
+        let days = career.worldDay - previousDay
+        let next = career.agenda.first.map { "\($0.title) · \($0.deadlineText)" }
+        // O resumo também vai para o histórico de ações (FLX-02): o aviso continua bloqueante até a próxima fatia.
+        onAlert(career.logQuickSimulation(days: days, nextPriority: next))
     }
 
     // MARK: - Atenção do treinador

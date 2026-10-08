@@ -104,6 +104,15 @@ extension FootballCareer {
         }
     }
 
+    /// Resumo de uma simulação rápida, guardado no histórico de ações para consulta depois que o aviso some (FLX-02).
+    /// Devolve o texto que o aviso mostra, e o histórico guarda o mesmo texto.
+    mutating func logQuickSimulation(days: Int, nextPriority: String?) -> String {
+        let priority = nextPriority.map { " Próxima prioridade: \($0)." } ?? " Agenda sem pendências com prazo."
+        let text = "\(days) dia(s) de calendário simulado(s). Resultados, treino e prazos atualizados." + priority
+        logActionResult(text, appID: nil)
+        return text
+    }
+
     // MARK: Dificuldade e desafios (AJU-06)
 
     /// Durante um desafio ativo a dificuldade é uma regra do cenário, não uma preferência.
