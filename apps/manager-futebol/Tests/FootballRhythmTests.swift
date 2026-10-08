@@ -20,4 +20,13 @@ final class FootballRhythmTests: XCTestCase {
         XCTAssertEqual(decoded.rhythmMode, .classic)
         XCTAssertEqual(decoded, preferences)
     }
+
+    /// O Clássico mostra menos partículas e termina antes na comemoração; o Imersivo mantém o efeito cheio.
+    func testClassicCelebrationIsLighterAndShorterButNeverEmpty() {
+        XCTAssertEqual(FootballRhythm.immersive.celebrationCount(64), 64)
+        XCTAssertEqual(FootballRhythm.immersive.celebrationSeconds(1.6), 1.6, accuracy: 0.0001)
+        XCTAssertEqual(FootballRhythm.classic.celebrationCount(64), 32)
+        XCTAssertEqual(FootballRhythm.classic.celebrationCount(1), 1)
+        XCTAssertLessThan(FootballRhythm.classic.celebrationSeconds(1.6), 1.6)
+    }
 }

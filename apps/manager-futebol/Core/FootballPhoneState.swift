@@ -29,7 +29,7 @@ struct AdvancePauses: Codable, Equatable {
 }
 
 /// Ritmo do FutOS. "Clássico" pede animações curtas e rituais resumidos; "Imersivo" mantém as cenas completas, como sempre foi.
-/// Por enquanto a escolha só fica salva; os efeitos entram nas próximas fatias.
+/// A comemoração de vitória já respeita o ritmo; o ritual de virada e a tela de bloqueio ainda não.
 enum FootballRhythm: String, Codable, CaseIterable, Identifiable {
     case classic, immersive
 
@@ -47,6 +47,16 @@ enum FootballRhythm: String, Codable, CaseIterable, Identifiable {
         case .classic: return "Animações curtas e rituais resumidos."
         case .immersive: return "Cenas completas, como sempre foi."
         }
+    }
+
+    /// Partículas de uma comemoração: o Clássico mostra metade, sem zerar o efeito.
+    func celebrationCount(_ count: Int) -> Int {
+        self == .classic ? max(1, count / 2) : count
+    }
+
+    /// Duração de uma comemoração, em segundos: o Clássico termina mais cedo.
+    func celebrationSeconds(_ seconds: Double) -> Double {
+        self == .classic ? seconds * 0.6 : seconds
     }
 }
 

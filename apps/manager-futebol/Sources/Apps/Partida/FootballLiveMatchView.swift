@@ -429,7 +429,7 @@ struct FootballLiveMatchView: View {
             .background(tint.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 if result == .win && !staticPreview && !FactoryCapture.isUITesting {
-                    FootballCelebrationBurst(count: margin >= 3 ? 64 : 34)
+                    FootballCelebrationBurst(count: margin >= 3 ? 64 : 34, rhythm: career.world.phone.preferences.rhythmMode)
                 }
             }
     }
@@ -957,7 +957,7 @@ struct FootballSeasonSummaryView: View {
                         .padding(.vertical, 8)
                         .overlay {
                             if (record.championID == record.clubID || record.promoted) && !FactoryCapture.isUITesting {
-                                FootballCelebrationBurst(count: 70)
+                                FootballCelebrationBurst(count: 70, rhythm: career.world.phone.preferences.rhythmMode)
                             }
                         }
                     }

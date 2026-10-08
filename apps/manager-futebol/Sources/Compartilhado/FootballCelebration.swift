@@ -4,15 +4,19 @@ import SwiftUI
 struct FootballCelebrationBurst: View {
     var colors: [Color] = [FootballTheme.gold, .white, .green, .yellow, .orange]
     var count = 34
+    /// Ritmo do FutOS: no Clássico a chuva tem menos partículas e termina antes.
+    var rhythm: FootballRhythm = .immersive
 
     @State private var fired = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var particles: Int { rhythm.celebrationCount(count) }
+
     var body: some View {
         ZStack {
             if !reduceMotion {
-                ForEach(0..<count, id: \.self) { index in
-                    let angle = Double(index) / Double(count) * 2 * .pi
+                ForEach(0..<particles, id: \.self) { index in
+                    let angle = Double(index) / Double(particles) * 2 * .pi
                     let distance = 90.0 + Double((index * 37) % 70)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(colors[index % colors.count])
@@ -28,7 +32,7 @@ struct FootballCelebrationBurst: View {
         .accessibilityHidden(true)
         .sensoryFeedback(.success, trigger: fired)
         .onAppear {
-            withAnimation(.easeOut(duration: 1.6)) { fired = true }
+            withAnimation(.easeOut(duration: rhythm.celebrationSeconds(1.6))) { fired = true }
         }
     }
 }

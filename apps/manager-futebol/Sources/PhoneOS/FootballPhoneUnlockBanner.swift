@@ -10,6 +10,8 @@ struct PhoneUnlockBanner: View {
     let onDismiss: () -> Void
     /// Puxar a faixa para baixo abre o centro de notificações, como puxar a tela inicial.
     let onPull: () -> Void
+    /// Ritmo do FutOS: no Clássico o confete da conquista é menor e some antes.
+    var rhythm: FootballRhythm = .immersive
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Vira verdadeiro ao aparecer e comanda a entrada da faixa.
@@ -55,7 +57,7 @@ struct PhoneUnlockBanner: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: .black.opacity(0.25), radius: 12, y: 4)
         // Confete leve. O componente também traz a vibração de sucesso e some com "reduzir movimento".
-        .overlay { FootballCelebrationBurst(count: 24) }
+        .overlay { FootballCelebrationBurst(count: 24, rhythm: rhythm) }
         // Arrastar para cima descarta; puxar para baixo abre a central. Simultâneo: não rouba o toque nem a rolagem.
         .simultaneousGesture(
             DragGesture(minimumDistance: 20).onEnded { value in

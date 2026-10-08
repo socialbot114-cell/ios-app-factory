@@ -231,7 +231,7 @@ struct FootballHome: View {
             if let notice = career.unlockQueue.first, capture == nil || capture == "unlock", !phoneIsCovered, guideSuggestion == nil {
                 VStack {
                     PhoneUnlockBanner(notice: notice, onOpen: { openUnlock(notice) }, onDismiss: { career.finishUnlock(id: notice.id) },
-                                      onPull: { showNotifications = true })
+                                      onPull: { showNotifications = true }, rhythm: career.world.phone.preferences.rhythmMode)
                         .id(notice.id)
                     Spacer()
                 }
