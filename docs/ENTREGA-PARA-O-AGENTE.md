@@ -1,11 +1,11 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 07/out/2026, 21:32 (Brasília). 1.1 (15) aprovado pelo usuário às 18:37. 1.1 (16) falhou no teste de equilíbrio (run 26, 19:22) e foi substituído pelo 1.1 (17), disparado pelo usuário às 20:09 (run 27, `37700560177`, commit `73f3df1`): passou em todos os passos e foi enviado e ativado no TestFlight interno às 21:29 (artefato `football-release-1.1-17`). Próximo: 1.1 (18), vitrine da Loja (item 45), só depois de dois dias de teste do 17 (até 09/out às 21:29), salvo decisão do usuário. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
+Atualizado em 07/out/2026, 21:48 (Brasília). 1.1 (15) aprovado pelo usuário às 18:37. 1.1 (16) falhou no teste de equilíbrio (run 26, 19:22) e foi substituído pelo 1.1 (17), disparado pelo usuário às 20:09 (run 27, `37700560177`, commit `73f3df1`): passou em todos os passos e foi enviado e ativado no TestFlight interno às 21:29 (artefato `football-release-1.1-17`). Próximo: 1.1 (18), vitrine da Loja (item 45), só depois de dois dias de teste do 17 (até 09/out às 21:29), salvo decisão do usuário. A rotina horária mantém este arquivo em dia; o estado real dos builds está na tabela de builds do `docs/ROADMAP-FUTOS.md`.
 
 ## Como usar quando você acordar
 
 1. Leia a seção "Estado agora" para saber o que já passou.
-2. Cole no outro agente, na ordem, os prompts A, B, C e D (cada um é independente; B só faz sentido se A estiver resolvido).
+2. Cole no outro agente o prompt do que você quer agora: **H** dispara o 1.1 (18), e **C2** tira os prints das telas novas para o artefato. Os prompts A, B, E, F e G já foram cumpridos e ficam como histórico; C e D continuam válidos.
 3. Jogue os roteiros da seção "O que você testa" no aparelho, quando o build chegar ao TestFlight.
 4. Traga para mim o relatório do agente (modelo na seção "Relatório") e o que você achou jogando.
 
@@ -21,7 +21,7 @@ Atualizado em 07/out/2026, 21:32 (Brasília). 1.1 (15) aprovado pelo usuário à
 | 1.1 (15) | **Aprovado pelo usuário às 18:37 (Brasília).** Enviado ao TestFlight interno às 16:33. Run `37663919522` (nº 25), commit `e5439a3`: todos os passos concluídos, incluindo "Activate internal TestFlight". Academia v1 liberada para teste. |
 | 1.1 (16) | **Falhou no passo de testes (run `37690905790`, commit `62ed950`, terminou 19:22).** Os testes de interface passaram. Falhou só `FootballYouthBalanceTests.testYouthPipelineBalanceReport` (medição por id, corrigida em `ee481d8`). Não foi enviado ao TestFlight. Substituído pelo 1.1 (17). O artefato `football-release-1.1-16` (ID 11515456607) ficou no run 26 e não interfere no 17. |
 | 1.1 (17) | **Enviado e ativado no TestFlight interno às 21:29 (Brasília): run 27 (`37700560177`, commit `73f3df1`), todos os passos verdes.** Mesmo conteúdo do 16: Academia v2 (Sub-15, parcerias de captação, campeonato de base com minutos, linha BALANCE), HUD real (bateria, sinal, data, hora e escudo vindos da carreira; a sala de espera mostra o último save de cada perfil), estados vazios da Academia, contadores que rolam, atalho "jovem pronto para decidir" no Gestor, mercado com busca, ordenação e "Mostrar mais", e a fila de desbloqueios no topo do celular. Mais a correção do teste de equilíbrio (`ee481d8`). Commits `6cf10b3`, `070e5da`, `c75c058`, `5388264`, `bdd01b8` e `ee481d8`. Artefato `football-release-1.1-17` (ID 11520219563). Linha BALANCE: o teste passou, mas o número não sai pela API (fica longe do fim do log); procure `BALANCE` na página do job: https://github.com/socialbot114-cell/ios-app-factory/actions/runs/37700560177/job/113062736648 . |
-| 1.1 (18) | **Em preparação, NÃO disparar.** Vitrine da Loja (módulos Pro em mistério, sem cobrança) e o catálogo testado (item 45 do roadmap). Só dispara depois que o 1.1 (17) for testado por dois dias, até 09/out às 21:29 (Brasília), salvo decisão do usuário antes. |
+| 1.1 (18) | **Pronto para disparar pelo prompt H.** Pedido pelo usuário em 07/out às 21:48 (Brasília), depois de aprovar o 17. A janela de dois dias do 17 iria até 09/out às 21:29; a antecipação é decisão do usuário. Vitrine da Loja Aplicativo (módulos Pro em mistério, sem cobrança; item 45 do roadmap). Commits `905c4cf` (Loja) e `4348a38` (capturas). Escrito sem compilador: a primeira compilação é o CI do 18. Não foi disparado: esta sessão não tem permissão para disparar workflows, então o disparo é feito pelo GitHub ou pelo outro agente. |
 | Feedback do 12 (07/out) | Testado: onboarding e tela de abertura saíram grandes e desproporcionais. Causa: a imagem de fundo alargava o layout. Corrigido no commit `9c6fa17` (fundo que não mexe no layout, largura máxima, fontes menores). Vai no **1.1 (13)**, ref `feature/entrega-a-ritmo`, junto com as próximas fatias da Entrega A. Escrito sem compilador: só o CI e o aparelho confirmam. |
 | Entrega A (conteúdo do build 12) | Branch `feature/entrega-a-ritmo`, a partir do mesmo commit do 11. Já tem: uma lenda no começo da carreira e uma por temporada (sem convidado por partida), tela de abertura (carregamento, Continuar, Novo jogo, Opções). Escrito, não compilado: só o CI valida. |
 | Hall das Lendas | Já unido às duas branches acima. Não entra no TestFlight do Football; validado pelo workflow "iOS app validation". |
@@ -109,6 +109,41 @@ Se passar: responda "1.1 (17) enviado e ativado", o horário de Brasília e a li
 Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro, a hierarquia anexada (se houver) e o número de testes que passaram. O build 17 continua livre nesse caso.
 O que há de novo: Sub-15 na base, parcerias de captação com escola e clube parceiro, campeonato de base simulado com minutos, painéis de captação e campeonatos no app Academia, o HUD real (bateria, sinal, data, hora e escudo na barra do celular e na sala de espera), o mercado com busca por nome, ordenação e "Mostrar mais", o atalho "jovem pronto para decidir" no Gestor, estados vazios que explicam o que esperar na Academia e a faixa de desbloqueios no topo do celular (conquistas e metas concluídas). Correção: o teste de equilíbrio passou a medir jovens por carreira (o 16 falhou nele).
 ```
+
+## Prompt H — Build 1.1 (18), vitrine da Loja Aplicativo
+
+**Pronto para disparar.** O usuário pediu o envio em 07/out às 21:48 (Brasília), depois de aprovar o 1.1 (17). A janela de dois dias do 17 iria até 09/out às 21:29; a antecipação é decisão do usuário. Não reenviar nem substituir o 17. O código é do commit `4348a38` e foi escrito sem compilador: a primeira compilação é o CI deste run.
+
+```
+Projeto socialbot114-cell/ios-app-factory. Dispare o workflow "Football TestFlight" (football-testflight.yml) com:
+  ref: feature/entrega-a-ritmo
+  version: 1.1
+  build: 18
+Antes de disparar, confirme que não há outro run do mesmo workflow em andamento e que o build 18 ainda não foi usado (artefato football-release-1.1-18 não pode existir em runs anteriores).
+Acompanhe o run até o fim e NÃO cancele nenhum passo, em especial "Activate internal TestFlight after Apple processing" (ele espera a Apple processar, de 2 a 15 minutos). NÃO altere código.
+Quando o passo "Test iPhone and iPad" terminar, procure no log do job a linha que começa com "BALANCE" e copie a linha inteira na resposta.
+Se passar: responda "1.1 (18) enviado e ativado", o horário de Brasília, a linha BALANCE e o nome e o ID do artefato football-release-1.1-18.
+Se falhar: traga o nome exato de cada teste que falhou, a linha do arquivo, a mensagem de erro, a hierarquia anexada (se houver) e o número de testes que passaram. O build 18 continua livre nesse caso.
+O que há de novo: app Loja (ícone de sacola) na grade do celular, com a vitrine dos cinco módulos Pro (Scout, Analytics, Market, Academy e Medical) em mistério, preços propostos e "Em breve". Nada é cobrado nesta versão. Mais as capturas das telas Academia, Loja e fila de desbloqueios.
+```
+
+---
+
+## Prompt C2 — Prints das telas novas (iPhone), para o artefato de entregas
+
+Pode rodar junto com H (workflow diferente). Estados: `academy` (Academia), `market` (mercado), `phone` (celular), `store` (Loja), `unlock` (fila de desbloqueios) e `title` (abertura). Os prints mostram o código atual (`4348a38` ou mais novo), não o binário de cada build.
+
+```
+Projeto socialbot114-cell/ios-app-factory. Dispare o workflow "iOS simulator screenshots" (screenshots.yml) com:
+  ref: feature/entrega-a-ritmo
+  app: manager-futebol
+  states: academy,market,phone,store,unlock,title
+  families: iphone
+Acompanhe até o fim. NÃO altere código.
+Quando terminar, responda o resultado do run e o nome e o ID do artefato gerado. Se conseguir baixar e abrir as imagens, diga para cada uma, em uma linha: texto cortado ou sobreposto, botão principal fora da tela, tela vazia ou cores ilegíveis. Se não conseguir baixar, diga só o resultado do run e o nome do artefato.
+```
+
+---
 
 ## Prompt C — Capturas de tela (iPhone e iPad)
 
