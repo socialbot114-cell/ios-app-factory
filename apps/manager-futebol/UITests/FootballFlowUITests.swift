@@ -450,7 +450,7 @@ final class FootballFlowUITests: XCTestCase {
 
     private func scrollUntilHittable(_ element: XCUIElement, in app: XCUIApplication) {
         var attempts = 0
-        while !element.isHittable && attempts < 6 {
+        while !element.isHittable && attempts < 12 {
             dragUp(app)
             attempts += 1
         }
