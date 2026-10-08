@@ -438,7 +438,8 @@ struct FootballDashboardView: View {
             .font(.subheadline.weight(.semibold))
             Button {
                 let result = career.simulateUntilAgendaDecision()
-                onAlert("\(result.days) dia(s) simulado(s). \(result.reason)")
+                // Parar numa decisão pede ação do treinador, então continua em alerta (FLX-02). Sem dias avançados, mostra só o motivo.
+                onAlert(result.days == 0 ? result.reason : "\(result.days) dia(s) simulado(s). \(result.reason)")
             } label: {
                 Label("Simular até a próxima decisão", systemImage: "forward.end.alt.fill").frame(maxWidth: .infinity)
             }
