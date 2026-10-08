@@ -27,6 +27,13 @@ struct FootballFinanceView: View {
                         .font(.caption.weight(.semibold)).foregroundStyle(Self.tint(overview.risk))
                 }
             }
+            let entries = career.finance.entries(season: career.season)
+            FactoryPanel(title: "Receita por origem", systemImage: "chart.bar.fill") {
+                Self.barRows(FootballBankBreakdown.income(entries), empty: "Sem receitas registradas nesta temporada.")
+            }
+            FactoryPanel(title: "Despesas por categoria", systemImage: "chart.bar.xaxis") {
+                Self.barRows(FootballBankBreakdown.expenses(entries), empty: "Sem despesas registradas nesta temporada.")
+            }
             HStack(spacing: 12) {
                 FactoryMetric(label: "Folha salarial", value: FootballFormat.money(career.wageBill), symbol: "person.3.fill", tint: .orange)
                 FactoryMetric(label: "Teto da folha", value: FootballFormat.money(career.wageCap), symbol: "lock.fill", tint: .gray)
@@ -88,6 +95,36 @@ struct FootballFinanceView: View {
         }
         .factoryPage()
         .navigationTitle("Finanças")
+    }
+
+    /// Barras horizontais com o valor ao lado. Uma série só, na cor de destaque; a lista de categorias abaixo continua sendo a tabela.
+    @ViewBuilder
+    private static func barRows(_ bars: [FootballBankBar], empty: String) -> some View {
+        if bars.isEmpty {
+            Text(empty).font(.subheadline).foregroundStyle(.secondary)
+        } else {
+            let largest = max(bars.map(\.amount).max() ?? 1, 1)
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(bars) { bar in
+                    HStack(spacing: 10) {
+                        Text(bar.title)
+                            .font(.caption).foregroundStyle(.secondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(width: 118, alignment: .leading)
+                        GeometryReader { proxy in
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(FootballTheme.accent)
+                                .frame(width: max(4, proxy.size.width * CGFloat(bar.amount) / CGFloat(largest)))
+                        }
+                        .frame(height: 12)
+                        Text(FootballFormat.money(bar.amount))
+                            .font(.caption.weight(.semibold).monospacedDigit())
+                            .frame(width: 92, alignment: .trailing)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
     }
 
     /// Fôlego em meses, em texto curto.
