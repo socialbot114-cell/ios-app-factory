@@ -587,9 +587,13 @@ struct FootballHome: View {
     }
 
     private func startChallenge(_ scenario: ChallengeScenario) {
-        if capture == nil { FootballSaveStore().save(career, slot: activeSlot) }
         let store = FootballSaveStore()
-        let target = (0..<FootballSaveStore.slotCount).first { $0 != activeSlot && store.summary(slot: $0) == nil } ?? activeSlot
+        // Sem espaço livre, o desafio substituiria a carreira atual: bloqueia com o mesmo aviso do "Novo jogo".
+        guard let target = (0..<FootballSaveStore.slotCount).first(where: { $0 != activeSlot && store.summary(slot: $0) == nil }) else {
+            alertMessage = "Todos os espaços de carreira estão ocupados. Apague uma carreira em Opções para começar outra."
+            return
+        }
+        if capture == nil { FootballSaveStore().save(career, slot: activeSlot) }
         activeSlot = target
         store.activeSlot = target
         career = FootballCareer.challenge(scenario)
