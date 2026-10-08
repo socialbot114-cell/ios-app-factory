@@ -76,6 +76,8 @@ struct PhoneUnlockBanner: View {
         }
         // Sai da fila sozinha depois de uns 4 segundos. Se o treinador tocar ou fechar antes, a tarefa é cancelada.
         .task(id: notice.id) {
+            // Na captura de tela a faixa fica parada, para o print mostrar o aviso.
+            guard FactoryCapture.screen == nil else { return }
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             guard !Task.isCancelled else { return }
             onDismiss()

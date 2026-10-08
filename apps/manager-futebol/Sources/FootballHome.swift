@@ -745,6 +745,12 @@ struct FootballHome: View {
         case "spotlight":
             searchSeed = "Aur"
             showSearch = true
+        case "academy": openApp = .academy
+        case "store": openApp = .store
+        case "unlock":
+            openApp = nil
+            career.enqueueUnlock(UnlockNotice(id: "conquista-leagueTitle", title: "Campeão da liga", detail: "Primeiro lugar ao fim da temporada",
+                                              symbol: "trophy.fill", appID: "trophies"))
         default: openApp = .manager
         }
     }

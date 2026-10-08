@@ -30,6 +30,7 @@ CAPTURES["manager-futebol"] += ["budget-planning", "fantasy-result", "fantasy-le
                                 "prep-flow", "halftime-talk", "wallpaper-night", "onboarding", "onboarding-mode", "loading", "title", "title-new", "title-shade",
                                 "offseason-recap", "offseason-contracts", "offseason-review", "offseason-pack", "offseason-holiday",
                                 "offseason-sponsor", "offseason-preseason", "offseason-kickoff"]
+CAPTURES["manager-futebol"] += ["academy", "store", "unlock"]
 
 
 def requested_states(slug: str, selection: str) -> list[str]:
