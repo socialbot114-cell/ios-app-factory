@@ -371,8 +371,9 @@ struct FootballLiveMatchView: View {
         let userGoals = live.userIsHome ? live.homeGoals : live.awayGoals
         let rivalGoals = live.userIsHome ? live.awayGoals : live.homeGoals
         let result: FootballResult = userGoals > rivalGoals ? .win : (userGoals == rivalGoals ? .draw : .loss)
+        let tier = FootballVictory.tier(VictoryContext(goalsFor: userGoals, goalsAgainst: rivalGoals, isClassic: live.sim.isDerby))
         return VStack(alignment: .leading, spacing: 12) {
-            resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals)
+            resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals, tier: tier)
             if career.canRevealShootout {
                 Button { career.revealLiveShootout() } label: { Label("Ver os pênaltis", systemImage: "scope").frame(maxWidth: .infinity) }
                     .buttonStyle(.borderedProminent)
@@ -407,13 +408,19 @@ struct FootballLiveMatchView: View {
         return copy.hypeTitle
     }
 
-    private func resultBanner(_ result: FootballResult, penalties: Bool, margin: Int = 0) -> some View {
+    private func resultBanner(_ result: FootballResult, penalties: Bool, margin: Int = 0, tier: VictoryTier? = nil) -> some View {
+        // Sem tier (chamada antiga), a goleada continua sendo a margem de três gols, como antes.
+        let victory = tier ?? (margin >= 3 ? VictoryTier.goleada : .regular)
         let text: String
         let tint: Color
         switch result {
         case .win:
-            text = margin >= 3 ? "Goleada! Que atuação, professor." : "Vitória! Três pontos para a conta."
-            tint = margin >= 3 ? Color(red: 0.05, green: 0.55, blue: 0.25) : .green
+            switch victory {
+            case .goleada: text = "Goleada! Que atuação, professor."
+            case .big: text = "Vitória grande! Três pontos que pesam."
+            case .regular: text = "Vitória! Três pontos para a conta."
+            }
+            tint = victory == .goleada ? Color(red: 0.05, green: 0.55, blue: 0.25) : .green
         case .draw:
             text = penalties ? "Empate no tempo regulamentar: a decisão vai aos pênaltis." : "Empate. Um ponto na tabela."
             tint = .gray
@@ -429,7 +436,7 @@ struct FootballLiveMatchView: View {
             .background(tint.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 if result == .win && !staticPreview && !FactoryCapture.isUITesting {
-                    FootballCelebrationBurst(count: margin >= 3 ? 64 : 34, rhythm: career.world.phone.preferences.rhythmMode)
+                    FootballCelebrationBurst(count: victory == .goleada ? 64 : (victory == .big ? 48 : 34), rhythm: career.world.phone.preferences.rhythmMode)
                 }
             }
     }
