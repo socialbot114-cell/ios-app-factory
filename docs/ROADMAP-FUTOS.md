@@ -610,7 +610,7 @@ Hoje: jovens são atletas com um marcador de base; há um único grupo de até 1
 
 Hoje: projeção com gráfico, simulador de contratação ou obra, extratos do clube e do treinador, empréstimos do treinador, juros e bloqueio de contratações no vermelho, teto salarial. Os painéis de categoria e de mês são texto simples, o ícone de pizza não tem gráfico, o patrocínio fica fora do Banco, não há empréstimo bancário nem fair play, e o extrato não tem busca.
 
-- [ ] BAN-07 Visão geral redesenhada: saldo, fôlego em meses, receitas e despesas do mês com tendência e alerta de risco.
+- [ ] BAN-07 Visão geral redesenhada: saldo, fôlego em meses, receitas e despesas do mês com tendência e alerta de risco. **Escrito na `feature/entrega-a-ritmo` sem compilador** (`Core/FootballBankOverview.swift`, painel "Visão geral" em Finanças, testes `FootballBankOverviewTests`); falta o CI do próximo build com essa fatia.
 - [ ] BAN-08 Gráficos reais: receita por origem em rosca, despesas por categoria, evolução do saldo e comparação entre temporadas.
 - [ ] BAN-09 Orçamento dividido entre transferências, folha, estrutura e base, com meta e aviso ao estourar.
 - [ ] BAN-10 Receitas por fonte (TV, bilheteria, sócios, patrocínio, naming, marca e vendas) com projeção e comparação com o ano anterior.

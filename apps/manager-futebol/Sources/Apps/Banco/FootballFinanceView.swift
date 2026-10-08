@@ -8,17 +8,28 @@ struct FootballFinanceView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 12) {
-                FactoryMetric(label: "Caixa", value: FootballFormat.money(career.transferBudget), symbol: "banknote.fill", tint: career.isInDebt ? .red : FootballTheme.accent)
-                FactoryMetric(label: "Projeção fim de temporada", value: FootballFormat.money(career.projectedSeasonEndCash), symbol: "chart.line.uptrend.xyaxis", tint: .indigo)
+            let overview = career.bankOverview
+            FactoryPanel(title: "Visão geral", systemImage: "gauge.with.dots.needle.50percent") {
+                HStack(spacing: 12) {
+                    FactoryMetric(label: "Saldo do clube", value: FootballFormat.money(overview.balance), symbol: "banknote.fill", tint: overview.balance < 0 ? .red : FootballTheme.accent)
+                    FactoryMetric(label: "Fôlego", value: Self.breathText(overview.monthsOfBreath), symbol: "hourglass", tint: Self.tint(overview.risk))
+                }
+                HStack(spacing: 12) {
+                    FactoryMetric(label: "Receitas do mês", value: FootballFormat.money(overview.monthIncome), symbol: "arrow.up.circle.fill", tint: .green)
+                    FactoryMetric(label: "Despesas do mês", value: FootballFormat.money(overview.monthExpenses), symbol: "arrow.down.circle.fill", tint: .orange)
+                }
+                if let income = overview.incomeChange, let expenses = overview.expenseChange {
+                    Text("Contra o mês anterior: receitas \(Self.changeText(income)), despesas \(Self.changeText(expenses)).")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if let alert = Self.alertText(overview) {
+                    Label(alert, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.weight(.semibold)).foregroundStyle(Self.tint(overview.risk))
+                }
             }
             HStack(spacing: 12) {
                 FactoryMetric(label: "Folha salarial", value: FootballFormat.money(career.wageBill), symbol: "person.3.fill", tint: .orange)
                 FactoryMetric(label: "Teto da folha", value: FootballFormat.money(career.wageCap), symbol: "lock.fill", tint: .gray)
-            }
-            if career.isInDebt {
-                Label("Clube no vermelho: juros, risco de transfer ban e diretoria preocupada.", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption.weight(.semibold)).foregroundStyle(.red)
             }
             FootballCashProjectionPanel(career: career)
             FootballCoachLoanPanel(career: $career)
@@ -77,5 +88,40 @@ struct FootballFinanceView: View {
         }
         .factoryPage()
         .navigationTitle("Finanças")
+    }
+
+    /// Fôlego em meses, em texto curto.
+    private static func breathText(_ months: Double?) -> String {
+        guard let months else { return "Sem despesas" }
+        if months < 1 { return "menos de 1 mês" }
+        let whole = Int(months)
+        return "\(whole) \(whole == 1 ? "mês" : "meses")"
+    }
+
+    private static func changeText(_ change: Int) -> String {
+        if change == 0 { return "sem mudança" }
+        let sign = change > 0 ? "+" : "−"
+        return "\(sign)\(FootballFormat.money(abs(change)))"
+    }
+
+    private static func tint(_ risk: FootballBankOverview.Risk) -> Color {
+        switch risk {
+        case .stable: return .green
+        case .watch: return .orange
+        case .critical: return .red
+        }
+    }
+
+    private static func alertText(_ overview: FootballBankOverview) -> String? {
+        switch overview.risk {
+        case .stable:
+            return nil
+        case .watch:
+            return "Fôlego abaixo de três meses ou projeção de caixa negativa. Acompanhe as despesas."
+        case .critical:
+            return overview.balance < 0
+                ? "Clube no vermelho: juros, risco de transfer ban e diretoria preocupada."
+                : "Menos de um mês de fôlego no ritmo atual. Reduza despesas ou busque receita."
+        }
     }
 }
