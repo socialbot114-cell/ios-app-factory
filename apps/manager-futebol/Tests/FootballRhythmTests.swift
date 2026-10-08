@@ -29,4 +29,10 @@ final class FootballRhythmTests: XCTestCase {
         XCTAssertEqual(FootballRhythm.classic.celebrationCount(1), 1)
         XCTAssertLessThan(FootballRhythm.classic.celebrationSeconds(1.6), 1.6)
     }
+
+    /// O Clássico lista menos pendências na tela de bloqueio; o Imersivo mantém as cinco de sempre.
+    func testClassicLockScreenListsFewerPendingItems() {
+        XCTAssertEqual(FootballRhythm.immersive.lockScreenItemLimit, 5)
+        XCTAssertEqual(FootballRhythm.classic.lockScreenItemLimit, 2)
+    }
 }

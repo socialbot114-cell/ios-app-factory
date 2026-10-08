@@ -58,6 +58,9 @@ enum FootballRhythm: String, Codable, CaseIterable, Identifiable {
     func celebrationSeconds(_ seconds: Double) -> Double {
         self == .classic ? seconds * 0.6 : seconds
     }
+
+    /// Quantas pendências a tela de bloqueio lista de cara. O contador continua mostrando o total.
+    var lockScreenItemLimit: Int { self == .classic ? 2 : 5 }
 }
 
 struct PhonePreferences: Codable, Equatable {
