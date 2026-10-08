@@ -5,7 +5,7 @@ import SwiftUI
 /// Cada app é uma micro-realidade do jogo; todos leem e escrevem na mesma carreira.
 enum PhoneApp: String, CaseIterable, Identifiable {
     case manager, squad, league, market, club, messages, social, betting, fantasy
-    case life, business, quests, trophies, alerts, brand, bank, contacts, settings, legends, academy
+    case life, business, quests, trophies, alerts, brand, bank, contacts, settings, legends, academy, store
 
     var id: String { rawValue }
 
@@ -31,6 +31,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .settings: return "Ajustes"
         case .legends: return "Lendas"
         case .academy: return "Academia"
+        case .store: return "Loja"
         }
     }
 
@@ -56,6 +57,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .settings: return "gearshape.fill"
         case .legends: return "crown.fill"
         case .academy: return "graduationcap.fill"
+        case .store: return "bag.fill"
         }
     }
 
@@ -81,6 +83,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .settings: return Color(red: 0.45, green: 0.47, blue: 0.52)
         case .legends: return Color(red: 0.78, green: 0.58, blue: 0.08)
         case .academy: return Color(red: 0.0, green: 0.48, blue: 0.75)
+        case .store: return Color(red: 0.18, green: 0.10, blue: 0.30)
         }
     }
 
@@ -107,6 +110,7 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .settings: return "Carreiras salvas, dificuldade, desafios, avisos e tutorial"
         case .legends: return "Craques eternos: pacote, craque da temporada e coleção"
         case .academy: return "Base: promessas, relatórios, mentores e ações de formação"
+        case .store: return "Módulos Pro pagos: scout, análises, mercado, base e saúde, vendidos uma vez cada"
         }
     }
 

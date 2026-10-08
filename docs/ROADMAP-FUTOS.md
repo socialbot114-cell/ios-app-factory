@@ -51,6 +51,7 @@ Cada versão é um build do TestFlight, só avança com gate verde e capturas re
 | 1.1 (17) | Mesmo conteúdo do 16 (Academia v2, HUD real, mercado com busca e paginação, atalho de decisão e estados vazios na Academia, fila de desbloqueios), mais a correção do teste de equilíbrio (medição por carreira, `ee481d8`) | Disparado às 20:09 (run `37700560177`, commit `73f3df1`), em andamento. Sem regra de dois dias: o 16 foi barrado no gate | a combinar |
 | Entrega F | Academia: contratos e bolsas, empréstimo e venda, destino futuro (fase F3) | Planejada | a combinar |
 | Entrega G | Comissão técnica: app dedicado para staff e contratações (item 43) | Planejada | a combinar |
+| Entrega H | Loja Aplicativo e módulos Pro (item 45): vitrine com mistério primeiro, compra depois | Vitrine na branch (sem compra); StoreKit e Market Pro pendentes | a combinar |
 | Entrega A | Ritmo e recompensa: pilares PIL, modo Clássico e Imersivo, animações de vitória, marcos, Banco (BAN-07 a BAN-09); lendas inicial e por temporada; abertura do app (carregamento, Continuar, Novo jogo, Opções) | Código iniciado na branch `feature/entrega-a-ritmo`: lendas inicial e por temporada e abertura do app escritas, aguardando CI | a combinar |
 | Entrega B | Mercado simples e base com categorias | Planejada | a combinar |
 | Entrega C | Carreira, narrativa e rede social | Planejada | a combinar |
@@ -1165,4 +1166,37 @@ Pedido do usuário: a bateria e o sinal da barra de status precisam mostrar dado
 **Adiado, não entrou.** A mecânica de bateria de 15 ações por dia, que força o próximo dia e tem aviso de bateria baixa. A decisão foi manter a energia atual como bateria. Fica registrada para decisão futura.
 
 **Não compilado aqui.** O ambiente de trabalho não tem o compilador Swift. O CI e o aparelho são o teste de verdade para o commit `070e5da`.
+
+### 45 — Loja Aplicativo e módulos Pro | Entrega H
+
+**Pedido (07/out, noite).** Um app de loja dentro do celular, a Loja, com módulos pagos. Cada módulo se compra uma vez, entre R$ 4,90 e R$ 14,90. Conteúdo pago apresentado com mistério e tom premium, no estilo de um terminal de mercado para jogadores de futebol.
+
+**Módulos e preços propostos (a confirmar):**
+
+| Módulo | Preço proposto | O que entrega (previsto) |
+|---|---|---|
+| Scout Pro | R$ 4,90 | Ratings exatos de atletas de outros clubes; comparação lado a lado |
+| Medical Pro | R$ 6,90 | Risco de lesão pela carga de jogos; plano de recuperação com prazo |
+| Analytics Pro | R$ 9,90 | Desempenho por temporada em gráficos; motivos de cada vitória e derrota |
+| Academy Pro | R$ 9,90 | Relatório completo de traços e potencial; calendário de peneiras e parcerias |
+| Market Pro | R$ 14,90 | Em alta, Subvalorizados, Em queda, Fim de contrato, Jovens promessas e Oportunidades |
+
+**Regras para vender (checar antes de ligar a compra):**
+- Conteúdo digital dentro do app passa pela compra no app da App Store (StoreKit), não por PIX, boleto ou link externo. Confirmar a regra vigente para o Brasil antes da venda.
+- Compra única, com "Restaurar compras" obrigatório.
+- O mistério fica só na apresentação. Conteúdo e preço aparecem antes da compra. Sem contagem regressiva falsa e sem "últimas unidades", pelo Código de Defesa do Consumidor (informação clara sobre produto e preço).
+- Desbloqueio fixo, sem sorteio pago. Se um dia houver sorteio com dinheiro, a Apple exige divulgar as chances de cada item.
+- Os preços de R$ 4,90, R$ 6,90, R$ 9,90 e R$ 14,90 precisam existir nas faixas de preço do App Store Connect. A Apple cobra comissão sobre cada venda.
+- Menores de idade: classificação etária e regras de compra para menores (ECA Digital) revisadas antes da venda pública, junto com LAN-02.
+- Os IDs de produto são do app de futebol (`futos.pro.<módulo>`). O código de StoreKit do Hall das Lendas serve de base.
+
+**Fatias:**
+1. **Vitrine (esta branch, para o próximo build):** app Loja na grade do celular, cinco cartões com mistério, prévia borrada dos sinais do Market Pro, "O que vai ter" sempre visível e "Em breve". Sem cobrança. Catálogo testado em `FootballStoreTests`.
+2. **StoreKit:** criar os cinco produtos no App Store Connect, comprar, restaurar e registrar entitlements, testando no sandbox.
+3. **Market Pro:** os sinais que não dependem de histórico (Subvalorizados, Fim de contrato, Jovens promessas, Oportunidades) com os dados da liga de hoje. Em alta e Em queda entram depois de duas temporadas de histórico.
+4. **Scout, Analytics, Academy e Medical:** um por vez, cada um com teste de domínio e captura de tela.
+
+**Sem verificação:** a vitrine foi escrita sem compilador. O CI e o aparelho confirmam. `FootballStoreTests` roda no pacote SwiftPM do Linux e no CI do iOS.
+
+**Decisões pendentes (do usuário):** preço de cada módulo; nome final ("Loja" ou "LOJA APLICATIVO"); se a Loja aparece como prévia para todo mundo ou só depois de um marco da carreira; e se o ícone fica na grade (hoje sim) ou só em Ajustes.
 

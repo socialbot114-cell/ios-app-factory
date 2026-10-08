@@ -397,6 +397,7 @@ struct FootballHome: View {
         case .trophies: FootballAchievementsView(career: $career)
         case .legends: FootballLegendsView(career: $career)
         case .academy: FootballAcademyView(career: $career, onAlert: showAlert)
+        case .store: FootballStoreView()
         case .alerts: FootballEventsView(career: $career, focusedEventID: focusedEventID)
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
         case .bank: FootballFinanceView(career: $career, onAlert: showAlert)
