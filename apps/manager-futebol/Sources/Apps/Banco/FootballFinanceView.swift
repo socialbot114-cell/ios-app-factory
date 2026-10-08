@@ -41,6 +41,11 @@ struct FootballFinanceView: View {
             FactoryPanel(title: "Evolução do saldo", systemImage: "chart.line.uptrend.xyaxis") {
                 Self.balanceTrail(career.monthReports(season: career.season))
             }
+            let budgetReference = FootballBudgetSplit.reference(summaries: career.finance.summaries, book: career.finance, currentSeason: career.season)
+            let budgetBuckets = FootballBudgetSplit.buckets(reference: budgetReference, entries: career.finance.entries(season: career.season))
+            FactoryPanel(title: "Orçamento da temporada", systemImage: "chart.pie.fill") {
+                Self.budgetRows(budgetBuckets, reference: budgetReference)
+            }
             HStack(spacing: 12) {
                 FactoryMetric(label: "Folha salarial", value: FootballFormat.money(career.wageBill), symbol: "person.3.fill", tint: .orange)
                 FactoryMetric(label: "Teto da folha", value: FootballFormat.money(career.wageCap), symbol: "lock.fill", tint: .gray)
@@ -102,6 +107,36 @@ struct FootballFinanceView: View {
         }
         .factoryPage()
         .navigationTitle("Finanças")
+    }
+
+    /// As quatro áreas do orçamento, cada uma com gasto, meta e aviso ao chegar perto de 80% ou ao estourar.
+    @ViewBuilder
+    private static func budgetRows(_ buckets: [FootballBudgetBucket], reference: Int) -> some View {
+        if reference <= 0 {
+            Text("O orçamento aparece depois da primeira temporada com receita.").font(.subheadline).foregroundStyle(.secondary)
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(buckets) { bucket in
+                    let status = budgetStatus(bucket)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(bucket.area.title).font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Text(status.text).font(.caption.weight(.bold)).foregroundStyle(status.tint)
+                        }
+                        Text("Gasto \(FootballFormat.money(bucket.spent)) de \(FootballFormat.money(bucket.target))")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+
+    private static func budgetStatus(_ bucket: FootballBudgetBucket) -> (text: String, tint: Color) {
+        if bucket.isOver { return ("Estourou", .red) }
+        if bucket.isNear { return ("Perto do limite", .orange) }
+        return ("Dentro da meta", .green)
     }
 
     /// Linha do saldo de fechamento de cada mês. Precisa de dois meses fechados para ter inclinação.
