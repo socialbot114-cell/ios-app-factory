@@ -38,7 +38,55 @@ final class FootballOnboardingTests: XCTestCase {
         XCTAssertEqual(career.fanMood, offer.fanMood)
         XCTAssertEqual(career.world.coach.contract?.seasons, offer.contractSeasons)
         XCTAssertGreaterThanOrEqual(career.world.coach.personalCash, 150_000 + offer.signingBonus)
+        XCTAssertEqual(career.firstCareerGuideStep, .welcome, "O roteiro prático começa depois do primeiro contrato")
         XCTAssertFalse(career.acceptCareerOffer(clubID: offer.clubID, coachName: "Outro"))
+    }
+
+    func testFirstCareerGuidePersistsTransitionsSkipsAndCanReplay() throws {
+        var career = FootballCareer(seed: 26)
+        XCTAssertNil(career.firstCareerGuideStep, "Carreira sem clube ainda não iniciou o roteiro")
+        let offer = career.careerOffers()[0]
+        XCTAssertTrue(career.acceptCareerOffer(clubID: offer.clubID, coachName: "Treinadora"))
+        XCTAssertTrue(career.isFirstCareerGuideActive)
+
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .welcome, to: .manager))
+        XCTAssertFalse(career.advanceFirstCareerGuide(from: .welcome, to: .tactics), "Toque repetido não deve pular uma etapa")
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .manager, to: .tactics))
+
+        let data = try JSONEncoder().encode(career)
+        var restored = try JSONDecoder().decode(FootballCareer.self, from: data)
+        XCTAssertEqual(restored.firstCareerGuideStep, .tactics)
+        restored.skipFirstCareerGuide()
+        XCTAssertFalse(restored.isFirstCareerGuideActive)
+        restored.replayFirstCareerGuide()
+        XCTAssertEqual(restored.firstCareerGuideStep, .welcome)
+    }
+
+    func testFirstCareerGuideFinishesOnlyAfterTheRecap() {
+        var career = FootballCareer(seed: 26)
+        let offer = career.careerOffers()[0]
+        XCTAssertTrue(career.acceptCareerOffer(clubID: offer.clubID, coachName: "Treinador"))
+        XCTAssertFalse(career.finishFirstCareerGuide(), "Não conclui antes de chegar ao resumo")
+
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .welcome, to: .manager))
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .manager, to: .tactics))
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .tactics, to: .match))
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .match, to: .liveMatch))
+        XCTAssertTrue(career.advanceFirstCareerGuide(from: .liveMatch, to: .recap))
+        XCTAssertTrue(career.finishFirstCareerGuide())
+        XCTAssertEqual(career.firstCareerGuideStep, .finished)
+        XCTAssertFalse(career.isFirstCareerGuideActive)
+    }
+
+    func testOlderCareerSaveDefaultsToNoFirstRunGuide() throws {
+        let career = FootballCareer(seed: 26)
+        let data = try JSONEncoder().encode(career)
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        legacy.removeValue(forKey: "firstCareerGuideStep")
+        legacy["schemaVersion"] = 12
+        let restored = try JSONDecoder().decode(FootballCareer.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(restored.firstCareerGuideStep)
+        XCTAssertFalse(restored.isFirstCareerGuideActive)
     }
 
     func testEmptyNameFallsBackAndNameIsTrimmedToLimit() {

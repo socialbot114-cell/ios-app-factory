@@ -94,7 +94,72 @@ struct PhoneState: Codable, Equatable {
     var snoozedSuggestions: [String: Int]? = nil
 }
 
+/// Número único de itens que realmente pedem atenção em um app; usado no ícone e dentro do app.
+struct PhoneAppAttention: Equatable {
+    enum Kind: Equatable {
+        case newOrDecision
+        case activeGoal
+    }
+
+    let count: Int
+    let detail: String
+    let kind: Kind
+}
+
 extension FootballCareer {
+    func phoneAppAttention(appID: String) -> PhoneAppAttention? {
+        let count: Int
+        let detail: String
+        let kind: PhoneAppAttention.Kind = appID == "quests" ? .activeGoal : .newOrDecision
+
+        switch appID {
+        case "manager":
+            count = pendingPress == nil ? 0 : 1
+            detail = "Coletiva aguarda resposta"
+        case "squad":
+            count = canPlay ? lineupWarnings.count : 0
+            detail = "Ajuste(s) na escalação antes do jogo"
+        case "market":
+            count = offers.count
+            detail = "Proposta(s) para revisar"
+        case "club":
+            count = invitations.count
+            detail = "Convite(s) de clube"
+        case "messages":
+            count = unreadMessageBadge
+            detail = "Mensagem(ns) não lida(s)"
+        case "social":
+            count = world.social.crisis == nil ? 0 : 1
+            detail = "Crise de imagem nas redes"
+        case "betting":
+            count = world.betting.bets.filter { $0.status == .open }.count
+            detail = "Palpite(s) em aberto"
+        case "quests":
+            count = world.quests.active.filter { !$0.completed }.count
+            detail = "Meta(s) em andamento"
+        case "alerts":
+            count = world.events.pending.count
+            detail = "Acontecimento(s) para decidir"
+        case "brand":
+            count = world.growth.tv == nil ? 1 : 0
+            detail = "Escolha o contrato de TV"
+        case "bank":
+            count = isInDebt ? 1 : 0
+            detail = "Caixa do clube no vermelho"
+        case "legends":
+            count = iconState.pendingPack == nil ? 0 : 1
+            detail = "Pacote de craque para abrir"
+        case "academy":
+            count = youthReadyForDecision.count
+            detail = "Jovem(ns) pronto(s) para decidir"
+        default:
+            return nil
+        }
+
+        guard count > 0 else { return nil }
+        return PhoneAppAttention(count: count, detail: detail, kind: kind)
+    }
+
     mutating func logActionResult(_ text: String, appID: String?) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

@@ -3,7 +3,7 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 12
+    static let schemaVersion = 13
     static let rosterLimit = 18
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
@@ -104,6 +104,7 @@ struct FootballCareer: Codable, Equatable {
         case unlockQueue
         case tutorialSeen
         case tutorialDismissed
+        case firstCareerGuideStep
         case iconState
         case academy
         case offseason
@@ -212,6 +213,8 @@ struct FootballCareer: Codable, Equatable {
     var unlockQueue: [UnlockNotice] = []
     var tutorialSeen: [String] = []
     var tutorialDismissed = false
+    /// Tutorial prático da primeira carreira; nil em saves antigos até um novo contrato ser aceito.
+    var firstCareerGuideStep: FirstCareerGuideStep? = nil
     var iconState = IconState()
     var academy = AcademyState()
     /// Ritual de virada de temporada em andamento (nil fora dele); bloqueia jogar e avançar o calendário.
@@ -369,6 +372,7 @@ struct FootballCareer: Codable, Equatable {
         counters = try container.decodeIfPresent([String: Int].self, forKey: .counters) ?? [:]
         tutorialSeen = try container.decodeIfPresent([String].self, forKey: .tutorialSeen) ?? []
         tutorialDismissed = try container.decodeIfPresent(Bool.self, forKey: .tutorialDismissed) ?? false
+        firstCareerGuideStep = try container.decodeIfPresent(FirstCareerGuideStep.self, forKey: .firstCareerGuideStep)
         iconState = try container.decodeIfPresent(IconState.self, forKey: .iconState) ?? IconState()
         academy = try container.decodeIfPresent(AcademyState.self, forKey: .academy) ?? AcademyState()
         offseason = try container.decodeIfPresent(OffseasonState.self, forKey: .offseason)
@@ -473,6 +477,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(unlockQueue, forKey: .unlockQueue)
         try container.encode(tutorialSeen, forKey: .tutorialSeen)
         try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
+        try container.encodeIfPresent(firstCareerGuideStep, forKey: .firstCareerGuideStep)
         try container.encode(iconState, forKey: .iconState)
         try container.encode(academy, forKey: .academy)
         try container.encodeIfPresent(offseason, forKey: .offseason)

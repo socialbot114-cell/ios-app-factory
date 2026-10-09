@@ -34,6 +34,7 @@ struct FootballHome: View {
     @State private var guideSuggestion: FootballSuggestion?
     @State private var guideAfterUnlock = false
     @State private var momentOverride: PhoneMoment?
+    @State private var firstRunToastStep: FirstCareerGuideStep?
     @Environment(\.scenePhase) private var scenePhase
 
     /// Dia do calendário em que a carreira está; quando muda, o FutOS bloqueia a tela e mostra a passagem do dia.
@@ -95,7 +96,12 @@ struct FootballHome: View {
         }
         .tint(FootballTheme.accent)
         .fullScreenCover(isPresented: $showLiveMatch) {
-            FootballLiveMatchView(career: $career, staticPreview: false) { showLiveMatch = false }
+            FootballLiveMatchView(career: $career, staticPreview: false) {
+                if career.firstCareerGuideStep == .liveMatch, career.liveMatch == nil {
+                    advanceFirstRunGuide(from: .liveMatch, to: .recap)
+                }
+                showLiveMatch = false
+            }
         }
         .sheet(isPresented: $showsTitleOptions) {
             FootballTitleOptionsSheet(career: $career, activeSlot: activeSlot, summaries: slotSummaries,
@@ -205,7 +211,13 @@ struct FootballHome: View {
     private var phone: some View {
         ZStack {
             PhoneHomeScreen(career: career, onOpen: open, onNotifications: { showNotifications = true },
-                            onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() }, momentOverride: momentOverride)
+                            onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() },
+                            firstRunGuideStep: career.firstCareerGuideStep,
+                            onFirstRunGuideContinue: continueFirstRunGuide,
+                            onFirstRunGuideSkip: { career.skipFirstCareerGuide() },
+                            firstRunToastStep: openApp == nil ? firstRunToastStep : nil,
+                            onFirstRunToastDismiss: dismissFirstRunGuideToast,
+                            momentOverride: momentOverride)
                 .accessibilityHidden(openApp != nil || locked)
                 .blur(radius: openApp != nil && !career.world.phone.preferences.reduceMotion ? 6 : 0)
                 .scaleEffect(openApp != nil && !career.world.phone.preferences.reduceMotion ? 0.95 : 1)
@@ -310,6 +322,12 @@ struct FootballHome: View {
     }
 
     private func open(_ app: PhoneApp) {
+        switch (career.firstCareerGuideStep, app) {
+        case (.welcome, .manager): advanceFirstRunGuide(from: .welcome, to: .manager)
+        case (.manager, .squad): advanceFirstRunGuide(from: .manager, to: .tactics)
+        case (.tactics, .manager): advanceFirstRunGuide(from: .tactics, to: .match)
+        default: break
+        }
         focusedContactID = nil
         focusedEventID = nil
         openApp = app
@@ -327,12 +345,65 @@ struct FootballHome: View {
     }
 
     private func closeApp() {
+        if openApp == .squad, career.firstCareerGuideStep == .tactics {
+            advanceFirstRunGuide(from: .tactics, to: .match)
+        }
         openApp = nil
+    }
+
+    private func advanceFirstRunGuide(from current: FirstCareerGuideStep, to next: FirstCareerGuideStep) {
+        guard career.advanceFirstCareerGuide(from: current, to: next) else { return }
+        showFirstRunGuideToast(for: next)
+    }
+
+    private func showFirstRunGuideToast(for step: FirstCareerGuideStep) {
+        withAnimation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.86)) {
+            firstRunToastStep = step
+        }
+    }
+
+    private func dismissFirstRunGuideToast(_ step: FirstCareerGuideStep) {
+        guard firstRunToastStep == step else { return }
+        withAnimation(career.world.phone.preferences.reduceMotion ? nil : .easeOut(duration: 0.2)) {
+            firstRunToastStep = nil
+        }
+    }
+
+    private func continueFirstRunGuide() {
+        guard let step = career.firstCareerGuideStep else { return }
+        switch step {
+        case .welcome: open(.manager)
+        case .manager: open(.squad)
+        case .tactics: closeApp()
+        case .match: startLiveMatch()
+        case .liveMatch:
+            if openApp == .manager { startLiveMatch() } else { open(.manager) }
+        case .recap:
+            if career.finishFirstCareerGuide() { showFirstRunGuideToast(for: .finished) }
+        case .finished, .skipped: break
+        }
     }
 
     private func appWindow(_ app: PhoneApp) -> some View {
         NavigationStack {
-            appContent(app)
+            VStack(spacing: 10) {
+                if let step = career.firstCareerGuideStep, step.appID == app.rawValue {
+                    FirstCareerGuideCard(step: step, onContinue: continueFirstRunGuide,
+                                         onSkip: { career.skipFirstCareerGuide() })
+                        .padding(.horizontal, 16)
+                        .padding(.top, 6)
+                }
+                if let step = firstRunToastStep {
+                    FirstCareerGuideToast(step: step) { dismissFirstRunGuideToast(step) }
+                        .padding(.horizontal, 16)
+                }
+                if let attention = career.phoneAppAttention(appID: app.rawValue) {
+                    PhoneAppAttentionBanner(app: app, attention: attention)
+                        .padding(.horizontal, 16)
+                }
+                appContent(app)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
                 // Cada app possui identidade própria: não reutilizar viewport/navegação de outro app.
                 .id(app)
                 .toolbar {
@@ -409,7 +480,7 @@ struct FootballHome: View {
     }
 
     /// Rotas de captura que abrem a partida ao vivo (nome exato, para não confundir com rotas como `match-prep`).
-    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final", "match-halftime", "halftime-talk"]
+    static let liveMatchCaptures: Set<String> = ["match", "match-watch", "match-goal", "match-narration", "match-final", "match-halftime", "halftime-talk", "first-run-live"]
 
     /// Etapas do ritual de virada de temporada que podem ser capturadas isoladamente.
     static let offseasonCaptures: [String: OffseasonStep] = [
@@ -549,6 +620,10 @@ struct FootballHome: View {
             alertMessage = "Não foi possível iniciar a partida. Confira a escalação e tente novamente."
             return
         }
+        if let step = career.firstCareerGuideStep, [.manager, .tactics, .match].contains(step) {
+            career.firstCareerGuideStep = .liveMatch
+            firstRunToastStep = nil
+        }
         showLiveMatch = true
     }
 
@@ -658,6 +733,7 @@ struct FootballHome: View {
         career = Self.previewCareer(liveMatch: Self.liveMatchCaptures.contains(capture))
         FootballF4Captures.prepare(capture, career: &career)
         FootballF5Captures.prepare(capture, career: &career)
+        prepareExperienceCapture(capture)
         if capture == "season-end" {
             // Fim de temporada: todas as rodadas jogadas, antes de abrir a próxima.
             var guardDays = 0
@@ -712,6 +788,12 @@ struct FootballHome: View {
             nil
         ]
         switch capture {
+        case "first-run-home": openApp = nil
+        case "first-run-manager", "first-run-match", "first-run-recap": openApp = .manager
+        case "first-run-tactics": openApp = .squad
+        case "first-run-live": openApp = nil
+        case "attention-bank": openApp = .bank
+        case "attention-academy": openApp = .academy
         case "table": openApp = .league
         case "cup":
             tableSection = .cup
@@ -759,6 +841,32 @@ struct FootballHome: View {
             career.enqueueUnlock(UnlockNotice(id: "conquista-leagueTitle", title: "Campeão da liga", detail: "Primeiro lugar ao fim da temporada",
                                               symbol: "trophy.fill", appID: "trophies"))
         default: openApp = .manager
+        }
+    }
+
+    /// Estados sintéticos e reproduzíveis para revisar o tutorial e os avisos dentro do FutOS.
+    private func prepareExperienceCapture(_ name: String) {
+        switch name {
+        case "first-run-home": career.firstCareerGuideStep = .welcome
+        case "first-run-manager":
+            career.firstCareerGuideStep = .manager
+            firstRunToastStep = .manager
+        case "first-run-tactics":
+            career.firstCareerGuideStep = .tactics
+            firstRunToastStep = .tactics
+        case "first-run-match":
+            career.firstCareerGuideStep = .match
+            firstRunToastStep = .match
+        case "first-run-live": career.firstCareerGuideStep = .liveMatch
+        case "first-run-recap":
+            career.firstCareerGuideStep = .recap
+            firstRunToastStep = .recap
+        case "attention-bank": career.transferBudget = -3_000_000
+        case "attention-academy":
+            var random = FootballRandom(seed: 303)
+            career.runYouthIntake(using: &random)
+            career.academy.followUps = career.youthRoster.map { YouthFollowUp(playerID: $0.id, observedWeeks: 12) }
+        default: break
         }
     }
 

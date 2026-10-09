@@ -19,6 +19,7 @@ struct FootballLiveMatchView: View {
     @State private var showSubstitutions = false
     @State private var didStart = false
     @State private var finishing = false
+    @State private var showsFirstRunToast = false
     @State private var quickFeedback = 0
     @State private var keyMoments: KeyMomentMode = .brief
     @State private var pitchExpanded = false
@@ -68,6 +69,15 @@ struct FootballLiveMatchView: View {
                 if let live {
                     VStack(alignment: .leading, spacing: 16) {
                         scoreboard(live)
+                        if showsFirstRunToast, career.firstCareerGuideStep == .liveMatch {
+                            FirstCareerGuideToast(step: .liveMatch) {
+                                withAnimation { showsFirstRunToast = false }
+                            }
+                        }
+                        if career.firstCareerGuideStep == .liveMatch {
+                            FirstCareerGuideCard(step: .liveMatch, onContinue: nil,
+                                                 onSkip: { career.skipFirstCareerGuide() })
+                        }
                         if live.sim.finished { fullTimePanel(live) }
                         viewModePicker
                         if viewMode == .watch {
@@ -119,7 +129,13 @@ struct FootballLiveMatchView: View {
         .sheet(isPresented: $showSubstitutions) {
             FootballSubstitutionSheet(career: $career, outgoingID: nil)
         }
-        .onAppear(perform: start)
+        .onAppear {
+            start()
+            if career.firstCareerGuideStep == .liveMatch,
+               !staticPreview || FactoryCapture.screen == "first-run-live" {
+                withAnimation { showsFirstRunToast = true }
+            }
+        }
         .onDisappear { tickTask?.cancel() }
     }
 

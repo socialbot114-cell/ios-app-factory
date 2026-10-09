@@ -145,6 +145,7 @@ extension FootballCareer {
         world.coach.contract = CoachContract(clubID: clubID, startSeason: season, seasons: offer.contractSeasons,
                                              salaryFactor: offer.salaryFactor, patienceBonus: offer.patienceBonus)
         addInbox(.board, title: "Bem-vindo, \(world.coach.name)", body: "Contrato de \(offer.contractSeasons) temporada(s) com o \(FootballSeason.teamName(clubID)). \(objectiveText).")
+        beginFirstCareerGuide()
         return true
     }
 

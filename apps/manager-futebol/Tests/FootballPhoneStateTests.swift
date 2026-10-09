@@ -61,6 +61,23 @@ final class FootballPhoneStateTests: XCTestCase {
         XCTAssertEqual(world.phone, PhoneState())
         XCTAssertTrue(world.phone.preferences.pauses.decisions)
     }
+
+    func testPhoneAppAttentionCountsMatchPendingActions() throws {
+        var career = career()
+        career.transferBudget = -1
+        let bank = try XCTUnwrap(career.phoneAppAttention(appID: "bank"))
+        XCTAssertEqual(bank.count, 1)
+        XCTAssertEqual(bank.detail, "Caixa do clube no vermelho")
+        XCTAssertNil(career.phoneAppAttention(appID: "market"), "Nenhuma proposta não deve mostrar badge")
+
+        var random = FootballRandom(seed: 7)
+        career.runYouthIntake(using: &random)
+        let youth = try XCTUnwrap(career.youthRoster.first)
+        career.academy.followUps = [YouthFollowUp(playerID: youth.id, observedWeeks: 12)]
+        let academy = try XCTUnwrap(career.phoneAppAttention(appID: "academy"))
+        XCTAssertEqual(academy.count, career.youthReadyForDecision.count)
+        XCTAssertEqual(academy.kind, .newOrDecision)
+    }
 }
 
 extension FootballPhoneStateTests {

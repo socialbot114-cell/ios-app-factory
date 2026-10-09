@@ -23,6 +23,11 @@ extension FootballCareer {
         if let crisis = world.social.crisis {
             list.append(PhoneNotification(id: "crisis", title: "Crise de imagem", detail: crisis.title, symbol: "exclamationmark.triangle.fill", app: .social, priority: 3))
         }
+        if let attention = phoneAppAttention(appID: PhoneApp.squad.rawValue) {
+            list.append(PhoneNotification(id: "squad-attention", title: "\(attention.count) ajuste(s) na escalação",
+                                          detail: lineupWarnings.first ?? "Confira o time antes da partida.", symbol: "person.3.fill",
+                                          app: .squad, priority: 2))
+        }
         for event in world.events.pending {
             list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Prazo: \(shortDate(worldDay: event.expiresWorldDay)).", symbol: "exclamationmark.bubble.fill", app: .alerts, priority: 2, deadlineWorldDay: event.expiresWorldDay, eventID: event.id))
         }
@@ -45,6 +50,16 @@ extension FootballCareer {
         if world.coach.energy < 25 {
             list.append(PhoneNotification(id: "energy", title: "Bateria baixa", detail: "Sua energia está em \(world.coach.energy)%. Descanse na Vida.", symbol: "battery.25percent", app: .life))
         }
+        if let attention = phoneAppAttention(appID: PhoneApp.bank.rawValue) {
+            list.append(PhoneNotification(id: "bank-attention", title: attention.detail,
+                                          detail: "Abra o Banco para conferir o caixa do clube.", symbol: "banknote.fill",
+                                          app: .bank, priority: 2))
+        }
+        if let attention = phoneAppAttention(appID: PhoneApp.academy.rawValue) {
+            list.append(PhoneNotification(id: "academy-decisions", title: "\(attention.count) jovem(ns) pronto(s) para decidir na Academia",
+                                          detail: "Abra as fichas na Academia para promover, emprestar ou dispensar.",
+                                          symbol: "graduationcap.fill", app: .academy, priority: 2))
+        }
         list = list.filter { world.phone.preferences.allows(appID: $0.app.rawValue, priority: $0.priority) }
         return list.enumerated().sorted { lhs, rhs in
             // Prazos comparáveis usam o calendário do jogo, nunca o relógio real.
@@ -60,19 +75,37 @@ extension FootballCareer {
     }
 
     func badge(for app: PhoneApp) -> Int {
-        switch app {
-        case .manager: return pendingPress != nil ? 1 : 0
-        case .market: return offers.count
-        case .club: return invitations.count
-        case .messages: return unreadMessageBadge
-        case .social: return world.social.crisis != nil ? 1 : 0
-        case .betting: return world.betting.bets.filter { $0.status == .open }.count
-        case .quests: return world.quests.active.filter { !$0.completed }.count
-        case .alerts: return world.events.pending.count
-        case .brand: return world.growth.tv == nil ? 1 : 0
-        case .legends: return iconState.pendingPack != nil ? 1 : 0
-        default: return 0
+        phoneAppAttention(appID: app.rawValue)?.count ?? 0
+    }
+}
+
+struct PhoneAppAttentionBanner: View {
+    let app: PhoneApp
+    let attention: PhoneAppAttention
+
+    private var displayedCount: String { attention.count > 9 ? "9+" : "\(attention.count)" }
+    private var tint: Color { attention.kind == .activeGoal ? app.tint : .red }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: attention.kind == .activeGoal ? "checklist" : "bell.badge.fill")
+                .foregroundStyle(tint)
+            Text(attention.detail)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+            Spacer(minLength: 4)
+            Text(displayedCount)
+                .font(.caption2.weight(.heavy).monospacedDigit())
+                .foregroundStyle(.white)
+                .padding(.horizontal, 7).padding(.vertical, 4)
+                .background(tint, in: Capsule())
         }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(FactoryColor.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(attention.count) \(attention.detail)")
+        .accessibilityIdentifier("app-attention-\(app.rawValue)")
     }
 }
 

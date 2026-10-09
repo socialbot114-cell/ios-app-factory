@@ -5,6 +5,26 @@ final class FootballFlowUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    func testFirstCareerGuideLeadsFromHomeToTheLiveMatch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launch()
+
+        tapWhenReady(app.buttons["choose-offer-0"], in: app)
+        XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "first-run-guide-welcome").firstMatch.exists)
+
+        openFromHome("dock-manager", in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "first-run-guide-manager").firstMatch.waitForExistence(timeout: 8))
+        tapWhenReady(app.buttons["first-run-guide-continue"], in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "first-run-guide-tactics").firstMatch.waitForExistence(timeout: 8))
+        tapWhenReady(app.buttons["first-run-guide-continue"], in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "first-run-guide-match").firstMatch.waitForExistence(timeout: 8))
+        tapWhenReady(app.buttons["first-run-guide-continue"], in: app)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "live-scoreboard").firstMatch.waitForExistence(timeout: 12))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "first-run-guide-liveMatch").firstMatch.waitForExistence(timeout: 8))
+    }
+
     func testPlayLiveMatchAndReadLeague() {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]

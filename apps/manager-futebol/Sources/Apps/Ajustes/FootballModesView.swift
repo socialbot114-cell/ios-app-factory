@@ -51,6 +51,18 @@ struct FootballModesView: View {
                 }
                 Toggle("Mostrar dicas no painel", isOn: Binding(get: { !career.tutorialDismissed }, set: { career.tutorialDismissed = !$0 }))
                     .font(.subheadline)
+                if career.selectedClubID != nil {
+                    Divider()
+                    Text("Roteiro da primeira partida")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Reveja como conferir o time, iniciar a partida e chegar ao resumo.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Button(career.isFirstCareerGuideActive ? "Recomeçar roteiro" : "Ver roteiro da primeira partida") {
+                        career.replayFirstCareerGuide()
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("first-run-guide-replay")
+                }
             }
         }
         .factoryPage()

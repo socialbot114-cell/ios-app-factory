@@ -8,6 +8,11 @@ struct PhoneHomeScreen: View {
     let onNotifications: () -> Void
     let onSearch: () -> Void
     var onGuide: () -> Void = {}
+    var firstRunGuideStep: FirstCareerGuideStep? = nil
+    var onFirstRunGuideContinue: () -> Void = {}
+    var onFirstRunGuideSkip: () -> Void = {}
+    var firstRunToastStep: FirstCareerGuideStep? = nil
+    var onFirstRunToastDismiss: (FirstCareerGuideStep) -> Void = { _ in }
     /// Só para capturas de tela: força o clima do papel de parede.
     var momentOverride: PhoneMoment? = nil
 
@@ -26,6 +31,10 @@ struct PhoneHomeScreen: View {
                     .accessibilityIdentifier("phone-notifications")
                 }
                 .padding(.top, 4)
+                if let firstRunToastStep {
+                    FirstCareerGuideToast(step: firstRunToastStep) { onFirstRunToastDismiss(firstRunToastStep) }
+                        .padding(.horizontal, 16)
+                }
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 10) {
                         // Guia e busca na mesma linha: sobra espaço para todos os ícones caberem sem rolar.
@@ -41,6 +50,9 @@ struct PhoneHomeScreen: View {
                             }
                             .accessibilityLabel("Buscar atletas, clubes, contatos e apps")
                             .accessibilityIdentifier("phone-search")
+                        }
+                        if let firstRunGuideStep, firstRunGuideStep.isActive {
+                            FirstCareerGuideCard(step: firstRunGuideStep, onContinue: onFirstRunGuideContinue, onSkip: onFirstRunGuideSkip)
                         }
                         widgets
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
