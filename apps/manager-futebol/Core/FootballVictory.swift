@@ -42,4 +42,15 @@ enum FootballVictory {
         if context.cameFromBehind || context.isClassic || context.decidesTitle { return .big }
         return .regular
     }
+
+    /// O clube esteve atrás no placar em algum momento, pela ordem dos gols (true quando o gol foi do clube).
+    static func wasBehind(scorers: [Bool]) -> Bool {
+        var ours = 0
+        var theirs = 0
+        for byClub in scorers {
+            if byClub { ours += 1 } else { theirs += 1 }
+            if theirs > ours { return true }
+        }
+        return false
+    }
 }

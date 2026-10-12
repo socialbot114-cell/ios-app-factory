@@ -387,7 +387,11 @@ struct FootballLiveMatchView: View {
         let userGoals = live.userIsHome ? live.homeGoals : live.awayGoals
         let rivalGoals = live.userIsHome ? live.awayGoals : live.homeGoals
         let result: FootballResult = userGoals > rivalGoals ? .win : (userGoals == rivalGoals ? .draw : .loss)
-        let tier = FootballVictory.tier(VictoryContext(goalsFor: userGoals, goalsAgainst: rivalGoals, isClassic: live.sim.isDerby))
+        let scorers = live.events.compactMap { event -> Bool? in
+            guard event.kind == .goal, let teamID = event.teamID else { return nil }
+            return teamID == live.userSide.teamID
+        }
+        let tier = FootballVictory.tier(VictoryContext(goalsFor: userGoals, goalsAgainst: rivalGoals, cameFromBehind: FootballVictory.wasBehind(scorers: scorers), isClassic: live.sim.isDerby))
         return VStack(alignment: .leading, spacing: 12) {
             resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals, tier: tier)
             if career.canRevealShootout {

@@ -29,4 +29,13 @@ final class FootballVictoryTests: XCTestCase {
         XCTAssertEqual(VictoryTier.big.headline, "VITÓRIA GRANDE")
         XCTAssertEqual(VictoryTier.regular.headline, "VITÓRIA")
     }
+
+    /// A virada vem da ordem dos gols: o clube esteve atrás em algum momento.
+    func testWasBehindFollowsTheGoalOrder() {
+        XCTAssertFalse(FootballVictory.wasBehind(scorers: []))
+        XCTAssertFalse(FootballVictory.wasBehind(scorers: [true, false]))
+        XCTAssertTrue(FootballVictory.wasBehind(scorers: [false, true]))
+        XCTAssertTrue(FootballVictory.wasBehind(scorers: [true, true, false, false, false]))
+        XCTAssertEqual(FootballVictory.tier(VictoryContext(goalsFor: 2, goalsAgainst: 1, cameFromBehind: FootballVictory.wasBehind(scorers: [false, true, true]))), .big)
+    }
 }
