@@ -197,6 +197,16 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["league-section-state"].waitForExistence(timeout: 8))
         let section = app.staticTexts["league-section-state"].label
 
+        // Diagnóstico: a tela da liga responde a toque? Troca de seção primeiro, e volta para a original.
+        let segmentB = app.segmentedControls["league-section"].buttons["Série B"]
+        if segmentB.waitForExistence(timeout: 3) {
+            segmentB.tap()
+            let state = app.staticTexts["league-section-state"]
+            XCTAssertTrue(state.waitForExistence(timeout: 3) && state.label == "Série B",
+                          "Diagnóstico: o toque no segmento da liga não mudou a aba\nHierarquia:\n\(app.debugDescription)")
+            app.segmentedControls["league-section"].buttons["Série A"].tap()
+        }
+
         // Linhas de clube têm o id "league-club-<número>". O prefixo sozinho também casa com "league-club-back" e outros.
         let club = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier MATCHES %@", "league-club-[0-9]+")).firstMatch
