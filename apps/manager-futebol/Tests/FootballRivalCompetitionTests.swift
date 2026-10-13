@@ -2,6 +2,9 @@ import Foundation
 import XCTest
 @testable import ManagerFutebol
 
+/// Nenhuma semente testada serve: o teste falha, em vez de pular.
+private struct NoSeedFound: Error {}
+
 final class FootballRivalCompetitionTests: XCTestCase {
     /// Carreira no começo da janela do meio do ano, com os melhores atletas de outros clubes na lista de observação.
     private func careerInWindow(seed: Int = 7) -> FootballCareer {
@@ -16,12 +19,12 @@ final class FootballRivalCompetitionTests: XCTestCase {
     }
 
     private func careerWithRace(seed: Int = 7) throws -> FootballCareer {
-        for attempt in 0..<6 {
+        for attempt in 0..<24 {
             var career = careerInWindow(seed: seed + attempt * 11)
             career.progressTransferRaces()
             if !career.openTransferRaces.isEmpty { return career }
         }
-        throw XCTSkip("Nenhuma disputa aberta nas sementes testadas")
+        throw NoSeedFound()
     }
 
     func testRaceOpensWithRumorCommitmentAndLimit() throws {

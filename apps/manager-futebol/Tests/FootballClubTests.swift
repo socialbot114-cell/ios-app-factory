@@ -101,7 +101,7 @@ final class FootballClubTests: XCTestCase {
         } else { XCTFail("Transfer ban bloqueia propostas") }
 
         career.transferBudget = 5_000_000
-        _ = career.chargeOperatingCosts()
+        career.chargeOperatingCosts()
         XCTAssertFalse(career.isTransferBanned)
     }
 

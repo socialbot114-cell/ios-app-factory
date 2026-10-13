@@ -177,7 +177,6 @@ final class FootballFlowUITests: XCTestCase {
 
     /// LIG-01..03: usa entidades e estados da Liga, sem depender do header do FutOS.
     func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() throws {
-        throw XCTSkip("Teste novo ainda não verificado no CI (perfil do clube não abriu no run 1.1/7); aguardando diagnóstico com a hierarquia.")
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]
         app.launch()
@@ -198,11 +197,13 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["league-section-state"].waitForExistence(timeout: 8))
         let section = app.staticTexts["league-section-state"].label
 
-        let club = leagueFirst("league-club-", in: app)
+        // Linhas de clube têm o id "league-club-<número>". O prefixo sozinho também casa com "league-club-back" e outros.
+        let club = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier MATCHES %@", "league-club-[0-9]+")).firstMatch
         leagueReveal(club, in: app)
         let clubID = String(club.identifier.dropFirst("league-club-".count))
         leagueTap(club, in: app)
-        XCTAssertTrue(app.staticTexts["league-club-profile-\(clubID)"].waitForExistence(timeout: 8))
+        XCTAssertTrue(leagueElement("league-club-profile-\(clubID)", in: app).waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Forma na liga"].exists)
         let player = leagueFirst("league-club-player-", in: app)
         leagueReveal(player, in: app)

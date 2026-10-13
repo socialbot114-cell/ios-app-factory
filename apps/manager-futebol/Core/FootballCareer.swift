@@ -529,22 +529,6 @@ struct FootballCareer: Codable, Equatable {
 
     static func randomSeed() -> Int { Int.random(in: 1...9_999_999) }
 
-    /// Carrega o save antigo do UserDefaults. Um save ilegível é preservado em uma chave de backup.
-    static func load(defaults: UserDefaults = .standard) -> FootballCareer {
-        guard let data = defaults.data(forKey: saveKey) else { return FootballCareer(seed: randomSeed()) }
-        do {
-            return try JSONDecoder().decode(FootballCareer.self, from: data)
-        } catch {
-            defaults.set(data, forKey: backupKey)
-            return FootballCareer(seed: randomSeed())
-        }
-    }
-
-    func persist(defaults: UserDefaults = .standard) {
-        guard let data = try? JSONEncoder().encode(self) else { return }
-        defaults.set(data, forKey: Self.saveKey)
-    }
-
     // MARK: - Consultas
 
     var selectedClub: LeagueTeam? {

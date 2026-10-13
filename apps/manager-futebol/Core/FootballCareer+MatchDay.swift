@@ -461,7 +461,7 @@ extension FootballCareer {
 
     /// Bilheteria, bônus da copa, torcida e confiança da diretoria após a partida do usuário.
     mutating func settleUserMatch(fixture: LeagueFixture) {
-        guard let selectedClubID, let club = selectedClub, let result = fixture.result(for: selectedClubID) else { return }
+        guard let selectedClubID, selectedClub != nil, let result = fixture.result(for: selectedClubID) else { return }
         let isHome = fixture.home == selectedClubID
         if isHome {
             let crowd = attendance(for: fixture)

@@ -2,12 +2,24 @@ import Foundation
 import XCTest
 @testable import ManagerFutebol
 
+/// Nenhuma semente testada serve: o teste falha, em vez de pular.
+private struct NoSeedFound: Error {}
+
 final class FootballBusinessDealsTests: XCTestCase {
     private func career(club: Int = 3, seed: Int = 7) -> FootballCareer {
         var career = FootballCareer(seed: seed)
         XCTAssertTrue(career.chooseClub(club))
         career.transferBudget = 30_000_000
         return career
+    }
+
+    /// Carreira com ao menos uma data livre para amistoso. Procura a semente em vez de pular o teste.
+    private func careerWithFreeFriendlyDate() throws -> FootballCareer {
+        for seed in 1...60 {
+            let candidate = career(seed: seed)
+            if !candidate.freeFriendlyDates.isEmpty { return candidate }
+        }
+        throw NoSeedFound()
     }
 
     private func playDays(_ career: inout FootballCareer, _ count: Int) {
@@ -81,8 +93,8 @@ final class FootballBusinessDealsTests: XCTestCase {
     // MARK: NEG-05
 
     func testScheduledFriendlyIsPlayedOnItsDateWithEstimateAndResult() throws {
-        var career = career()
-        guard let date = career.freeFriendlyDates.first else { throw XCTSkip("Sem data livre nesta temporada") }
+        var career = try careerWithFreeFriendlyDate()
+        let date = try XCTUnwrap(career.freeFriendlyDates.first)
         let opponent = try XCTUnwrap(FootballSeason.teams.first { $0.id != career.selectedClubID }?.id)
         let friendly = try XCTUnwrap(career.scheduleFriendly(opponentID: opponent, home: true, matchDay: date))
         XCTAssertGreaterThan(friendly.expectedRevenue, 0)

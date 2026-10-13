@@ -18,17 +18,16 @@ final class FootballF5UITests: XCTestCase {
     // LIG-01..03: jornada completa em FootballFlowUITests, usando IDs reais do FutOS.
 
     func testBankSimulatorChangesProjectionAndResetRestoresIt() throws {
-        throw XCTSkip("Teste novo ainda não verificado no CI (elemento não encontrado no run 1.1/7); aguardando diagnóstico com a hierarquia.")
         let app = openApp("app-bank")
         let summary = element("budget-summary", in: app)
-        XCTAssertTrue(reveal(summary, in: app))
+        XCTAssertTrue(revealVisible(summary, in: app), "O resumo do orçamento deve estar visível")
         let before = summary.staticTexts.allElementsBoundByIndex.map(\.label)
         XCTAssertFalse(before.isEmpty)
         let simulator = element("budget-simulator", in: app)
-        XCTAssertTrue(reveal(simulator, in: app))
+        XCTAssertTrue(revealVisible(simulator, in: app))
         simulator.tap()
         let preset = app.buttons["budget-roster-preset"]
-        XCTAssertTrue(reveal(preset, in: app))
+        XCTAssertTrue(revealVisible(preset, in: app))
         preset.tap()
         for _ in 0..<6 {
             if summary.exists && summary.isHittable { break }
@@ -37,7 +36,7 @@ final class FootballF5UITests: XCTestCase {
         }
         XCTAssertNotEqual(before, summary.staticTexts.allElementsBoundByIndex.map(\.label))
         let reset = app.buttons["budget-reset"]
-        XCTAssertTrue(reveal(reset, in: app))
+        XCTAssertTrue(revealVisible(reset, in: app))
         reset.tap()
         XCTAssertEqual(before, summary.staticTexts.allElementsBoundByIndex.map(\.label))
     }
@@ -61,11 +60,10 @@ final class FootballF5UITests: XCTestCase {
     // MARK: Metas, Troféus e Ajustes
 
     func testSettingsCanCreateAndRestoreCareerSlot() throws {
-        throw XCTSkip("Teste novo ainda não verificado no CI (elemento não encontrado no run 1.1/7); aguardando diagnóstico com a hierarquia.")
         let app = openApp("app-settings")
-        XCTAssertTrue(reveal(element("settings-save-slots", in: app), in: app))
+        XCTAssertTrue(revealVisible(element("settings-save-slots", in: app), in: app), "Os espaços de carreira devem aparecer em Ajustes")
         let create = app.buttons["settings-new-slot-1"]
-        XCTAssertTrue(reveal(create, in: app))
+        XCTAssertTrue(revealVisible(create, in: app))
         create.tap()
         XCTAssertTrue(app.staticTexts["Seu primeiro contrato"].waitForExistence(timeout: 8))
         let offer = app.buttons["choose-offer-0"]
@@ -75,14 +73,14 @@ final class FootballF5UITests: XCTestCase {
         let settings = app.buttons["app-settings"]
         XCTAssertTrue(settings.waitForExistence(timeout: 8))
         settings.tap()
-        XCTAssertTrue(reveal(element("settings-active-slot-1", in: app), in: app))
+        XCTAssertTrue(revealVisible(element("settings-active-slot-1", in: app), in: app))
         let restore = app.buttons["settings-load-slot-0"]
-        XCTAssertTrue(reveal(restore, in: app))
+        XCTAssertTrue(revealVisible(restore, in: app))
         restore.tap()
         XCTAssertTrue(app.buttons["dock-manager"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["app-settings"].waitForExistence(timeout: 8))
         app.buttons["app-settings"].tap()
-        XCTAssertTrue(reveal(element("settings-active-slot-0", in: app), in: app))
+        XCTAssertTrue(revealVisible(element("settings-active-slot-0", in: app), in: app))
     }
 
     func testGoalsLetThePlayerChooseAndKeepHistory() {
@@ -122,6 +120,19 @@ final class FootballF5UITests: XCTestCase {
             start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)))
         }
         return element.exists
+    }
+
+    /// Como `reveal`, mas só termina quando o elemento está na tela e pode ser tocado. Usada pelos testes reativados.
+    private func revealVisible(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
+        let scrollView = app.scrollViews.firstMatch
+        for swipeUp in [true, false] {
+            for _ in 0..<10 {
+                if element.exists && element.isHittable { return true }
+                guard scrollView.exists else { break }
+                if swipeUp { scrollView.swipeUp() } else { scrollView.swipeDown() }
+            }
+        }
+        return element.exists && element.isHittable
     }
 
     private func openApp(_ appIdentifier: String) -> XCUIApplication {

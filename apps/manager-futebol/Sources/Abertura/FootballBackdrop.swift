@@ -15,7 +15,7 @@ struct FootballBackdrop: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                Image("MatchSceneV2")
+                Image("MatchSceneNoite")
                     .resizable()
                     .scaledToFill()
                     .frame(width: proxy.size.width, height: proxy.size.height)

@@ -131,6 +131,7 @@ struct FootballCashProjectionPanel: View {
             FactoryMetric(label: "Esperado", value: FootballFormat.money(projection.endingExpected),
                           symbol: "chart.line.uptrend.xyaxis", tint: projection.endingExpected >= 0 ? .indigo : .red)
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("budget-summary")
     }
 
