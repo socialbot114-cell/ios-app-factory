@@ -87,6 +87,8 @@ struct FirstCareerGuideCard: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(FootballTheme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // Sem `.contain`, o identificador do cartão sobrescreve os dos botões filhos na árvore de acessibilidade.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("first-run-guide-\(step.rawValue)")
     }
 }

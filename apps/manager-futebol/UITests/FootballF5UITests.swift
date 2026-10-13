@@ -122,17 +122,19 @@ final class FootballF5UITests: XCTestCase {
         return element.exists
     }
 
-    /// Como `reveal`, mas só termina quando o elemento está na tela e pode ser tocado. Usada pelos testes reativados.
+    /// Como `reveal`, mas só termina quando o elemento existe e cai dentro da área do app. Se não aparecer, a falha traz a hierarquia.
     private func revealVisible(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
-        let scrollView = app.scrollViews.firstMatch
-        for swipeUp in [true, false] {
-            for _ in 0..<10 {
-                if element.exists && element.isHittable { return true }
-                guard scrollView.exists else { break }
-                if swipeUp { scrollView.swipeUp() } else { scrollView.swipeDown() }
-            }
+        let screen = app.frame
+        func isVisible() -> Bool { element.exists && element.frame.intersects(screen) }
+        for _ in 0..<12 where !isVisible() {
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
+            start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)))
         }
-        return element.exists && element.isHittable
+        guard isVisible() else {
+            XCTFail("Elemento não visível: \(element.identifier)\nHierarquia:\n\(app.debugDescription)")
+            return false
+        }
+        return true
     }
 
     private func openApp(_ appIdentifier: String) -> XCUIApplication {

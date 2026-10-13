@@ -203,7 +203,8 @@ final class FootballFlowUITests: XCTestCase {
         leagueReveal(club, in: app)
         let clubID = String(club.identifier.dropFirst("league-club-".count))
         leagueTap(club, in: app)
-        XCTAssertTrue(leagueElement("league-club-profile-\(clubID)", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(leagueElement("league-club-profile-\(clubID)", in: app).waitForExistence(timeout: 8),
+                      "Ficha do clube \(clubID) não abriu\nHierarquia:\n\(app.debugDescription)")
         XCTAssertTrue(app.staticTexts["Forma na liga"].exists)
         let player = leagueFirst("league-club-player-", in: app)
         leagueReveal(player, in: app)
