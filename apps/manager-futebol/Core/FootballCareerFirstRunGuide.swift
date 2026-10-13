@@ -53,11 +53,14 @@ enum FirstCareerGuideStep: String, Codable, Equatable {
 }
 
 extension FootballCareer {
+    /// Liga o guia de primeira carreira. O app desliga nos UI tests, exceto no teste do guia, para o guia não cobrir as telas testadas (como o onboarding).
+    static var firstRunGuideEnabled = true
+
     var isFirstCareerGuideActive: Bool { firstCareerGuideStep?.isActive == true }
 
     /// Inicia só ao fechar o primeiro contrato; saves anteriores ficam sem guia até o jogador pedir.
     mutating func beginFirstCareerGuide() {
-        guard selectedClubID != nil, firstCareerGuideStep == nil else { return }
+        guard Self.firstRunGuideEnabled, selectedClubID != nil, firstCareerGuideStep == nil else { return }
         firstCareerGuideStep = .welcome
     }
 

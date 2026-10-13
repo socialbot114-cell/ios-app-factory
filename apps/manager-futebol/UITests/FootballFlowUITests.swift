@@ -7,7 +7,7 @@ final class FootballFlowUITests: XCTestCase {
 
     func testFirstCareerGuideLeadsFromHomeToTheLiveMatch() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting"]
+        app.launchArguments = ["--uitesting", "--first-run-guide"]
         app.launch()
 
         tapWhenReady(app.buttons["choose-offer-0"], in: app)
