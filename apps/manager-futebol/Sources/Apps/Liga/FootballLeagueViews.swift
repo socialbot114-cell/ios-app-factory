@@ -90,12 +90,14 @@ struct FootballTableView: View {
                 .foregroundStyle(.secondary)
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     Divider()
-                    // Botão com destino explícito, em vez de NavigationLink: o toque na linha precisa abrir a ficha de forma confiável.
+                    // Botão com destino explícito. `contentShape` faz a linha inteira responder ao toque, não só o texto:
+                    // o espaço entre o nome e os números não tinha área de toque, e a linha não abria a ficha.
                     Button {
                         clubToShow = row.team.id
                         showingClub = true
                     } label: {
                         standingRow(index: index, row: row, division: division)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("league-club-\(row.team.id)")
