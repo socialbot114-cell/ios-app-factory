@@ -202,8 +202,13 @@ final class FootballFlowUITests: XCTestCase {
             .matching(NSPredicate(format: "identifier MATCHES %@", "league-club-[0-9]+")).firstMatch
         leagueReveal(club, in: app)
         let clubID = String(club.identifier.dropFirst("league-club-".count))
+        // Toque logo depois de rolar pode ser consumido pela desaceleração da lista: espera a ficha e repete o toque se ela não abrir.
+        let profileTitle = leagueElement("league-club-profile-\(clubID)", in: app)
         leagueTap(club, in: app)
-        XCTAssertTrue(leagueElement("league-club-profile-\(clubID)", in: app).waitForExistence(timeout: 8),
+        for _ in 0..<2 where !profileTitle.waitForExistence(timeout: 3) {
+            leagueTap(club, in: app)
+        }
+        XCTAssertTrue(profileTitle.waitForExistence(timeout: 3),
                       "Ficha do clube \(clubID) não abriu\nHierarquia:\n\(app.debugDescription)")
         XCTAssertTrue(app.staticTexts["Forma na liga"].exists)
         let player = leagueFirst("league-club-player-", in: app)

@@ -66,6 +66,8 @@ struct FootballCashProjectionPanel: View {
                     .accessibilityIdentifier("budget-assumptions")
             }
         }
+        // Sem `.contain`, o identificador do painel sobrescreve os de resumo e simulador (budget-summary, budget-simulator).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("cash-projection")
         .onAppear { if FactoryCapture.screen == "budget-planning" { showSimulator = true } }
     }
