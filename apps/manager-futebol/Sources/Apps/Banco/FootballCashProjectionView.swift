@@ -24,6 +24,8 @@ struct FootballCashProjectionPanel: View {
                     Label("Simular contratação ou obra", systemImage: "slider.horizontal.3")
                         .font(.subheadline.weight(.semibold))
                 }
+                // Sem `.contain`, o identificador do simulador sobrescreve os de zerar e de referência (budget-reset, budget-roster-preset).
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("budget-simulator")
                 Text("Simulação apenas: não contrata, compra nem altera as finanças do clube.")
                     .font(.caption).foregroundStyle(.secondary)

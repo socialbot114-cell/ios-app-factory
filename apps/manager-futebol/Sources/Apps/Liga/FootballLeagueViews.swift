@@ -7,6 +7,8 @@ struct FootballTableView: View {
     @State private var section: LeagueSection
     @State private var serieARound: Int?
     @State private var serieBRound: Int?
+    @State private var clubToShow: Int?
+    @State private var showingClub = false
     /// Avisa a aba escolhida para ela ser lembrada ao sair e voltar ao app (OS-05).
     var onSectionChange: ((LeagueSection) -> Void)? = nil
 
@@ -54,6 +56,11 @@ struct FootballTableView: View {
         .factoryPage()
         .navigationTitle("Liga")
         .onChange(of: section) { _, value in onSectionChange?(value) }
+        .navigationDestination(isPresented: $showingClub) {
+            if let id = clubToShow, let team = FootballSeason.team(id) {
+                FootballLeagueClubProfile(career: career, team: team)
+            }
+        }
     }
 
     private var subtitle: String {
@@ -83,8 +90,10 @@ struct FootballTableView: View {
                 .foregroundStyle(.secondary)
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     Divider()
-                    NavigationLink {
-                        FootballLeagueClubProfile(career: career, team: row.team)
+                    // Botão com destino explícito, em vez de NavigationLink: o toque na linha precisa abrir a ficha de forma confiável.
+                    Button {
+                        clubToShow = row.team.id
+                        showingClub = true
                     } label: {
                         standingRow(index: index, row: row, division: division)
                     }
