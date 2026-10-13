@@ -126,12 +126,14 @@ final class FootballF5UITests: XCTestCase {
     private func revealVisible(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         let screen = app.frame
         func isVisible() -> Bool { element.exists && element.frame.intersects(screen) }
-        for _ in 0..<12 where !isVisible() {
+        for _ in 0..<25 where !isVisible() {
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
             start.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)))
         }
         guard isVisible() else {
-            XCTFail("Elemento não visível: \(element.identifier)\nHierarquia:\n\(app.debugDescription)")
+            // `identifier` lança erro quando o elemento não existe; por isso a checagem antes.
+            let name = element.exists ? element.identifier : "(ausente)"
+            XCTFail("Elemento não visível: \(name)\nHierarquia:\n\(app.debugDescription)")
             return false
         }
         return true

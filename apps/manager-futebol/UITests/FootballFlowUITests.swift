@@ -188,7 +188,7 @@ final class FootballFlowUITests: XCTestCase {
         leagueTap(app.buttons["play-match"], in: app)
         XCTAssertTrue(leagueElement("live-scoreboard", in: app).waitForExistence(timeout: 10))
         leagueTap(app.buttons["live-skip"], in: app)
-        XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
+        waitForLiveFinish(in: app)
         leagueTap(app.buttons["live-finish"], in: app)
         if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
         XCTAssertTrue(leagueElement("football-training-report", in: app).waitForExistence(timeout: 10))
