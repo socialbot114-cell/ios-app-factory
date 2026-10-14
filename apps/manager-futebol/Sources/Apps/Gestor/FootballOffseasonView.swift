@@ -162,9 +162,9 @@ struct FootballOffseasonView: View {
 
     /// No Clássico, o topo do ritual diz quais escolhas ainda faltam, sem obrigar a passar por cada etapa para descobrir (PIL-03 v3).
     @ViewBuilder private var classicDecisionLine: some View {
-        let open = career.openOffseasonDecisions
-        if career.world.phone.preferences.rhythmMode == .classic, !open.isEmpty {
-            Text("Escolhas que faltam: " + open.map(\.title).joined(separator: ", "))
+        let pending = career.openOffseasonDecisions
+        if career.world.phone.preferences.rhythmMode == .classic, !pending.isEmpty {
+            Text("Escolhas que faltam: " + pending.map(\.title).joined(separator: ", "))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.85))
                 .multilineTextAlignment(.center)
