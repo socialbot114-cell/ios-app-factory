@@ -96,7 +96,7 @@ final class FootballGrowthTests: XCTestCase {
         XCTAssertTrue((-0.4...0.6).contains(happy) && (-0.4...0.6).contains(angry))
     }
 
-    func testTryoutAddsTwoYouthsOncePerSeason() {
+    func testTryoutAddsTwoYouthsOncePerWindowAcrossTheSeason() {
         var career = started()
         let before = career.youthRoster.count
         let cash = career.transferBudget
@@ -104,8 +104,26 @@ final class FootballGrowthTests: XCTestCase {
         XCTAssertEqual(found.count, 2)
         XCTAssertEqual(career.youthRoster.count, before + 2)
         XCTAssertEqual(cash - career.transferBudget, career.tryoutCost)
+        // Na mesma janela não há outra peneira.
         XCTAssertNotNil(career.canHoldTryout())
         XCTAssertTrue(career.holdTryout(region: nil).isEmpty)
+        // A janela seguinte abre uma peneira nova.
+        career.matchDayIndex = career.tryoutWindowStart(1)
+        XCTAssertNil(career.canHoldTryout())
+        XCTAssertEqual(career.holdTryout(region: 2).count, 2)
+        // A última janela também tem a sua.
+        career.matchDayIndex = career.tryoutWindowStart(2)
+        XCTAssertEqual(career.holdTryout(region: 3).count, 2)
+        XCTAssertNotNil(career.canHoldTryout())
+    }
+
+    func testSaveFromTheOldFormatCountsTheSeasonTryoutAsWindowZero() {
+        var career = started()
+        career.world.growth.tryoutSeason = career.season
+        career.world.growth.tryoutWindowsHeld = nil
+        XCTAssertNotNil(career.canHoldTryout())
+        career.matchDayIndex = career.tryoutWindowStart(1)
+        XCTAssertNil(career.canHoldTryout())
     }
 
     func testYouthCategoriesPartitionTheAcademy() {

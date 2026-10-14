@@ -76,7 +76,7 @@ struct FootballAcademyView: View {
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("academy-tryout")
-            Text("Uma peneira por temporada traz 2 jovens da região escolhida.").font(.caption).foregroundStyle(.secondary)
+            Text("Uma peneira em cada fase da temporada (começo, meio e fim) traz 2 jovens da região escolhida.").font(.caption).foregroundStyle(.secondary)
         }
     }
 
