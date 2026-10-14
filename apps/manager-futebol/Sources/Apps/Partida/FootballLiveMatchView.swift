@@ -66,6 +66,8 @@ struct FootballLiveMatchView: View {
         }
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var userTeamID: Int? { career.selectedClubID }
 
     var body: some View {
@@ -83,7 +85,13 @@ struct FootballLiveMatchView: View {
                             FirstCareerGuideCard(step: .liveMatch, onContinue: nil,
                                                  onSkip: { career.skipFirstCareerGuide() })
                         }
-                        if live.sim.finished { fullTimePanel(live) }
+                        // O cartão de fim de jogo sobe e aparece com mola; com "reduzir movimento", aparece sem animação (ANI-02).
+                        Group {
+                            if live.sim.finished {
+                                fullTimePanel(live).transition(.move(edge: .bottom).combined(with: .opacity))
+                            }
+                        }
+                        .animation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.15), value: live.sim.finished)
                         viewModePicker
                         if viewMode == .watch {
                             watchPanel(live)
