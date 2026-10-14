@@ -1000,6 +1000,7 @@ struct FootballSeasonSummaryView: View {
                     if let champion = FootballSeason.team(record.championID) {
                         VStack(spacing: 10) {
                             Image(systemName: "trophy.fill").font(.system(size: 44)).foregroundStyle(FootballTheme.gold)
+                                .modifier(FootballIconPulse(active: record.championID == record.clubID, classic: career.world.phone.preferences.rhythmMode == .classic))
                             ClubCrest(team: champion, size: 64)
                             Text("\(champion.name) é campeão da Série A na temporada \(record.season)")
                                 .font(.title3.bold()).multilineTextAlignment(.center)
