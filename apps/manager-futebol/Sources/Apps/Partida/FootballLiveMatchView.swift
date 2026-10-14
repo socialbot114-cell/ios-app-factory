@@ -51,6 +51,11 @@ struct FootballLiveMatchView: View {
     }
 
     private var live: LiveMatchState? { career.liveMatch }
+    /// Vitória confirmada no apito final: vira verdadeiro uma vez e dispara a vibração de sucesso (ANI-02).
+    private var winAtFullTime: Bool {
+        guard let live, live.sim.finished else { return false }
+        return live.userIsHome ? live.homeGoals > live.awayGoals : live.awayGoals > live.homeGoals
+    }
 
     private var tickNanoseconds: UInt64 {
         if FactoryCapture.isUITesting { return 10_000_000 }
@@ -126,6 +131,7 @@ struct FootballLiveMatchView: View {
         .sensoryFeedback(.impact(weight: .heavy), trigger: live?.homeGoals ?? 0)
         .sensoryFeedback(.selection, trigger: quickFeedback)
         .sensoryFeedback(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
+        .sensoryFeedback(.success, trigger: winAtFullTime)
         .sheet(isPresented: $showSubstitutions) {
             FootballSubstitutionSheet(career: $career, outgoingID: nil)
         }
