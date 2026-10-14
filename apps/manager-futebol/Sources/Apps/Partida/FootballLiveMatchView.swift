@@ -467,7 +467,12 @@ struct FootballLiveMatchView: View {
             .foregroundStyle(.white)
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(tint.gradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(tint.gradient)
+                    .overlay { FootballShineBand(active: result == .win) }
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
             .overlay {
                 if result == .win && !staticPreview && !FactoryCapture.isUITesting {
                     FootballCelebrationBurst(count: victory == .goleada ? 64 : (victory == .big ? 48 : 34), rhythm: career.world.phone.preferences.rhythmMode)
