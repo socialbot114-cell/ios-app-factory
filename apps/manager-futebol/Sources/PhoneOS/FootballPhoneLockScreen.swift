@@ -202,11 +202,13 @@ struct PhoneLockScreen: View {
     @ViewBuilder
     private var nightDigest: some View {
         let items = career.overnightItems()
+        // O ritmo decide quantas pendências aparecem de cara; o contador continua com o total (PIL-03 v3).
+        let shown = Array(items.prefix(career.world.phone.preferences.rhythmMode.lockScreenItemLimit))
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Label(transition == nil ? "Pendências · \(items.count)" : "Durante a noite · \(items.count) para você", systemImage: "moon.stars.fill")
                     .font(.caption.weight(.heavy)).tracking(0.5).foregroundStyle(.white.opacity(0.8))
-                if let first = items.first {
+                if let first = shown.first {
                     Button { onUnlock(); onSuggestion(first) } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "sparkles").font(.title3)
@@ -226,7 +228,7 @@ struct PhoneLockScreen: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("lock-guide")
                 }
-                let rest = Array(items.dropFirst())
+                let rest = Array(shown.dropFirst())
                 if !rest.isEmpty {
                     Button { withAnimation(.easeInOut(duration: 0.25)) { digestExpanded.toggle() } } label: {
                         HStack {
