@@ -30,3 +30,29 @@ struct FootballRoundProgress: Equatable {
         return phrases
     }
 }
+
+/// Foto do clube antes ou depois de uma rodada. Quem chama tira a foto antes de jogar e compara depois (PIL-05 v2).
+struct FootballRoundSnapshot: Equatable {
+    /// Posição na tabela da divisão do usuário (1 é a liderança).
+    var position: Int
+    /// Caixa do clube, em reais.
+    var cash: Int
+    /// Progresso da meta da diretoria, de 0 a 1; nil enquanto o app não mede a meta.
+    var objectiveProgress: Double?
+}
+
+extension FootballRoundProgress {
+    /// Monta a faixa a partir da foto de antes e da de depois da rodada.
+    init(before: FootballRoundSnapshot, after: FootballRoundSnapshot) {
+        self.init(positionBefore: before.position, positionAfter: after.position,
+                  cashChange: after.cash - before.cash, objectiveProgress: after.objectiveProgress)
+    }
+}
+
+extension FootballCareer {
+    /// Foto do clube para a faixa; nil quando o clube não está na tabela da divisão.
+    func captureRoundSnapshot() -> FootballRoundSnapshot? {
+        guard let position = userPosition else { return nil }
+        return FootballRoundSnapshot(position: position, cash: transferBudget, objectiveProgress: nil)
+    }
+}

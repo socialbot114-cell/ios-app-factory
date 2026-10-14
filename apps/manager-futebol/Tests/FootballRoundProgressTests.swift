@@ -20,4 +20,17 @@ final class FootballRoundProgressTests: XCTestCase {
         XCTAssertTrue(FootballRoundProgress(positionBefore: 2, positionAfter: 2, cashChange: 0, objectiveProgress: nil).lines.isEmpty)
         XCTAssertEqual(FootballRoundProgress(positionBefore: 2, positionAfter: 2, cashChange: 0, objectiveProgress: 1.3).lines, ["meta da diretoria em 100%"])
     }
+
+    /// As fotos de antes e de depois montam a faixa na mesma ordem (PIL-05 v2): posição e caixa, sem meta medida.
+    func testSnapshotsBuildTheBandInOrder() {
+        let before = FootballRoundSnapshot(position: 5, cash: 1_000_000, objectiveProgress: nil)
+        let after = FootballRoundSnapshot(position: 4, cash: 1_750_000, objectiveProgress: nil)
+        XCTAssertEqual(FootballRoundProgress(before: before, after: after).lines, ["subiu uma posição", "caixa +R$ 750 mil"])
+    }
+
+    /// Fotos iguais não geram faixa.
+    func testSameSnapshotsGiveNoLines() {
+        let snapshot = FootballRoundSnapshot(position: 2, cash: 500_000, objectiveProgress: nil)
+        XCTAssertTrue(FootballRoundProgress(before: snapshot, after: snapshot).lines.isEmpty)
+    }
 }
