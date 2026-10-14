@@ -462,7 +462,12 @@ struct FootballLiveMatchView: View {
             text = "Derrota. Hora de rever o plano."
             tint = .red
         }
-        return Label(text, systemImage: result == .win ? "star.fill" : (result == .draw ? "equal.circle.fill" : "xmark.circle.fill"))
+        return HStack(spacing: 8) {
+            Image(systemName: result == .win ? "star.fill" : (result == .draw ? "equal.circle.fill" : "xmark.circle.fill"))
+                .accessibilityHidden(true)
+                .modifier(FootballIconPulse(active: result == .win, classic: career.world.phone.preferences.rhythmMode == .classic))
+            Text(text)
+        }
             .font(.headline)
             .foregroundStyle(.white)
             .padding(16)
