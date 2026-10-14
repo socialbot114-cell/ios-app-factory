@@ -680,6 +680,7 @@ struct MatchupHeader: View {
     let homeScore: Int?
     let awayScore: Int?
     var crestSize: CGFloat = 48
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -688,6 +689,9 @@ struct MatchupHeader: View {
                 if let homeScore, let awayScore {
                     Text("\(homeScore) – \(awayScore)")
                         .font(.system(size: 34, weight: .heavy, design: .rounded).monospacedDigit())
+                        .contentTransition(.numericText())
+                        .animation(reduceMotion ? nil : .snappy, value: homeScore)
+                        .animation(reduceMotion ? nil : .snappy, value: awayScore)
                 } else {
                     Text("×").font(.system(size: 28, weight: .bold, design: .rounded)).foregroundStyle(.secondary)
                 }
