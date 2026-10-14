@@ -8,6 +8,8 @@ struct FootballDashboardView: View {
     let onNavigate: (PhoneApp) -> Void
     let onShowPress: () -> Void
     var onOpenAgenda: ((FootballAgendaItem) -> Void)? = nil
+    /// Faixa da última rodada (PIL-05 v2), montada pela casa ao voltar da partida; vazia quando não há o que mostrar.
+    var roundBand: [String] = []
     @State private var confirmsQuickSimulation = false
     @State private var showsPrepFlow = false
     @State private var playAfterPrepDismiss = false
@@ -56,6 +58,14 @@ struct FootballDashboardView: View {
                 preparationPanel
                 if !career.offers.isEmpty && !career.isFired {
                     FootballOffersPanel(career: $career, onAlert: onAlert)
+                }
+                if !roundBand.isEmpty {
+                    FactoryPanel(title: "Última rodada", systemImage: "chart.line.uptrend.xyaxis") {
+                        Text(roundBand.joined(separator: " · "))
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .accessibilityIdentifier("round-band")
                 }
                 if let summary = career.latestUserFixture?.summary { FootballPostMatchSummaryPanel(summary: summary) }
                 if let lastResult = career.latestUserFixture {

@@ -8,6 +8,10 @@ struct FootballHome: View {
     @State private var openApp: PhoneApp?
     @State private var alertMessage: String?
     @State private var showLiveMatch = false
+    /// Foto do clube no começo da rodada e faixa montada ao voltar da partida (PIL-05 v2).
+    @State private var roundStart: FootballRoundSnapshot?
+    @State private var roundBand: [String] = []
+    @State private var roundBandDay: Int?
     @State private var seasonSummary: SeasonRecord?
     @State private var showsOnboarding = FootballOnboardingGate.shouldShow
     /// Menu de entrada (Continuar, Novo jogo, Opções); UI tests e capturas entram direto no jogo.
@@ -95,7 +99,7 @@ struct FootballHome: View {
             }
         }
         .tint(FootballTheme.accent)
-        .fullScreenCover(isPresented: $showLiveMatch) {
+        .fullScreenCover(isPresented: $showLiveMatch, onDismiss: { finishRoundBand() }) {
             FootballLiveMatchView(career: $career, staticPreview: false) {
                 if career.firstCareerGuideStep == .liveMatch, career.liveMatch == nil {
                     advanceFirstRunGuide(from: .liveMatch, to: .recap)
@@ -446,7 +450,8 @@ struct FootballHome: View {
                 onSeasonEnded: { seasonSummary = $0 },
                 onNavigate: { openApp = $0 },
                 onShowPress: { showPress = true },
-                onOpenAgenda: openAgendaItem
+                onOpenAgenda: openAgendaItem,
+                roundBand: roundBandDay == career.matchDayIndex ? roundBand : []
             )
         case .squad:
             FootballSquadView(career: $career, onAlert: showAlert)
@@ -616,6 +621,10 @@ struct FootballHome: View {
             alertMessage = "Termine a pré-temporada antes da estreia."
             return
         }
+        if career.liveMatch == nil {
+            roundStart = career.captureRoundSnapshot()
+            roundBand = []
+        }
         if career.liveMatch == nil && !career.beginMatchDay() {
             alertMessage = "Não foi possível iniciar a partida. Confira a escalação e tente novamente."
             return
@@ -625,6 +634,14 @@ struct FootballHome: View {
             firstRunToastStep = nil
         }
         showLiveMatch = true
+    }
+
+    /// Monta a faixa quando a partida termina e a tela fecha (PIL-05 v2). Com a partida ainda aberta, espera a próxima vez.
+    private func finishRoundBand() {
+        guard career.liveMatch == nil, let start = roundStart, let end = career.captureRoundSnapshot() else { return }
+        roundBand = FootballRoundProgress(before: start, after: end).lines
+        roundBandDay = career.matchDayIndex
+        roundStart = nil
     }
 
     private var continueSubtitle: String? {
