@@ -36,6 +36,7 @@ struct FootballOffseasonView: View {
             } else {
                 VStack(spacing: 0) {
                     progressBar.padding(.top, 14)
+                    classicDecisionLine
                     ScrollView {
                         scene
                             .id(step)
@@ -157,6 +158,20 @@ struct FootballOffseasonView: View {
         }
         .ignoresSafeArea()
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.8), value: step.phase)
+    }
+
+    /// No Clássico, o topo do ritual diz quais escolhas ainda faltam, sem obrigar a passar por cada etapa para descobrir (PIL-03 v3).
+    @ViewBuilder private var classicDecisionLine: some View {
+        let open = career.openOffseasonDecisions
+        if career.world.phone.preferences.rhythmMode == .classic, !open.isEmpty {
+            Text("Escolhas que faltam: " + open.map(\.title).joined(separator: ", "))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.85))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 22)
+                .padding(.top, 6)
+                .accessibilityIdentifier("offseason-open-decisions")
+        }
     }
 
     private var progressBar: some View {
