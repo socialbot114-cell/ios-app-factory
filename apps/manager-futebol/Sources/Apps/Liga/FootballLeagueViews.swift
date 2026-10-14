@@ -280,6 +280,7 @@ struct FootballTableView: View {
                     Spacer()
                     Text("\(player.goals)").font(.title3.weight(.heavy).monospacedDigit())
                 }
+                .contentShape(Rectangle())
                 .accessibilityElement(children: .combine)
                 }
                 .buttonStyle(.plain)
@@ -318,6 +319,7 @@ struct FootballTableView: View {
                 .padding(.vertical, 4)
                 .background(fixture.involves(career.selectedClubID ?? -1) ? FootballTheme.accent.opacity(0.08) : .clear,
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .contentShape(Rectangle())
                 .accessibilityElement(children: .combine)
                 }
                 .buttonStyle(.plain)
@@ -477,6 +479,7 @@ private struct FootballLeagueClubProfile: View {
                             Spacer()
                             Text("GER \(player.overall)").font(.caption.bold())
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("league-club-player-\(player.id)")
