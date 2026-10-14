@@ -8,14 +8,18 @@ enum MatchdayStep: Equatable {
     case press
     /// Escalação com alertas (titular lesionado, cansado ou improvisado): revisar antes do jogo.
     case prepare
+    /// Semana com decisões pendentes: abrir o meio da semana, para descansar o time e ajustar o treino.
+    case midweek
     /// Escalação sem alertas e jogo marcado: jogar a partida.
     case play
     /// Dia sem jogo do clube: avançar o calendário.
     case advance
 
     /// Decide o passo a partir do que já se sabe. Função pura, para testar sem montar uma carreira inteira.
-    static func next(hasPendingPress: Bool, hasUserMatch: Bool, lineupWarnings: Int, canAdvanceWithoutPlaying: Bool) -> MatchdayStep? {
+    static func next(hasPendingPress: Bool, hasUserMatch: Bool, lineupWarnings: Int, canAdvanceWithoutPlaying: Bool,
+                     midweekWaiting: Bool = false) -> MatchdayStep? {
         if hasPendingPress { return .press }
+        if hasUserMatch && midweekWaiting { return .midweek }
         if hasUserMatch { return lineupWarnings == 0 ? .play : .prepare }
         if canAdvanceWithoutPlaying { return .advance }
         return nil
@@ -30,6 +34,7 @@ extension FootballCareer {
         return MatchdayStep.next(hasPendingPress: pendingPress != nil,
                           hasUserMatch: canPlay,
                           lineupWarnings: lineupWarnings.count,
-                          canAdvanceWithoutPlaying: canAdvanceWithoutPlaying)
+                          canAdvanceWithoutPlaying: canAdvanceWithoutPlaying,
+                          midweekWaiting: midweekWaiting)
     }
 }

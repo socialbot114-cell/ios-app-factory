@@ -1,7 +1,7 @@
 import Foundation
 
 extension FootballCareer {
-    static let youthRosterLimit = 12
+    static let youthRosterLimit = 16
 
     // MARK: - Finanças
 

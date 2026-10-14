@@ -247,6 +247,8 @@ extension FootballCareer {
         var reason = "Limite de dias atingido."
         while days < maxDays {
             if liveMatch != nil { return (days, "Há uma partida em andamento.") }
+            // O meio da semana é uma decisão do treinador: o avanço para antes do jogo e espera por ela.
+            if midweekWaiting { return (days, "Meio da semana: abra a janela antes do jogo para descansar o time e ajustar o treino.") }
             if isFired { return (days, "Você está sem clube.") }
             if isSeasonComplete { return (days, "A temporada terminou.") }
             guard simulateNextMatchDay() else { return (days, "Não foi possível avançar.") }

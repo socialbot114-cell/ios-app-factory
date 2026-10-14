@@ -3,8 +3,8 @@ import Foundation
 struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
-    static let schemaVersion = 13
-    static let rosterLimit = 18
+    static let schemaVersion = 14
+    static let rosterLimit = 24
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
 
@@ -105,6 +105,7 @@ struct FootballCareer: Codable, Equatable {
         case tutorialSeen
         case tutorialDismissed
         case firstCareerGuideStep
+        case midweek
         case iconState
         case academy
         case offseason
@@ -215,6 +216,8 @@ struct FootballCareer: Codable, Equatable {
     var tutorialDismissed = false
     /// Tutorial prático da primeira carreira; nil em saves antigos até um novo contrato ser aceito.
     var firstCareerGuideStep: FirstCareerGuideStep? = nil
+    /// Abertura do meio da semana da rodada atual (ver FootballMidweek.swift); nil em saves antigos.
+    var midweek: MidweekState? = nil
     var iconState = IconState()
     var academy = AcademyState()
     /// Ritual de virada de temporada em andamento (nil fora dele); bloqueia jogar e avançar o calendário.
@@ -373,6 +376,7 @@ struct FootballCareer: Codable, Equatable {
         tutorialSeen = try container.decodeIfPresent([String].self, forKey: .tutorialSeen) ?? []
         tutorialDismissed = try container.decodeIfPresent(Bool.self, forKey: .tutorialDismissed) ?? false
         firstCareerGuideStep = try container.decodeIfPresent(FirstCareerGuideStep.self, forKey: .firstCareerGuideStep)
+        midweek = try container.decodeIfPresent(MidweekState.self, forKey: .midweek)
         iconState = try container.decodeIfPresent(IconState.self, forKey: .iconState) ?? IconState()
         academy = try container.decodeIfPresent(AcademyState.self, forKey: .academy) ?? AcademyState()
         offseason = try container.decodeIfPresent(OffseasonState.self, forKey: .offseason)
@@ -478,6 +482,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(tutorialSeen, forKey: .tutorialSeen)
         try container.encode(tutorialDismissed, forKey: .tutorialDismissed)
         try container.encodeIfPresent(firstCareerGuideStep, forKey: .firstCareerGuideStep)
+        try container.encodeIfPresent(midweek, forKey: .midweek)
         try container.encode(iconState, forKey: .iconState)
         try container.encode(academy, forKey: .academy)
         try container.encodeIfPresent(offseason, forKey: .offseason)
@@ -658,6 +663,8 @@ struct FootballCareer: Codable, Equatable {
         return cupFixtures.contains { $0.isPlayed && $0.involves(selectedClubID) && $0.winner != selectedClubID }
     }
 
+    /// Há uma rodada do clube pronta para jogar. A abertura do meio da semana não bloqueia o motor:
+    /// a interface e o avanço rápido é que param nela (ver `midweekWaiting`).
     var canPlay: Bool {
         selectedClubID != nil && !isSeasonComplete && !isFired && offseason == nil && nextUserFixture != nil
     }

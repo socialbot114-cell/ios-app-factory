@@ -41,9 +41,13 @@ struct FootballHome: View {
     struct DayKey: Equatable {
         let season: Int
         let matchDay: Int
+        /// A abertura do meio da semana desta rodada já aconteceu: cada uma trava o celular uma vez.
+        var midweek = false
     }
 
-    private var dayKey: DayKey { DayKey(season: career.season, matchDay: career.matchDayIndex) }
+    private var dayKey: DayKey {
+        DayKey(season: career.season, matchDay: career.matchDayIndex, midweek: career.midweekOpenedThisRound)
+    }
 
     /// Os UI tests abrem o celular já desbloqueado; só testam a tela de bloqueio ao avançar com `--lock-on-advance`.
     private var locksOnAdvance: Bool {
@@ -446,7 +450,8 @@ struct FootballHome: View {
                 onSeasonEnded: { seasonSummary = $0 },
                 onNavigate: { openApp = $0 },
                 onShowPress: { showPress = true },
-                onOpenAgenda: openAgendaItem
+                onOpenAgenda: openAgendaItem,
+                onOpenMidweek: openMidweek
             )
         case .squad:
             FootballSquadView(career: $career, onAlert: showAlert)
@@ -611,7 +616,17 @@ struct FootballHome: View {
         }
     }
 
+    /// Abre o meio da semana da rodada. A tela trava e destrava com ela, como em qualquer abertura do celular.
+    private func openMidweek() {
+        career.openMidweek()
+    }
+
     private func startLiveMatch() {
+        // Com decisões pendentes, a rodada espera pelo meio da semana: o jogo abre por ela.
+        if career.midweekWaiting {
+            openMidweek()
+            return
+        }
         if career.offseason != nil {
             alertMessage = "Termine a pré-temporada antes da estreia."
             return

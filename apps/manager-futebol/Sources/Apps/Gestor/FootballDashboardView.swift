@@ -8,6 +8,8 @@ struct FootballDashboardView: View {
     let onNavigate: (PhoneApp) -> Void
     let onShowPress: () -> Void
     var onOpenAgenda: ((FootballAgendaItem) -> Void)? = nil
+    /// Abre o meio da semana da rodada: o celular trava e destrava com ela.
+    var onOpenMidweek: () -> Void = {}
     @State private var confirmsQuickSimulation = false
     @State private var showsPrepFlow = false
     @State private var playAfterPrepDismiss = false
@@ -247,12 +249,44 @@ struct FootballDashboardView: View {
     // MARK: - Próximo passo (FLX-03)
 
     /// Barra fixa com o que falta no dia de jogo: responder, revisar a escalação, jogar ou avançar.
+    /// Meio da semana aberto: descansar o time, chamar peneiras e, por fim, ir ao jogo.
+    private var midweekPanel: some View {
+        FactoryPanel(title: "Meio da semana", systemImage: "calendar.badge.clock") {
+            Text("Antes do jogo: descanse o time (recupera a condição do elenco e a energia do treinador) ou faça uma peneira.")
+                .font(.caption).foregroundStyle(.secondary)
+            Button {
+                career.restTeam()
+            } label: {
+                Label(career.midweekRestUsed ? "Time descansado nesta semana" : "Descansar o time", systemImage: "bed.double.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(career.midweekRestUsed)
+            .accessibilityIdentifier("midweek-rest")
+            Button {
+                onNavigate(.academy)
+            } label: {
+                Label("Fazer peneira", systemImage: "figure.soccer").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("midweek-tryout")
+            Button {
+                career.closeMidweek()
+            } label: {
+                Label("Ir para o jogo", systemImage: "play.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(FactoryPrimaryButtonStyle())
+            .accessibilityIdentifier("midweek-close")
+        }
+    }
+
     private func nextStepBar(_ step: MatchdayStep) -> some View {
         let label = nextStepLabel(step)
         return Button {
             switch step {
             case .press: onShowPress()
             case .prepare: onNavigate(.squad)
+            case .midweek: onOpenMidweek()
             case .play: onPlayLive()
             case .advance: requestQuickSimulation()
             }
@@ -270,6 +304,7 @@ struct FootballDashboardView: View {
         switch step {
         case .press: return ("Responder a coletiva", "mic.fill")
         case .prepare: return ("Revisar a escalação", "person.3.fill")
+        case .midweek: return ("Abrir o meio da semana", "calendar.badge.clock")
         case .play: return ("Jogar a partida", "play.fill")
         case .advance: return ("Avançar o dia", "forward.fill")
         }
@@ -416,11 +451,22 @@ struct FootballDashboardView: View {
             .font(.subheadline.weight(.semibold))
             .accessibilityIdentifier("prep-flow-open")
 
-            Button(action: onPlayLive) {
-                Label("Jogar partida ao vivo", systemImage: "play.fill")
+            if career.midweekOpen {
+                midweekPanel
             }
-            .buttonStyle(FactoryPrimaryButtonStyle())
-            .accessibilityIdentifier("play-match")
+            if career.midweekWaiting {
+                Button(action: onOpenMidweek) {
+                    Label("Abrir o meio da semana", systemImage: "calendar.badge.clock")
+                }
+                .buttonStyle(FactoryPrimaryButtonStyle())
+                .accessibilityIdentifier("midweek-open")
+            } else {
+                Button(action: onPlayLive) {
+                    Label("Jogar partida ao vivo", systemImage: "play.fill")
+                }
+                .buttonStyle(FactoryPrimaryButtonStyle())
+                .accessibilityIdentifier("play-match")
+            }
 
             HStack(spacing: 10) {
                 Button {

@@ -237,8 +237,6 @@ struct GrowthState: Codable, Equatable {
     var slotDeals: [SlotDeal] = []
     var youthProgram = YouthProgram.balanced
     var tryoutSeason = 0
-    /// Peneiras já feitas, como temporada * 10 + janela. Nil em saves antigos: vale só o `tryoutSeason`.
-    var tryoutWindowsHeld: [Int]? = nil
     var lastPressureWarningDay = -10
     var nextID = 1
 }
@@ -246,7 +244,7 @@ struct GrowthState: Codable, Equatable {
 // MARK: - Regras
 
 extension FootballCareer {
-    static let tryoutBaseCost = 60_000
+    static let tryoutBaseCost = 25_000
 
     // MARK: TV
 
@@ -421,38 +419,16 @@ extension FootballCareer {
         tickAcademy()
     }
 
-    var tryoutCost: Int { Self.tryoutBaseCost + 20_000 * youthAcademyLevel }
+    /// Custo de uma peneira: barato, para a base se renovar com frequência. Sobe um pouco com a academia.
+    var tryoutCost: Int { Self.tryoutBaseCost + 8_000 * youthAcademyLevel }
 
-    /// Peneiras por temporada: uma em cada janela de rodadas (começo, meio e fim), para a base se renovar ao longo do ano.
-    static let tryoutWindowCount = 3
+    /// Quantos jovens cada peneira traz: de 1 a 3.
+    static let tryoutYouthRange = 1...3
 
-    /// Janela da temporada em que a rodada cai (0 no começo, a última no fim).
-    func tryoutWindow(matchDay index: Int? = nil) -> Int {
-        let total = max(1, FootballSeason.matchDaysPerSeason)
-        let day = min(max(0, index ?? matchDayIndex), total - 1)
-        return min(Self.tryoutWindowCount - 1, day * Self.tryoutWindowCount / total)
-    }
-
-    /// Primeira rodada (base 0) de cada janela: o menor dia cuja janela calculada é `window`.
-    func tryoutWindowStart(_ window: Int) -> Int {
-        let total = max(1, FootballSeason.matchDaysPerSeason)
-        return (window * total + Self.tryoutWindowCount - 1) / Self.tryoutWindowCount
-    }
-
-    func tryoutHeld(window: Int) -> Bool {
-        if let held = world.growth.tryoutWindowsHeld { return held.contains(season * 10 + window) }
-        return world.growth.tryoutSeason == season && window == 0
-    }
-
+    /// Peneira sem limite por temporada: o clube faz quantas quiser, enquanto houver caixa e vaga na base.
     func canHoldTryout() -> String? {
         guard selectedClubID != nil, !isFired else { return "Sem clube." }
-        let window = tryoutWindow()
-        if tryoutHeld(window: window) {
-            let next = window + 1
-            guard next < Self.tryoutWindowCount else { return "As peneiras desta temporada já foram feitas." }
-            return "A peneira desta fase já foi feita. A próxima começa na rodada \(tryoutWindowStart(next) + 1)."
-        }
-        if youthRoster.count + 2 > Self.youthRosterLimit { return "A base está cheia: dispense ou promova jovens." }
+        if youthRoster.count + Self.tryoutYouthRange.lowerBound > Self.youthRosterLimit { return "A base está cheia: dispense ou promova jovens." }
         if transferBudget < tryoutCost { return "Caixa insuficiente." }
         return nil
     }
@@ -460,17 +436,16 @@ extension FootballCareer {
     @discardableResult
     mutating func holdTryout(region: Int?) -> [FootballPlayer] {
         guard canHoldTryout() == nil, let selectedClubID else { return [] }
-        let window = tryoutWindow()
-        var random = FootballRandom(seed: matchSeed(stream: .offseason, id: 61_000 + season * 13 + (region ?? 9) + window * 101))
+        // A semente usa o id do próximo jovem, que muda a cada peneira: cada uma traz jovens diferentes.
+        var random = FootballRandom(seed: matchSeed(stream: .offseason, id: 61_000 + nextPlayerID + (region ?? 9) * 7))
         book(.academy, -tryoutCost, "Peneira de novos talentos")
-        // Ao gravar a primeira peneira nova, a da temporada no formato antigo continua contando como feita.
-        var held = world.growth.tryoutWindowsHeld ?? (world.growth.tryoutSeason == season ? [season * 10] : [])
-        held.append(season * 10 + window)
-        world.growth.tryoutWindowsHeld = held
         let strength = (selectedClub?.strength ?? 65) + (division(of: selectedClubID) == .serieA ? 2 : -2)
         let positions: [FootballPosition] = [.goalkeeper, .defender, .midfielder, .forward]
         var found: [FootballPlayer] = []
-        for _ in 0..<2 {
+        // Nunca passa do limite da base: a peneira traz só os jovens que cabem.
+        let room = max(0, Self.youthRosterLimit - youthRoster.count)
+        let count = min(random.int(in: Self.tryoutYouthRange), room)
+        for _ in 0..<count {
             let position = random.pick(positions) ?? .midfielder
             var youth = FootballSeason.makeYouth(id: nextPlayerID, position: position, teamStrength: strength, teamID: selectedClubID,
                                                  season: season, quality: youthAcademyLevel + 1 + staffBonus(.youthCoach), using: &random)

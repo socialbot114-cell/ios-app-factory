@@ -101,29 +101,30 @@ final class FootballGrowthTests: XCTestCase {
         let before = career.youthRoster.count
         let cash = career.transferBudget
         let found = career.holdTryout(region: 1)
-        XCTAssertEqual(found.count, 2)
-        XCTAssertEqual(career.youthRoster.count, before + 2)
+        XCTAssertTrue(FootballCareer.tryoutYouthRange.contains(found.count))
+        XCTAssertEqual(career.youthRoster.count, before + found.count)
         XCTAssertEqual(cash - career.transferBudget, career.tryoutCost)
-        // Na mesma janela não há outra peneira.
-        XCTAssertNotNil(career.canHoldTryout())
-        XCTAssertTrue(career.holdTryout(region: nil).isEmpty)
-        // A janela seguinte abre uma peneira nova.
-        career.matchDayIndex = career.tryoutWindowStart(1)
-        XCTAssertNil(career.canHoldTryout())
-        XCTAssertEqual(career.holdTryout(region: 2).count, 2)
-        // A última janela também tem a sua.
-        career.matchDayIndex = career.tryoutWindowStart(2)
-        XCTAssertEqual(career.holdTryout(region: 3).count, 2)
-        XCTAssertNotNil(career.canHoldTryout())
     }
 
-    func testSaveFromTheOldFormatCountsTheSeasonTryoutAsWindowZero() {
+    /// Não há limite de peneiras por temporada: o clube faz quantas quiser, enquanto houver caixa e vaga na base.
+    func testTryoutsRepeatWithoutASeasonLimitAndNeverOverflowTheYouthRoster() {
         var career = started()
-        career.world.growth.tryoutSeason = career.season
-        career.world.growth.tryoutWindowsHeld = nil
+        var totalYouths = 0
+        for _ in 0..<8 {
+            let found = career.holdTryout(region: nil)
+            totalYouths += found.count
+        }
+        XCTAssertGreaterThan(totalYouths, FootballCareer.tryoutYouthRange.lowerBound)
+        XCTAssertLessThanOrEqual(career.youthRoster.count, FootballCareer.youthRosterLimit)
+    }
+
+    func testTryoutCostRisesWithTheAcademyAndNeedsCash() {
+        var career = started()
+        let base = career.tryoutCost
+        career.youthAcademyLevel += 1
+        XCTAssertEqual(career.tryoutCost, base + 8_000)
+        career.transferBudget = 0
         XCTAssertNotNil(career.canHoldTryout())
-        career.matchDayIndex = career.tryoutWindowStart(1)
-        XCTAssertNil(career.canHoldTryout())
     }
 
     func testYouthCategoriesPartitionTheAcademy() {
