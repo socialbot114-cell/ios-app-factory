@@ -106,6 +106,22 @@ final class FootballGrowthTests: XCTestCase {
         XCTAssertEqual(cash - career.transferBudget, career.tryoutCost)
     }
 
+    /// Liberar vaga: o jovem escolhido é o de menor teto de potencial, e a dispensa tira ele da base.
+    func testWeakestYouthToReleaseHasTheLowestPotentialCeilingAndLeavesTheRoster() {
+        var career = started()
+        _ = career.holdTryout(region: 1)
+        guard let weakest = career.weakestYouthToRelease() else {
+            XCTFail("A peneira devia ter trazido pelo menos um jovem")
+            return
+        }
+        let ceiling = career.potentialEstimate(for: weakest).upperBound
+        for youth in career.youthRoster {
+            XCTAssertLessThanOrEqual(ceiling, career.potentialEstimate(for: youth).upperBound)
+        }
+        XCTAssertTrue(career.releaseYouth(playerID: weakest.id))
+        XCTAssertFalse(career.youthRoster.contains { $0.id == weakest.id })
+    }
+
     /// Não há limite de peneiras por temporada: o clube faz quantas quiser, enquanto houver caixa e vaga na base.
     func testTryoutsRepeatWithoutASeasonLimitAndNeverOverflowTheYouthRoster() {
         var career = started()

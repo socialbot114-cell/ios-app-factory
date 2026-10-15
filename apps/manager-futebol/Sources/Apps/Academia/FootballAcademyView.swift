@@ -8,6 +8,13 @@ struct FootballAcademyView: View {
     let onAlert: (String) -> Void
     @State private var selected: YouthSelection?
     @State private var tryoutRegion: Int?
+    @State private var reveal: TryoutReveal?
+    @State private var releaseCandidate: FootballPlayer?
+
+    struct TryoutReveal: Identifiable {
+        let id = UUID()
+        let players: [FootballPlayer]
+    }
 
     struct YouthSelection: Identifiable {
         let id: Int
@@ -42,6 +49,18 @@ struct FootballAcademyView: View {
         .sheet(item: $selected) { selection in
             FootballYouthDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
         }
+        .sheet(item: $reveal) { result in
+            FootballTryoutRevealView(career: career, players: result.players)
+        }
+        .confirmationDialog("Dispensar \(releaseCandidate?.name ?? "jovem") para abrir vaga?", isPresented: Binding(get: { releaseCandidate != nil }, set: { if !$0 { releaseCandidate = nil } }), titleVisibility: .visible) {
+            Button("Dispensar", role: .destructive) {
+                if let player = releaseCandidate, career.releaseYouth(playerID: player.id) {
+                    onAlert("\(player.name) saiu da base. A vaga está livre para a próxima peneira.")
+                }
+                releaseCandidate = nil
+            }
+            Button("Cancelar", role: .cancel) { releaseCandidate = nil }
+        }
         .accessibilityIdentifier("academy-app")
     }
 
@@ -68,8 +87,11 @@ struct FootballAcademyView: View {
             }
             .pickerStyle(.menu)
             Button {
-                if career.holdTryout(region: tryoutRegion).isEmpty {
+                let found = career.holdTryout(region: tryoutRegion)
+                if found.isEmpty {
                     onAlert(career.canHoldTryout() ?? "Não foi possível realizar a peneira.")
+                } else {
+                    reveal = TryoutReveal(players: found)
                 }
             } label: {
                 Label("Fazer peneira · \(FootballFormat.money(career.tryoutCost))", systemImage: "figure.soccer").frame(maxWidth: .infinity)
@@ -78,6 +100,14 @@ struct FootballAcademyView: View {
             .accessibilityIdentifier("academy-tryout")
             Text("Quantas peneiras quiser, enquanto houver caixa e vaga na base. Cada uma traz de 1 a 3 jovens da região escolhida.")
             Text("Vagas na base: \(career.youthRoster.count) de \(FootballCareer.youthRosterLimit).").font(.caption).foregroundStyle(.secondary)
+            if career.youthRoster.count + FootballCareer.tryoutYouthRange.lowerBound > FootballCareer.youthRosterLimit,
+               let weakest = career.weakestYouthToRelease(), career.canRelease(playerID: weakest.id) {
+                Button { releaseCandidate = weakest } label: {
+                    Label("Liberar vaga: dispensar \(weakest.name)", systemImage: "person.badge.minus").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("academy-free-slot")
+            }
         }
     }
 
@@ -188,6 +218,54 @@ struct FootballAcademyView: View {
             }
         }
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Chegada da peneira
+
+/// Os jovens que a peneira trouxe, com o potencial estimado do mesmo jeito que a lista da Academia mostra.
+struct FootballTryoutRevealView: View {
+    let career: FootballCareer
+    let players: [FootballPlayer]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(players) { player in
+                        let estimate = career.potentialEstimate(for: player)
+                        HStack(spacing: 12) {
+                            RatingBadge(value: player.overall)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(player.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                                Text("\(player.age) anos · \(player.position.title)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 4)
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("Potencial").font(.caption2).foregroundStyle(.secondary)
+                                Text("\(estimate.lowerBound)–\(estimate.upperBound)").font(.subheadline.weight(.bold).monospacedDigit())
+                            }
+                        }
+                    }
+                } header: {
+                    Text(players.count == 1 ? "Um jovem chegou à base" : "\(players.count) jovens chegaram à base")
+                } footer: {
+                    Text("O potencial é uma estimativa. Acompanhe a evolução na lista da Academia.")
+                }
+            }
+            .navigationTitle("Peneira")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fechar") { dismiss() }
+                        .accessibilityIdentifier("tryout-reveal-close")
+                }
+            }
+        }
+        .tint(FootballTheme.accent)
+        .accessibilityIdentifier("tryout-reveal")
     }
 }
 

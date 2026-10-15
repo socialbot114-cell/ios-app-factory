@@ -159,7 +159,8 @@ struct PhoneLockScreen: View {
 
     private func playTransition() async {
         guard let transition else { return }
-        if reduceMotion || FactoryCapture.isUITesting || FactoryCapture.screen != nil {
+        // No Clássico, a passagem de dia não anima o calendário: o celular já mostra o amanhecer (PIL-03).
+        if reduceMotion || career.world.phone.preferences.rhythmMode == .classic || FactoryCapture.isUITesting || FactoryCapture.screen != nil {
             shownDay = transition.toDay
             clockText = FootballCalendarClock.clock(transition.toMoment)
             elapsedDays = transition.days

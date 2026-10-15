@@ -191,6 +191,11 @@ extension FootballCareer {
         return low...high
     }
 
+    /// Jovem a liberar quando a base está cheia: o de menor teto de potencial estimado, o mesmo número que a Academia mostra.
+    func weakestYouthToRelease() -> FootballPlayer? {
+        youthRoster.min { potentialEstimate(for: $0).upperBound < potentialEstimate(for: $1).upperBound }
+    }
+
     // MARK: Crescimento
 
     func isValidMentor(_ id: Int) -> Bool {

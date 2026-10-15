@@ -27,6 +27,7 @@ struct FootballMarketView: View {
     @State private var missionRegion: Int?
     @State private var missionAge = 23
     @State private var missionValue = 5_000_000
+    @State private var tryoutReveal: FootballAcademyView.TryoutReveal?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -72,6 +73,9 @@ struct FootballMarketView: View {
         .navigationTitle("Mercado")
         .sheet(item: $selected) { selection in
             FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
+        }
+        .sheet(item: $tryoutReveal) { result in
+            FootballTryoutRevealView(career: career, players: result.players)
         }
         .confirmationDialog(
             "Contratar \(pendingSigning?.name ?? "atleta")?",
@@ -297,7 +301,12 @@ struct FootballMarketView: View {
                 .pickerStyle(.segmented)
                 Text(career.world.growth.youthProgram.summary).font(.caption).foregroundStyle(.secondary)
                 Button {
-                    if career.holdTryout(region: missionRegion).isEmpty { onAlert(career.canHoldTryout() ?? "Não foi possível realizar a peneira.") }
+                    let found = career.holdTryout(region: missionRegion)
+                    if found.isEmpty {
+                        onAlert(career.canHoldTryout() ?? "Não foi possível realizar a peneira.")
+                    } else {
+                        tryoutReveal = FootballAcademyView.TryoutReveal(players: found)
+                    }
                 } label: {
                     Label("Fazer peneira · \(FootballFormat.money(career.tryoutCost))", systemImage: "figure.soccer").frame(maxWidth: .infinity)
                 }
