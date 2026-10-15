@@ -76,7 +76,7 @@ extension FootballCareer {
 
     /// Receitas de todo dia de jogo: TV, sócios e patrocínio (a bilheteria é lançada com a partida em casa).
     mutating func collectMatchDayIncome() {
-        guard let selectedClubID, let club = selectedClub else { return }
+        guard selectedClub != nil else { return }
         book(.tv, tvIncomePerMatchDay, "Cotas de TV")
         book(.members, Int(Double(members) * 1.4 / 100) * 100, "Mensalidades dos sócios-torcedores")
         if let deal = sponsorDeal {

@@ -149,7 +149,7 @@ struct PhoneNotificationCenter: View {
                     Section {
                         ForEach(AmbientFeed.batch(context: career.ambientContext)) { notice in
                             HStack(spacing: 12) {
-                                Image(systemName: notice.symbol).frame(width: 30).foregroundStyle(notice.tint)
+                                Image(systemName: notice.symbol).frame(width: 30).foregroundStyle(notice.tint.color)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(notice.title).font(.subheadline.weight(.semibold))
                                     Text(notice.hidden ? "Conteúdo oculto" : notice.body)

@@ -2,11 +2,23 @@ import Foundation
 import XCTest
 @testable import ManagerFutebol
 
+/// Nenhuma semente testada serve: o teste falha, em vez de pular.
+private struct NoSeedFound: Error {}
+
 final class FootballStaffTasksTests: XCTestCase {
     private func career(club: Int = 3, seed: Int = 7) -> FootballCareer {
         var career = FootballCareer(seed: seed)
         XCTAssertTrue(career.chooseClub(club))
         return career
+    }
+
+    /// Carreira de um clube que tem o membro da comissão pedido. Procura a semente em vez de pular o teste.
+    private func career(withStaff role: StaffRole) throws -> FootballCareer {
+        for seed in 1...60 {
+            let candidate = career(seed: seed)
+            if candidate.staffMember(role) != nil { return candidate }
+        }
+        throw NoSeedFound()
     }
 
     private func playDays(_ career: inout FootballCareer, _ count: Int) {
@@ -37,8 +49,7 @@ final class FootballStaffTasksTests: XCTestCase {
     }
 
     func testRecoveryPlanRestoresConditionAndLowersInjuryRisk() throws {
-        var career = career()
-        guard career.staffMember(.fitnessCoach) != nil else { throw XCTSkip("Clube sem preparador") }
+        var career = try career(withStaff: .fitnessCoach)
         let risk = career.injuryRiskFactor
         XCTAssertTrue(career.assignStaffTask(.recoveryPlan))
         XCTAssertEqual(career.injuryRiskFactor, risk * 0.9, accuracy: 0.0001)
@@ -48,8 +59,7 @@ final class FootballStaffTasksTests: XCTestCase {
     }
 
     func testMedicalReviewShortensInjuries() throws {
-        var career = career()
-        guard career.staffMember(.doctor) != nil else { throw XCTSkip("Clube sem médico") }
+        var career = try career(withStaff: .doctor)
         let index = try XCTUnwrap(career.players.firstIndex { $0.teamID == career.selectedClubID })
         career.players[index].injuryRounds = 4
         XCTAssertTrue(career.assignStaffTask(.medicalReview))

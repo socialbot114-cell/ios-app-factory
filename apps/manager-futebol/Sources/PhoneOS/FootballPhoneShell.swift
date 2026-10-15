@@ -65,7 +65,7 @@ struct PhoneSignal: View {
     let fanMood: Int?
 
     var body: some View {
-        let lit = Self.litBars(fanMood)
+        let lit = FootballSignal.litBars(fanMood)
         HStack(spacing: 3) {
             ForEach(0..<4, id: \.self) { index in
                 Capsule()
@@ -74,12 +74,6 @@ struct PhoneSignal: View {
             }
         }
         .accessibilityHidden(true)
-    }
-
-    /// Degraus em 15, 40, 65 e 90: quantas barras acendem para um humor.
-    static func litBars(_ fanMood: Int?) -> Int {
-        guard let fanMood else { return 0 }
-        return (0..<4).filter { fanMood >= 25 * ($0 + 1) - 10 }.count
     }
 }
 

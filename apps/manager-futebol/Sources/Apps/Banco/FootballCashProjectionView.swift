@@ -24,6 +24,8 @@ struct FootballCashProjectionPanel: View {
                     Label("Simular contratação ou obra", systemImage: "slider.horizontal.3")
                         .font(.subheadline.weight(.semibold))
                 }
+                // Sem `.contain`, o identificador do simulador sobrescreve os de zerar e de referência (budget-reset, budget-roster-preset).
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("budget-simulator")
                 Text("Simulação apenas: não contrata, compra nem altera as finanças do clube.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -66,6 +68,8 @@ struct FootballCashProjectionPanel: View {
                     .accessibilityIdentifier("budget-assumptions")
             }
         }
+        // Sem `.contain`, o identificador do painel sobrescreve os de resumo e simulador (budget-summary, budget-simulator).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("cash-projection")
         .onAppear { if FactoryCapture.screen == "budget-planning" { showSimulator = true } }
     }
@@ -131,6 +135,7 @@ struct FootballCashProjectionPanel: View {
             FactoryMetric(label: "Esperado", value: FootballFormat.money(projection.endingExpected),
                           symbol: "chart.line.uptrend.xyaxis", tint: projection.endingExpected >= 0 ? .indigo : .red)
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("budget-summary")
     }
 

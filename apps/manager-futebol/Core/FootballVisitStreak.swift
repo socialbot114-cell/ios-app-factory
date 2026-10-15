@@ -1,6 +1,7 @@
 import Foundation
 
 /// Sequência de dias em que o app foi aberto: vira um selo pequeno na sala de espera.
+/// O registro no UserDefaults fica em Sources (ver `FootballVisitStreak.register`), para esta parte rodar no Linux.
 enum FootballVisitStreak {
     static let streakKey = "football.visit.streak.v1"
     static let dayKey = "football.visit.lastDay.v1"
@@ -16,18 +17,5 @@ enum FootballVisitStreak {
         if lastDay == today { return max(1, streak) }
         if lastDay == yesterday { return max(1, streak) + 1 }
         return 1
-    }
-
-    /// Registra a abertura de hoje e devolve a sequência atual. Capturas e UI tests não registram nada.
-    @discardableResult
-    static func register(now: Date = Date(), defaults: UserDefaults = .standard, calendar: Calendar = .current) -> Int {
-        if FactoryCapture.isUITesting || FactoryCapture.screen != nil { return 1 }
-        let today = key(for: now, calendar: calendar)
-        let before = calendar.date(byAdding: .day, value: -1, to: now) ?? now
-        let streak = next(streak: defaults.integer(forKey: streakKey), lastDay: defaults.string(forKey: dayKey),
-                          today: today, yesterday: key(for: before, calendar: calendar))
-        defaults.set(streak, forKey: streakKey)
-        defaults.set(today, forKey: dayKey)
-        return streak
     }
 }

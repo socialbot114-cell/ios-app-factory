@@ -7,7 +7,7 @@ final class FootballFlowUITests: XCTestCase {
 
     func testFirstCareerGuideLeadsFromHomeToTheLiveMatch() {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting"]
+        app.launchArguments = ["--uitesting", "--first-run-guide"]
         app.launch()
 
         tapWhenReady(app.buttons["choose-offer-0"], in: app)
@@ -177,7 +177,6 @@ final class FootballFlowUITests: XCTestCase {
 
     /// LIG-01..03: usa entidades e estados da Liga, sem depender do header do FutOS.
     func testLeagueRowsOpenClubProfileMatchesAndRoundsNavigate() throws {
-        throw XCTSkip("Teste novo ainda não verificado no CI (perfil do clube não abriu no run 1.1/7); aguardando diagnóstico com a hierarquia.")
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]
         app.launch()
@@ -189,7 +188,7 @@ final class FootballFlowUITests: XCTestCase {
         leagueTap(app.buttons["play-match"], in: app)
         XCTAssertTrue(leagueElement("live-scoreboard", in: app).waitForExistence(timeout: 10))
         leagueTap(app.buttons["live-skip"], in: app)
-        XCTAssertTrue(app.buttons["live-finish"].waitForExistence(timeout: 30))
+        waitForLiveFinish(in: app)
         leagueTap(app.buttons["live-finish"], in: app)
         if app.buttons["press-skip"].waitForExistence(timeout: 5) { app.buttons["press-skip"].tap() }
         XCTAssertTrue(leagueElement("football-training-report", in: app).waitForExistence(timeout: 10))
@@ -198,11 +197,19 @@ final class FootballFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["league-section-state"].waitForExistence(timeout: 8))
         let section = app.staticTexts["league-section-state"].label
 
-        let club = leagueFirst("league-club-", in: app)
+        // Linhas de clube têm o id "league-club-<número>". O prefixo sozinho também casa com "league-club-back" e outros.
+        let club = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier MATCHES %@", "league-club-[0-9]+")).firstMatch
         leagueReveal(club, in: app)
         let clubID = String(club.identifier.dropFirst("league-club-".count))
+        // Toque logo depois de rolar pode ser consumido pela desaceleração da lista: espera a ficha e repete o toque se ela não abrir.
+        let profileTitle = leagueElement("league-club-profile-\(clubID)", in: app)
         leagueTap(club, in: app)
-        XCTAssertTrue(app.staticTexts["league-club-profile-\(clubID)"].waitForExistence(timeout: 8))
+        for _ in 0..<2 where !profileTitle.waitForExistence(timeout: 3) {
+            leagueTap(club, in: app)
+        }
+        XCTAssertTrue(profileTitle.waitForExistence(timeout: 3),
+                      "Ficha do clube \(clubID) não abriu\nHierarquia:\n\(app.debugDescription)")
         XCTAssertTrue(app.staticTexts["Forma na liga"].exists)
         let player = leagueFirst("league-club-player-", in: app)
         leagueReveal(player, in: app)

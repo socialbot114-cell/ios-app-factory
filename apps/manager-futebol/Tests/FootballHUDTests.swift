@@ -66,10 +66,10 @@ final class FootballHUDTests: XCTestCase {
     }
 
     func testSignalBarsFollowFanMoodSteps() {
-        XCTAssertEqual(PhoneSignal.litBars(nil), 0)
-        XCTAssertEqual(PhoneSignal.litBars(0), 0)
-        XCTAssertEqual(PhoneSignal.litBars(15), 1)
-        XCTAssertEqual(PhoneSignal.litBars(60), 2)
-        XCTAssertEqual(PhoneSignal.litBars(100), 4)
+        XCTAssertEqual(FootballSignal.litBars(nil), 0)
+        XCTAssertEqual(FootballSignal.litBars(0), 0)
+        XCTAssertEqual(FootballSignal.litBars(15), 1)
+        XCTAssertEqual(FootballSignal.litBars(60), 2)
+        XCTAssertEqual(FootballSignal.litBars(100), 4)
     }
 }

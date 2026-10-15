@@ -96,16 +96,35 @@ final class FootballGrowthTests: XCTestCase {
         XCTAssertTrue((-0.4...0.6).contains(happy) && (-0.4...0.6).contains(angry))
     }
 
-    func testTryoutAddsTwoYouthsOncePerSeason() {
+    func testTryoutAddsTwoYouthsOncePerWindowAcrossTheSeason() {
         var career = started()
         let before = career.youthRoster.count
         let cash = career.transferBudget
         let found = career.holdTryout(region: 1)
-        XCTAssertEqual(found.count, 2)
-        XCTAssertEqual(career.youthRoster.count, before + 2)
+        XCTAssertTrue(FootballCareer.tryoutYouthRange.contains(found.count))
+        XCTAssertEqual(career.youthRoster.count, before + found.count)
         XCTAssertEqual(cash - career.transferBudget, career.tryoutCost)
+    }
+
+    /// Não há limite de peneiras por temporada: o clube faz quantas quiser, enquanto houver caixa e vaga na base.
+    func testTryoutsRepeatWithoutASeasonLimitAndNeverOverflowTheYouthRoster() {
+        var career = started()
+        var totalYouths = 0
+        for _ in 0..<8 {
+            let found = career.holdTryout(region: nil)
+            totalYouths += found.count
+        }
+        XCTAssertGreaterThan(totalYouths, FootballCareer.tryoutYouthRange.lowerBound)
+        XCTAssertLessThanOrEqual(career.youthRoster.count, FootballCareer.youthRosterLimit)
+    }
+
+    func testTryoutCostRisesWithTheAcademyAndNeedsCash() {
+        var career = started()
+        let base = career.tryoutCost
+        career.youthAcademyLevel += 1
+        XCTAssertEqual(career.tryoutCost, base + 8_000)
+        career.transferBudget = 0
         XCTAssertNotNil(career.canHoldTryout())
-        XCTAssertTrue(career.holdTryout(region: nil).isEmpty)
     }
 
     func testYouthCategoriesPartitionTheAcademy() {

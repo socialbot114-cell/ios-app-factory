@@ -87,7 +87,7 @@ struct FootballProfileRoom: View {
 
     private var ambientLines: [Line] {
         AmbientFeed.batch().map {
-            Line(id: "ambient-\($0.id)", symbol: $0.symbol, tint: $0.tint, app: $0.app, title: $0.title,
+            Line(id: "ambient-\($0.id)", symbol: $0.symbol, tint: $0.tint.color, app: $0.app, title: $0.title,
                  detail: $0.hidden ? "Conteúdo oculto" : $0.body)
         }
     }

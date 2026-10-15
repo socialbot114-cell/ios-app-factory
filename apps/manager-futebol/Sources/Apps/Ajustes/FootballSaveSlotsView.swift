@@ -56,6 +56,8 @@ struct FootballSaveSlotsView: View {
                 if slot < FootballSaveStore.slotCount - 1 { Divider() }
             }
         }
+        // Sem `.contain`, o identificador do painel sobrescreve os dos botões de cada espaço (settings-new-slot-N).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("settings-save-slots")
         .confirmationDialog(pending?.title ?? "Carreiras", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }), titleVisibility: .visible) {
             if let pending {

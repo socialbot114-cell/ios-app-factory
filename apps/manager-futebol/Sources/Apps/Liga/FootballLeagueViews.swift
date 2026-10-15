@@ -7,6 +7,8 @@ struct FootballTableView: View {
     @State private var section: LeagueSection
     @State private var serieARound: Int?
     @State private var serieBRound: Int?
+    @State private var clubToShow: Int?
+    @State private var showingClub = false
     /// Avisa a aba escolhida para ela ser lembrada ao sair e voltar ao app (OS-05).
     var onSectionChange: ((LeagueSection) -> Void)? = nil
 
@@ -54,6 +56,11 @@ struct FootballTableView: View {
         .factoryPage()
         .navigationTitle("Liga")
         .onChange(of: section) { _, value in onSectionChange?(value) }
+        .navigationDestination(isPresented: $showingClub) {
+            if let id = clubToShow, let team = FootballSeason.team(id) {
+                FootballLeagueClubProfile(career: career, team: team)
+            }
+        }
     }
 
     private var subtitle: String {
@@ -83,10 +90,14 @@ struct FootballTableView: View {
                 .foregroundStyle(.secondary)
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     Divider()
-                    NavigationLink {
-                        FootballLeagueClubProfile(career: career, team: row.team)
+                    // Botão com destino explícito. `contentShape` faz a linha inteira responder ao toque, não só o texto:
+                    // o espaço entre o nome e os números não tinha área de toque, e a linha não abria a ficha.
+                    Button {
+                        clubToShow = row.team.id
+                        showingClub = true
                     } label: {
                         standingRow(index: index, row: row, division: division)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("league-club-\(row.team.id)")
@@ -269,6 +280,7 @@ struct FootballTableView: View {
                     Spacer()
                     Text("\(player.goals)").font(.title3.weight(.heavy).monospacedDigit())
                 }
+                .contentShape(Rectangle())
                 .accessibilityElement(children: .combine)
                 }
                 .buttonStyle(.plain)
@@ -307,6 +319,7 @@ struct FootballTableView: View {
                 .padding(.vertical, 4)
                 .background(fixture.involves(career.selectedClubID ?? -1) ? FootballTheme.accent.opacity(0.08) : .clear,
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .contentShape(Rectangle())
                 .accessibilityElement(children: .combine)
                 }
                 .buttonStyle(.plain)
@@ -466,6 +479,7 @@ private struct FootballLeagueClubProfile: View {
                             Spacer()
                             Text("GER \(player.overall)").font(.caption.bold())
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("league-club-player-\(player.id)")
