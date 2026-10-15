@@ -35,6 +35,16 @@ struct FootballPressView: View {
                                 }
                             }
                         }
+                        let pending = press.questions.filter { $0.answered == nil }
+                        if pending.count >= 2 {
+                            Button {
+                                for question in pending { career.answerPress(questionID: question.id, tone: .calm) }
+                            } label: {
+                                Label("Responder todas com o tom Calmo", systemImage: "text.bubble.fill").frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("press-answer-all")
+                        }
                         Button("Pular coletiva") { career.skipPress(); dismiss() }
                             .buttonStyle(.bordered)
                             .accessibilityIdentifier("press-skip")

@@ -303,7 +303,7 @@ struct FootballMarketView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("hold-tryout")
-                Text("Uma peneira por temporada traz 2 jovens da região escolhida na aba Olheiros.").font(.caption).foregroundStyle(.secondary)
+                Text("Quantas peneiras quiser, enquanto houver caixa e vaga na base. Cada uma traz de 1 a 3 jovens da região escolhida, na aba Olheiros.").font(.caption).foregroundStyle(.secondary)
             }
             ForEach(YouthCategory.allCases) { category in
                 FactoryPanel(title: "\(category.title) · \(career.youth(in: category).count)", systemImage: category == .under17 ? "person.crop.circle" : "person.crop.circle.fill") {

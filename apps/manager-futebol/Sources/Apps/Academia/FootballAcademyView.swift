@@ -76,7 +76,8 @@ struct FootballAcademyView: View {
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("academy-tryout")
-            Text("Uma peneira em cada fase da temporada (começo, meio e fim) traz 2 jovens da região escolhida.").font(.caption).foregroundStyle(.secondary)
+            Text("Quantas peneiras quiser, enquanto houver caixa e vaga na base. Cada uma traz de 1 a 3 jovens da região escolhida.")
+            Text("Vagas na base: \(career.youthRoster.count) de \(FootballCareer.youthRosterLimit).").font(.caption).foregroundStyle(.secondary)
         }
     }
 
