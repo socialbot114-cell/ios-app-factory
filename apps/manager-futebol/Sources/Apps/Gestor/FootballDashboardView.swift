@@ -12,6 +12,8 @@ struct FootballDashboardView: View {
     var roundBand: [String] = []
     /// Abre o meio da semana da rodada: o celular trava e destrava com ela.
     var onOpenMidweek: () -> Void = {}
+    /// Avisa a casa quando uma simulação rápida jogou com o clube (PIL-05 v3): a faixa "Última rodada" aparece sem a partida ao vivo.
+    var onRoundPlayed: (FootballRoundProgress) -> Void = { _ in }
     @State private var confirmsQuickSimulation = false
     @State private var showsPrepFlow = false
     @State private var playAfterPrepDismiss = false
@@ -214,15 +216,24 @@ struct FootballDashboardView: View {
 
     private func runQuickSimulation() {
         let previousDay = career.worldDay
+        let start = career.captureRoundSnapshot()
+        let fixtureBefore = career.latestUserFixture?.matchDay
         if !career.simulateNextMatchDay() {
             onAlert("Não foi possível avançar. Confira a escalação e tente novamente.")
             return
         }
+        reportRoundIfClubPlayed(from: start, fixtureBefore: fixtureBefore)
         let days = career.worldDay - previousDay
         let next = career.agenda.first.map { "\($0.title) · \($0.deadlineText)" }
         // O resumo também vai para o histórico de ações (FLX-02 v1) e aparece numa faixa que se desfaz sozinha (FLX-02 v2).
         let summary = career.logQuickSimulation(days: days, nextPriority: next)
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) { quickSummary = summary }
+    }
+
+    /// Faixa "Última rodada" depois de uma simulação, só quando o clube jogou nela (PIL-05 v3).
+    private func reportRoundIfClubPlayed(from start: FootballRoundSnapshot?, fixtureBefore: Int?) {
+        guard let start = start, let end = career.captureRoundSnapshot(), career.latestUserFixture?.matchDay != fixtureBefore else { return }
+        onRoundPlayed(FootballRoundProgress(before: start, after: end))
     }
 
     /// Faixa com o resumo da simulação rápida (FLX-02 v2). Some sozinha em uns 4 segundos; tocar fecha antes.
@@ -493,7 +504,10 @@ struct FootballDashboardView: View {
             }
             .font(.subheadline.weight(.semibold))
             Button {
+                let start = career.captureRoundSnapshot()
+                let fixtureBefore = career.latestUserFixture?.matchDay
                 let result = career.simulateUntilAgendaDecision()
+                reportRoundIfClubPlayed(from: start, fixtureBefore: fixtureBefore)
                 // Parar numa decisão pede ação do treinador, então continua em alerta (FLX-02). Sem dias avançados, mostra só o motivo.
                 onAlert(result.days == 0 ? result.reason : "\(result.days) dia(s) simulado(s). \(result.reason)")
             } label: {

@@ -456,7 +456,8 @@ struct FootballHome: View {
                 onShowPress: { showPress = true },
                 onOpenAgenda: openAgendaItem,
                 roundBand: roundBandDay == career.matchDayIndex ? roundBand : [],
-                onOpenMidweek: openMidweek
+                onOpenMidweek: openMidweek,
+                onRoundPlayed: showRoundBand
             )
         case .squad:
             FootballSquadView(career: $career, onAlert: showAlert)
@@ -657,6 +658,12 @@ struct FootballHome: View {
         roundBand = FootballRoundProgress(before: start, after: end).lines
         roundBandDay = career.matchDayIndex
         roundStart = nil
+    }
+
+    /// Faixa de uma simulação rápida que jogou com o clube (PIL-05 v3), com a mesma regra da faixa da partida ao vivo.
+    private func showRoundBand(_ progress: FootballRoundProgress) {
+        roundBand = progress.lines
+        roundBandDay = career.matchDayIndex
     }
 
     private var continueSubtitle: String? {
