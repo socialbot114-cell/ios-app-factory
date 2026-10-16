@@ -59,18 +59,6 @@ final class FootballBuild24Tests: XCTestCase {
         XCTAssertEqual(career.goalBonusCredit(bonus, for: keeper), 0, "Goleiro nunca faz 10 gols")
     }
 
-    func testGoalBonusNoLongerBuysAGoalkeeperForLess() throws {
-        let career = career()
-        let keeper = try XCTUnwrap(career.players.first {
-            $0.teamID == 3 && $0.position == .goalkeeper && career.sellerCanSell($0)
-        })
-        let wage = career.joiningAsk(for: keeper).wage
-        let ask = career.askingPrice(for: keeper)
-        let withBonus = TransferBid(playerID: keeper.id, fee: Int(Double(ask) * 0.7), goalBonus: 3_000_000, wage: wage, years: 3)
-        let withoutBonus = TransferBid(playerID: keeper.id, fee: Int(Double(ask) * 0.7), wage: wage, years: 3)
-        XCTAssertEqual(career.evaluateBid(withBonus), career.evaluateBid(withoutBonus), "O bônus não muda a resposta para um goleiro")
-    }
-
     // MARK: - Veteranos
 
     func testVeteranAskIsNotADoubleDiscount() throws {

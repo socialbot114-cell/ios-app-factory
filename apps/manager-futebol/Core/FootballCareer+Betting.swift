@@ -33,6 +33,10 @@ extension FootballCareer {
         return result
     }
 
+    /// Ajuste entre os gols esperados do motor e os gols que o Poisson das casas precisa para acertar o "mais de 2,5".
+    /// Medido em 14 campeonatos (2.520 jogos) no build 24: com 1,12 o modelo esperava 2,38 gols por jogo e saíam 2,57.
+    static let bookmakerGoalFactor = 1.21
+
     func probabilities(for fixture: LeagueFixture) -> MatchProbabilities {
         func side(_ teamID: Int, _ rival: Int, home: Bool) -> MatchSide {
             let lineupPlayers = lineup(for: teamID).compactMap { player($0) }
@@ -42,8 +46,8 @@ extension FootballCareer {
         let homeSide = side(fixture.home, fixture.away, home: true)
         let awaySide = side(fixture.away, fixture.home, home: false)
         let share = min(0.7, max(0.3, 0.5 + (homeSide.control - awaySide.control) * 0.015))
-        let homeLambda = FootballMatchEngine.expectedGoals(attack: homeSide.attack, defense: awaySide.defense, possessionShare: share) * 2 * MatchSimulation.goalCalibration * 1.12
-        let awayLambda = FootballMatchEngine.expectedGoals(attack: awaySide.attack, defense: homeSide.defense, possessionShare: 1 - share) * 2 * MatchSimulation.goalCalibration * 1.12
+        let homeLambda = FootballMatchEngine.expectedGoals(attack: homeSide.attack, defense: awaySide.defense, possessionShare: share) * 2 * MatchSimulation.goalCalibration * Self.bookmakerGoalFactor
+        let awayLambda = FootballMatchEngine.expectedGoals(attack: awaySide.attack, defense: homeSide.defense, possessionShare: 1 - share) * 2 * MatchSimulation.goalCalibration * Self.bookmakerGoalFactor
         let size = 9
         var grid = Array(repeating: Array(repeating: 0.0, count: size), count: size)
         var total = 0.0
