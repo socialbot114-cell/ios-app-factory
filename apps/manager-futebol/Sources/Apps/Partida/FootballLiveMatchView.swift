@@ -242,7 +242,7 @@ struct FootballLiveMatchView: View {
                     .buttonStyle(.bordered)
                     .disabled(staticPreview)
                     Button { showSubstitutions = true } label: {
-                        Label("Trocar (\(live.substitutionsUsed)/\(LiveMatchState.maxSubstitutions))", systemImage: "arrow.left.arrow.right")
+                        Label("Trocar \(live.substitutionsUsed)/\(LiveMatchState.maxSubstitutions)", systemImage: "arrow.left.arrow.right")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
