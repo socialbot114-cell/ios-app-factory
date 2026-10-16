@@ -6,12 +6,17 @@ extension FootballCareer {
     /// Joga o próximo dia de jogo inteiro: com a partida do usuário (simulação rápida) ou sem ela.
     @discardableResult
     mutating func simulateNextMatchDay() -> Bool {
+        let advanced: Bool
         if canPlay {
             guard beginMatchDay() else { return false }
-            return finishMatchDay()
+            advanced = finishMatchDay()
+        } else if canAdvanceWithoutPlaying {
+            advanced = advanceMatchDay()
+        } else {
+            return false
         }
-        if canAdvanceWithoutPlaying { return advanceMatchDay() }
-        return false
+        closeStaleFirstCareerGuide()
+        return advanced
     }
 
     @discardableResult

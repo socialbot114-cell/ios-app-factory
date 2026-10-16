@@ -5,9 +5,10 @@ import SwiftUI
 struct FootballPlayerDetailView: View {
     @Binding var career: FootballCareer
     let playerID: Int
-    let onAlert: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var confirmSale = false
+    /// Recusas desta ficha. Ficam aqui, e não na tela de trás, porque o alerta de trás fica escondido com a folha aberta.
+    @State private var message: String?
     @State private var showSubstitution = false
     @State private var showRenewal = false
     @State private var showBid = false
@@ -44,8 +45,13 @@ struct FootballPlayerDetailView: View {
             FootballSubstitutionSheet(career: $career, outgoingID: career.startingXI.contains(playerID) ? playerID : nil)
         }
         .sheet(isPresented: $showRenewal) { FootballRenewalSheet(career: $career, playerID: playerID) }
-        .sheet(isPresented: $showBid) { FootballBidSheet(career: $career, playerID: playerID, onAlert: onAlert) }
-        .sheet(isPresented: $showLoanOut) { FootballLoanOutSheet(career: $career, playerID: playerID, onAlert: onAlert) }
+        .sheet(isPresented: $showBid) { FootballBidSheet(career: $career, playerID: playerID, onAlert: notify) }
+        .sheet(isPresented: $showLoanOut) { FootballLoanOutSheet(career: $career, playerID: playerID, onAlert: notify) }
+        .sheetAlert($message)
+    }
+
+    private func notify(_ text: String) {
+        message = text
     }
 
     // MARK: Cabeçalho
@@ -196,7 +202,7 @@ struct FootballPlayerDetailView: View {
                 Spacer()
                 Picker("Foco", selection: Binding(
                     get: { player.individualFocus },
-                    set: { value in if !career.setIndividualFocus(playerID: player.id, kind: value) { onAlert("Limite de programas individuais atingido.") } }
+                    set: { value in if !career.setIndividualFocus(playerID: player.id, kind: value) { notify("Limite de programas individuais atingido.") } }
                 )) {
                     Text("Nenhum").tag(AttributeKind?.none)
                     ForEach(AttributeKind.allCases.filter { $0.group != .hidden && ($0.group != .goalkeeping || player.position == .goalkeeper) }) {
@@ -212,7 +218,7 @@ struct FootballPlayerDetailView: View {
                 Menu {
                     ForEach(FootballPosition.allCases.filter { $0 != player.position && !player.learnedPositions.contains($0) }, id: \.self) { position in
                         Button(position.title) {
-                            if !career.startLearning(playerID: player.id, position: position) { onAlert("Limite de programas individuais atingido.") }
+                            if !career.startLearning(playerID: player.id, position: position) { notify("Limite de programas individuais atingido.") }
                         }
                     }
                 } label: {
@@ -268,7 +274,7 @@ struct FootballPlayerDetailView: View {
         if player.onLoan {
             if career.canBuyOutLoan(playerID: player.id), let option = player.purchaseOption {
                 Button {
-                    if career.buyOutLoan(playerID: player.id) { onAlert("\(player.name) agora é do clube.") }
+                    if career.buyOutLoan(playerID: player.id) { notify("\(player.name) agora é do clube.") }
                 } label: {
                     Label("Comprar por \(FootballFormat.money(option))", systemImage: "cart.fill").frame(maxWidth: .infinity)
                 }
@@ -291,8 +297,8 @@ struct FootballPlayerDetailView: View {
             .buttonStyle(.bordered)
             .disabled(!career.isTransferWindowOpen || !career.canRelease(playerID: player.id))
             Button {
-                if !career.promiseStarts(playerID: player.id) { onAlert("Não é possível prometer minutos a este atleta agora.") }
-                else { onAlert("Promessa feita: ele jogará de início nos próximos jogos.") }
+                if !career.promiseStarts(playerID: player.id) { notify("Não é possível prometer minutos a este atleta agora.") }
+                else { notify("Promessa feita: ele jogará de início nos próximos jogos.") }
             } label: {
                 Label("Prometer 3 jogos como titular", systemImage: "hand.thumbsup.fill").frame(maxWidth: .infinity)
             }
@@ -308,7 +314,7 @@ struct FootballPlayerDetailView: View {
             .font(.caption).foregroundStyle(.secondary)
             .confirmationDialog("Vender \(player.name)?", isPresented: $confirmSale, titleVisibility: .visible) {
                 Button("Vender por \(FootballFormat.money(price))", role: .destructive) {
-                    if career.sellPlayer(playerID: player.id) { dismiss() } else { onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
+                    if career.sellPlayer(playerID: player.id) { dismiss() } else { notify("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
                 }
                 Button("Cancelar", role: .cancel) { }
             } message: {
@@ -528,6 +534,8 @@ struct FootballLoanOutSheet: View {
     let playerID: Int
     let onAlert: (String) -> Void
     @Environment(\.dismiss) private var dismiss
+    /// Falha de empréstimo fica nesta folha: ela continua aberta para o treinador tentar outro clube.
+    @State private var message: String?
 
     var body: some View {
         NavigationStack {
@@ -540,7 +548,7 @@ struct FootballLoanOutSheet: View {
                                     onAlert("\(player.name) foi emprestado ao \(team.name).")
                                     dismiss()
                                 } else {
-                                    onAlert("Não foi possível emprestar agora.")
+                                    message = "Não foi possível emprestar agora."
                                 }
                             } label: {
                                 HStack { ClubCrest(team: team, size: 24); Text(team.name); Spacer() }
@@ -555,5 +563,6 @@ struct FootballLoanOutSheet: View {
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
         }
         .tint(FootballTheme.accent)
+        .sheetAlert($message)
     }
 }

@@ -72,7 +72,7 @@ struct FootballMarketView: View {
         .onChange(of: clubFilter) { _, _ in clubList.resetPage() }
         .navigationTitle("Mercado")
         .sheet(item: $selected) { selection in
-            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
+            FootballPlayerDetailView(career: $career, playerID: selection.id)
         }
         .sheet(item: $tryoutReveal) { result in
             FootballTryoutRevealView(career: career, players: result.players)

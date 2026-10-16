@@ -4,7 +4,8 @@ struct FootballCareer: Codable, Equatable {
     static let saveKey = "football.career"
     static let backupKey = "football.career.backup"
     static let schemaVersion = 14
-    static let rosterLimit = 24
+    /// Plantel principal: 30 atletas dão folga para descansar titulares e ainda ter reservas de qualidade.
+    static let rosterLimit = 30
     static let minimumRoster = 12
     static let quickSaleRate = 0.7
 

@@ -148,7 +148,7 @@ struct FootballHome: View {
                            onLeagueSection: { tableSection = $0; openApp = .league })
         }
         .sheet(item: $searchedPlayer) { selection in
-            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: showAlert)
+            FootballPlayerDetailView(career: $career, playerID: selection.id)
         }
         .sheet(item: $notifiedMessage) { selection in
             NavigationStack {
@@ -382,7 +382,8 @@ struct FootballHome: View {
         switch step {
         case .welcome: open(.manager)
         case .manager: open(.squad)
-        case .tactics: closeApp()
+        // Do celular, o cartão de tática abre o Gestor: sem o app Tática aberto, fechar não avançava o roteiro.
+        case .tactics: if openApp == .squad { closeApp() } else { open(.manager) }
         case .match: startLiveMatch()
         case .liveMatch:
             if openApp == .manager { startLiveMatch() } else { open(.manager) }
@@ -569,7 +570,7 @@ struct FootballHome: View {
         case "growth": FootballGrowthView(career: $career, onAlert: showAlert)
         case "contacts": FootballContactsView(career: $career, onAlert: showAlert)
         default:
-            FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0, onAlert: showAlert)
+            FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0)
         }
     }
 

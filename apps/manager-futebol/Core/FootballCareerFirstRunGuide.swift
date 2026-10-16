@@ -84,6 +84,13 @@ extension FootballCareer {
         return true
     }
 
+    /// O calendário andou por simulação rápida antes de o roteiro chegar à partida ao vivo. O cartão do celular
+    /// continuaria apontando para "Entre em campo" de um jogo que já passou, então o roteiro se encerra.
+    mutating func closeStaleFirstCareerGuide() {
+        guard let step = firstCareerGuideStep, [.welcome, .manager, .tactics, .match].contains(step) else { return }
+        firstCareerGuideStep = .finished
+    }
+
     mutating func replayFirstCareerGuide() {
         guard selectedClubID != nil else { return }
         firstCareerGuideStep = .welcome

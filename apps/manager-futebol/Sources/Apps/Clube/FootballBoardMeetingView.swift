@@ -7,6 +7,13 @@ struct FootballBoardMeetingPanel: View {
 
     var body: some View {
         FactoryPanel(title: "Reunião com a diretoria", systemImage: "person.3.sequence.fill") {
+            // Metas e folha lado a lado: a conversa com a diretoria começa pelo que o clube pode pagar.
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Meta da temporada: \(career.boardTarget)º lugar").font(.caption.weight(.semibold))
+                Text("Folha \(FootballFormat.money(career.wageBill)) de teto \(FootballFormat.money(career.wageCap)) · caixa \(FootballFormat.money(career.transferBudget)) · \(career.cashIsHealthy ? "caixa saudável" : "caixa apertado")")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .accessibilityIdentifier("board-goals-summary")
             if let meeting = career.openBoardMeeting {
                 openMeeting(meeting)
             } else {

@@ -42,6 +42,25 @@ final class FootballOnboardingTests: XCTestCase {
         XCTAssertFalse(career.acceptCareerOffer(clubID: offer.clubID, coachName: "Outro"))
     }
 
+    func testSimulatingADayClosesAFirstRunGuideThatNeverReachedTheLiveMatch() throws {
+        var career = FootballCareer(seed: 27)
+        let offer = career.careerOffers()[0]
+        XCTAssertTrue(career.acceptCareerOffer(clubID: offer.clubID, coachName: "Treinador"))
+        XCTAssertEqual(career.firstCareerGuideStep, .welcome)
+        career.simulateNextMatchDay()
+        XCTAssertEqual(career.matchDayIndex, 1)
+        XCTAssertEqual(career.firstCareerGuideStep, .finished, "O cartão não pode ficar preso numa partida que já passou")
+    }
+
+    func testFirstCareerGuideInTheLiveMatchSurvivesAQuickSimulation() throws {
+        var career = FootballCareer(seed: 28)
+        let offer = career.careerOffers()[0]
+        XCTAssertTrue(career.acceptCareerOffer(clubID: offer.clubID, coachName: "Treinador"))
+        career.firstCareerGuideStep = .liveMatch
+        career.closeStaleFirstCareerGuide()
+        XCTAssertEqual(career.firstCareerGuideStep, .liveMatch, "Partida ao vivo em andamento não é encerrada pelo roteiro")
+    }
+
     func testFirstCareerGuidePersistsTransitionsSkipsAndCanReplay() throws {
         var career = FootballCareer(seed: 26)
         XCTAssertNil(career.firstCareerGuideStep, "Carreira sem clube ainda não iniciou o roteiro")
