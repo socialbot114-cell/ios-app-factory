@@ -12,7 +12,7 @@ struct FootballTacticalPlansPanel: View {
                     if let plan = career.tacticalPlan(slot) {
                         Text("\(slot.title) · \(plan.formation.rawValue) · \(plan.style.rawValue)").font(.subheadline.weight(.semibold))
                         let missing = career.unavailableStarters(in: plan).count
-                        Text(missing == 0 ? "Todos os titulares disponíveis." : "\(missing) titular(es) indisponíveis hoje; serão substituídos.")
+                        Text(missing == 0 ? "Todos os titulares disponíveis." : (missing == 1 ? "1 titular indisponível hoje; será substituído." : "\(missing) titulares indisponíveis hoje; serão substituídos."))
                             .font(.caption).foregroundStyle(missing == 0 ? Color.secondary : Color.orange)
                     } else {
                         Text("\(slot.title) ainda não foi salvo").font(.subheadline.weight(.semibold))

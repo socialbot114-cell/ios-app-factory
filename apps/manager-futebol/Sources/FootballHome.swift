@@ -30,6 +30,7 @@ struct FootballHome: View {
     @State private var focusedContactID: Int?
     @State private var focusedEventID: Int?
     @State private var notifiedMessage: SearchedPlayer?
+    @State private var notifiedAlert: String?
     @State private var pendingMessageID: Int?
     @State private var pendingPlayerID: Int?
     @State private var dayTransition: PhoneDayTransition?
@@ -152,7 +153,7 @@ struct FootballHome: View {
         }
         .sheet(item: $notifiedMessage) { selection in
             NavigationStack {
-                FootballInboxView(career: $career, onAlert: showAlert, onOpenApp: { app in
+                FootballInboxView(career: $career, onAlert: { notifiedAlert = $0 }, onOpenApp: { app in
                     notifiedMessage = nil
                     openApp = app
                 }, focusedMessageID: selection.id)
@@ -160,6 +161,8 @@ struct FootballHome: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { notifiedMessage = nil } } }
             }
+            // O alerta da tela de trás fica escondido com a folha aberta: esta folha mostra o próprio.
+            .sheetAlert($notifiedAlert)
         }
         .alert("Manager de Futebol", isPresented: Binding(
             get: { alertMessage != nil },
@@ -955,7 +958,7 @@ struct FootballClubSelectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(
-                eyebrow: "Nova carreira",
+                eyebrow: "Comece por aqui",
                 title: "Seu primeiro contrato",
                 subtitle: "Diga como você se chama e escolha entre seis propostas. Orçamento, meta, paciência da diretoria e pressão da torcida mudam a dificuldade da sua carreira.",
                 accent: FootballTheme.accent
@@ -1027,7 +1030,7 @@ struct FootballClubSelectionView: View {
                     term("Meta", FootballCareer.objectiveText(target: offer.boardTarget, division: division))
                 }
                 GridRow {
-                    term("Contrato", "\(offer.contractSeasons) temporada(s)")
+                    term("Contrato", FootballFormat.plural(offer.contractSeasons, "temporada"))
                     term("Luvas", FootballFormat.money(offer.signingBonus))
                 }
                 GridRow {

@@ -42,7 +42,7 @@ struct FootballBoardMeetingPanel: View {
             switch meeting.status {
             case .awaitingAnswer:
                 let days = max(0, meeting.answerWorldDay - career.worldDay)
-                Text(days == 0 ? "A resposta sai ao avançar o próximo dia de jogo." : "A diretoria responde em \(days) dia(s) de jogo.")
+                Text(days == 0 ? "A resposta sai ao avançar o próximo dia de jogo." : "A diretoria responde em \(FootballFormat.plural(days, "dia")) de jogo.")
                     .font(.caption).foregroundStyle(.secondary)
             case .conditionRunning:
                 Text(meeting.answer).font(.caption).fixedSize(horizontal: false, vertical: true)

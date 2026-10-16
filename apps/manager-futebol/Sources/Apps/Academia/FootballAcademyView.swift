@@ -34,6 +34,8 @@ struct FootballAcademyView: View {
                 FactoryMetric(label: "Jovens", value: "\(career.youthRoster.count)/\(FootballCareer.youthRosterLimit)", symbol: "person.3.fill", tint: .blue, animatesValue: true)
             }
             .accessibilityIdentifier("academy-metrics")
+            Text("Observar e escolher mentor gastam ações. A base renova 50% na metade da temporada e 100% no fim.")
+                .font(.caption).foregroundStyle(.secondary)
             programPanel
             tryoutPanel
             scoutingPanel
@@ -374,7 +376,7 @@ struct FootballYouthDetailView: View {
             }
             let hidden = profile.traits.count - revealed.count
             if hidden > 0 {
-                Text("\(hidden) traço(s) por descobrir.").font(.caption).foregroundStyle(.secondary)
+                Text(hidden == 1 ? "1 traço por descobrir." : "\(hidden) traços por descobrir.").font(.caption).foregroundStyle(.secondary)
             }
         }
     }

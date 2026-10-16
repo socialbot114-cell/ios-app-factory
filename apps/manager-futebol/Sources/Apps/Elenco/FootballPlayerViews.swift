@@ -385,7 +385,7 @@ struct FootballRenewalSheet: View {
                         }
                         Section("Sua oferta") {
                             Stepper("Salário: \(FootballFormat.money(wage))", value: $wage, in: 20_000...3_000_000, step: 5_000)
-                            Stepper("Duração: \(years) temporada(s)", value: $years, in: 1...5)
+                            Stepper("Duração: \(FootballFormat.plural(years, "temporada", "temporadas"))", value: $years, in: 1...5)
                             Picker("Papel prometido", selection: $status) {
                                 ForEach(SquadStatus.allCases, id: \.self) { Text($0.title).tag($0) }
                             }
@@ -490,7 +490,7 @@ struct FootballBidSheet: View {
                     }
                     Section("Proposta ao atleta") {
                         Stepper("Salário: \(FootballFormat.money(wage))", value: $wage, in: 20_000...3_000_000, step: 5_000)
-                        Stepper("Contrato: \(years) temporada(s)", value: $years, in: 1...5)
+                        Stepper("Contrato: \(FootballFormat.plural(years, "temporada", "temporadas"))", value: $years, in: 1...5)
                     }
                     if let message { Section { Text(message).font(.subheadline) } }
                     Section {
@@ -552,6 +552,7 @@ struct FootballLoanOutSheet: View {
                                 }
                             } label: {
                                 HStack { ClubCrest(team: team, size: 24); Text(team.name); Spacer() }
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }

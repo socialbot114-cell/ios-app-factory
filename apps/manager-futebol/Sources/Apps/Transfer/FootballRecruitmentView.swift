@@ -82,7 +82,7 @@ struct FootballTransferTalksPanel: View {
                 ForEach(SquadStatus.allCases.reversed(), id: \.self) { Text($0.title).tag($0) }
             }
             .pickerStyle(.menu)
-            Stepper("Contrato: \(years) ano(s)", value: $years, in: 1...5).font(.caption)
+            Stepper("Contrato: \(FootballFormat.plural(years, "ano", "anos"))", value: $years, in: 1...5).font(.caption)
             Text("Para esse papel e duração, o atleta espera cerca de \(FootballFormat.money(needed))/temporada.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 8) {
@@ -101,7 +101,7 @@ struct FootballTransferTalksPanel: View {
             }
         case .agreed:
             if let summary = career.costSummary(talkID: talk.id) {
-                Text("Entrada \(FootballFormat.money(summary.upfront)) · parcelas \(FootballFormat.money(summary.laterInstallments)) · salários \(FootballFormat.money(summary.totalWages)) em \(talk.years) ano(s)")
+                Text("Entrada \(FootballFormat.money(summary.upfront)) · parcelas \(FootballFormat.money(summary.laterInstallments)) · salários \(FootballFormat.money(summary.totalWages)) em \(FootballFormat.plural(talk.years, "ano", "anos"))")
                     .font(.caption.monospacedDigit())
                 Text("Custo total \(FootballFormat.money(summary.total)). Menor caixa garantido depois: \(FootballFormat.money(summary.lowestProjectedCash)).")
                     .font(.caption2).foregroundStyle(summary.lowestProjectedCash < 0 ? .red : .secondary)
@@ -256,7 +256,7 @@ struct FootballBriefsPanel: View {
 
     private func reportText(_ report: RecruitmentScoutReport) -> String {
         var text = "Relatório \(report.reliability.title.lowercased()) · conhecimento \(report.knowledge)%"
-        if let age = report.ageInDays { text += age == 0 ? " · visto hoje" : " · visto há \(age) dia(s)" }
+        if let age = report.ageInDays { text += age == 0 ? " · visto hoje" : " · visto há \(FootballFormat.plural(age, "dia", "dias"))" }
         return text
     }
 }

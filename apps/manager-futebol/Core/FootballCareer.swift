@@ -805,7 +805,7 @@ struct FootballCareer: Codable, Equatable {
         }
         let tired = starters.filter { !$0.isInjured && $0.condition < 65 }
         if !tired.isEmpty {
-            warnings.append("\(tired.count) titular(es) com energia abaixo de 65%.")
+            warnings.append("\(FootballFormat.plural(tired.count, "titular", "titulares")) com energia abaixo de 65%.")
         }
         let outOfPosition = FootballSeason.outOfPositionCount(lineup: starters, formation: formation)
         if outOfPosition > 0 {

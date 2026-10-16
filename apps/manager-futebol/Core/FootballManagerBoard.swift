@@ -70,7 +70,7 @@ extension FootballCareer {
                                          done: playStyle == suggested, destination: .squad))
         }
         let benchedPromises = promises.filter { promise in promise.startsDone < promise.requiredStarts && !startingXI.contains(promise.playerID) }
-        items.append(PreparationItem(id: "promises", title: "Promessas de minutos", detail: benchedPromises.isEmpty ? "Ninguém com promessa pendente fora do time." : "\(benchedPromises.count) atleta(s) com promessa pendente fora da escalação.",
+        items.append(PreparationItem(id: "promises", title: "Promessas de minutos", detail: benchedPromises.isEmpty ? "Ninguém com promessa pendente fora do time." : "\(FootballFormat.plural(benchedPromises.count, "atleta", "atletas")) com promessa pendente fora da escalação.",
                                      done: benchedPromises.isEmpty, destination: .squad))
         items.append(PreparationItem(id: "press", title: "Coletiva", detail: pendingPress == nil ? "Sem coletiva pendente." : "Há coletiva aguardando resposta.", done: pendingPress == nil, destination: .alerts))
         return items

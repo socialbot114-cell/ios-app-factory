@@ -251,7 +251,7 @@ extension FootballCareer {
         let name = players[playerIndex].name
         let factID = "talk-\(talkID)-signed"
         recordFact(WorldFact(id: factID, source: .negotiation, worldDay: worldDay, title: "\(name) assina com o \(FootballSeason.teamName(selectedClubID ?? 0))",
-                             detail: "Taxa de \(FootballFormat.money(talk.fee)) em \(talk.installments)x, salário de \(FootballFormat.money(talk.wage))/temporada por \(talk.years) ano(s), chegando como \(talk.role.title.lowercased()).",
+                             detail: "Taxa de \(FootballFormat.money(talk.fee)) em \(talk.installments)x, salário de \(FootballFormat.money(talk.wage))/temporada por \(FootballFormat.plural(talk.years, "ano", "anos")), chegando como \(talk.role.title.lowercased()).",
                              playerIDs: [talk.playerID], clubIDs: [talk.sellerID], reliability: .confirmed, isPublic: true,
                              effects: ["Entrada de \(FootballFormat.money(summary.upfront))", "Folha +\(FootballFormat.money(talk.wage))"]))
         deliverFact(factID, inbox: .transfer, social: true)

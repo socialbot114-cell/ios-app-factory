@@ -89,7 +89,7 @@ struct FootballRotationPanel: View {
                             Text("\(row.condition) → \(row.projectedCondition)").font(.caption.monospacedDigit())
                                 .foregroundStyle(row.projectedCondition < 60 ? Color.red : Color.secondary)
                         }
-                        Text(row.promisedStartsLeft > 0 ? "\(row.advice) Promessa: faltam \(row.promisedStartsLeft) titularidade(s)." : row.advice)
+                        Text(row.promisedStartsLeft > 0 ? "\(row.advice) Promessa: faltam \(FootballFormat.plural(row.promisedStartsLeft, "titularidade", "titularidades"))." : row.advice)
                             .font(.caption2).foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)

@@ -168,6 +168,7 @@ struct FootballDashboardView: View {
                             .foregroundStyle(item.expiresOnNextAdvance ? Color.orange : Color.secondary)
                         Text(item.detail).font(.caption).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("agenda-\(item.id)")
@@ -192,6 +193,7 @@ struct FootballDashboardView: View {
                             }
                             Spacer(minLength: 0)
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("prep-\(item.id)")
@@ -350,16 +352,16 @@ struct FootballDashboardView: View {
                     attentionRow("Crise de imagem nas redes", "exclamationmark.triangle.fill", .red, id: "attention-crisis") { onNavigate(.social) }
                 }
                 if events > 0 {
-                    attentionRow("\(events) acontecimento(s) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.alerts) }
+                    attentionRow("\(FootballFormat.plural(events, "acontecimento")) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.alerts) }
                 }
                 if unread > 0 {
-                    attentionRow("\(unread) mensagem(ns) não lida(s)", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.messages) }
+                    attentionRow("\(FootballFormat.plural(unread, "mensagem", "mensagens")) \(unread == 1 ? "não lida" : "não lidas")", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.messages) }
                 }
                 if invites > 0 {
-                    attentionRow("\(invites) convite(s) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
+                    attentionRow("\(FootballFormat.plural(invites, "convite")) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
                 }
                 if academyReady > 0 {
-                    attentionRow("\(academyReady) jovem(ns) pronto(s) para decidir na Academia", "graduationcap.fill", PhoneApp.academy.tint, id: "attention-academy") { onNavigate(.academy) }
+                    attentionRow("\(FootballFormat.plural(academyReady, "jovem", "jovens")) \(academyReady == 1 ? "pronto" : "prontos") para decidir na Academia", "graduationcap.fill", PhoneApp.academy.tint, id: "attention-academy") { onNavigate(.academy) }
                 }
                 if career.shouldShowTutorial {
                     let progress = career.tutorialProgress
@@ -509,7 +511,7 @@ struct FootballDashboardView: View {
                 let result = career.simulateUntilAgendaDecision()
                 reportRoundIfClubPlayed(from: start, fixtureBefore: fixtureBefore)
                 // Parar numa decisão pede ação do treinador, então continua em alerta (FLX-02). Sem dias avançados, mostra só o motivo.
-                onAlert(result.days == 0 ? result.reason : "\(result.days) dia(s) simulado(s). \(result.reason)")
+                onAlert(result.days == 0 ? result.reason : "\(FootballFormat.plural(result.days, "dia simulado", "dias simulados")). \(result.reason)")
             } label: {
                 Label("Simular até a próxima decisão", systemImage: "forward.end.alt.fill").frame(maxWidth: .infinity)
             }

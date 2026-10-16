@@ -20,7 +20,7 @@ struct FootballModesView: View {
                     Text(scenario.title).font(.subheadline.weight(.bold))
                     Text(scenario.summary).font(.caption).foregroundStyle(.secondary)
                     switch challenge.status {
-                    case .active: Label("Em andamento · \(scenario.seasonsAllowed) temporada(s)", systemImage: "hourglass").font(.caption)
+                    case .active: Label("Em andamento · \(FootballFormat.plural(scenario.seasonsAllowed, "temporada", "temporadas"))", systemImage: "hourglass").font(.caption)
                     case .won: Label("Vencido!", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
                     case .failed: Label(challenge.failureReason ?? "Falhou", systemImage: "xmark.seal.fill").font(.caption).foregroundStyle(.red)
                     }

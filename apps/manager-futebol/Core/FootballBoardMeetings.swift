@@ -335,7 +335,7 @@ extension FootballCareer {
         let met = condition.winsCounted >= needed
         world.projects.meetings[index].status = met ? .conditionMet : .conditionFailed
         boardConfidence = met ? min(100, boardConfidence + 4) : max(0, boardConfidence - 10)
-        let summary = "\(condition.winsCounted) vitória(s) em \(condition.gamesCounted) jogo(s)"
+        let summary = "\(FootballFormat.plural(condition.winsCounted, "vitória", "vitórias")) em \(FootballFormat.plural(condition.gamesCounted, "jogo", "jogos"))"
         world.projects.meetings[index].resolution = met ? "Condição cumprida: \(summary). Confiança +4." : "Condição descumprida: \(summary). Confiança -10."
         addInbox(.board, title: met ? "Diretoria satisfeita" : "Diretoria cobra o combinado", body: world.projects.meetings[index].resolution)
     }

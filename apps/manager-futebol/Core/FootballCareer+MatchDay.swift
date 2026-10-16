@@ -320,7 +320,7 @@ extension FootballCareer {
             players[index].injuryRounds = max(players[index].injuryRounds, adjusted)
             if players[index].teamID == selectedClubID {
                 addInbox(.injury, title: "\(players[index].name) se lesionou",
-                         body: "Fora por \(adjusted) jogo(s) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
+                         body: "Fora por \(FootballFormat.plural(adjusted, "jogo", "jogos")) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
                          playerID: id)
             }
         }

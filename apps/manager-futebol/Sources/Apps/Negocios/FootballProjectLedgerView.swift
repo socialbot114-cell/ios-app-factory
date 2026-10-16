@@ -24,7 +24,7 @@ struct FootballProjectLedgerPanel: View {
                        ratio: forecastToDate > 0 ? Double(project.realized) / Double(forecastToDate) : nil, running: project.isActive)
         }
         let ledger = career.projectLedger.map { entry in
-            var detail = "\(entry.daysElapsed) jogo(s)"
+            var detail = "\(FootballFormat.plural(entry.daysElapsed, "jogo", "jogos"))"
             if let horizon = entry.horizonDays { detail += " de \(horizon)" }
             if entry.invested > 0 { detail = "Investimento \(FootballFormat.money(entry.invested)) · " + detail }
             return Row(id: "ledger-\(entry.id)", title: entry.title, detail: detail,

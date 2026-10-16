@@ -28,7 +28,7 @@ struct FootballNamingTalkPanel: View {
                     let value = Int(Double(talk.offer.perSeason) * ask / 10_000) * 10_000
                     Text("\(talk.offer.sponsor) oferece \(FootballFormat.money(talk.offer.perSeason))/temporada.").font(.subheadline.weight(.semibold))
                     Stepper("Pedido: \(FootballFormat.money(value))/temporada", value: $ask, in: 0.9...1.6, step: 0.05).font(.caption)
-                    Stepper("Duração: \(seasons) temporada(s)", value: $seasons, in: 1...6).font(.caption)
+                    Stepper("Duração: \(FootballFormat.plural(seasons, "temporada", "temporadas"))", value: $seasons, in: 1...6).font(.caption)
                     Toggle("Manter o nome tradicional junto (−15% no valor)", isOn: $keepName).font(.caption)
                     Text("Reação esperada da torcida: humor −\(career.namingBacklash(keepTraditionalName: keepName)).")
                         .font(.caption2).foregroundStyle(.secondary)

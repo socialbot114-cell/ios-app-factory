@@ -75,7 +75,7 @@ extension FootballCareer {
         recordFact(WorldFact(id: factID, source: .market, worldDay: worldDay, title: "\(rival) também quer \(athlete.name)",
                              detail: "Fontes do mercado dizem que o \(rival) prepara cerca de \(FootballFormat.money(offer)) pelo \(athlete.name), do \(FootballSeason.teamName(sellerID)). Se quiser o atleta, feche antes.",
                              playerIDs: [athlete.id], clubIDs: [rivalID, sellerID], reliability: .rumor, isPublic: true,
-                             nextEvents: ["O \(rival) deve formalizar a proposta em \(days) dia(s) de jogo."]))
+                             nextEvents: ["O \(rival) deve formalizar a proposta em \(FootballFormat.plural(days, "dia", "dias")) de jogo."]))
         deliverFact(factID, inbox: .transfer, social: true)
         let commitment = openCommitment(kind: .transferRace, playerID: athlete.id, factID: factID, days: days,
                                         title: "Disputa por \(athlete.name)",

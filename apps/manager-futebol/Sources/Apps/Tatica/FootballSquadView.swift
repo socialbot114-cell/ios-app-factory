@@ -25,7 +25,6 @@ struct FootballSquadView: View {
                     subtitle: "Escolha quem começa e quem fica no banco. A energia aparece no anel de cada atleta.",
                     accent: FootballTheme.accent
                 )
-                tacticsPanel
                 FactoryPanel(title: "Escalação · \(career.formation.rawValue)", systemImage: "sportscourt.fill") {
                     PitchView(formation: career.formation, starters: career.starters) { player in
                         substitutionTarget = SubstitutionTarget(id: player.id)
@@ -64,6 +63,7 @@ struct FootballSquadView: View {
                             .font(.caption.weight(.medium)).foregroundStyle(.orange)
                     }
                 }
+                tacticsPanel
                 FootballTacticalPlansPanel(career: $career)
                 FootballMatchPrepHub(career: $career)
                 instructionsPanel

@@ -117,7 +117,7 @@ extension MatchSimulation {
         if minute == 90 && stoppageMinutes == nil {
             let added = isCup ? 0 : stoppage()
             stoppageMinutes = added
-            if added > 0 { addEvent(.stoppage, nil, "O quarto árbitro levanta a placa: \(added) minuto(s) de acréscimo.") }
+            if added > 0 { addEvent(.stoppage, nil, "O quarto árbitro levanta a placa: \(FootballFormat.plural(added, "minuto", "minutos")) de acréscimo.") }
         }
         if detailed, minute % 12 == 0, minute < 90 { pressureNarration(random: &random) }
         if minute == regulationEnd && !inExtraTime && !wentToExtraTime {

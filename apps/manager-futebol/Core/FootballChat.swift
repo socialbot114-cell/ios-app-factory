@@ -363,7 +363,7 @@ extension FootballCareer {
             return "Estamos sem goleiros no elenco. Precisamos contratar."
         case .youthCoach:
             let youth = players.filter { $0.teamID == selectedClubID && $0.isYouth }.count
-            return "Temos \(youth) jovem(ns) na base. Os melhores já pedem passagem."
+            return "Temos \(FootballFormat.plural(youth, "jovem", "jovens")) na base. Os melhores já pedem passagem."
         case .analyst:
             return "Estamos no \(formation.rawValue). Os números mostram que dá para crescer na posse de bola."
         }

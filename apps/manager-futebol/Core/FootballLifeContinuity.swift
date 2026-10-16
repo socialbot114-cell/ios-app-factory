@@ -280,7 +280,7 @@ extension FootballCareer {
         var lines: [String] = []
         if let course = world.coach.course {
             let left = course.sessionsNeeded - course.sessionsDone
-            lines.append("Curso para \(CoachProfile.licenseNames[min(max(course.targetLicense, 1), 4) - 1]): faltam \(left) aula(s).")
+            lines.append("Curso para \(CoachProfile.licenseNames[min(max(course.targetLicense, 1), 4) - 1]): faltam \(FootballFormat.plural(left, "aula", "aulas")).")
         }
         if world.coach.bookSessions > 0 {
             var line = "Livro: capítulo \(world.coach.bookSessions) de 6"
@@ -288,7 +288,7 @@ extension FootballCareer {
             lines.append(line + ".")
         }
         if let contract = life.mediaContract, contract.status == .active {
-            lines.append("Comentarista: \(contract.done.count) de \(contract.appearanceDays.count) programas, \(contract.missed.count) falta(s).")
+            lines.append("Comentarista: \(contract.done.count) de \(contract.appearanceDays.count) programas, \(FootballFormat.plural(contract.missed.count, "falta", "faltas")).")
         }
         return lines
     }

@@ -132,7 +132,7 @@ extension FootballCareer {
             guard left <= 4 else { continue }
             let missing = promise.requiredStarts - promise.startsDone
             list.append(FootballSuggestion(id: "promise-\(promise.id)", title: "Promessa a \(athlete.name)",
-                                           detail: "Faltam \(missing) titularidade(s) até \(shortDate(matchDay: promise.deadlineMatchDay)).",
+                                           detail: "Faltam \(FootballFormat.plural(missing, "titularidade", "titularidades")) até \(shortDate(matchDay: promise.deadlineMatchDay)).",
                                            appID: "squad", symbol: "handshake.fill", category: .squad,
                                            score: 52 + deadlineBonus(daysLeft: left),
                                            why: "Promessa quebrada derruba a moral dele e a confiança do elenco.", actionTitle: "Escalar"))
@@ -159,7 +159,7 @@ extension FootballCareer {
         }
         if !offers.isEmpty {
             let deadline = offers.map(\.expiresAfterRound).min() ?? matchDayIndex
-            list.append(FootballSuggestion(id: "offers", title: "\(offers.count) proposta(s) por seus atletas",
+            list.append(FootballSuggestion(id: "offers", title: "\(FootballFormat.plural(offers.count, "proposta", "propostas")) por seus atletas",
                                            detail: "A primeira vence em \(shortDate(matchDay: deadline)).",
                                            appID: "market", symbol: "envelope.badge.fill", category: .market,
                                            score: 50 + deadlineBonus(daysLeft: deadline - matchDayIndex),

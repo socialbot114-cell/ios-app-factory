@@ -333,7 +333,7 @@ struct FootballOffseasonView: View {
             hero(symbol: isChampion ? "trophy.fill" : "flag.checkered", title: headline, subtitle: "Fim da temporada \(career.season)")
             VStack(spacing: 12) {
                 infoRow(1, symbol: "list.number", label: "Posição final", value: "\(position)º · \(division.name)")
-                infoRow(2, symbol: "target", label: "Meta da diretoria", value: "\(career.objectiveText) · \(met ? "cumprida" : "não cumprida")",
+                infoRow(2, symbol: "target", label: met ? "Meta da diretoria · cumprida" : "Meta da diretoria · não cumprida", value: career.objectiveText,
                         tint: met ? .green : .orange)
                 if let champion {
                     infoRow(3, symbol: "crown.fill", label: "Campeão da Série A", value: champion.name)

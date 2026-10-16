@@ -167,7 +167,7 @@ extension FootballCareer {
             return "Plano encerrado. \(tired) titular(es) ainda abaixo de 75 de condição."
         case .focusedScouting:
             let known = watchlist.filter { scoutKnowledge(of: $0) >= 80 }.count
-            return "Observação concluída: \(known) de \(watchlist.count) atleta(s) da lista com relatório confiável."
+            return "Observação concluída: \(known) de \(FootballFormat.plural(watchlist.count, "atleta", "atletas")) da lista com relatório confiável."
         case .medicalReview:
             var treated = 0
             for index in players.indices where players[index].teamID == selectedClubID && players[index].injuryRounds > 1 {

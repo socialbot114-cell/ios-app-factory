@@ -166,7 +166,7 @@ struct FootballImageContractPanel: View {
         FactoryPanel(title: "Contrato de imagem", systemImage: "signature") {
             if let contract = career.activeImageContract {
                 let days = max(0, contract.deadlineWorldDay - career.worldDay)
-                Text("\(contract.brand) · prazo em \(days) dia(s) de jogo").font(.subheadline.weight(.semibold))
+                Text("\(contract.brand) · prazo em \(FootballFormat.plural(days, "dia", "dias")) de jogo").font(.subheadline.weight(.semibold))
                 obligation("Comerciais gravados: \(contract.shootsDone)/\(contract.shootsRequired)", met: contract.shootsDone >= contract.shootsRequired)
                 obligation("Imagem do treinador ≥ \(contract.minimumImage) (hoje \(career.coachImage))", met: career.coachImage >= contract.minimumImage)
                 obligation(contract.hadCrisis ? "Houve crise de imagem" : "Nenhuma crise de imagem", met: !contract.hadCrisis)

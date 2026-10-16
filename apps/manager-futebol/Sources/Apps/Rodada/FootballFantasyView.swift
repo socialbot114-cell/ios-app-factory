@@ -104,6 +104,7 @@ struct FootballFantasyView: View {
                                 Spacer()
                                 Text(String(format: "forma %.1f", outlook.form)).font(.caption.monospacedDigit())
                             }
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("fantasy-captain-\(outlook.playerID)")

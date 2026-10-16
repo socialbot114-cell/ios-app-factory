@@ -54,7 +54,7 @@ struct FootballPersonalPlanPanel: View {
                     .font(.subheadline.weight(.semibold))
                 Text(matchText(day)).font(.caption).foregroundStyle(day.isDerby ? Color.red : Color.secondary)
                 if !day.deadlines.isEmpty {
-                    Label("\(day.deadlines.count) prazo(s) do clube", systemImage: "exclamationmark.circle.fill")
+                    Label("\(FootballFormat.plural(day.deadlines.count, "prazo", "prazos")) do clube", systemImage: "exclamationmark.circle.fill")
                         .font(.caption2.weight(.semibold)).foregroundStyle(.orange)
                 }
             }

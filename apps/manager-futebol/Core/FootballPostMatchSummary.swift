@@ -89,7 +89,7 @@ extension FootballCareer {
             var cause: String
             if let stat, stat.minutes > 0 {
                 cause = "Jogou \(stat.minutes) min, nota \(String(format: "%.1f", stat.rating))"
-                if stat.goals > 0 { cause += ", \(stat.goals) gol(s)" }
+                if stat.goals > 0 { cause += ", \(FootballFormat.plural(stat.goals, "gol", "gols"))" }
             } else {
                 cause = "Não entrou em campo (\(athlete.benchStreak) jogo(s) seguidos no banco)"
             }
@@ -98,11 +98,11 @@ extension FootballCareer {
 
         // Lesões e suspensões novas.
         for athlete in roster where athlete.isInjured && !before.injured.contains(athlete.id) {
-            changes.append(SummaryChange(label: "Lesão: \(athlete.name)", delta: nil, text: "\(athlete.name) está fora por \(athlete.injuryRounds) jogo(s).",
+            changes.append(SummaryChange(label: "Lesão: \(athlete.name)", delta: nil, text: "\(athlete.name) está fora por \(FootballFormat.plural(athlete.injuryRounds, "jogo", "jogos")).",
                                          cause: fixture.events.first { $0.kind == .injury && $0.playerID == athlete.id }.map { "Saiu machucado aos \($0.minute)′." } ?? "Lesão registrada no jogo."))
         }
         for athlete in roster where athlete.isSuspended && !before.suspended.contains(athlete.id) {
-            changes.append(SummaryChange(label: "Suspensão: \(athlete.name)", delta: nil, text: "\(athlete.name) cumpre \(athlete.discipline.suspensionGames) jogo(s) de suspensão.",
+            changes.append(SummaryChange(label: "Suspensão: \(athlete.name)", delta: nil, text: "\(athlete.name) cumpre \(FootballFormat.plural(athlete.discipline.suspensionGames, "jogo", "jogos")) de suspensão.",
                                          cause: "Cartões recebidos nesta partida."))
         }
 

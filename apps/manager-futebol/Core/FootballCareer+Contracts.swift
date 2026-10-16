@@ -85,7 +85,7 @@ extension FootballCareer {
         let base = max(player.contract.endSeason, season)
         players[index].contract = PlayerContract(wage: wage, endSeason: base + years, status: status)
         players[index].morale = min(100, player.morale + 8)
-        addInbox(.general, title: "Renovação concluída", body: "\(player.name) assinou por mais \(years) temporada(s).", playerID: playerID)
+        addInbox(.general, title: "Renovação concluída", body: "\(player.name) assinou por mais \(FootballFormat.plural(years, "temporada", "temporadas")).", playerID: playerID)
         resolveMessages(for: playerID, kinds: [.playerContract])
     }
 

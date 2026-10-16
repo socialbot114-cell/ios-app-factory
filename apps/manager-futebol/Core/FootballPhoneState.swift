@@ -118,28 +118,28 @@ extension FootballCareer {
             detail = "Coletiva aguarda resposta"
         case "squad":
             count = canPlay ? lineupWarnings.count : 0
-            detail = "Ajuste(s) na escalação antes do jogo"
+            detail = count == 1 ? "Ajuste na escalação antes do jogo" : "Ajustes na escalação antes do jogo"
         case "market":
             count = offers.count
-            detail = "Proposta(s) para revisar"
+            detail = count == 1 ? "Proposta para revisar" : "Propostas para revisar"
         case "club":
             count = invitations.count
-            detail = "Convite(s) de clube"
+            detail = count == 1 ? "Convite de clube" : "Convites de clube"
         case "messages":
             count = unreadMessageBadge
-            detail = "Mensagem(ns) não lida(s)"
+            detail = count == 1 ? "Mensagem não lida" : "Mensagens não lidas"
         case "social":
             count = world.social.crisis == nil ? 0 : 1
             detail = "Crise de imagem nas redes"
         case "betting":
             count = world.betting.bets.filter { $0.status == .open }.count
-            detail = "Palpite(s) em aberto"
+            detail = count == 1 ? "Palpite em aberto" : "Palpites em aberto"
         case "quests":
             count = world.quests.active.filter { !$0.completed }.count
-            detail = "Meta(s) em andamento"
+            detail = count == 1 ? "Meta em andamento" : "Metas em andamento"
         case "alerts":
             count = world.events.pending.count
-            detail = "Acontecimento(s) para decidir"
+            detail = count == 1 ? "Acontecimento para decidir" : "Acontecimentos para decidir"
         case "brand":
             count = world.growth.tv == nil ? 1 : 0
             detail = "Escolha o contrato de TV"
@@ -151,7 +151,7 @@ extension FootballCareer {
             detail = "Pacote de craque para abrir"
         case "academy":
             count = youthReadyForDecision.count
-            detail = "Jovem(ns) pronto(s) para decidir"
+            detail = count == 1 ? "Jovem pronto para decidir" : "Jovens prontos para decidir"
         default:
             return nil
         }
@@ -176,7 +176,7 @@ extension FootballCareer {
     /// Devolve o texto que o aviso mostra, e o histórico guarda o mesmo texto.
     mutating func logQuickSimulation(days: Int, nextPriority: String?) -> String {
         let priority = nextPriority.map { " Próxima prioridade: \($0)." } ?? " Agenda sem pendências com prazo."
-        let text = "\(days) dia(s) de calendário simulado(s). Resultados, treino e prazos atualizados." + priority
+        let text = "\(FootballFormat.plural(days, "dia de calendário simulado", "dias de calendário simulados")). Resultados, treino e prazos atualizados." + priority
         logActionResult(text, appID: nil)
         return text
     }
@@ -203,7 +203,7 @@ extension FootballCareer {
     var activeChallengeRules: [String] {
         guard let challenge, challenge.status == .active, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) else { return [] }
         var rules = ["Dificuldade: \(difficulty.title) (fixa)",
-                     "Prazo: \(scenario.seasonsAllowed) temporada(s), desde a temporada \(challenge.startSeason)"]
+                     "Prazo: \(FootballFormat.plural(scenario.seasonsAllowed, "temporada", "temporadas")), desde a temporada \(challenge.startSeason)"]
         if let age = scenario.maxStarterAge { rules.append("Titulares com até \(age) anos") }
         if let cap = scenario.wageCapFactor { rules.append("Folha limitada a \(Int((cap * 100).rounded()))% do referencial") }
         for goal in scenario.goals { rules.append("Meta: \(goal.text)") }

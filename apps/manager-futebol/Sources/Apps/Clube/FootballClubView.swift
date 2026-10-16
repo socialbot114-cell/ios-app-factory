@@ -59,7 +59,7 @@ struct FootballClubView: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    FactoryMetric(label: "Títulos da Série A", value: "\(leagueTitles)", symbol: "trophy.fill", tint: FootballTheme.gold)
+                    FactoryMetric(label: "Títulos", value: "\(leagueTitles)", symbol: "trophy.fill", tint: FootballTheme.gold)
                     FactoryMetric(label: "Copas", value: "\(cupTitles)", symbol: "trophy", tint: FootballTheme.gold)
                     FactoryMetric(label: "Temporadas", value: "\(career.history.count)", symbol: "calendar", tint: FootballTheme.accent)
                 }

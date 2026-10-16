@@ -256,6 +256,9 @@ struct FootballLiveMatchView: View {
                     .accessibilityIdentifier("live-skip")
                 }
                 .font(.subheadline.weight(.semibold))
+                // "Trocar (0/5)" quebrava em duas linhas e ficava maior que os botões vizinhos.
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 HStack(spacing: 8) {
                     Text("Lances-chave").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     Picker("Lances-chave", selection: $keyMoments) {

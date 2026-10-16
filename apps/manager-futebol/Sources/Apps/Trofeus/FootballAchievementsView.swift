@@ -40,6 +40,7 @@ struct FootballAchievementsView: View {
                             Spacer()
                             if unlocked { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
                         }
+                        .contentShape(Rectangle())
                         .opacity(unlocked ? 1 : 0.7)
                         .accessibilityElement(children: .combine)
                     }
