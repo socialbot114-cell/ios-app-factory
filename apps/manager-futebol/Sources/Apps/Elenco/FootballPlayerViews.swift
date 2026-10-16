@@ -469,10 +469,10 @@ struct FootballBidSheet: View {
                 if let player = career.player(playerID) {
                     Section("Negociação") {
                         Text("\(player.name) · \(FootballSeason.teamName(player.teamID ?? 0))").font(.subheadline.weight(.semibold))
-                        Text("Pedido aproximado: \(FootballFormat.money(career.askingPrice(for: player)))").font(.caption).foregroundStyle(.secondary)
+                        Text("Pedido aproximado: \(FootballFormat.money(career.installmentAdjustedAsk(career.askingPrice(for: player), installments: installments)))").font(.caption).foregroundStyle(.secondary)
                         Text("Caixa: \(FootballFormat.money(career.transferBudget))").font(.caption).foregroundStyle(.secondary)
                         if let window = career.transferWindow {
-                            Text("\(window.title): \(window.daysLeft) dia(s) restantes").font(.caption).foregroundStyle(.secondary)
+                            Text("\(window.title): \(FootballFormat.plural(window.daysLeft, "dia restante", "dias restantes"))").font(.caption).foregroundStyle(.secondary)
                         } else {
                             Label("Janela fechada", systemImage: "lock.fill").font(.caption).foregroundStyle(.red)
                         }
@@ -480,7 +480,13 @@ struct FootballBidSheet: View {
                     Section("Proposta ao clube") {
                         Stepper("Valor: \(FootballFormat.money(fee))", value: $fee, in: 0...80_000_000, step: 250_000)
                         Stepper("Parcelas: \(installments)", value: $installments, in: 1...4)
+                        if installments > 1 {
+                            Text("Parcelar custa 3% a mais por parcela extra. Já está no pedido acima.").font(.caption).foregroundStyle(.secondary)
+                        }
                         Stepper("Bônus por 10 gols: \(FootballFormat.money(goalBonus))", value: $goalBonus, in: 0...5_000_000, step: 250_000)
+                        if goalBonus > 0, player.position != .forward {
+                            Text("Para \(player.position.title.lowercased()), o clube conta só uma parte do bônus: poucos chegam a 10 gols.").font(.caption).foregroundStyle(.secondary)
+                        }
                         Picker("Troca", selection: $swapID) {
                             Text("Sem troca").tag(Int?.none)
                             ForEach(career.clubRoster.filter { !$0.isYouth && career.canRelease(playerID: $0.id) }) { own in

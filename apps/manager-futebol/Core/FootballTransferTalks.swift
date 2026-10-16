@@ -109,8 +109,8 @@ extension FootballCareer {
         let ask = askingPrice(for: athlete)
         let seller = FootballSeason.teamName(world.projects.transferTalks[index].sellerID)
         world.projects.transferTalks[index].installments = parts
-        // Parcelar custa: o clube quer 3% a mais por parcela extra.
-        let needed = Int(Double(ask) * (1 + 0.03 * Double(parts - 1)) / 10_000) * 10_000
+        // Parcelar custa o mesmo aqui e na proposta direta (ver `installmentAdjustedAsk`).
+        let needed = installmentAdjustedAsk(ask, installments: parts)
         if fee >= needed {
             world.projects.transferTalks[index].fee = fee
             world.projects.transferTalks[index].stage = .personalTerms

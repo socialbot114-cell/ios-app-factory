@@ -85,6 +85,7 @@ struct FootballStarterPickerSheet: View {
             }
             Text("Toque em um titular para selecioná-lo e depois em um reserva para trocar. Com vaga livre, um reserva entra direto.")
                 .font(.caption).foregroundStyle(.secondary)
+            rotationHint
             Button {
                 draft = career.eligibleLineup()
                 selectedStarter = nil
@@ -95,12 +96,48 @@ struct FootballStarterPickerSheet: View {
         }
     }
 
+    /// Titulares com pouca energia e a troca sugerida por um reserva descansado. Um toque aplica todas.
+    @ViewBuilder
+    private var rotationHint: some View {
+        let tiredCount = draft.compactMap { career.player($0) }.filter { $0.condition < FootballCareer.tiredCondition }.count
+        let swaps = career.rotationSwaps(for: draft)
+        if tiredCount > 0 {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(FootballFormat.plural(tiredCount, "titular cansado", "titulares cansados") + " (energia abaixo de \(FootballCareer.tiredCondition))",
+                      systemImage: "battery.25percent")
+                    .font(.caption.weight(.medium)).foregroundStyle(.orange)
+                    .accessibilityIdentifier("starter-tired")
+                if swaps.isEmpty {
+                    Text("Nenhum reserva descansado da mesma função rende parecido. Vale o descanso do meio da semana.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    ForEach(swaps, id: \.outgoingID) { swap in
+                        if let out = career.player(swap.outgoingID), let incoming = career.player(swap.incomingID) {
+                            Text("\(out.name) (energia \(out.condition)) sai para \(incoming.name) (energia \(incoming.condition))")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Button {
+                        for swap in swaps {
+                            if let index = draft.firstIndex(of: swap.outgoingID) { draft[index] = swap.incomingID }
+                        }
+                        selectedStarter = nil
+                    } label: {
+                        Label("Aplicar rodízio sugerido", systemImage: "arrow.triangle.2.circlepath").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("starter-rotation-apply")
+                }
+            }
+        }
+    }
+
     private func starterRow(_ player: FootballPlayer) -> some View {
         let isSelected = selectedStarter == player.id
         return Button {
             selectedStarter = isSelected ? nil : player.id
         } label: {
-            playerLine(player, trailing: isSelected ? "Selecionado" : nil)
+            playerLine(player, trailing: isSelected ? "Selecionado" : (player.condition < FootballCareer.tiredCondition ? "Cansado" : nil))
                 .padding(10)
                 .background(isSelected ? FootballTheme.accent.opacity(0.16) : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }

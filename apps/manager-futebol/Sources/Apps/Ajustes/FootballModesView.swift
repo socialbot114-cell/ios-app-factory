@@ -7,6 +7,7 @@ struct FootballModesView: View {
     let onStartChallenge: (ChallengeScenario) -> Void
     var onAlert: (String) -> Void = { _ in }
     var saveSlots: FootballSaveSlotsView? = nil
+    @State private var showsIntro = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -51,6 +52,14 @@ struct FootballModesView: View {
                 }
                 Toggle("Mostrar dicas no painel", isOn: Binding(get: { !career.tutorialDismissed }, set: { career.tutorialDismissed = !$0 }))
                     .font(.subheadline)
+                Divider()
+                Text("Boas-vindas")
+                    .font(.subheadline.weight(.semibold))
+                Text("Reveja a apresentação do jogo: o celular, o ritmo dos dias e as decisões entre temporadas. Só a dificuldade, na última página, muda a carreira.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Rever as boas-vindas") { showsIntro = true }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("intro-replay")
                 if career.selectedClubID != nil {
                     Divider()
                     Text("Roteiro da primeira partida")
@@ -67,5 +76,8 @@ struct FootballModesView: View {
         }
         .factoryPage()
         .navigationTitle("Modos de jogo")
+        .fullScreenCover(isPresented: $showsIntro) {
+            FootballOnboardingView(career: $career) { showsIntro = false }
+        }
     }
 }

@@ -44,3 +44,46 @@ extension FootballCareer {
         return nil
     }
 }
+
+// MARK: - Rodízio
+
+/// Troca sugerida: um titular cansado sai e um reserva descansado da mesma função entra.
+struct RotationSwap: Equatable {
+    let outgoingID: Int
+    let incomingID: Int
+}
+
+extension FootballCareer {
+    /// Abaixo desta condição o titular rende bem menos e vale poupar (mesmo limite do aviso de rodízio da preparação).
+    static let tiredCondition = 60
+    /// O reserva só entra se não for muito pior, já descontada a condição de cada um.
+    static let rotationMaxDrop = 3.0
+
+    /// Sugestões de rodízio para uma escalação: um reserva por titular cansado, sempre com a escalação ainda válida.
+    func rotationSwaps(for ids: [Int]) -> [RotationSwap] {
+        guard selectedClubID != nil, liveMatch == nil else { return [] }
+        let tired = ids.compactMap { player($0) }
+            .filter { $0.condition < Self.tiredCondition }
+            .sorted { $0.condition < $1.condition }
+        var lineup = ids
+        var swaps: [RotationSwap] = []
+        for starter in tired {
+            let candidates = clubRoster.filter { reserve in
+                !reserve.isYouth && !lineup.contains(reserve.id) && reserve.isAvailable(matchDay: matchDayIndex)
+                    && reserve.condition >= Self.tiredCondition && reserve.canPlay(as: starter.position)
+                    && reserve.effectiveOverall >= starter.effectiveOverall - Self.rotationMaxDrop
+            }
+            for reserve in candidates.sorted(by: { $0.effectiveOverall > $1.effectiveOverall }) {
+                var trial = lineup
+                guard let index = trial.firstIndex(of: starter.id) else { break }
+                trial[index] = reserve.id
+                if lineupProblem(trial) == nil {
+                    lineup = trial
+                    swaps.append(RotationSwap(outgoingID: starter.id, incomingID: reserve.id))
+                    break
+                }
+            }
+        }
+        return swaps
+    }
+}
