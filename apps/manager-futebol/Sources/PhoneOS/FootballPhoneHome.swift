@@ -62,6 +62,13 @@ struct PhoneHomeScreen: View {
                     }
                     .padding(.horizontal, 4)
                 }
+                // A última fileira de ícones pode passar do espaço visível: o esmaecido embaixo mostra que a grade rola.
+                .mask(
+                    VStack(spacing: 0) {
+                        Rectangle()
+                        LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 26)
+                    }
+                )
                 dock
             }
             .padding(.horizontal, 16)

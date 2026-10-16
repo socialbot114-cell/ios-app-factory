@@ -11,6 +11,8 @@ struct FootballModesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Ajustes e modos",
+                                 subtitle: "Dificuldade, carreiras salvas, avisos e desafios.")
             FootballDifficultyRulesPanel(career: $career)
             if let saveSlots { saveSlots }
             FootballPhonePreferencesPanel(career: $career)

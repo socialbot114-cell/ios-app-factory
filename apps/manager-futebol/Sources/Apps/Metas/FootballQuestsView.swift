@@ -8,6 +8,8 @@ struct FootballQuestsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Suas metas",
+                                 subtitle: "Missões rápidas, missões de temporada e as metas que você escolhe. As recompensas caem sozinhas.")
             FactoryMetric(label: "Missões concluídas", value: "\(career.world.quests.completedCount)", symbol: "checkmark.seal.fill", tint: .blue)
             FootballGoalsPlannerPanel(career: $career, onOpenApp: onOpenApp)
             let weekly = career.world.quests.active.filter { !$0.seasonal && !$0.completed && $0.origin != .player }

@@ -259,13 +259,18 @@ struct FootballLiveMatchView: View {
                 // "Trocar (0/5)" quebrava em duas linhas e ficava maior que os botões vizinhos.
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                HStack(spacing: 8) {
-                    Text("Lances-chave").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    Picker("Lances-chave", selection: $keyMoments) {
-                        ForEach(KeyMomentMode.allCases) { Text($0.rawValue).tag($0) }
+                // Ajuste raro: um menu pequeno no lugar de uma terceira fileira de controles.
+                HStack {
+                    Menu {
+                        Picker("Lances-chave", selection: $keyMoments) {
+                            ForEach(KeyMomentMode.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                    } label: {
+                        Label("Lances-chave: \(keyMoments.rawValue)", systemImage: "sparkles")
+                            .font(.caption.weight(.semibold))
                     }
-                    .pickerStyle(.segmented)
                     .accessibilityIdentifier("live-key-moments")
+                    Spacer()
                 }
                 if live.sim.minute == 45 && !running {
                     Label("Intervalo: converse com o time abaixo, troque jogadores e ajuste a tática antes do 2º tempo.", systemImage: "person.2.wave.2.fill")

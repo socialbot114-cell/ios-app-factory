@@ -12,6 +12,8 @@ struct FootballSocialView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Redes do treinador",
+                                 subtitle: "Seguidores, polêmicas e o que falam de você e do clube.")
             HStack(spacing: 12) {
                 FactoryMetric(label: social.verified ? "Seguidores · verificado" : "Seguidores", value: FootballFormat.compact(social.coachFollowers),
                               symbol: social.verified ? "checkmark.seal.fill" : "person.2.fill", tint: .pink)

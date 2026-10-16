@@ -11,6 +11,8 @@ struct FootballBusinessView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Receitas fora de campo",
+                                 subtitle: "Loja, projetos, patrocínios e programas que rendem ao clube.")
             HStack(spacing: 12) {
                 FactoryMetric(label: "Caixa do clube", value: FootballFormat.money(career.transferBudget), symbol: "banknote.fill", tint: FootballTheme.accent)
                 FactoryMetric(label: "Lojinha por jogo", value: FootballFormat.money(career.merchRevenuePerMatchDay), symbol: "bag.fill", tint: .indigo)

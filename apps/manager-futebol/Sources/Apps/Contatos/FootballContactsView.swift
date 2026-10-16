@@ -11,8 +11,8 @@ struct FootballContactsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Seis pessoas que acompanham a sua carreira. Conversar custa energia e só dá para uma conversa por dia de jogo. Quem fica sem atenção esfria.")
-                .font(.subheadline).foregroundStyle(.secondary)
+            FootballScreenHeader(career: career, title: "Quem acompanha você",
+                                 subtitle: "Seis pessoas acompanham a sua carreira. Conversar custa energia e só dá para uma conversa por dia de jogo. Quem fica sem atenção esfria.")
             if let note {
                 Label(note, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }

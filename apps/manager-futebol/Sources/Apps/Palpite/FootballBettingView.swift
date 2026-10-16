@@ -21,6 +21,8 @@ struct FootballBettingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Seus palpites",
+                                 subtitle: "Fichas fictícias, sem valor real. Nada na carreira exige apostar.")
             if !captureFocus { walletPanel }
             if let note {
                 Label(note, systemImage: "ticket.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)

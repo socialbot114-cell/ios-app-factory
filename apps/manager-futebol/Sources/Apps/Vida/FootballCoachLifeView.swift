@@ -12,6 +12,8 @@ struct FootballCoachLifeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Vida do treinador",
+                                 subtitle: "Caixa pessoal, energia, estresse e as atividades fora do clube.")
             HStack(spacing: 12) {
                 FactoryMetric(label: "Caixa pessoal", value: FootballFormat.money(coach.personalCash), symbol: "wallet.bifold.fill", tint: FootballTheme.gold)
                 FactoryMetric(label: "Salário/temporada", value: FootballFormat.money(career.coachSalaryPerSeason), symbol: "briefcase.fill", tint: .teal)

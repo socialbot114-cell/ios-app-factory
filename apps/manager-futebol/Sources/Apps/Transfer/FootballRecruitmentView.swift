@@ -58,7 +58,7 @@ struct FootballTransferTalksPanel: View {
         case .clubOffer:
             let base = career.player(talk.playerID).map { career.askingPrice(for: $0) } ?? 0
             // Mesmo acréscimo do motor: +3% por parcela extra.
-            let ask = Int(Double(base) * (1 + 0.03 * Double(installments - 1)) / 10_000) * 10_000
+            let ask = career.installmentAdjustedAsk(base, installments: installments)
             Stepper("Parcelas: \(installments)x", value: $installments, in: 1...4).font(.caption)
             Text("O clube pede \(FootballFormat.money(ask))\(installments > 1 ? " (+3% por parcela extra)" : "").")
                 .font(.caption2).foregroundStyle(.secondary)
@@ -101,9 +101,14 @@ struct FootballTransferTalksPanel: View {
             }
         case .agreed:
             if let summary = career.costSummary(talkID: talk.id) {
-                Text("Entrada \(FootballFormat.money(summary.upfront)) · parcelas \(FootballFormat.money(summary.laterInstallments)) · salários \(FootballFormat.money(summary.totalWages)) em \(FootballFormat.plural(talk.years, "ano", "anos"))")
-                    .font(.caption.monospacedDigit())
-                Text("Custo total \(FootballFormat.money(summary.total)). Menor caixa garantido depois: \(FootballFormat.money(summary.lowestProjectedCash)).")
+                VStack(spacing: 5) {
+                    costRow("Entrada agora", summary.upfront)
+                    if summary.laterInstallments > 0 { costRow("Parcelas depois", summary.laterInstallments) }
+                    costRow("Salários em \(FootballFormat.plural(talk.years, "ano", "anos"))", summary.totalWages)
+                    Divider()
+                    costRow("Custo total", summary.total, bold: true)
+                }
+                Text("Menor caixa garantido depois: \(FootballFormat.money(summary.lowestProjectedCash)).")
                     .font(.caption2).foregroundStyle(summary.lowestProjectedCash < 0 ? .red : .secondary)
                 if !summary.fitsWageCap { Text("A folha passaria do teto da diretoria.").font(.caption2).foregroundStyle(.red) }
             }
@@ -115,6 +120,15 @@ struct FootballTransferTalksPanel: View {
             }
         default:
             EmptyView()
+        }
+    }
+
+    /// Uma linha de valor do custo total: rótulo à esquerda, valor alinhado à direita.
+    private func costRow(_ label: String, _ amount: Int, bold: Bool = false) -> some View {
+        HStack {
+            Text(label).font(bold ? .caption.weight(.bold) : .caption).foregroundStyle(bold ? .primary : .secondary)
+            Spacer()
+            Text(FootballFormat.money(amount)).font((bold ? Font.caption.weight(.bold) : Font.caption).monospacedDigit())
         }
     }
 

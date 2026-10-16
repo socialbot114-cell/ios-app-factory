@@ -396,6 +396,10 @@ struct FootballHome: View {
         }
     }
 
+    /// Nestes apps a própria tela já lista o que pede atenção (mensagens, metas, palpites, acontecimentos):
+    /// a faixa do topo só repetia o selo do ícone. O selo da tela inicial continua.
+    private static let appsListingTheirOwnAttention: Set<PhoneApp> = [.messages, .quests, .betting, .alerts]
+
     private func appWindow(_ app: PhoneApp) -> some View {
         NavigationStack {
             VStack(spacing: 10) {
@@ -409,7 +413,7 @@ struct FootballHome: View {
                     FirstCareerGuideToast(step: step) { dismissFirstRunGuideToast(step) }
                         .padding(.horizontal, 16)
                 }
-                if let attention = career.phoneAppAttention(appID: app.rawValue) {
+                if !Self.appsListingTheirOwnAttention.contains(app), let attention = career.phoneAppAttention(appID: app.rawValue) {
                     PhoneAppAttentionBanner(app: app, attention: attention)
                         .padding(.horizontal, 16)
                 }
