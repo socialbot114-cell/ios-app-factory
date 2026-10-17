@@ -292,7 +292,7 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 2. **Builds 24 e 25:** entregues.
 3. **Build 26:** MOM-01, CLR-01, CLR-02, CLR-04 e TEL-11. CLR-03 espera a sua decisão. O resumo em cartão (CLR-01) vem antes de MOM-01, porque o fim de jogo reaproveita o mesmo cartão.
 4. **Build 27:** IOS-01 a IOS-03, SOM-01 (só depois da estimativa de custo aprovada), MOM-02 a MOM-04.
-5. **Build 28:** PRF-01 a PRF-03, RPL-01, AUX-01, EVO-01.
+5. **Build 28:** PRF-01, PRF-02, PRF-03 (só levar o mapa ao resumo), RPL-01, AUX-01, EVO-01.
 6. **Builds 29 a 31 (seção 6c):** mundo visual, ao vivo e patrocínio, sistema do celular. AOV-01 a AOV-04 podem antecipar.
 7. **Qualidade:** QLD-02 antes do build 26, para medir o efeito das mudanças de tela. QLD-03 antes de a revisão no aparelho ficar frequente.
 8. **Equilíbrio e mundo vivo (seção 6):** um item de cada vez, com decisão e medição antes e depois.
