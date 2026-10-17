@@ -1,15 +1,16 @@
-# Roadmap Manager de Futebol — builds 24 a 26
+# Roadmap Manager de Futebol — builds 24 em diante
 
-Escrito em 16/out/2026 (horário de Brasília), depois da rodada de polimento do build 23.
+Escrito em 16/out/2026 (horário de Brasília) e atualizado em 17/out, depois dos builds 24 e 25.
 Este documento continua o `docs/ROADMAP-FUTOS.md`, que é cronológico e muito longo. Aqui ficam só os próximos passos, com critérios de aceite.
 
 ## 1. Onde estamos
 
-- **No TestFlight interno:** 1.1 (23), branch `release/1.1-23` @ `c59ce2f`, run `38939859482`, todos os passos verdes (gate de testes de iPhone e iPad, archive, upload e ativação).
-- **Linha de entrega:** `release/1.1-21` → `release/1.1-22` → `release/1.1-23`. Nenhuma delas foi mesclada em `feature/entrega-a-ritmo` ainda.
-- **O 1.1 (22)** trouxe: ações da base em 15, renovadas 50% na metade da temporada e 100% no fim; plantel de 30; escolha de titulares; pedidos à diretoria sobre salário e gastos; alertas dentro das fichas.
-- **O 1.1 (23)** trouxe: singular e plural em mais de 60 textos; toque na linha inteira em seis listas; alerta dentro da folha de mensagem; Tática com o campo primeiro; botão Trocar sem quebra de linha; onboarding centralizado; texto de renovação na Academia.
-- **Antes e depois do 23:** artefato publicado em https://claude.ai/artifact/LFpTygSbRq9VdvxGpFxs8X
+- **No TestFlight interno:** 1.1 (25), branch `release/1.1-25` @ `9cc68fd`, run `38993534322`, todos os passos verdes (gate de iPhone e iPad, archive, upload e ativação).
+- **1.1 (24)** (lógica e mercado): `release/1.1-24` @ `27bf294`, run `38965319745`, verde.
+- **1.1 (23)** (polimento de textos e toques): `release/1.1-23` @ `c59ce2f`, run `38939859482`, verde.
+- **Linha de entrega:** `release/1.1-21` → `22` → `23` → `24` → `25`. Nenhuma foi mesclada em `feature/entrega-a-ritmo` ainda.
+- **Antes e depois:** build 23 em https://claude.ai/artifact/LFpTygSbRq9VdvxGpFxs8X; builds 24 e 25 em https://claude.ai/artifact/DpRFBWwcH4w1XHa5nu6kzi
+- **Sem revisão no aparelho** até agora. Tudo vem de simulador, testes e simulações.
 
 ## 2. Diagnóstico que origina este roadmap
 
@@ -78,6 +79,8 @@ Mercado no dia 0 (caixa 7,5M, folha 3,25M, teto 4,06M):
 
 ## 4. Build 24 — lógica e mercado
 
+**Estado: enviado e ativado em 16/out.** Entregues: CMP-01, CMP-02, CMP-03, PRT-01, QLD-01, ELE-01, TUT-01. **Não entrou:** SEM-01 (resumo da semana), que passa para a seção 6b. CMP-04 foi retirado: a lista de parcelas nunca chega vazia à virada.
+
 Objetivo: tornar as compras coerentes e medir o equilíbrio da partida. **Sem mexer na economia.** Tamanho: médio. Validação: Core no Docker, `validate.yml`, depois TestFlight.
 
 | ID | Item | Critério de aceite | Onde | Tam. |
@@ -94,6 +97,8 @@ Objetivo: tornar as compras coerentes e medir o equilíbrio da partida. **Sem me
 **Fora do build 24, de propósito:** teto da folha, contratos da IA e caixa da IA. Mudam o equilíbrio do jogo e pedem conversa antes (seção 6).
 
 ## 5. Build 25 — telas
+
+**Estado: enviado e ativado em 17/out.** Entregues: TEL-01 (10 apps, mais Ajustes), TEL-02, TEL-04, TEL-05, TEL-06, TEL-07, TEL-08 (o gráfico já existia; subiu na tela), TEL-10. TEL-03 e TEL-09 ficaram **parciais**: o verde de destaque ficou adaptativo, mas os botões secundários continuam apagados no tema escuro (agora TEL-11). **Não entrou:** SOM-01, por falta de arquivos de áudio. Clube, Gestor e Mensagens mantêm a abertura própria.
 
 Objetivo: consistência entre os apps e uma sensação mais premium. Tamanho: grande, por tocar muitos arquivos. Cada item entra com captura antes e depois. A separação do build 24 é recomendada: se algo quebrar, fica claro qual das duas mudanças causou.
 
@@ -116,7 +121,7 @@ Peças padrão, aplicadas nos 16 apps que ainda não as usam:
 | SOM-01 | Sons e vibração em gol, apito, assinatura de contrato e virada | Opção de desligar em Ajustes. **Depende de arquivos de áudio que ainda não existem no projeto.** | M |
 | TEL-10 | Artefato antes e depois do build 25 (como o do 23) | Publicado ao fim do build. | P |
 
-## 6. Build 26 em diante — equilíbrio e mundo vivo
+## 6. Equilíbrio e mundo vivo (sem build definido)
 
 Cada item mexe na economia ou no comportamento da IA. **Precisa de decisão do usuário antes** e vem com medição pela sonda (QLD-01).
 
@@ -132,13 +137,89 @@ Cada item mexe na economia ou no comportamento da IA. **Precisa de decisão do u
 | TMP-01 | **Semana com conteúdo.** Janelas medidas em datas, com contagem regressiva, e eventos entre os jogos. | O tempo entre rodadas deixa de ser vazio. | Médio |
 | LOJ-01 | **Loja.** Ligar a compra de verdade (StoreKit) com o Market Pro entregando algo, ou tirar a Loja da tela inicial até lá. | Hoje os módulos Pro não bloqueiam nada. | Médio (depende de contas e de produtos no App Store Connect) |
 
+## 6b. Ideias adicionadas em 17/out
+
+Três pacotes, em ordem. Cada item é uma proposta, ainda não medida nem testada. Os que mexem no equilíbrio do jogo estão na seção 6 e continuam esperando decisão.
+
+### Build 26 — momentos de pico e clareza (telas e textos, sem mexer na economia)
+
+Achados que originam o pacote, vistos nas capturas do build 25: a virada de temporada (escura e dourada) é a tela mais premium, e fim de jogo, título e coletiva usam o cartão branco comum; o resumo pós-jogo repete a mesma causa em quatro linhas; a central de notificações lista "Zebra na copa" três vezes seguidas; a coletiva não mostra o que cada tom custa.
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| MOM-01 | **Fim de jogo na linguagem da virada.** Fundo escuro, placar grande, uma frase de manchete e vibração; vale também para título, acesso e rebaixamento. | Vitória, empate e derrota têm tratamentos distintos. Respeita "Reduzir movimento". | M |
+| CLR-01 | **Resumo do jogo em um cartão.** Três números, uma causa e a próxima ação; o detalhe fica recolhido. | A causa de um resultado aparece uma vez, não uma por linha. | M |
+| CLR-02 | **Notificações agrupadas** por tipo e dia ("3 zebras na copa"). | Nenhum título repetido em sequência na central. | P |
+| CLR-04 | **Coletiva com prévia do efeito** (torcida, vestiário, diretoria) antes de escolher o tom. | Cada opção mostra o que costuma mudar, sem esconder o risco. | M |
+| TEL-11 | **Botões do tema escuro.** Secundários legíveis e principais com texto branco, tratados separadamente. | Razão de contraste do texto de 4,5:1 ou mais nos dois tipos, medida nas capturas escuras. | M |
+| CLR-03 | **Tela "Hoje" única** (antes PIL-04 e SEM-01). **Depende de decisão sua.** | Uma tela com resultado, lesões, prazos e a próxima decisão. | M |
+
+### Build 27 — experiência de app iOS e som
+
+Exige configuração no projeto Xcode e na conta Apple; por isso fica separado.
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| IOS-01 | **Live Activity** com o placar ao vivo na tela bloqueada. | Atualiza a cada gol e some no apito final. | G |
+| IOS-02 | **Widget** da tela inicial com o próximo jogo. | Mostra adversário, data e horário do calendário do jogo. | M |
+| IOS-03 | **Notificação local** "jogo hoje". | Pode ser desligada em Ajustes. | P |
+| SOM-01 | **Sons de apito, torcida e gol.** Há uma ferramenta de áudio conectada que gera efeitos, mas gasta créditos: **estimar o custo e pedir aprovação antes de gerar qualquer arquivo.** | Opção de desligar em Ajustes; sons só depois de um toque do jogador. | M |
+| MOM-02 | **Apresentação do reforço.** Cartão do atleta ao assinar, no lugar do alerta. | Aparece uma vez por contratação. | P |
+| MOM-03 | **Capa do dia seguinte:** manchete gerada do resultado e das reações. | Texto coerente com o placar e as repercussões do jogo. | M |
+| MOM-04 | **Cartão de temporada compartilhável** como imagem. | Gera a imagem sem sair do app. | M |
+
+### Build 28 — profundidade e análise
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| PRF-01 | **Tática visual:** zonas de pressão e linha defensiva desenhadas no campo. | Os controles de instrução têm um reflexo visual. | G |
+| PRF-02 | **Ficha do atleta com radar de atributos** e comparação lado a lado. | Compara dois atletas na mesma escala. | M |
+| PRF-03 | **Mapa de finalizações** do jogo, com xG e tipo de finalização (o motor já guarda ambos; as coordenadas precisam ser conferidas). | Cada chute aparece no campo, com cor por resultado. | M |
+| RPL-01 | **Replay do gol** no campo 2D, a partir dos eventos da partida. | Repete os últimos lances antes do gol. | G |
+| AUX-01 | **Auxiliar técnico** com recomendações e personalidade (escalação, rodízio, lesões). | Cada recomendação explica o motivo em uma frase. | M |
+| EVO-01 | **Gráfico de evolução de atributos** por temporada. | Mostra ganho e queda por atributo. | P |
+
+### Qualidade (corre em paralelo aos três builds)
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| QLD-02 | **Teste visual automático:** compara as capturas entre builds e aponta o que mudou sem querer. | Gera uma lista de telas com diferença maior que um limite. | M |
+| QLD-03 | **Botão "Relatar problema"** no app, com captura de tela, para o TestFlight. | Envia a captura e o estado resumido da carreira. | M |
+| QLD-04 | **Passada de acessibilidade:** texto grande e leitor de tela. | Nenhum texto cortado no maior tamanho de fonte. | M |
+| PER-01 | **Métricas de desempenho no CI:** tempo de abertura, tamanho do save e quadros na partida ao vivo. | Falha se passar de um limite combinado. | M |
+
+### Banco de ideias (segunda rodada)
+
+Ainda sem critérios; entram em build quando houver decisão. A coluna de viabilidade diz o que já existe no código.
+
+| Tema | Ideia | O que já existe |
+|---|---|---|
+| Mundo | **Rivalidades com história:** placar histórico e rivais de cada clube. | O motor já registra o confronto direto. |
+| Mundo | **Ídolos e capitão** com vínculo com o clube e a torcida. | Capitão existe na Rodada Mágica. |
+| Mundo | **Estádio que evolui** na imagem conforme as obras. | Obras e imagem do estádio existem. |
+| Carreira | **Convite para a seleção** como evolução da carreira do treinador. | Ofertas de clube e convocações de atletas existem. |
+| Carreira | **Filosofia do treinador:** identidade tática que evolui e atrai atletas e ofertas. | Estilos e instruções existem. |
+| Carreira | **Plano de 3 temporadas** com metas e pontos de checagem. | Reuniões e metas da diretoria existem. |
+| Elenco | **Entrosamento** entre duplas e linhas. | — |
+| Elenco | **Vestiário:** grupos, conflitos e liderança. | Moral e promessas existem. |
+| Mercado | **Janela em datas** com contagem regressiva e último dia dramático (ofertas relâmpago). | Último dia da janela já gera propostas. |
+| Mercado | **Olheiros por região** em mapa. | Missões de olheiro por região existem. |
+| Competições | **Torneio continental** para os melhores da Série A. | — |
+| Competições | **Modos de carreira:** Resgate (clube em crise) e Fundação (Série B, orçamento mínimo). | Cenários de desafio existem. |
+| Personalização | **Criar o próprio clube:** nome, cores e escudo. | Escudos e cores por clube existem. |
+| Plataforma | **Save no iCloud** com sincronia entre iPhone e iPad. | Três espaços de save locais existem. |
+| Plataforma | **Idiomas** (inglês e espanhol) e modo para daltonismo. | — |
+
 ## 7. Ordem sugerida e dependências
 
-1. **Rodada no aparelho** com o 1.1 (23): iniciar carreira, comprar um jogador, simular uma rodada, virar a temporada. Não gasta build e reordena este plano.
-2. **Build 24:** CMP-01 a CMP-03, PRT-01, QLD-01, ELE-01, TUT-01 (e SEM-01 se sobrar tempo). QLD-01 deve entrar **antes** de PRT-01 para que o ajuste da partida seja medido.
-3. **Build 25:** TEL-01 a TEL-10 e SOM-01. TEL-01 e TEL-02 primeiro; os demais dependem das peças padrão.
-4. **Build 26+:** itens da seção 6, um de cada vez, com a decisão do usuário e a medição antes e depois.
-5. **Mesclagem:** decidir quando `release/1.1-22` e `release/1.1-23` entram em `feature/entrega-a-ritmo`.
+1. **Rodada no aparelho** com o 1.1 (25): iniciar carreira, comprar um jogador, simular uma rodada, virar a temporada. Não gasta build e reordena este plano.
+2. **Builds 24 e 25:** entregues.
+3. **Build 26:** MOM-01, CLR-01, CLR-02, CLR-04 e TEL-11. CLR-03 espera a sua decisão. O resumo em cartão (CLR-01) vem antes de MOM-01, porque o fim de jogo reaproveita o mesmo cartão.
+4. **Build 27:** IOS-01 a IOS-03, SOM-01 (só depois da estimativa de custo aprovada), MOM-02 a MOM-04.
+5. **Build 28:** PRF-01 a PRF-03, RPL-01, AUX-01, EVO-01.
+6. **Qualidade:** QLD-02 antes do build 26, para medir o efeito das mudanças de tela. QLD-03 antes de a revisão no aparelho ficar frequente.
+7. **Equilíbrio e mundo vivo (seção 6):** um item de cada vez, com decisão e medição antes e depois.
+8. **Mesclagem:** decidir quando `release/1.1-22` a `release/1.1-25` entram em `feature/entrega-a-ritmo`.
 
 ## 8. Como cada build é entregue
 
@@ -158,9 +239,11 @@ Cada item mexe na economia ou no comportamento da IA. **Precisa de decisão do u
 
 ## 10. Perguntas em aberto
 
-1. Build 24 só de lógica e build 25 só de telas, ou juntos? (Recomendação: separados.)
-2. Quando mesclar `release/1.1-22` e `release/1.1-23` em `feature/entrega-a-ritmo`?
-3. O que exatamente quebrava no onboarding e na virada de temporada?
-4. Para os sons (SOM-01): há arquivos de áudio, ou será preciso criar ou licenciar?
-5. Para a Loja (LOJ-01): ligar a compra de verdade ou retirar da tela inicial por enquanto?
-6. Para o teto da folha (ECO-01): qual proporção da receita a diretoria deve aceitar?
+1. Quando mesclar `release/1.1-22` a `release/1.1-25` em `feature/entrega-a-ritmo`?
+2. O que exatamente quebrava no onboarding e na virada de temporada? (Ainda não confirmado.)
+3. Sons (SOM-01): posso pedir a estimativa de custo da ferramenta de áudio conectada? Nenhum arquivo é gerado sem a sua aprovação.
+4. Live Activity e widget (IOS-01 e IOS-02): a conta Apple e o projeto Xcode permitem adicionar as extensões?
+5. Tela "Hoje" (CLR-03): vale a decisão pendente desde o 1.1 (21)?
+6. Loja (LOJ-01): ligar a compra de verdade ou retirar da tela inicial?
+7. Teto da folha (ECO-01): qual proporção da receita a diretoria deve aceitar?
+8. Qual pacote vem primeiro depois do 26: iOS e som (27) ou profundidade (28)?
