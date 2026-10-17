@@ -5,7 +5,8 @@ Este documento continua o `docs/ROADMAP-FUTOS.md`, que é cronológico e muito l
 
 ## 1. Onde estamos
 
-- **No TestFlight interno:** 1.1 (25), branch `release/1.1-25` @ `9cc68fd`, run `38993534322`, todos os passos verdes (gate de iPhone e iPad, archive, upload e ativação).
+- **1.1 (26)** (placares ao vivo, celular, patrocinadores, cidade): branch `release/1.1-26`, em validação em 17/out. Ver a seção 6d.
+- **No TestFlight interno antes dele:** 1.1 (25), branch `release/1.1-25` @ `9cc68fd`, run `38993534322`, todos os passos verdes (gate de iPhone e iPad, archive, upload e ativação).
 - **1.1 (24)** (lógica e mercado): `release/1.1-24` @ `27bf294`, run `38965319745`, verde.
 - **1.1 (23)** (polimento de textos e toques): `release/1.1-23` @ `c59ce2f`, run `38939859482`, verde.
 - **Linha de entrega:** `release/1.1-21` → `22` → `23` → `24` → `25`. Nenhuma foi mesclada em `feature/entrega-a-ritmo` ainda.
@@ -286,11 +287,39 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 - AOV-01 a AOV-04 são pequenos e não dependem de arte. Podem entrar já no build 26 ou 27 se você preferir ver o resultado ao vivo antes.
 - Tudo que escolhe, guarda ou edita do celular vai em campos opcionais do save.
 
+## 6d. Build 26 — o que entrou, o que ficou de fora e por quê (17/out)
+
+**Decisão de escopo:** juntar num só build tudo o que é seguro, sem mexer na economia e sem depender de arte nova, áudio ou extensões do Xcode. Cada item de lógica tem teste no Core (Linux); as telas são conferidas pelo GitHub Actions e por capturas.
+
+### Entrou
+
+| Pedido | Itens | Como ficou |
+|---|---|---|
+| Resultados de outros jogos ao vivo | AOV-01, AOV-02, AOV-03, AOV-04 | Aviso curto de gol em outro jogo durante a partida (só dos jogos de clubes até duas posições do seu na tabela; em saltos de relógio mostra o último). Painel "Outros jogos da rodada" com estrela nos relevantes e **posição provisória** na tabela ("subiu 2 desde o início da rodada"). Autor do gol no aviso. No apito final o painel vira "Rodada completa". Lógica em `Core/FootballLiveRound.swift`. |
+| Fim de jogo | MOM-01 (parcial), MOM-03 (manchete) | Manchete de uma linha no cartão do resultado, com gradiente que escurece como na virada de temporada. **Não entrou** a tela cheia dedicada nem a capa de jornal separada. |
+| Resumo e fluxo | CLR-01, CLR-02, CLR-04 | Resumo da rodada em cartão: manchete, fichas curtas com a variação, causa dita uma vez, próxima atenção e "Ver detalhes". Notificações com o mesmo título viram uma ("3 mensagens não lidas"). Coletiva mostra o efeito base de cada tom (torcida, diretoria, moral, rival); um teste confere os números contra o motor. |
+| Patrocinadores | PAT-01 (parcial) | As placas de LED do campo usam a cor de cada marca contratada, e uma faixa sob o campo lista camisa, espaços vendidos e nome do estádio. **Não entrou** nome escrito nas placas nem logo na camisa. |
+| Cidade | CID-01 (parcial) | Painel "Cidade" no Clube, com o horizonte por porte (pequena, média, grande; grande à noite). É só apresentação: não muda nenhuma regra. |
+| Sistema do celular | OS-01, OS-02, OS-03 (parcial), OS-04 | Botão de bloquear a tela. Cinco papéis de parede à escolha. Tema claro, escuro ou automático. Vibração com liga e desliga (as 17 vibrações do app respeitam). Trocar os apps de lugar (segurar um ícone, tocar em um e depois em outro), com restaurar. Restaurar padrões do celular. **Não entraram** pastas, várias páginas, widgets escolhíveis nem dock editável. |
+| Qualidade | QLD-03, TEL-11 | "Relatar um problema" em Ajustes compartilha um resumo curto (versão, ponto da carreira, últimas ações). Botões secundários com contraste nos dois temas (texto mais claro no escuro). |
+
+### Ficou de fora, e a razão
+
+| Item | Razão |
+|---|---|
+| EST-01, PRS-01 a PRS-03, UNI-01, UNI-03 | Dependem de gerar arte nova no Blender, que não está instalado nesta máquina. Aguardam a decisão da seção 10. |
+| SOM-01 | Não há arquivos de áudio, e gerar efeitos gasta créditos: precisa da sua aprovação do custo. |
+| IOS-01 a IOS-03 | Live Activity e widget exigem alvos novos no projeto e capacidades na conta Apple. |
+| ECO-01, ECV-01 a ECV-05, PAT-02, PAT-03, CID-02 | Mexem no equilíbrio da economia e do jogo. Seguem a regra de medir antes e depois, e ficam para builds próprios. |
+| CAM-01, CAM-02 | Clima e atmosfera no campo pedem mais desenho em Canvas do que dá para conferir sem aparelho. |
+| CLR-03, SEM-01 | A decisão da tela "Hoje" continua pendente. |
+| OS-05 a OS-08 | Central de controle, Foco, apps de sistema novos e seletor de apps: pacote próprio do celular, depois deste. |
+
 ## 7. Ordem sugerida e dependências
 
 1. **Rodada no aparelho** com o 1.1 (25): iniciar carreira, comprar um jogador, simular uma rodada, virar a temporada. Não gasta build e reordena este plano.
 2. **Builds 24 e 25:** entregues.
-3. **Build 26:** MOM-01, CLR-01, CLR-02, CLR-04 e TEL-11. CLR-03 espera a sua decisão. O resumo em cartão (CLR-01) vem antes de MOM-01, porque o fim de jogo reaproveita o mesmo cartão.
+3. **Build 26:** em andamento, com o pacote da seção 6d (inclui os avisos ao vivo, o celular, os patrocinadores e a cidade, que antes estavam nos builds 29 a 31).
 4. **Build 27:** IOS-01 a IOS-03, SOM-01 (só depois da estimativa de custo aprovada), MOM-02 a MOM-04.
 5. **Build 28:** PRF-01, PRF-02, PRF-03 (só levar o mapa ao resumo), RPL-01, AUX-01, EVO-01.
 6. **Builds 29 a 31 (seção 6c):** mundo visual, ao vivo e patrocínio, sistema do celular. AOV-01 a AOV-04 podem antecipar.
