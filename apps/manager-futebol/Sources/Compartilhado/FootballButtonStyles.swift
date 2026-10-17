@@ -14,7 +14,7 @@ struct FootballSecondaryButtonStyle: ButtonStyle {
         let fill: Color = destructive ? .red : (scheme == .dark ? Color(red: 0.30, green: 0.78, blue: 0.55) : FootballTheme.accent)
         configuration.label
             .foregroundStyle(ink)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(fill.opacity(configuration.isPressed ? 0.30 : 0.16), in: Capsule())
             .opacity(isEnabled ? 1 : 0.45)

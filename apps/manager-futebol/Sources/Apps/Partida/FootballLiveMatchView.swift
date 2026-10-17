@@ -265,7 +265,7 @@ struct FootballLiveMatchView: View {
                 .font(.subheadline.weight(.semibold))
                 // "Trocar (0/5)" quebrava em duas linhas e ficava maior que os botões vizinhos.
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
                 // Ajuste raro: um menu pequeno no lugar de uma terceira fileira de controles.
                 HStack {
                     Menu {
