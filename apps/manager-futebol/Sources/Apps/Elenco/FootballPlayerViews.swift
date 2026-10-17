@@ -112,7 +112,7 @@ struct FootballPlayerDetailView: View {
                 Button { showRenewal = true } label: {
                     Label("Negociar renovação", systemImage: "signature").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("renew-\(player.id)")
             }
         }
@@ -252,7 +252,7 @@ struct FootballPlayerDetailView: View {
                     } label: {
                         Label("Pedir por empréstimo · \(FootballFormat.money(career.loanFee(for: player)))", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                 }
                 watchButton(player)
             } else {
@@ -269,7 +269,7 @@ struct FootballPlayerDetailView: View {
             Button { showSubstitution = true } label: {
                 Label("Substituir este titular", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
         }
         if player.onLoan {
             if career.canBuyOutLoan(playerID: player.id), let option = player.purchaseOption {
@@ -294,7 +294,7 @@ struct FootballPlayerDetailView: View {
             Button { showLoanOut = true } label: {
                 Label("Emprestar a um clube", systemImage: "arrow.uturn.right.circle").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .disabled(!career.isTransferWindowOpen || !career.canRelease(playerID: player.id))
             Button {
                 if !career.promiseStarts(playerID: player.id) { notify("Não é possível prometer minutos a este atleta agora.") }
@@ -302,12 +302,12 @@ struct FootballPlayerDetailView: View {
             } label: {
                 Label("Prometer 3 jogos como titular", systemImage: "hand.thumbsup.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
         }
         Button(role: .destructive) { confirmSale = true } label: {
             Label("Vender agora por \(FootballFormat.money(price))", systemImage: "banknote").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(FootballSecondaryButtonStyle())
         .disabled(!career.canSell(playerID: player.id))
         .accessibilityIdentifier("sell-player-\(player.id)")
         Text("Venda imediata paga \(Int(FootballCareer.quickSaleRate * 100))% do valor. Propostas costumam pagar mais.")
@@ -327,7 +327,7 @@ struct FootballPlayerDetailView: View {
             Label(career.watchlist.contains(player.id) ? "Remover da lista de observação" : "Observar este atleta",
                   systemImage: career.watchlist.contains(player.id) ? "eye.slash.fill" : "eye.fill").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(FootballSecondaryButtonStyle())
     }
 
     private func detailRow(_ title: String, _ value: String) -> some View {

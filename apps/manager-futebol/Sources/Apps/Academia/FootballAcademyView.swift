@@ -98,7 +98,7 @@ struct FootballAcademyView: View {
             } label: {
                 Label("Fazer peneira · \(FootballFormat.money(career.tryoutCost))", systemImage: "figure.soccer").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("academy-tryout")
             Text("Quantas peneiras quiser, enquanto houver caixa e vaga na base. Cada uma traz de 1 a 3 jovens da região escolhida.")
             Text("Vagas na base: \(career.youthRoster.count) de \(FootballCareer.youthRosterLimit).").font(.caption).foregroundStyle(.secondary)
@@ -107,7 +107,7 @@ struct FootballAcademyView: View {
                 Button { releaseCandidate = weakest } label: {
                     Label("Liberar vaga: dispensar \(weakest.name)", systemImage: "person.badge.minus").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("academy-free-slot")
             }
         }
@@ -128,7 +128,7 @@ struct FootballAcademyView: View {
                     }
                     Spacer()
                     Button("Encerrar", role: .destructive) { career.cancelPartnership(id: partnership.id) }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .font(.caption.weight(.bold))
                 }
             }
@@ -432,7 +432,7 @@ struct FootballYouthDetailView: View {
                 Label("Observar de perto · \(FootballFormat.money(FootballCareer.academyObserveCost)) · 1 ação", systemImage: "binoculars.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("academy-observe")
             Button {
                 if career.promoteYouth(playerID: player.id) { dismiss() } else { message = promoteBlocker(player) }
@@ -448,7 +448,7 @@ struct FootballYouthDetailView: View {
             Button(role: .destructive) { confirmsRelease = true } label: {
                 Label("Dispensar", systemImage: "xmark.circle").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .confirmationDialog("Dispensar \(player.name)?", isPresented: $confirmsRelease, titleVisibility: .visible) {
                 Button("Dispensar", role: .destructive) {
                     career.releaseYouth(playerID: player.id)

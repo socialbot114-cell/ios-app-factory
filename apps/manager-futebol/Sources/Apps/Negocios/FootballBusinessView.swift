@@ -50,7 +50,7 @@ struct FootballBusinessView: View {
                     Label(career.shopUpgradeCost().map { "Ampliar · \(FootballFormat.money($0))" } ?? "Nível máximo", systemImage: "arrow.up.square.fill")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("shop-upgrade")
             }
             .font(.subheadline.weight(.semibold))
@@ -131,7 +131,7 @@ struct FootballBusinessView: View {
                                 note = "Amistoso: \(record.goalsFor) × \(record.goalsAgainst) contra \(team.name) · \(FootballFormat.money(record.revenue))."
                             }
                         }
-                        .buttonStyle(.bordered).font(.caption.weight(.bold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                     }
                 }
             }
@@ -141,7 +141,7 @@ struct FootballBusinessView: View {
             } label: {
                 Label("Turnê de pré-temporada", systemImage: "globe.americas.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .font(.subheadline.weight(.semibold))
             ForEach(business.friendlies.suffix(4).reversed()) { record in
                 Text("T\(record.season): \(record.goalsFor) × \(record.goalsAgainst) vs \(FootballSeason.teamName(record.opponentID))")

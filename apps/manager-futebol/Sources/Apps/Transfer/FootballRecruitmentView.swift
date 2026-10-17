@@ -66,7 +66,7 @@ struct FootballTransferTalksPanel: View {
                 ForEach([0.9, 1.0], id: \.self) { share in
                     let fee = Int(Double(ask) * share / 10_000) * 10_000
                     Button(FootballFormat.money(fee)) { report(career.proposeFee(talkID: talk.id, fee: fee, installments: installments)) }
-                        .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                 }
             }
             walkAway(talk)
@@ -89,7 +89,7 @@ struct FootballTransferTalksPanel: View {
                 ForEach([0.85, 1.0], id: \.self) { share in
                     let wage = Int(Double(needed) * share / 5_000) * 5_000
                     Button(FootballFormat.money(wage)) { report(career.proposeTerms(talkID: talk.id, wage: wage, years: years, role: role)) }
-                        .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                 }
             }
             walkAway(talk)
@@ -134,7 +134,7 @@ struct FootballTransferTalksPanel: View {
 
     private func walkAway(_ talk: TransferTalk) -> some View {
         Button("Desistir", role: .destructive) { career.walkAwayFromTransferTalk(talkID: talk.id) }
-            .buttonStyle(.bordered).font(.caption)
+            .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
     }
 
     private func report(_ outcome: TalkOutcome) {
@@ -179,7 +179,7 @@ struct FootballBriefsPanel: View {
             ForEach(career.recruitmentBriefs) { brief in briefSection(brief) }
             if creating { form } else if career.recruitmentBriefs.count < FootballCareer.maxBriefs {
                 Button { creating = true } label: { Label("Novo briefing", systemImage: "plus.circle.fill") }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("brief-new")
             }
         }
@@ -208,7 +208,7 @@ struct FootballBriefsPanel: View {
                     creating = false
                 }
                 .buttonStyle(.borderedProminent)
-                Button("Cancelar") { creating = false }.buttonStyle(.bordered)
+                Button("Cancelar") { creating = false }.buttonStyle(FootballSecondaryButtonStyle())
             }
         }
         .padding(10)
@@ -255,13 +255,13 @@ struct FootballBriefsPanel: View {
             if !row.warnings.isEmpty { Text(row.warnings.joined(separator: " · ")).font(.caption2).foregroundStyle(.orange) }
             HStack(spacing: 8) {
                 Button(pinned ? "Tirar da comparação" : "Comparar") { career.toggleShortlist(briefID: brief.id, playerID: row.playerID) }
-                    .buttonStyle(.bordered).font(.caption)
+                    .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
                 Button("Negociar") {
                     if career.startTransferTalk(playerID: row.playerID) == nil {
                         onAlert(career.transferTalkBlocker(playerID: row.playerID) ?? "Não foi possível abrir a negociação.")
                     }
                 }
-                .buttonStyle(.bordered).font(.caption)
+                .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
                 .accessibilityIdentifier("talk-start-\(row.playerID)")
             }
         }

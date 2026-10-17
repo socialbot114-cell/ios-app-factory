@@ -25,7 +25,7 @@ struct FootballContactTopicsView: View {
                 } label: {
                     Label("Outros assuntos", systemImage: "ellipsis.bubble.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("contact-topics-\(contact.role.rawValue)")
             }
         }
@@ -43,7 +43,7 @@ struct FootballContactTopicsView: View {
                 Button("Aceitar") { onNote(career.answerContactRequest(request.id, accept: true) ?? (block ?? "Não foi possível.")) }
                     .buttonStyle(.borderedProminent).disabled(block != nil)
                 Button("Recusar") { onNote(career.answerContactRequest(request.id, accept: false) ?? "") }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
             }
             .font(.caption)
         }

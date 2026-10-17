@@ -105,7 +105,7 @@ struct FootballOnboardingView: View {
         }
         .background { FootballBackdrop(drift: drift, imageOpacity: 0.5, zoom: 1.14, topShade: 0.35, glow: 0.18) }
         .preferredColorScheme(.dark)
-        .sensoryFeedback(.selection, trigger: page)
+        .footballHaptic(.selection, trigger: page)
         .onAppear {
             shown.insert(page)
             if !reduceMotion { drift = true }

@@ -43,7 +43,7 @@ struct FootballStarterPickerSheet: View {
                             } label: {
                                 Label("Tirar \(player.name) da escalação", systemImage: "person.badge.minus").frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(FootballSecondaryButtonStyle())
                             .accessibilityIdentifier("starter-remove")
                         }
                     }
@@ -92,7 +92,7 @@ struct FootballStarterPickerSheet: View {
             } label: {
                 Label("Usar a escalação ideal", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
         }
     }
 
@@ -125,7 +125,7 @@ struct FootballStarterPickerSheet: View {
                     } label: {
                         Label("Aplicar rodízio sugerido", systemImage: "arrow.triangle.2.circlepath").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("starter-rotation-apply")
                 }
             }

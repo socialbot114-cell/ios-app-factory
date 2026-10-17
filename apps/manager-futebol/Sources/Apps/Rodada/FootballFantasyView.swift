@@ -162,7 +162,7 @@ struct FootballFantasyView: View {
                 } label: {
                     Label("Sugestão", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("fantasy-suggest")
                 Button {
                     if career.setFantasyLineup(ids: lineup, captainID: captainID) {
@@ -314,7 +314,7 @@ struct FootballFantasyView: View {
                         onAlert(career.fantasyShareBlockReason(result) ?? "Publicação indisponível.")
                     }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .disabled(career.fantasyShareBlockReason(result) != nil)
                 .accessibilityIdentifier("fantasy-share-\(result.id)")
                 if let reason = career.fantasyShareBlockReason(result) {

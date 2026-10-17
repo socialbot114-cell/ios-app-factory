@@ -51,7 +51,7 @@ struct FootballOffseasonView: View {
             if closing { closingOverlay }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: step)
-        .sensoryFeedback(.impact(weight: .medium), trigger: impact)
+        .footballHaptic(.impact(weight: .medium), trigger: impact)
         .task(id: step) { await pace() }
         .onChange(of: career.offseason) { _, newValue in
             if newValue == nil { onFinish() }
@@ -399,7 +399,7 @@ struct FootballOffseasonView: View {
                     Label("Ver relatório completo", systemImage: "doc.richtext")
                         .font(.subheadline.weight(.semibold))
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .tint(.white)
                 .reveal(visibleCount >= 6)
                 .accessibilityIdentifier("offseason-full-report")

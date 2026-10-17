@@ -113,7 +113,7 @@ struct FootballTitleScreen: View {
         }
         .background { FootballBackdrop(drift: drift, imageOpacity: 0.55, zoom: 1.16, topShade: 0.25, glow: 0.22, seconds: 18) }
         .preferredColorScheme(.dark)
-        .sensoryFeedback(.impact(weight: .light), trigger: taps)
+        .footballHaptic(.impact(weight: .light), trigger: taps)
         .onAppear {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) { shown = true }
             guard !reduceMotion else { return }

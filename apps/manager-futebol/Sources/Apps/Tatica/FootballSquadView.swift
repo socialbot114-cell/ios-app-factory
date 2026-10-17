@@ -48,14 +48,14 @@ struct FootballSquadView: View {
                         } label: {
                             Label("Escalação ideal", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .accessibilityIdentifier("auto-lineup")
                         Button {
                             substitutionTarget = SubstitutionTarget(id: -1)
                         } label: {
                             Label("Trocar titular", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                     }
                     .font(.subheadline.weight(.semibold))
                     ForEach(career.lineupWarnings, id: \.self) { warning in

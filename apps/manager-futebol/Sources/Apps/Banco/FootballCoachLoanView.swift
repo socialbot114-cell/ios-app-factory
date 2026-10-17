@@ -24,7 +24,7 @@ struct FootballCoachLoanPanel: View {
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         if loan.status == .active {
                             Button("Perdoar o saldo") { loanToForgive = loan.id }
-                                .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                                .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                                 .accessibilityIdentifier("forgive-loan-\(loan.id)")
                         }
                     }

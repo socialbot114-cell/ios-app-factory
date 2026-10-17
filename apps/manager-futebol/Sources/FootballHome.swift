@@ -215,6 +215,17 @@ struct FootballHome: View {
             guard phase != .active, capture == nil else { return }
             FootballSaveStore().save(career, slot: activeSlot)
         }
+        .environment(\.footballHapticsEnabled, career.world.phone.preferences.hapticsOn)
+        .preferredColorScheme(Self.colorScheme(for: career.world.phone.preferences.themeChoice))
+    }
+
+    /// Tema escolhido em Ajustes; automático (nil) segue o aparelho.
+    private static func colorScheme(for choice: PhoneThemeChoice) -> ColorScheme? {
+        switch choice {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
     }
 
     // MARK: - O celular
@@ -223,6 +234,8 @@ struct FootballHome: View {
         ZStack {
             PhoneHomeScreen(career: career, onOpen: open, onNotifications: { showNotifications = true },
                             onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() },
+                            onLock: { withAnimation(.easeOut(duration: 0.35)) { locked = true } },
+                            onReorder: { ids in career.world.phone.preferences.homeOrder = ids.isEmpty ? nil : ids },
                             firstRunGuideStep: career.firstCareerGuideStep,
                             onFirstRunGuideContinue: continueFirstRunGuide,
                             onFirstRunGuideSkip: { career.skipFirstCareerGuide() },
@@ -269,7 +282,7 @@ struct FootballHome: View {
             }
         }
         .animation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: openApp)
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: openApp)
+        .footballHaptic(.impact(flexibility: .soft, intensity: 0.5), trigger: openApp)
     }
 
     private func unlock() {

@@ -88,7 +88,7 @@ struct FootballMatchPrepFlow: View {
 
     private var openSquadButton: some View {
         Button { dismiss(); onOpenSquad() } label: { Label("Abrir Tática", systemImage: "person.3.fill").frame(maxWidth: .infinity) }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
     }
 
     private var readyCard: some View {
@@ -105,7 +105,7 @@ struct FootballMatchPrepFlow: View {
         HStack(spacing: 10) {
             if index > 0 {
                 Button { withAnimation { index -= 1 } } label: { Label("Voltar", systemImage: "chevron.left").frame(maxWidth: .infinity) }
-                    .buttonStyle(.bordered).accessibilityIdentifier("prep-back")
+                    .buttonStyle(FootballSecondaryButtonStyle()).accessibilityIdentifier("prep-back")
             }
             if index < steps.count {
                 Button { withAnimation { index += 1 } } label: { Label(index == steps.count - 1 ? "Revisar" : "Próximo", systemImage: "chevron.right").frame(maxWidth: .infinity) }

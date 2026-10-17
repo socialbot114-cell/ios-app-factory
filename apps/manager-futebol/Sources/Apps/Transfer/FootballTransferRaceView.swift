@@ -53,7 +53,7 @@ struct FootballTransferRacePanel: View {
                         .buttonStyle(.plain)
                         Spacer()
                         Button(career.watchlist.contains(id) ? "Observando" : "Observar") { career.toggleWatch(playerID: id) }
-                            .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                            .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                     }
                 }
             }

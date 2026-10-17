@@ -40,7 +40,7 @@ struct FootballDashboardView: View {
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         }
-                        Button("Preparar escalação") { onNavigate(.squad) }.buttonStyle(.bordered)
+                        Button("Preparar escalação") { onNavigate(.squad) }.buttonStyle(FootballSecondaryButtonStyle())
                     }
                 }
                 if career.isFired {
@@ -283,7 +283,7 @@ struct FootballDashboardView: View {
                 Label(career.midweekRestUsed ? "Time descansado nesta semana" : "Descansar o time", systemImage: "bed.double.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .disabled(career.midweekRestUsed)
             .accessibilityIdentifier("midweek-rest")
             Button {
@@ -291,7 +291,7 @@ struct FootballDashboardView: View {
             } label: {
                 Label("Fazer peneira", systemImage: "figure.soccer").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("midweek-tryout")
             Button {
                 career.closeMidweek()
@@ -449,7 +449,7 @@ struct FootballDashboardView: View {
                     if career.playStyle != suggestion {
                         Button("Aplicar") { career.setPlayStyle(suggestion) }
                             .font(.caption.weight(.bold))
-                            .buttonStyle(.bordered)
+                            .buttonStyle(FootballSecondaryButtonStyle())
                             .accessibilityIdentifier("apply-suggestion")
                     } else {
                         PillLabel(text: "EM USO", systemImage: "checkmark")
@@ -470,7 +470,7 @@ struct FootballDashboardView: View {
             Button { showsPrepFlow = true } label: {
                 Label("Preparar a partida", systemImage: "checklist").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .font(.subheadline.weight(.semibold))
             .accessibilityIdentifier("prep-flow-open")
 
@@ -497,12 +497,12 @@ struct FootballDashboardView: View {
                 } label: {
                     Label("Simulação rápida", systemImage: "forward.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("simulate-round")
                 Button { onNavigate(.squad) } label: {
                     Label("Escalação", systemImage: "person.3.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
             }
             .font(.subheadline.weight(.semibold))
             Button {
@@ -515,7 +515,7 @@ struct FootballDashboardView: View {
             } label: {
                 Label("Simular até a próxima decisão", systemImage: "forward.end.alt.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .font(.subheadline.weight(.semibold))
             .accessibilityIdentifier("simulate-until-decision")
         }
@@ -652,7 +652,7 @@ struct FootballDashboardView: View {
             Text("Ajuste formação, estilo e treino no Elenco. Antes de cada jogo, leia o relatório do olheiro: cada estilo tem vantagens e fraquezas contra o plano do rival.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button { onNavigate(.squad) } label: { Label("Gerir elenco e tática", systemImage: "person.3.fill") }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
         }
     }
 
@@ -912,7 +912,7 @@ struct FootballOffersPanel: View {
                             Text("expira em \(max(1, offer.expiresAfterRound - career.matchDayIndex)) jogo(s)").font(.caption2).foregroundStyle(.secondary)
                             Spacer()
                             Button("Recusar") { career.rejectOffer(offer.id) }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(FootballSecondaryButtonStyle())
                             Button("Aceitar") {
                                 if !career.acceptOffer(offer.id) {
                                     onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação com pelo menos \(FootballCareer.minimumRoster) atletas.")

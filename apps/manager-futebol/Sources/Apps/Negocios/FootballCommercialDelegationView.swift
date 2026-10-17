@@ -71,9 +71,9 @@ struct FootballCommercialDelegationPanel: View {
             settings
             HStack(spacing: 10) {
                 Button("Atualizar ordens") { career.delegateCommercial(risk: risk, limit: limit) }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                 Button("Dispensar", role: .destructive) { career.endCommercialDelegation() }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("delegation-end")
             }
         }

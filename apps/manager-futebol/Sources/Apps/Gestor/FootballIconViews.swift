@@ -57,9 +57,9 @@ struct FootballIconPackView: View {
             .padding(.vertical, 20)
             Color.white.opacity(flash).ignoresSafeArea().allowsHitTesting(false)
         }
-        .sensoryFeedback(.impact(weight: .heavy), trigger: impact)
-        .sensoryFeedback(.success, trigger: phase == .revealed)
-        .sensoryFeedback(.selection, trigger: statsShown)
+        .footballHaptic(.impact(weight: .heavy), trigger: impact)
+        .footballHaptic(.success, trigger: phase == .revealed)
+        .footballHaptic(.selection, trigger: statsShown)
         .onAppear { if !reduceMotion { breathing = true } }
     }
 

@@ -16,6 +16,7 @@ struct FootballModesView: View {
             FootballDifficultyRulesPanel(career: $career)
             if let saveSlots { saveSlots }
             FootballPhonePreferencesPanel(career: $career)
+            FootballSystemSettingsPanel(career: $career)
             FootballAdvancePausesPanel(career: $career)
             FootballActionHistoryPanel(career: career)
             if let challenge = career.challenge, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) {
@@ -60,7 +61,7 @@ struct FootballModesView: View {
                 Text("Reveja a apresentação do jogo: o celular, o ritmo dos dias e as decisões entre temporadas. Só a dificuldade, na última página, muda a carreira.")
                     .font(.caption).foregroundStyle(.secondary)
                 Button("Rever as boas-vindas") { showsIntro = true }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("intro-replay")
                 if career.selectedClubID != nil {
                     Divider()
@@ -71,7 +72,7 @@ struct FootballModesView: View {
                     Button(career.isFirstCareerGuideActive ? "Recomeçar roteiro" : "Ver roteiro da primeira partida") {
                         career.replayFirstCareerGuide()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("first-run-guide-replay")
                 }
             }

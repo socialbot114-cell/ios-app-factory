@@ -78,7 +78,7 @@ struct FootballRotationPanel: View {
                 ForEach(plan.reasons, id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary) }
                 if plan.suggestedFocus != career.trainingFocus {
                     Button("Treinar \(plan.suggestedFocus.rawValue.lowercased())") { career.setTrainingFocus(plan.suggestedFocus) }
-                        .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                         .accessibilityIdentifier("rotation-focus")
                 }
                 ForEach(plan.rows.prefix(8)) { row in

@@ -22,7 +22,7 @@ struct FootballTacticalPlansPanel: View {
                             career.saveTacticalPlan(slot)
                             message = "\(slot.title) salvo com a tática e a escalação de agora."
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .accessibilityIdentifier("plan-save-\(slot.rawValue)")
                         Button("Aplicar") { message = career.applyTacticalPlan(slot).message }
                             .buttonStyle(.borderedProminent)

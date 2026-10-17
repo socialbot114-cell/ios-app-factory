@@ -63,7 +63,7 @@ struct FootballFinanceView: View {
                         Button("+ \(FootballFormat.money(amount))") {
                             if !career.lendToClub(amount: amount) { onAlert("Seu caixa pessoal não cobre este aporte.") }
                         }
-                        .buttonStyle(.bordered).font(.caption.weight(.bold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                         .accessibilityIdentifier("lend-\(amount)")
                     }
                 }

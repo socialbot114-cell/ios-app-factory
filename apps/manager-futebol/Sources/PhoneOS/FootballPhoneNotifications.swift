@@ -31,8 +31,12 @@ extension FootballCareer {
         for event in world.events.pending {
             list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Prazo: \(shortDate(worldDay: event.expiresWorldDay)).", symbol: "exclamationmark.bubble.fill", app: .alerts, priority: 2, deadlineWorldDay: event.expiresWorldDay, eventID: event.id))
         }
-        for (index, message) in inbox.filter({ !$0.isRead }).sorted(by: { $0.id > $1.id }).enumerated() {
-            list.append(PhoneNotification(id: index == 0 ? "inbox" : "inbox-\(message.id)", title: message.title, detail: "Mensagem não lida · \(shortDate(matchDay: message.matchDay, season: message.season))", symbol: "tray.full.fill", app: .messages, messageID: message.id))
+        // Mensagens não lidas com o mesmo título viram uma notificação só ("3 mensagens não lidas"), a da mais recente.
+        for (index, group) in unreadMessageGroups.enumerated() {
+            let message = group.newest
+            let date = shortDate(matchDay: message.matchDay, season: message.season)
+            let detail = group.count == 1 ? "Mensagem não lida · \(date)" : "\(group.count) mensagens não lidas · a última em \(date)"
+            list.append(PhoneNotification(id: index == 0 ? "inbox" : "inbox-\(message.id)", title: message.title, detail: detail, symbol: "tray.full.fill", app: .messages, messageID: message.id))
         }
         if !offers.isEmpty {
             let deadline = offers.map(\.expiresAfterRound).min() ?? matchDayIndex

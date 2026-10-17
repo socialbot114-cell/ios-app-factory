@@ -63,6 +63,38 @@ enum FootballRhythm: String, Codable, CaseIterable, Identifiable {
     var lockScreenItemLimit: Int { self == .classic ? 2 : 5 }
 }
 
+/// Papel de parede escolhido no Ajustes. `club` é o padrão: cores do clube e clima do dia.
+enum PhoneWallpaperStyle: String, Codable, CaseIterable, Identifiable {
+    case club, pitch, night, sunset, graphite
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .club: return "Cores do clube"
+        case .pitch: return "Gramado"
+        case .night: return "Noite de jogo"
+        case .sunset: return "Pôr do sol"
+        case .graphite: return "Grafite"
+        }
+    }
+}
+
+/// Tema escolhido pelo jogador. `system` segue o aparelho.
+enum PhoneThemeChoice: String, Codable, CaseIterable, Identifiable {
+    case system, light, dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: return "Automático"
+        case .light: return "Claro"
+        case .dark: return "Escuro"
+        }
+    }
+}
+
 struct PhonePreferences: Codable, Equatable {
     /// 1 = todos os avisos, 2 = importantes e urgentes, 3 = só urgentes.
     var minimumPriority = 1
@@ -73,6 +105,33 @@ struct PhonePreferences: Codable, Equatable {
     var rhythm: FootballRhythm? = nil
 
     var rhythmMode: FootballRhythm { rhythm ?? .immersive }
+
+    /// Escolhas de sistema do celular. Todas opcionais: saves antigos ficam no padrão.
+    var wallpaper: PhoneWallpaperStyle? = nil
+    var theme: PhoneThemeChoice? = nil
+    var hapticsEnabled: Bool? = nil
+    /// Ordem dos apps da tela inicial (`PhoneApp.rawValue`); nil mantém a ordem de fábrica.
+    var homeOrder: [String]? = nil
+
+    var wallpaperStyle: PhoneWallpaperStyle { wallpaper ?? .club }
+    var themeChoice: PhoneThemeChoice { theme ?? .system }
+    var hapticsOn: Bool { hapticsEnabled ?? true }
+
+    /// Aplica a ordem escolhida aos apps da grade: os escolhidos primeiro, na ordem dele, e os que faltam no fim, na ordem de fábrica.
+    static func ordered(_ factory: [String], custom: [String]?) -> [String] {
+        guard let custom, !custom.isEmpty else { return factory }
+        var seen = Set<String>()
+        let chosen = custom.filter { factory.contains($0) && seen.insert($0).inserted }
+        return chosen + factory.filter { !seen.contains($0) }
+    }
+
+    /// Troca a posição de dois apps da lista; devolve a lista como estava se algum não está nela.
+    static func swapped(_ ids: [String], _ first: String, _ second: String) -> [String] {
+        guard let a = ids.firstIndex(of: first), let b = ids.firstIndex(of: second) else { return ids }
+        var copy = ids
+        copy.swapAt(a, b)
+        return copy
+    }
 
     /// Avisos urgentes (prioridade 3) nunca são silenciados: perder uma coletiva ou crise tem custo no jogo.
     func allows(appID: String, priority: Int) -> Bool {
@@ -208,5 +267,20 @@ extension FootballCareer {
         if let cap = scenario.wageCapFactor { rules.append("Folha limitada a \(Int((cap * 100).rounded()))% do referencial") }
         for goal in scenario.goals { rules.append("Meta: \(goal.text)") }
         return rules
+    }
+}
+
+extension FootballCareer {
+    /// Mensagens não lidas agrupadas por título, da mais recente para a mais antiga; cada grupo guarda a mensagem mais nova.
+    var unreadMessageGroups: [(newest: InboxMessage, count: Int)] {
+        var groups: [(newest: InboxMessage, count: Int)] = []
+        for message in inbox.filter({ !$0.isRead }).sorted(by: { $0.id > $1.id }) {
+            if let index = groups.firstIndex(where: { $0.newest.title == message.title }) {
+                groups[index].count += 1
+            } else {
+                groups.append((newest: message, count: 1))
+            }
+        }
+        return groups
     }
 }

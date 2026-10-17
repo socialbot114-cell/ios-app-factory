@@ -106,7 +106,7 @@ struct FootballPersonalPlanPanel: View {
                 .accessibilityIdentifier("plan-confirm")
                 if day.planned != nil {
                     Button("Desmarcar", role: .destructive) { career.unplanActivity(on: day.worldDay) }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                 }
             }
         }

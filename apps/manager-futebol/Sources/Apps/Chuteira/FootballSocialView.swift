@@ -23,7 +23,7 @@ struct FootballSocialView: View {
             Button { onOpenApp(.messages) } label: {
                 Label("Mensagens diretas", systemImage: "paperplane.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("social-open-messages")
             if let crisis = social.crisis { crisisPanel(crisis) }
             if let lastNote {

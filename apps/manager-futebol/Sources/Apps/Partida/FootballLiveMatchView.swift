@@ -42,6 +42,10 @@ struct FootballLiveMatchView: View {
         return LiveViewMode(rawValue: viewModeRaw) ?? .narration
     }
     @State private var impactPreview: MatchImpact?
+    /// Aviso curto de gol em outro jogo que mexe perto de você na tabela.
+    @State private var goalNotice: LiveGoalNotice?
+    @State private var noticeMinute = 0
+    @State private var noticeTask: Task<Void, Never>?
 
     /// O que o relógio faz quando sai gol, pênalti ou lesão.
     enum KeyMomentMode: String, CaseIterable, Identifiable {
@@ -122,6 +126,7 @@ struct FootballLiveMatchView: View {
                 }
             }
             .background(FactoryColor.canvas.ignoresSafeArea())
+            .overlay(alignment: .top) { goalNoticeBanner }
             .navigationTitle(live.flatMap { title(for: $0) } ?? "Partida")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -136,10 +141,12 @@ struct FootballLiveMatchView: View {
                 }
             }
         }
-        .sensoryFeedback(.impact(weight: .heavy), trigger: live?.homeGoals ?? 0)
-        .sensoryFeedback(.selection, trigger: quickFeedback)
-        .sensoryFeedback(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
-        .sensoryFeedback(.success, trigger: winAtFullTime)
+        .footballHaptic(.impact(weight: .heavy), trigger: live?.homeGoals ?? 0)
+        .footballHaptic(.selection, trigger: quickFeedback)
+        .footballHaptic(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
+        .footballHaptic(.success, trigger: winAtFullTime)
+        .footballHaptic(.impact(weight: .light), trigger: goalNotice?.id)
+        .onChange(of: live?.sim.minute ?? 0) { _, minute in showGoalNotices(upTo: minute) }
         .sheet(isPresented: $showSubstitutions) {
             FootballSubstitutionSheet(career: $career, outgoingID: nil)
         }
@@ -239,19 +246,19 @@ struct FootballLiveMatchView: View {
                     Button { advance(minutes: 5) } label: {
                         Label("+5 min", systemImage: "goforward.5").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .disabled(staticPreview)
                     Button { showSubstitutions = true } label: {
                         Label("Trocar \(live.substitutionsUsed)/\(LiveMatchState.maxSubstitutions)", systemImage: "arrow.left.arrow.right")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .disabled(staticPreview || live.substitutionsUsed >= LiveMatchState.maxSubstitutions)
                     .accessibilityIdentifier("live-substitutions")
                     Button(action: skipToEnd) {
                         Label("Ao final", systemImage: "forward.end.fill").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .disabled(staticPreview)
                     .accessibilityIdentifier("live-skip")
                 }
@@ -303,8 +310,35 @@ struct FootballLiveMatchView: View {
                 Label(pitchExpanded ? "Reduzir" : "Ampliar", systemImage: pitchExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                     .font(.caption.weight(.semibold))
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("live-pitch-expand")
+            sponsorStrip
+        }
+    }
+
+    /// Quem paga o clube e onde a marca aparece: as cores das placas do campo vêm destes contratos.
+    @ViewBuilder
+    private var sponsorStrip: some View {
+        let sponsors = career.visibleSponsors
+        if !sponsors.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(sponsors) { sponsor in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color(hue: Double(FootballCareer.brandHue(of: sponsor.name)) / 360, saturation: 0.78, brightness: 0.92))
+                                .frame(width: 8, height: 8)
+                            Text("\(sponsor.role) · \(sponsor.name)").font(.caption2.weight(.semibold))
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Color.primary.opacity(0.07), in: Capsule())
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Patrocinadores: " + sponsors.map { "\($0.role), \($0.name)" }.joined(separator: "; "))
+            .accessibilityIdentifier("live-sponsors")
         }
     }
 
@@ -369,7 +403,7 @@ struct FootballLiveMatchView: View {
                         } label: {
                             Label(slot.title, systemImage: "square.on.square").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .disabled(staticPreview || career.tacticalPlan(slot) == nil)
                         .accessibilityIdentifier("quick-plan-\(slot.rawValue)")
                     }
@@ -389,7 +423,7 @@ struct FootballLiveMatchView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .disabled(staticPreview || plan == nil)
                     .accessibilityIdentifier("quick-sub-\(kind.rawValue)")
                 }
@@ -414,8 +448,14 @@ struct FootballLiveMatchView: View {
             return teamID == live.userSide.teamID
         }
         let tier = FootballVictory.tier(VictoryContext(goalsFor: userGoals, goalsAgainst: rivalGoals, cameFromBehind: FootballVictory.wasBehind(scorers: scorers), isClassic: live.sim.isDerby))
+        let headline = FootballHeadline.make(club: FootballSeason.teamName(live.userSide.teamID),
+                                             opponent: FootballSeason.teamName(live.userIsHome ? live.sim.away.teamID : live.sim.home.teamID),
+                                             userGoals: userGoals, rivalGoals: rivalGoals, isDerby: live.sim.isDerby,
+                                             cameFromBehind: userGoals > rivalGoals && FootballVictory.wasBehind(scorers: scorers),
+                                             isCup: career.fixtures.first(where: { $0.id == live.fixtureID })?.competition.isCup == true,
+                                             seed: live.fixtureID)
         return VStack(alignment: .leading, spacing: 12) {
-            resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals, tier: tier)
+            resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals, tier: tier, headline: headline)
             if career.canRevealShootout {
                 Button { career.revealLiveShootout() } label: { Label("Ver os pênaltis", systemImage: "scope").frame(maxWidth: .infinity) }
                     .buttonStyle(.borderedProminent)
@@ -450,7 +490,7 @@ struct FootballLiveMatchView: View {
         return copy.hypeTitle
     }
 
-    private func resultBanner(_ result: FootballResult, penalties: Bool, margin: Int = 0, tier: VictoryTier? = nil) -> some View {
+    private func resultBanner(_ result: FootballResult, penalties: Bool, margin: Int = 0, tier: VictoryTier? = nil, headline: String? = nil) -> some View {
         // Sem tier (chamada antiga), a goleada continua sendo a margem de três gols, como antes.
         let victory = tier ?? (margin >= 3 ? VictoryTier.goleada : .regular)
         let text: String
@@ -470,21 +510,26 @@ struct FootballLiveMatchView: View {
             text = "Derrota. Hora de rever o plano."
             tint = .red
         }
-        return HStack(spacing: 8) {
+        return HStack(alignment: .top, spacing: 10) {
             Image(systemName: result == .win ? "star.fill" : (result == .draw ? "equal.circle.fill" : "xmark.circle.fill"))
+                .font(.title3)
                 .accessibilityHidden(true)
                 .modifier(FootballIconPulse(active: result == .win, classic: career.world.phone.preferences.rhythmMode == .classic))
-            Text(text)
+            VStack(alignment: .leading, spacing: 4) {
+                // A manchete abre o cartão; a frase de sempre vira o apoio.
+                if let headline { Text(headline).font(.title3.weight(.bold)).fixedSize(horizontal: false, vertical: true) }
+                Text(text).font(headline == nil ? .headline : .subheadline).opacity(headline == nil ? 1 : 0.85)
+            }
         }
-            .font(.headline)
             .foregroundStyle(.white)
-            .padding(16)
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(tint.gradient)
+                // Mesma ideia da virada de temporada: a cor do resultado escurece até quase preto.
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(LinearGradient(colors: [tint, tint.opacity(0.72), Color.black.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .overlay { FootballShineBand(active: result == .win) }
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             }
             .overlay {
                 if result == .win && !staticPreview && !FactoryCapture.isUITesting {
@@ -595,22 +640,81 @@ struct FootballLiveMatchView: View {
 
     @ViewBuilder
     private func othersPanel(_ live: LiveMatchState) -> some View {
-        if !live.others.isEmpty {
-            FactoryPanel(title: "Outros jogos da rodada", systemImage: "list.bullet.rectangle") {
-                ForEach(Array(live.others.enumerated()), id: \.offset) { _, outcome in
-                    if let fixture = career.fixtures.first(where: { $0.id == outcome.fixtureID }) {
-                        let score = live.score(of: outcome, at: live.sim.minute)
-                        HStack(spacing: 8) {
-                            Text(FootballSeason.team(fixture.home)?.shortName ?? "—").font(.caption.weight(.bold)).frame(width: 40, alignment: .trailing)
-                            Text("\(score.home) – \(score.away)").font(.subheadline.weight(.heavy).monospacedDigit()).frame(width: 60)
-                            Text(FootballSeason.team(fixture.away)?.shortName ?? "—").font(.caption.weight(.bold)).frame(width: 40, alignment: .leading)
-                            Spacer()
-                            Text(fixture.competition.isCup ? "Copa" : (fixture.competition.division?.name ?? "")).font(.caption2).foregroundStyle(.secondary)
-                        }
-                        .accessibilityElement(children: .combine)
+        let games = career.liveRoundGames(live)
+        if !games.isEmpty {
+            FactoryPanel(title: live.sim.finished ? "Rodada completa" : "Outros jogos da rodada", systemImage: "list.bullet.rectangle") {
+                if isLeagueMatch(live), let position = career.liveUserTablePosition(live) { positionLine(position) }
+                ForEach(games) { game in
+                    HStack(spacing: 8) {
+                        Image(systemName: "star.fill").font(.caption2).foregroundStyle(FootballTheme.gold)
+                            .opacity(game.isRelevant ? 1 : 0)
+                            .accessibilityHidden(true)
+                        Text(FootballSeason.team(game.homeID)?.shortName ?? "—").font(.caption.weight(.bold)).frame(width: 40, alignment: .trailing)
+                        Text("\(game.homeScore) – \(game.awayScore)").font(.subheadline.weight(.heavy).monospacedDigit()).frame(width: 60)
+                        Text(FootballSeason.team(game.awayID)?.shortName ?? "—").font(.caption.weight(.bold)).frame(width: 40, alignment: .leading)
+                        Spacer()
+                        Text(game.competitionName).font(.caption2).foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(FootballSeason.teamName(game.homeID)) \(game.homeScore) a \(game.awayScore) \(FootballSeason.teamName(game.awayID))" + (game.isRelevant ? ", perto do seu clube na tabela" : ""))
+                }
+                if games.contains(where: \.isRelevant) {
+                    Text("A estrela marca jogos de clubes perto do seu na tabela.").font(.caption2).foregroundStyle(.secondary)
                 }
             }
+            .accessibilityIdentifier("live-others")
+        }
+    }
+
+    /// A posição provisória só faz sentido em rodada de liga.
+    private func isLeagueMatch(_ live: LiveMatchState) -> Bool {
+        career.fixtures.first(where: { $0.id == live.fixtureID })?.competition.division != nil
+    }
+
+    private func positionLine(_ position: LiveTablePosition) -> some View {
+        let change = position.change
+        let trend = change > 0 ? "subiu \(change)" : (change < 0 ? "caiu \(-change)" : "sem mudança")
+        return Label("Tabela agora: \(position.now)º (\(trend) desde o início da rodada)",
+                     systemImage: change > 0 ? "arrow.up.right" : (change < 0 ? "arrow.down.right" : "equal"))
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(change > 0 ? Color.green : (change < 0 ? Color.red : Color.secondary))
+            .accessibilityIdentifier("live-table-position")
+    }
+
+    // MARK: - Aviso de gol em outro jogo
+
+    @ViewBuilder
+    private var goalNoticeBanner: some View {
+        if let notice = goalNotice {
+            HStack(spacing: 10) {
+                Image(systemName: "soccerball").foregroundStyle(FootballTheme.gold)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("GOL EM OUTRO JOGO").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(.white.opacity(0.75))
+                    Text(notice.text).font(.footnote.weight(.semibold)).foregroundStyle(.white).lineLimit(2)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color.black.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 16).padding(.top, 6)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("live-other-goal")
+        }
+    }
+
+    /// Mostra o gol mais recente de um jogo que importa para a tabela; saltos de relógio mostram só o último.
+    private func showGoalNotices(upTo minute: Int) {
+        guard let live else { return }
+        let previous = noticeMinute
+        noticeMinute = max(noticeMinute, minute)
+        let notices = career.liveGoalNotices(live, after: previous, upTo: minute)
+        guard let latest = notices.last(where: \.isRelevant) else { return }
+        withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8)) { goalNotice = latest }
+        noticeTask?.cancel()
+        noticeTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_500_000_000)
+            if !Task.isCancelled { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) { goalNotice = nil } }
         }
     }
 
@@ -619,6 +723,7 @@ struct FootballLiveMatchView: View {
     private func start() {
         guard !didStart else { return }
         didStart = true
+        noticeMinute = career.liveMatch?.sim.minute ?? 0
         guard career.liveMatch != nil else {
             onClose()
             return
@@ -815,7 +920,7 @@ struct FootballLiveTacticsPanel: View {
                     Label("Substituições (\(side.substitutionsUsed)/\(LiveMatchState.maxSubstitutions))", systemImage: "arrow.left.arrow.right")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .disabled(locked || side.substitutionsUsed >= LiveMatchState.maxSubstitutions)
             }
         }

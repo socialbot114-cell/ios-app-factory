@@ -75,7 +75,7 @@ struct FootballBoardMeetingPanel: View {
             Button("Marcar reunião") {
                 if !career.requestBoardMeeting(kind) { onAlert(blocker ?? "Não foi possível marcar a reunião.") }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .disabled(blocker != nil)
             .accessibilityIdentifier("board-request-\(kind.rawValue)")
         }

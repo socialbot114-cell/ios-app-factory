@@ -116,7 +116,7 @@ struct FootballCampaignBriefPanel: View {
                         Button { channel = kind } label: {
                             Label(kind.title, systemImage: kind.symbol).font(.caption.weight(.semibold))
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .tint(channel == kind ? FootballTheme.accent : .secondary)
                         .accessibilityIdentifier("campaign-\(kind.rawValue)")
                     }
@@ -195,7 +195,7 @@ struct FootballImageContractPanel: View {
                 Text("Obrigações em 10 dias de jogo: \(offer.shootsRequired) comerciais, imagem ≥ \(offer.minimumImage) e nenhuma crise. Cumprir rende bônus de 50%; descumprir devolve metade e custa reputação.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button("Assinar") { if !career.signImageContract() { onAlert("A proposta não está mais disponível.") } }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("image-contract-sign")
             } else {
                 Text("Marcas procuram treinadores com imagem a partir de 35. A sua está em \(career.coachImage).")

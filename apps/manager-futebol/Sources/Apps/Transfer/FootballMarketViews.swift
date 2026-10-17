@@ -134,7 +134,7 @@ struct FootballMarketView: View {
         Button(action: action) {
             Label("Mostrar mais (\(remaining) restantes)", systemImage: "chevron.down").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(FootballSecondaryButtonStyle())
         .accessibilityIdentifier(identifier)
     }
 
@@ -310,7 +310,7 @@ struct FootballMarketView: View {
                 } label: {
                     Label("Fazer peneira · \(FootballFormat.money(career.tryoutCost))", systemImage: "figure.soccer").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("hold-tryout")
                 Text("Quantas peneiras quiser, enquanto houver caixa e vaga na base. Cada uma traz de 1 a 3 jovens da região escolhida, na aba Olheiros.").font(.caption).foregroundStyle(.secondary)
             }
@@ -326,7 +326,7 @@ struct FootballMarketView: View {
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .disabled(!career.canPromote(playerID: player.id))
-                                Button("Dispensar", role: .destructive) { career.releaseYouth(playerID: player.id) }.buttonStyle(.bordered)
+                                Button("Dispensar", role: .destructive) { career.releaseYouth(playerID: player.id) }.buttonStyle(FootballSecondaryButtonStyle())
                             }
                             .font(.caption.weight(.bold))
                         }

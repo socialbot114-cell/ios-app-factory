@@ -94,7 +94,7 @@ struct FootballCoachLifeView: View {
                 } label: {
                     Label("Matricular-se", systemImage: "book.closed.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("start-course")
             } else {
                 Label("Licença máxima conquistada", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.subheadline)
@@ -120,7 +120,7 @@ struct FootballCoachLifeView: View {
                     }
                     Spacer()
                     if let owned {
-                        Button("Vender") { career.sellAsset(id: owned.id) }.buttonStyle(.bordered).font(.caption.weight(.bold))
+                        Button("Vender") { career.sellAsset(id: owned.id) }.buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                     } else {
                         Button("Comprar") {
                             if !career.buyAsset(kind) { onAlert(career.canBuyAsset(kind) ?? "Compra indisponível.") }
@@ -166,7 +166,7 @@ struct FootballCoachLifeView: View {
                             .font(.caption).foregroundStyle(delta >= 0 ? .green : .red)
                     }
                     Spacer()
-                    Button("Resgatar") { career.withdrawInvestment(id: investment.id) }.buttonStyle(.bordered).font(.caption.weight(.bold))
+                    Button("Resgatar") { career.withdrawInvestment(id: investment.id) }.buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                 }
             }
         }

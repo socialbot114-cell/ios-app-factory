@@ -42,7 +42,7 @@ struct FootballContactsView: View {
                     } label: {
                         Label(contact.role.action, systemImage: "phone.fill").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .opacity(block == nil ? 1 : 0.45)
                     .accessibilityIdentifier("contact-\(contact.role.rawValue)")
                     FootballContactTopicsView(career: $career, contact: contact) { note = $0 }
