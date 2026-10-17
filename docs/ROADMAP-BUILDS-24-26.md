@@ -174,7 +174,7 @@ Exige configuração no projeto Xcode e na conta Apple; por isso fica separado.
 |---|---|---|---|
 | PRF-01 | **Tática visual:** zonas de pressão e linha defensiva desenhadas no campo. | Os controles de instrução têm um reflexo visual. | G |
 | PRF-02 | **Ficha do atleta com radar de atributos** e comparação lado a lado. | Compara dois atletas na mesma escala. | M |
-| PRF-03 | **Mapa de finalizações** do jogo, com xG e tipo de finalização (o motor já guarda ambos; as coordenadas precisam ser conferidas). | Cada chute aparece no campo, com cor por resultado. | M |
+| PRF-03 | ~~Mapa de finalizações~~ **Já existe** (mapa de finalizações e mapa de calor na partida, `FootballShotMap` e `FootballHeatMap`). Fica só a ideia de levar o mesmo mapa ao resumo pós-jogo. | O resumo pós-jogo mostra o mapa do jogo. | P |
 | RPL-01 | **Replay do gol** no campo 2D, a partir dos eventos da partida. | Repete os últimos lances antes do gol. | G |
 | AUX-01 | **Auxiliar técnico** com recomendações e personalidade (escalação, rodízio, lesões). | Cada recomendação explica o motivo em uma frase. | M |
 | EVO-01 | **Gráfico de evolução de atributos** por temporada. | Mostra ganho e queda por atributo. | P |
@@ -210,6 +210,82 @@ Ainda sem critérios; entram em build quando houver decisão. A coluna de viabil
 | Plataforma | **Save no iCloud** com sincronia entre iPhone e iPad. | Três espaços de save locais existem. |
 | Plataforma | **Idiomas** (inglês e espanhol) e modo para daltonismo. | — |
 
+## 6c. Mundo visual, jogo ao vivo, patrocínio e sistema do celular (17/out, terceira rodada)
+
+Esta seção nasceu de uma investigação do código e dos assets, feita antes de propor. Primeiro o que já existe, depois os pacotes.
+
+### O que já existe e o que falta
+
+| Tema | Já existe | O que falta |
+|---|---|---|
+| **Estádio** | Quatro ilustrações por capacidade (pequeno, médio, grande, grande à noite) no app Clube. Sete outras ilustrações estão nos assets sem nenhum uso no código. Cenas de partida de dia, à noite e de TV. | Todos os clubes com a mesma ilustração: Manaus e Porto Alegre têm o mesmo estádio. Não muda com as obras de forma visível. |
+| **Cidade** | Só o nome da cidade, em texto. Na biblioteca de arte 3D há cidade pequena, média e grande, de dia e de noite, e o estádio dentro da cidade. | Nenhuma cidade na tela. A cidade não influencia nada no jogo (torcida, patrocínio, clima, viagem). |
+| **Campo** | Campo desenhado em tempo real, com torcida (densidade pelo humor), painéis de LED, refletores, bancos de reservas e iluminação. Mapa de finalizações e de calor. Na arte 3D há três variações de gramado. | Gramado igual em todo jogo: sem desgaste ao longo da temporada, sem chuva ou lama, sem relação com o nível do centro de treinamento. Os painéis de LED são faixas coloridas sem nome. |
+| **Personagens** | Lendas com ilustração própria. O resto são ícones e iniciais (contatos com símbolo; sala de perfis com a letra do nome). Na arte 3D há jogadores, goleiro, árbitro, treinador e elenco em onze poses, com pele, cabelo e uniforme variados. | Nenhum atleta, treinador ou contato tem rosto. |
+| **Camisas** | Cinco padrões (liso, listras verticais, faixas, metades, faixa transversal) escolhidos por `id` do clube; camisa reserva automática quando as cores se confundem; goleiro com cor própria. | Os padrões se repetem entre clubes. Sem terceiro uniforme. Escudo é um símbolo do sistema com três letras. Sem patrocinador nem número visível na camisa. |
+| **Jogos de outras partidas** | O painel "Outros jogos da rodada" mostra o placar de cada jogo **pelo minuto atual** da partida. | Fica no meio da tela. Nenhum aviso quando sai gol em outro jogo, nenhum destaque dos jogos que mexem no seu título ou rebaixamento, nenhuma tabela ao vivo, e os gols não têm autor. |
+| **Patrocínio** | Contrato principal, quatro espaços (manga, placas do estádio, uniforme de treino, parceiro digital), naming rights e propostas que renovam. | Nada disso aparece no campo, na camisa ou no estádio. O patrocinador não reage ao desempenho nem à exposição. |
+| **Economia e marketing** | Loja do clube com coleções, cota de TV, campanhas de marketing com previsão, programas sociais, gerente comercial delegável, preço de ingresso e 31 acontecimentos de mundo. | O mundo econômico não muda sozinho: sem ciclos de crise e de alta, sem concorrência de rivais por patrocinadores, sem venda de camisa por astro, sem preço de ingresso que acompanhe a importância do jogo. |
+| **Celular** | Tela de bloqueio com widgets e "toque para abrir", central de notificações, busca, widgets pequenos na home, papel de parede que muda com o clube e com o momento do dia, preferências de aviso e de ritmo, reduzir movimento, vibração em 16 pontos. | O celular só trava sozinho na virada do dia, sem botão de bloquear. Papel de parede sem escolha. Ícones sem edição, sem mover e sem pastas. Vibração sem ajuste, sem som, sem tema escolhido pelo jogador. |
+
+**Arte 3D:** os scripts (Blender 4.2.1) e um catálogo estão em `Resources/Blender/COMPONENTE_TESTE_INOVACAO`, na branch de entrega. As imagens renderizadas (54 MB) ficam só no checkout principal e são ignoradas pelo git. **Esta máquina não tem Blender**: para gerar mais arte é preciso rodar o Blender no seu computador ou instalá-lo num runner. Isso pesa no tamanho dos pacotes abaixo.
+
+### Build 29 — estádio, cidade, campo, personagens e camisas
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| EST-01 | **Estádio de cada clube.** Uma ilustração por clube, nas cores dele, usando as variações já nos assets, e que muda com o nível das obras. | Dois clubes de mesmo porte não têm a mesma imagem. A imagem muda ao concluir uma obra. | G |
+| CID-01 | **Cidade do clube.** Horizonte por porte (pequena, média, grande; dia e noite) no app Clube e um cartão da cidade. | A cidade aparece no Clube. Cada cidade tem um porte definido por dados. | M |
+| CID-02 | **A cidade pesa no jogo** (decisão sua): porte da cidade alimenta torcida, bilheteria e patrocínio; clima por região e viagem do visitante afetam a condição. | Medição antes e depois, como no build 24. | G |
+| CAM-01 | **Gramado que vive:** variação pelo nível do centro de treinamento, desgaste ao longo da temporada, chuva e lama em alguns jogos. | O campo da partida muda entre início e fim de temporada. Chuva muda a imagem e tem efeito pequeno no jogo, medido. | M |
+| CAM-02 | **Atmosfera de clássico:** mosaico da torcida e mais barulho visual em jogos de rivalidade. | Só aparece em clássico, e respeita "Reduzir movimento". | M |
+| PRS-01 | **Retratos de atletas** gerados a partir dos personagens 3D: pele, cabelo, idade e camisa do clube. | Cada atleta tem o mesmo retrato sempre. Aparece na ficha, no elenco e na escolha de titulares. Depende de gerar os retratos no Blender. | G |
+| PRS-02 | **Treinador e contatos com rosto** (empresário, jornalista, família). | Substitui as iniciais e os símbolos. | M |
+| PRS-03 | **Elenco em pose:** comemoração, apresentação de reforço e capa de jornal. | Reaproveita MOM-02 e MOM-03. | M |
+| UNI-01 | **Uniforme próprio de cada clube,** em vez de repetir cinco padrões por `id`. | Os 20 clubes têm desenhos distintos nas camisas da partida e nos retratos. | M |
+| UNI-02 | **Terceiro uniforme e lançamento de coleção** ligado às vendas da loja. | Lançar uma camisa gera pico de vendas e aparece nos jogos. | M |
+| UNI-03 | **Escudo próprio por clube,** no lugar do símbolo e das três letras. | Os 20 escudos distintos, nos mesmos tamanhos de hoje. | M |
+| UNI-04 | **Número e nome na camisa** e patrocinador no peito e na manga (ligado a PAT-01). | Visível na partida e nos retratos. | M |
+
+### Build 30 — jogo ao vivo, patrocínio e economia viva
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| AOV-01 | **Faixa de placares ao vivo** no topo da partida: um gol em outro jogo aparece como aviso curto ("GOL · Maré Alta 1–0 Estrela"). | O aviso aparece no minuto do gol e some sozinho. Respeita "Reduzir movimento". | M |
+| AOV-02 | **Relevância:** destaque só para os jogos que mexem no seu título, acesso ou rebaixamento, e uma **tabela ao vivo** mostrando sua posição provisória. | A posição muda em tempo real e é explicada em uma linha. | M |
+| AOV-03 | **Autor dos gols** nos outros jogos (o resultado final já tem os autores; falta emparelhar com os minutos). | O aviso mostra o nome. | P |
+| AOV-04 | **Rodada completa no intervalo e no apito final.** | Lista todos os placares, com os jogos que mexem na tabela em cima. | P |
+| PAT-01 | **Patrocinadores visíveis:** nome nas placas de LED (espaço "placas do estádio"), na camisa e na manga, na tela do estádio e no placar. Marcas fictícias. | Cada contrato ativo aparece onde foi vendido; sem contrato, o espaço fica neutro. | M |
+| PAT-02 | **Exposição e satisfação do patrocinador:** jogos de TV, público e resultado alimentam o pagamento variável e a renovação. | O patrocinador reage a uma sequência ruim ou boa e isso aparece em mensagem. | G |
+| PAT-03 | **Ativações pedidas pelo patrocinador** (ação com a torcida, visita ao CT), com recompensa e custo. | Entra como acontecimento, com prazo. | M |
+| ECV-01 | **Mercado de patrocínio vivo:** valores e propostas variam com reputação, desempenho e a concorrência de rivais. | Os valores de uma proposta mudam entre duas temporadas sem o jogador fazer nada. | G |
+| ECV-02 | **Venda de camisas por astro:** o ídolo do elenco puxa as vendas da loja. | A venda sobe e cai com a forma e a saída do astro. | M |
+| ECV-03 | **Preço de ingresso dinâmico** pela importância do jogo e pela demanda. | Clássico e jogo decisivo aceitam preço maior sem derrubar o público. | M |
+| ECV-04 | **Marketing com resposta visível:** efeito das campanhas em gráficos de torcida e sócios, e concorrência de campanhas de rivais. | Cada campanha mostra o antes e o depois. | M |
+| ECV-05 | **Ciclos da economia:** fases de alta e de crise que mudam patrocínio, TV e bilheteria. | Aparecem como acontecimento de mundo e podem ser lidas na tela de Finanças. **Mexe no equilíbrio: decisão sua.** | G |
+
+### Build 31 — sistema do celular
+
+Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os saves antigos abrirem.
+
+| ID | Item | Critério de aceite | Tam. |
+|---|---|---|---|
+| OS-01 | **Bloquear e desbloquear à mão:** botão lateral simulado, bloqueio automático por tempo e, opcional, senha. | Travar e destravar funciona a qualquer hora, sem mudar o dia. | M |
+| OS-02 | **Papel de parede à escolha:** cores do clube, estádio, cidade, momento do dia automático, gradiente e imagens do jogo; tela inicial e de bloqueio separadas. | A escolha é lembrada no save. | M |
+| OS-03 | **Editar a tela inicial:** modo de edição, mover ícones, criar pastas e grupos, várias páginas, dock editável e escolha de widgets. | A organização é guardada no save e sobrevive à virada de temporada. | G |
+| OS-04 | **Ajustes do sistema:** vibração (liga, desliga e intensidade), sons, tema (claro, escuro, automático), tamanho do texto, restaurar padrões. | Cada ajuste vale na hora. A vibração fixa em 16 pontos passa a respeitá-lo. | M |
+| OS-05 | **Central de controle** (puxar do canto): Foco, vibração, som, tema e bloquear. | Abre de qualquer tela, sem cobrir uma decisão pendente. | M |
+| OS-06 | **Modos de Foco** (Jogo, Descanso, Reunião) ligados à prioridade de avisos e às pausas do avanço. | Cada modo muda o que chega, e urgentes nunca são silenciados. | M |
+| OS-07 | **Apps de sistema novos:** Notas (anotações do treinador), Mapas (cidades dos clubes e viagens), Tempo (clima da rodada), Relógio (contagem para janela e jogo) e Fotos (momentos do jogo). | Cada um aproveita dados que o jogo já tem. Mapas e Tempo dependem de CID-02. | G |
+| OS-08 | **Seletor de apps** (apps recentes). | Alterna entre dois apps abertos sem passar pela tela inicial. | M |
+
+### Ordem e riscos desta seção
+
+- **Primeiro, uma decisão de arte:** quem gera as imagens do Blender (no seu computador ou num runner) e qual o limite de tamanho do app. Sem isso, EST-01, CID-01, PRS-01 e UNI-03 não andam.
+- O build 29 é o mais pesado em arte; o 30, em lógica e economia; o 31, em interface do celular. ECV-05 e CID-02 mexem no equilíbrio do jogo e seguem a regra da seção 6: medição antes e depois.
+- AOV-01 a AOV-04 são pequenos e não dependem de arte. Podem entrar já no build 26 ou 27 se você preferir ver o resultado ao vivo antes.
+- Tudo que escolhe, guarda ou edita do celular vai em campos opcionais do save.
+
 ## 7. Ordem sugerida e dependências
 
 1. **Rodada no aparelho** com o 1.1 (25): iniciar carreira, comprar um jogador, simular uma rodada, virar a temporada. Não gasta build e reordena este plano.
@@ -217,9 +293,10 @@ Ainda sem critérios; entram em build quando houver decisão. A coluna de viabil
 3. **Build 26:** MOM-01, CLR-01, CLR-02, CLR-04 e TEL-11. CLR-03 espera a sua decisão. O resumo em cartão (CLR-01) vem antes de MOM-01, porque o fim de jogo reaproveita o mesmo cartão.
 4. **Build 27:** IOS-01 a IOS-03, SOM-01 (só depois da estimativa de custo aprovada), MOM-02 a MOM-04.
 5. **Build 28:** PRF-01 a PRF-03, RPL-01, AUX-01, EVO-01.
-6. **Qualidade:** QLD-02 antes do build 26, para medir o efeito das mudanças de tela. QLD-03 antes de a revisão no aparelho ficar frequente.
-7. **Equilíbrio e mundo vivo (seção 6):** um item de cada vez, com decisão e medição antes e depois.
-8. **Mesclagem:** decidir quando `release/1.1-22` a `release/1.1-25` entram em `feature/entrega-a-ritmo`.
+6. **Builds 29 a 31 (seção 6c):** mundo visual, ao vivo e patrocínio, sistema do celular. AOV-01 a AOV-04 podem antecipar.
+7. **Qualidade:** QLD-02 antes do build 26, para medir o efeito das mudanças de tela. QLD-03 antes de a revisão no aparelho ficar frequente.
+8. **Equilíbrio e mundo vivo (seção 6):** um item de cada vez, com decisão e medição antes e depois.
+9. **Mesclagem:** decidir quando `release/1.1-22` a `release/1.1-25` entram em `feature/entrega-a-ritmo`.
 
 ## 8. Como cada build é entregue
 
@@ -246,4 +323,6 @@ Ainda sem critérios; entram em build quando houver decisão. A coluna de viabil
 5. Tela "Hoje" (CLR-03): vale a decisão pendente desde o 1.1 (21)?
 6. Loja (LOJ-01): ligar a compra de verdade ou retirar da tela inicial?
 7. Teto da folha (ECO-01): qual proporção da receita a diretoria deve aceitar?
-8. Qual pacote vem primeiro depois do 26: iOS e som (27) ou profundidade (28)?
+8. Qual pacote vem primeiro depois do 26: iOS e som (27), profundidade (28), mundo visual (29), ao vivo e patrocínio (30) ou celular (31)?
+9. Arte 3D: quem roda o Blender (seu computador ou um runner de CI), e qual o tamanho máximo de arte no app?
+10. Os jogos ao vivo de outros campeonatos (AOV-01 a AOV-04) podem antecipar para o 26 ou 27?
