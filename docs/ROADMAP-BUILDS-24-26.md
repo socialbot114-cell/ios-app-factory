@@ -329,6 +329,26 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 
 **Fica para os próximos builds:** economia viva com medição (ECO/ECV, PAT-02/03, CID-02), Live Activity e widget (exigem alvos Xcode e conta Apple), uniformes próprios, mais arte (treinador e contatos).
 
+## 6f. Build 28 — campo vivo e correções de mercado (19/out)
+
+**Causa dos erros de contratação e de promoção da base:** o teto salarial da diretoria caía 3% a cada temporada sem a meta cumprida, enquanto a folha só crescia (renovações, jovens da base). Em uma de cada três carreiras testadas o teto terminava abaixo da folha, e aí **toda** contratação e **toda** promoção falhavam, com botão apagado e sem explicação. Medido em 72 carreiras simuladas antes da correção.
+
+**Corrigido:**
+- Teto com folga mínima de 12% sobre a folha a cada virada de temporada; saves já travados voltam a ter folga ao carregar.
+- Promoção da base diz o motivo (elenco cheio, ou quanto falta de folga); o botão não fica mais mudo.
+- Negociação por etapas avisa antes de começar se o salário mínimo do atleta não cabe no teto (antes a pessoa negociava taxa e salário e só na assinatura descobria). Negociações paradas por 6 dias de jogo esfriam e liberam a vaga (eram 3 vagas presas para sempre).
+- Janelas de transferência mais largas: pré-temporada nos dias 0 a 2 e meio de temporada nos dias 8 a 12; a mensagem de janela fechada diz quando abre.
+
+**Campo ao vivo:**
+- Bola fora de verdade: lateral (cobrador com os braços para cima, bola sobre a cabeça), tiro de meta (goleiro) e escanteio, com a regra de quem tocou por último.
+- Todo escanteio da estatística agora vira um lance na súmula (tipo novo `corner`) e no campo: cobrador na bandeirinha, atacantes e defensores na área, cruzamento disputado. Chute defendido que a súmula chama de escanteio termina na linha de fundo, sem contar duas vezes.
+- Falta e cartão: barreira a 9,15 m quando perto da área.
+- Física: arranque e freada limitados (4,6 e 7,5 m/s²), velocidade máxima por atleta, passe com desaceleração no gramado, erro de passe maior com a distância e com marcação, passe cortado, desarme só com rival colado, condução da bola nos pés, marcação por zona.
+- Relógio pelo campo: cada minuto vale 2,5 s de jogo; 2× e 4× aceleram o campo e os minutos na mesma proporção (antes o relógio andava 6× e o campo 2,2×). Lances da súmula seguram o relógio.
+- O motor do campo foi para o Core (testável no Linux), com 12 testes novos.
+
+**Limites honestos:** sem revisão em aparelho; lateral e tiro de meta comuns acontecem de 6 a 18 vezes por tempo de campo (calibrado por simulação, não por jogos reais); impedimento e pênalti em jogo corrido seguem só na narração.
+
 ## 7. Ordem sugerida e dependências
 
 1. **Rodada no aparelho** com o 1.1 (25): iniciar carreira, comprar um jogador, simular uma rodada, virar a temporada. Não gasta build e reordena este plano.
