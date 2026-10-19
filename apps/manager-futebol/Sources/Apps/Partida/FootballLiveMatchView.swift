@@ -150,31 +150,50 @@ struct FootballLiveMatchView: View {
     }
 
     var body: some View {
+        sheetsAndLifecycle
+    }
+
+    private var soundWatchers: some View {
         matchStack
-        .onChange(of: live?.sim.minute ?? 0) { _, minute in
-            showGoalNotices(upTo: minute)
-            if minute == 45 { playSound(.whistle) }
-        }
-        .onChange(of: (live?.homeGoals ?? 0) + (live?.awayGoals ?? 0)) { old, new in
-            if new > old { playSound(.goal) }
-        }
-        .onChange(of: live?.sim.finished ?? false) { _, finished in
-            if finished { playSound(.whistle) }
-        }
-        .onChange(of: running) { _, isRunning in
-            if isRunning, (live?.sim.minute ?? 0) <= 1 { playSound(.kickoff) }
-        }
-        .sheet(isPresented: $showSubstitutions) {
-            FootballSubstitutionSheet(career: $career, outgoingID: nil)
-        }
-        .onAppear {
-            start()
-            if career.firstCareerGuideStep == .liveMatch,
-               !staticPreview || FactoryCapture.screen == "first-run-live" {
-                withAnimation { showsFirstRunToast = true }
+            .onChange(of: live?.sim.minute ?? 0) { _, minute in
+                showGoalNotices(upTo: minute)
+                if minute == 45 { playSound(.whistle) }
             }
+            .onChange(of: totalGoals) { old, new in
+                if new > old { playSound(.goal) }
+            }
+            .onChange(of: matchFinished) { _, finished in
+                if finished { playSound(.whistle) }
+            }
+            .onChange(of: running) { _, isRunning in
+                if isRunning, (live?.sim.minute ?? 0) <= 1 { playSound(.kickoff) }
+            }
+    }
+
+    private var sheetsAndLifecycle: some View {
+        soundWatchers
+            .sheet(isPresented: $showSubstitutions) {
+                FootballSubstitutionSheet(career: $career, outgoingID: nil)
+            }
+            .onAppear(perform: onAppearStart)
+            .onDisappear { tickTask?.cancel() }
+    }
+
+    private var totalGoals: Int {
+        (live?.homeGoals ?? 0) + (live?.awayGoals ?? 0)
+    }
+
+    private var matchFinished: Bool {
+        live?.sim.finished ?? false
+    }
+
+    private func onAppearStart() {
+        start()
+        let atLiveStep: Bool = career.firstCareerGuideStep == .liveMatch
+        let previewCapture: Bool = FactoryCapture.screen == "first-run-live"
+        if atLiveStep && (!staticPreview || previewCapture) {
+            withAnimation { showsFirstRunToast = true }
         }
-        .onDisappear { tickTask?.cancel() }
     }
 
     private func title(for live: LiveMatchState) -> String? {
