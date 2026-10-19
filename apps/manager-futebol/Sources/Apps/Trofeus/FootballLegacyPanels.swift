@@ -39,7 +39,7 @@ struct FootballTrophyDetailView: View {
                 } label: {
                     Label(highlighted ? "Remover dos destaques" : "Destacar no perfil", systemImage: highlighted ? "star.slash" : "star")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("trophy-highlight")
                 if !highlighted && career.world.legacy.highlights.count >= FootballCareer.legacyHighlightLimit {
                     Text("Máximo de \(FootballCareer.legacyHighlightLimit) destaques. Remova um para escolher outro.")

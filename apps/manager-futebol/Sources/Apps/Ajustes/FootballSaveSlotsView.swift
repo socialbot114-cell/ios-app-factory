@@ -43,13 +43,13 @@ struct FootballSaveSlotsView: View {
                         if slot != activeSlot && summary != nil {
                             Button("Carregar") { onLoad(slot) }.buttonStyle(.borderedProminent)
                                 .accessibilityIdentifier("settings-load-slot-\(slot)")
-                            Button("Apagar", role: .destructive) { pending = .delete(slot) }.buttonStyle(.bordered)
+                            Button("Apagar", role: .destructive) { pending = .delete(slot) }.buttonStyle(FootballSecondaryButtonStyle())
                                 .accessibilityIdentifier("settings-delete-slot-\(slot)")
                         }
                         Button(summary == nil && slot != activeSlot ? "Nova carreira" : "Recomeçar") {
                             if summary == nil && slot != activeSlot { onNew(slot) }
                             else { pending = .replace(slot) }
-                        }.buttonStyle(.bordered)
+                        }.buttonStyle(FootballSecondaryButtonStyle())
                             .accessibilityIdentifier("settings-new-slot-\(slot)")
                     }.font(.caption.weight(.semibold))
                 }

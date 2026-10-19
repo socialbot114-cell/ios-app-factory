@@ -43,7 +43,7 @@ struct FootballStoryView: View {
                 Button(role: .destructive) { confirmResign = true } label: {
                     Label("Pedir demissão", systemImage: "door.left.hand.open").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 Text("Você deixa o clube e escolhe entre propostas. Custa reputação.").font(.caption).foregroundStyle(.secondary)
             }
         }

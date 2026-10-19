@@ -11,6 +11,25 @@ struct FootballClubView: View {
         }
     }
 
+    /// Horizonte da cidade do clube, pelo porte; à noite, as cidades grandes acendem as luzes.
+    private func cityPanel(_ club: LeagueTeam) -> some View {
+        let scale = club.cityScale
+        let image = scale == .large && career.phoneMoment == .matchNight ? "CityGrandeNoite" : scale.imageName
+        return FactoryPanel(title: "Cidade", systemImage: "building.2.fill") {
+            Image(image)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 170)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .accessibilityLabel("Horizonte de \(club.city)")
+            Label("\(club.city) · \(scale.title.lowercased())", systemImage: "mappin.and.ellipse")
+                .font(.subheadline.weight(.semibold))
+                .accessibilityIdentifier("club-city")
+        }
+    }
+
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     /// Abre outro app do celular (Banco, Marca, Negócios, Ajustes) sem duplicar o que ele já mostra.
@@ -38,6 +57,7 @@ struct FootballClubView: View {
                         }
                     }
                 }
+                cityPanel(club)
                 FactoryPanel(title: "Estádio", systemImage: "sportscourt.fill") {
                     Image(Self.stadiumImageName(capacity: career.stadiumCapacity))
                         .resizable()
@@ -59,7 +79,7 @@ struct FootballClubView: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    FactoryMetric(label: "Títulos da Série A", value: "\(leagueTitles)", symbol: "trophy.fill", tint: FootballTheme.gold)
+                    FactoryMetric(label: "Títulos", value: "\(leagueTitles)", symbol: "trophy.fill", tint: FootballTheme.gold)
                     FactoryMetric(label: "Copas", value: "\(cupTitles)", symbol: "trophy", tint: FootballTheme.gold)
                     FactoryMetric(label: "Temporadas", value: "\(career.history.count)", symbol: "calendar", tint: FootballTheme.accent)
                 }

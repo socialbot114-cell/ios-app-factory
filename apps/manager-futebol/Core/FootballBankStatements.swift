@@ -143,7 +143,7 @@ extension FootballCareer {
             }
         case .media:
             if let contract = life.mediaContract {
-                return FinanceOrigin(title: "Contrato de comentarista", detail: "\(contract.done.count) programa(s) feitos, \(contract.missed.count) falta(s).")
+                return FinanceOrigin(title: "Contrato de comentarista", detail: "\(contract.done.count) programa(s) feitos, \(FootballFormat.plural(contract.missed.count, "falta", "faltas")).")
             }
         }
         return FinanceOrigin(title: link.title, detail: "Registro original não está mais no histórico.")

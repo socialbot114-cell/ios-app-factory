@@ -27,7 +27,7 @@ struct FootballAgendaItem: Identifiable, Equatable {
 
     var expiresOnNextAdvance: Bool { expiresOnCalendarAdvance && daysRemaining <= 1 }
     var deadlineText: String {
-        if kind == .contract { return "Ao encerrar a temporada · \(daysRemaining) dia(s) de calendário" }
+        if kind == .contract { return "Ao encerrar a temporada · \(FootballFormat.plural(daysRemaining, "dia", "dias")) de calendário" }
         if daysRemaining <= 0 { return "Prazo atingido" }
         if daysRemaining == 1 { return "Último dia · vence ao avançar" }
         return "\(daysRemaining) dias de calendário restantes"

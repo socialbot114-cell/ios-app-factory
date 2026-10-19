@@ -8,6 +8,8 @@ struct FootballFinanceView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Finanças do clube",
+                                 subtitle: "Caixa, receitas, despesas e a projeção dos próximos jogos.")
             let overview = career.bankOverview
             FactoryPanel(title: "Visão geral", systemImage: "gauge.with.dots.needle.50percent") {
                 HStack(spacing: 12) {
@@ -27,6 +29,10 @@ struct FootballFinanceView: View {
                         .font(.caption.weight(.semibold)).foregroundStyle(Self.tint(overview.risk))
                 }
             }
+            FactoryPanel(title: "Evolução do saldo", systemImage: "chart.line.uptrend.xyaxis") {
+                Self.balanceTrail(career.monthReports(season: career.season))
+            }
+            FootballCashProjectionPanel(career: career)
             let entries = career.finance.entries(season: career.season)
             FactoryPanel(title: "Receita por origem", systemImage: "chart.bar.fill") {
                 Self.barRows(FootballBankBreakdown.income(entries), empty: "Sem receitas registradas nesta temporada.")
@@ -38,9 +44,6 @@ struct FootballFinanceView: View {
             FactoryPanel(title: "Temporadas em comparação", systemImage: "arrow.left.arrow.right") {
                 Self.barRows(FootballBankTrends.seasonBars(totals), empty: "A comparação aparece quando alguma temporada tiver receitas ou despesas.")
             }
-            FactoryPanel(title: "Evolução do saldo", systemImage: "chart.line.uptrend.xyaxis") {
-                Self.balanceTrail(career.monthReports(season: career.season))
-            }
             let budgetReference = FootballBudgetSplit.reference(summaries: career.finance.summaries, book: career.finance, currentSeason: career.season)
             let budgetBuckets = FootballBudgetSplit.buckets(reference: budgetReference, entries: career.finance.entries(season: career.season))
             FactoryPanel(title: "Orçamento da temporada", systemImage: "chart.pie.fill") {
@@ -50,7 +53,6 @@ struct FootballFinanceView: View {
                 FactoryMetric(label: "Folha salarial", value: FootballFormat.money(career.wageBill), symbol: "person.3.fill", tint: .orange)
                 FactoryMetric(label: "Teto da folha", value: FootballFormat.money(career.wageCap), symbol: "lock.fill", tint: .gray)
             }
-            FootballCashProjectionPanel(career: career)
             FootballCoachLoanPanel(career: $career)
             FootballStatementsPanel(career: career)
             FactoryPanel(title: "Aporte do treinador", systemImage: "arrow.down.to.line.circle.fill") {
@@ -61,7 +63,7 @@ struct FootballFinanceView: View {
                         Button("+ \(FootballFormat.money(amount))") {
                             if !career.lendToClub(amount: amount) { onAlert("Seu caixa pessoal não cobre este aporte.") }
                         }
-                        .buttonStyle(.bordered).font(.caption.weight(.bold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                         .accessibilityIdentifier("lend-\(amount)")
                     }
                 }

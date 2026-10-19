@@ -107,6 +107,7 @@ extension FootballCareer {
             addInbox(.news, title: "Prêmios da temporada \(season)", body: "Craque do campeonato: \(best.name). Artilheiro: \(awards.topScorer?.name ?? "—") (\(awards.topScorerGoals) gols). Técnico do ano: \(awards.coachOfTheYearClubID.map { FootballSeason.teamName($0) } ?? "—").")
         }
 
+        renewAcademyActionsForSeasonEnd()
         season += 1
         matchDayIndex = 0
         lastTrainingReport = nil

@@ -51,7 +51,7 @@ struct FootballOffseasonView: View {
             if closing { closingOverlay }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: step)
-        .sensoryFeedback(.impact(weight: .medium), trigger: impact)
+        .footballHaptic(.impact(weight: .medium), trigger: impact)
         .task(id: step) { await pace() }
         .onChange(of: career.offseason) { _, newValue in
             if newValue == nil { onFinish() }
@@ -333,7 +333,7 @@ struct FootballOffseasonView: View {
             hero(symbol: isChampion ? "trophy.fill" : "flag.checkered", title: headline, subtitle: "Fim da temporada \(career.season)")
             VStack(spacing: 12) {
                 infoRow(1, symbol: "list.number", label: "Posição final", value: "\(position)º · \(division.name)")
-                infoRow(2, symbol: "target", label: "Meta da diretoria", value: "\(career.objectiveText) · \(met ? "cumprida" : "não cumprida")",
+                infoRow(2, symbol: "target", label: met ? "Meta da diretoria · cumprida" : "Meta da diretoria · não cumprida", value: career.objectiveText,
                         tint: met ? .green : .orange)
                 if let champion {
                     infoRow(3, symbol: "crown.fill", label: "Campeão da Série A", value: champion.name)
@@ -399,7 +399,7 @@ struct FootballOffseasonView: View {
                     Label("Ver relatório completo", systemImage: "doc.richtext")
                         .font(.subheadline.weight(.semibold))
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .tint(.white)
                 .reveal(visibleCount >= 6)
                 .accessibilityIdentifier("offseason-full-report")

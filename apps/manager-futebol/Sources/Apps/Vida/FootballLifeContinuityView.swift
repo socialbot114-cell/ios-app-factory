@@ -29,7 +29,7 @@ struct FootballLifeContinuityPanel: View {
                     Button("Assinar contrato") {
                         if !career.acceptMediaContract() { onAlert("A proposta não está mais disponível.") }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("media-contract-accept")
                 }
             }

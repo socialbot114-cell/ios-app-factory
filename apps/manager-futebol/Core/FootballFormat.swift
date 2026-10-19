@@ -18,6 +18,11 @@ enum FootballFormat {
         return formatter
     }()
 
+    /// Número com o substantivo no singular ou no plural: "1 dia", "3 dias", "2 jovens".
+    static func plural(_ count: Int, _ singular: String, _ plural: String? = nil) -> String {
+        "\(count) " + (count == 1 ? singular : (plural ?? singular + "s"))
+    }
+
     /// Valor curto: "R$ 8,0 mi", "R$ 750 mil".
     static func money(_ value: Int) -> String {
         let sign = value < 0 ? "-" : ""

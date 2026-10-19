@@ -8,6 +8,10 @@ struct PhoneHomeScreen: View {
     let onNotifications: () -> Void
     let onSearch: () -> Void
     var onGuide: () -> Void = {}
+    /// Trava a tela à mão, como o botão lateral.
+    var onLock: () -> Void = {}
+    /// Nova ordem dos apps da grade (`PhoneApp.rawValue`); lista vazia volta à ordem de fábrica.
+    var onReorder: ([String]) -> Void = { _ in }
     var firstRunGuideStep: FirstCareerGuideStep? = nil
     var onFirstRunGuideContinue: () -> Void = {}
     var onFirstRunGuideSkip: () -> Void = {}
@@ -16,12 +20,30 @@ struct PhoneHomeScreen: View {
     /// Só para capturas de tela: força o clima do papel de parede.
     var momentOverride: PhoneMoment? = nil
 
+    /// Modo de edição da tela inicial: toque em um app e depois em outro para trocar de lugar.
+    @State private var editing = false
+    @State private var selectedForSwap: PhoneApp?
+
+    /// Apps da grade na ordem escolhida pelo jogador.
+    private var orderedGrid: [PhoneApp] {
+        PhonePreferences.ordered(PhoneApp.grid.map(\.rawValue), custom: career.world.phone.preferences.homeOrder)
+            .compactMap { PhoneApp(rawValue: $0) }
+    }
+
     var body: some View {
         ZStack {
-            PhoneWallpaper(team: career.selectedClub, moment: momentOverride ?? career.phoneMoment)
+            PhoneWallpaper(team: career.selectedClub, moment: momentOverride ?? career.phoneMoment,
+                           style: career.world.phone.preferences.wallpaperStyle)
             VStack(spacing: 14) {
                 HStack {
                     PhoneStatusBar(career: career)
+                    Button(action: onLock) {
+                        Image(systemName: "lock.fill")
+                            .foregroundStyle(.white).frame(width: 32, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Bloquear a tela")
+                    .accessibilityIdentifier("phone-lock")
                     Button(action: onNotifications) {
                         Image(systemName: career.phoneNotifications.isEmpty ? "bell" : "bell.badge.fill")
                             .foregroundStyle(.white).frame(width: 36, height: 28)
@@ -55,13 +77,21 @@ struct PhoneHomeScreen: View {
                             FirstCareerGuideCard(step: firstRunGuideStep, onContinue: onFirstRunGuideContinue, onSkip: onFirstRunGuideSkip)
                         }
                         widgets
+                        if editing { editBar }
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                            ForEach(PhoneApp.grid) { app in icon(app, id: "app-\(app.rawValue)") }
+                            ForEach(orderedGrid) { app in icon(app, id: "app-\(app.rawValue)") }
                         }
                         Color.clear.frame(height: 16)
                     }
                     .padding(.horizontal, 4)
                 }
+                // A última fileira de ícones pode passar do espaço visível: o esmaecido embaixo mostra que a grade rola.
+                .mask(
+                    VStack(spacing: 0) {
+                        Rectangle()
+                        LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 26)
+                    }
+                )
                 dock
             }
             .padding(.horizontal, 16)
@@ -160,7 +190,7 @@ struct PhoneHomeScreen: View {
     // MARK: Ícones e dock
 
     private func icon(_ app: PhoneApp, id: String) -> some View {
-        Button { onOpen(app) } label: {
+        Button { if editing { tapInEditMode(app) } else { onOpen(app) } } label: {
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: app.symbol)
@@ -169,6 +199,12 @@ struct PhoneHomeScreen: View {
                         .frame(width: 56, height: 56)
                         .background(LinearGradient(colors: [app.tint, app.tint.opacity(0.7)], startPoint: .top, endPoint: .bottom),
                                     in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .overlay {
+                            if editing && selectedForSwap == app {
+                                RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(.white, lineWidth: 3)
+                            }
+                        }
+                        .scaleEffect(editing && selectedForSwap == app ? 1.08 : 1)
                     let badge = career.badge(for: app)
                     if badge > 0 {
                         // Tarefas ativas (checklist, azul) não se confundem com novidades (número, vermelho).
@@ -187,8 +223,46 @@ struct PhoneHomeScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // Segurar um ícone abre a edição da tela inicial.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.7).onEnded { _ in
+            if !editing, PhoneApp.grid.contains(app) { withAnimation { editing = true } }
+        })
         .accessibilityLabel(app.title + (career.badge(for: app) > 0 ? ", \(career.badge(for: app)) \(app == .quests ? "tarefa(s) ativa(s)" : "novidade(s)")" : ""))
         .accessibilityIdentifier(id)
+    }
+
+    // MARK: Editar a tela inicial
+
+    private var editBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Toque em um app e depois em outro para trocá-los de lugar.")
+                .font(.caption.weight(.semibold)).foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                Button("Restaurar ordem") { selectedForSwap = nil; onReorder([]) }
+                    .accessibilityIdentifier("home-edit-reset")
+                Spacer()
+                Button("Concluído") { withAnimation { editing = false; selectedForSwap = nil } }
+                    .font(.caption.weight(.bold))
+                    .accessibilityIdentifier("home-edit-done")
+            }
+            .font(.caption)
+            .foregroundStyle(.white)
+        }
+        .padding(12)
+        .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func tapInEditMode(_ app: PhoneApp) {
+        guard orderedGrid.contains(app) else { return }
+        if let first = selectedForSwap {
+            if first != app {
+                onReorder(PhonePreferences.swapped(orderedGrid.map(\.rawValue), first.rawValue, app.rawValue))
+            }
+            selectedForSwap = nil
+        } else {
+            selectedForSwap = app
+        }
     }
 
     private var dock: some View {

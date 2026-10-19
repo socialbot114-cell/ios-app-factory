@@ -78,7 +78,7 @@ struct FootballRotationPanel: View {
                 ForEach(plan.reasons, id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary) }
                 if plan.suggestedFocus != career.trainingFocus {
                     Button("Treinar \(plan.suggestedFocus.rawValue.lowercased())") { career.setTrainingFocus(plan.suggestedFocus) }
-                        .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                         .accessibilityIdentifier("rotation-focus")
                 }
                 ForEach(plan.rows.prefix(8)) { row in
@@ -89,7 +89,7 @@ struct FootballRotationPanel: View {
                             Text("\(row.condition) → \(row.projectedCondition)").font(.caption.monospacedDigit())
                                 .foregroundStyle(row.projectedCondition < 60 ? Color.red : Color.secondary)
                         }
-                        Text(row.promisedStartsLeft > 0 ? "\(row.advice) Promessa: faltam \(row.promisedStartsLeft) titularidade(s)." : row.advice)
+                        Text(row.promisedStartsLeft > 0 ? "\(row.advice) Promessa: faltam \(FootballFormat.plural(row.promisedStartsLeft, "titularidade", "titularidades"))." : row.advice)
                             .font(.caption2).foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)

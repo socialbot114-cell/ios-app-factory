@@ -40,7 +40,7 @@ struct FootballDashboardView: View {
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         }
-                        Button("Preparar escalação") { onNavigate(.squad) }.buttonStyle(.bordered)
+                        Button("Preparar escalação") { onNavigate(.squad) }.buttonStyle(FootballSecondaryButtonStyle())
                     }
                 }
                 if career.isFired {
@@ -168,6 +168,7 @@ struct FootballDashboardView: View {
                             .foregroundStyle(item.expiresOnNextAdvance ? Color.orange : Color.secondary)
                         Text(item.detail).font(.caption).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("agenda-\(item.id)")
@@ -192,6 +193,7 @@ struct FootballDashboardView: View {
                             }
                             Spacer(minLength: 0)
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("prep-\(item.id)")
@@ -281,7 +283,7 @@ struct FootballDashboardView: View {
                 Label(career.midweekRestUsed ? "Time descansado nesta semana" : "Descansar o time", systemImage: "bed.double.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .disabled(career.midweekRestUsed)
             .accessibilityIdentifier("midweek-rest")
             Button {
@@ -289,7 +291,7 @@ struct FootballDashboardView: View {
             } label: {
                 Label("Fazer peneira", systemImage: "figure.soccer").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("midweek-tryout")
             Button {
                 career.closeMidweek()
@@ -350,16 +352,16 @@ struct FootballDashboardView: View {
                     attentionRow("Crise de imagem nas redes", "exclamationmark.triangle.fill", .red, id: "attention-crisis") { onNavigate(.social) }
                 }
                 if events > 0 {
-                    attentionRow("\(events) acontecimento(s) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.alerts) }
+                    attentionRow("\(FootballFormat.plural(events, "acontecimento")) para decidir", "exclamationmark.bubble.fill", .orange, id: "attention-events") { onNavigate(.alerts) }
                 }
                 if unread > 0 {
-                    attentionRow("\(unread) mensagem(ns) não lida(s)", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.messages) }
+                    attentionRow("\(FootballFormat.plural(unread, "mensagem", "mensagens")) \(unread == 1 ? "não lida" : "não lidas")", "tray.full.fill", FootballTheme.accent, id: "attention-inbox") { onNavigate(.messages) }
                 }
                 if invites > 0 {
-                    attentionRow("\(invites) convite(s) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
+                    attentionRow("\(FootballFormat.plural(invites, "convite")) de outros clubes", "envelope.open.fill", .indigo, id: "attention-invites") { onNavigate(.club) }
                 }
                 if academyReady > 0 {
-                    attentionRow("\(academyReady) jovem(ns) pronto(s) para decidir na Academia", "graduationcap.fill", PhoneApp.academy.tint, id: "attention-academy") { onNavigate(.academy) }
+                    attentionRow("\(FootballFormat.plural(academyReady, "jovem", "jovens")) \(academyReady == 1 ? "pronto" : "prontos") para decidir na Academia", "graduationcap.fill", PhoneApp.academy.tint, id: "attention-academy") { onNavigate(.academy) }
                 }
                 if career.shouldShowTutorial {
                     let progress = career.tutorialProgress
@@ -447,7 +449,7 @@ struct FootballDashboardView: View {
                     if career.playStyle != suggestion {
                         Button("Aplicar") { career.setPlayStyle(suggestion) }
                             .font(.caption.weight(.bold))
-                            .buttonStyle(.bordered)
+                            .buttonStyle(FootballSecondaryButtonStyle())
                             .accessibilityIdentifier("apply-suggestion")
                     } else {
                         PillLabel(text: "EM USO", systemImage: "checkmark")
@@ -468,7 +470,7 @@ struct FootballDashboardView: View {
             Button { showsPrepFlow = true } label: {
                 Label("Preparar a partida", systemImage: "checklist").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .font(.subheadline.weight(.semibold))
             .accessibilityIdentifier("prep-flow-open")
 
@@ -495,12 +497,12 @@ struct FootballDashboardView: View {
                 } label: {
                     Label("Simulação rápida", systemImage: "forward.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("simulate-round")
                 Button { onNavigate(.squad) } label: {
                     Label("Escalação", systemImage: "person.3.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
             }
             .font(.subheadline.weight(.semibold))
             Button {
@@ -509,11 +511,11 @@ struct FootballDashboardView: View {
                 let result = career.simulateUntilAgendaDecision()
                 reportRoundIfClubPlayed(from: start, fixtureBefore: fixtureBefore)
                 // Parar numa decisão pede ação do treinador, então continua em alerta (FLX-02). Sem dias avançados, mostra só o motivo.
-                onAlert(result.days == 0 ? result.reason : "\(result.days) dia(s) simulado(s). \(result.reason)")
+                onAlert(result.days == 0 ? result.reason : "\(FootballFormat.plural(result.days, "dia simulado", "dias simulados")). \(result.reason)")
             } label: {
                 Label("Simular até a próxima decisão", systemImage: "forward.end.alt.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .font(.subheadline.weight(.semibold))
             .accessibilityIdentifier("simulate-until-decision")
         }
@@ -650,7 +652,7 @@ struct FootballDashboardView: View {
             Text("Ajuste formação, estilo e treino no Elenco. Antes de cada jogo, leia o relatório do olheiro: cada estilo tem vantagens e fraquezas contra o plano do rival.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button { onNavigate(.squad) } label: { Label("Gerir elenco e tática", systemImage: "person.3.fill") }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
         }
     }
 
@@ -910,7 +912,7 @@ struct FootballOffersPanel: View {
                             Text("expira em \(max(1, offer.expiresAfterRound - career.matchDayIndex)) jogo(s)").font(.caption2).foregroundStyle(.secondary)
                             Spacer()
                             Button("Recusar") { career.rejectOffer(offer.id) }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(FootballSecondaryButtonStyle())
                             Button("Aceitar") {
                                 if !career.acceptOffer(offer.id) {
                                     onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação com pelo menos \(FootballCareer.minimumRoster) atletas.")

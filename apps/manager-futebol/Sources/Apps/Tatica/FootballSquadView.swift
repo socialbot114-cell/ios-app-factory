@@ -6,6 +6,7 @@ struct FootballSquadView: View {
 
     @State private var substitutionTarget: SubstitutionTarget?
     @State private var selectedPlayer: PlayerSelection?
+    @State private var showsStarterPicker = false
 
     struct SubstitutionTarget: Identifiable {
         let id: Int
@@ -21,29 +22,40 @@ struct FootballSquadView: View {
                 FactoryHeader(
                     eyebrow: "Elenco · \(career.clubRoster.count)/\(FootballCareer.rosterLimit) atletas",
                     title: club.name,
-                    subtitle: "Toque em um titular no campo para trocá-lo. A energia aparece no anel de cada atleta.",
+                    subtitle: "Escolha quem começa e quem fica no banco. A energia aparece no anel de cada atleta.",
                     accent: FootballTheme.accent
                 )
-                tacticsPanel
                 FactoryPanel(title: "Escalação · \(career.formation.rawValue)", systemImage: "sportscourt.fill") {
                     PitchView(formation: career.formation, starters: career.starters) { player in
                         substitutionTarget = SubstitutionTarget(id: player.id)
                     }
                     .accessibilityIdentifier("squad-pitch")
+                    HStack {
+                        Text("Titulares \(career.startingXI.count)/11").font(.caption.weight(.bold))
+                        Spacer()
+                        Text("Energia média \(averageStarterCondition)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
+                    Button {
+                        showsStarterPicker = true
+                    } label: {
+                        Label("Escolher titulares", systemImage: "list.bullet.rectangle.portrait.fill").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(FactoryPrimaryButtonStyle())
+                    .accessibilityIdentifier("open-starter-picker")
                     HStack(spacing: 10) {
                         Button {
                             career.autoSelectLineup()
                         } label: {
                             Label("Escalação ideal", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .accessibilityIdentifier("auto-lineup")
                         Button {
                             substitutionTarget = SubstitutionTarget(id: -1)
                         } label: {
                             Label("Trocar titular", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                     }
                     .font(.subheadline.weight(.semibold))
                     ForEach(career.lineupWarnings, id: \.self) { warning in
@@ -51,6 +63,7 @@ struct FootballSquadView: View {
                             .font(.caption.weight(.medium)).foregroundStyle(.orange)
                     }
                 }
+                tacticsPanel
                 FootballTacticalPlansPanel(career: $career)
                 FootballMatchPrepHub(career: $career)
                 instructionsPanel
@@ -80,8 +93,18 @@ struct FootballSquadView: View {
             FootballSubstitutionSheet(career: $career, outgoingID: target.id >= 0 ? target.id : nil)
         }
         .sheet(item: $selectedPlayer) { selection in
-            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
+            FootballPlayerDetailView(career: $career, playerID: selection.id)
         }
+        .sheet(isPresented: $showsStarterPicker) {
+            FootballStarterPickerSheet(career: $career)
+        }
+    }
+
+    /// Média de energia dos titulares: quanto mais baixa, mais o time precisa de descanso antes do próximo jogo.
+    private var averageStarterCondition: Int {
+        let starters = career.starters
+        guard !starters.isEmpty else { return 0 }
+        return starters.reduce(0) { $0 + $1.condition } / starters.count
     }
 
     private var tacticsPanel: some View {

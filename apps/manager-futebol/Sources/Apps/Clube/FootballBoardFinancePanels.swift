@@ -41,7 +41,7 @@ struct FootballConstructionPanel: View {
                 Text("Pago \(FootballFormat.money(plan.paid)) de \(FootballFormat.money(plan.totalCost)). \(career.constructionImpact(for: plan.kind))")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if plan.pausedDays > 0 {
-                    Label("Parada \(plan.pausedDays) dia(s) por falta de caixa", systemImage: "pause.circle.fill").font(.caption).foregroundStyle(.orange)
+                    Label("Parada \(FootballFormat.plural(plan.pausedDays, "dia", "dias")) por falta de caixa", systemImage: "pause.circle.fill").font(.caption).foregroundStyle(.orange)
                 }
             }
             .accessibilityIdentifier("construction-stages")

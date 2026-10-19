@@ -8,6 +8,10 @@ enum BoardRequestKind: String, Codable, CaseIterable, Identifiable {
     case budgetBoost
     /// Meta da temporada menos ambiciosa, ao custo de confiança.
     case targetReview
+    /// Teto da folha maior, só com caixa saudável.
+    case wageIncrease
+    /// Teto da folha menor: menos contratos possíveis, mais folga no caixa.
+    case wageCut
 
     var id: String { rawValue }
 
@@ -15,6 +19,8 @@ enum BoardRequestKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .budgetBoost: return "Pedir verba extra"
         case .targetReview: return "Rever a meta da temporada"
+        case .wageIncrease: return "Ampliar o teto salarial"
+        case .wageCut: return "Enxugar a folha e os gastos"
         }
     }
 
@@ -22,6 +28,8 @@ enum BoardRequestKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .budgetBoost: return "A diretoria libera dinheiro para reforços, mas cobra resultado nos jogos seguintes."
         case .targetReview: return "A meta fica mais realista até o fim da temporada, mas a diretoria passa a confiar menos em você."
+        case .wageIncrease: return "Com o caixa saudável, a diretoria libera mais folha para contratos e salários. Com caixa apertado, ela nem recebe o pedido."
+        case .wageCut: return "A diretoria aceita um teto menor: sobra caixa para o imprevisto, mas cabem menos contratações."
         }
     }
 }
@@ -148,6 +156,14 @@ extension FootballCareer {
         return max(50_000, Int(Double(club.startingBudget) * 0.08 / 50_000) * 50_000)
     }
 
+    /// Caixa saudável: cobre a folha de um ano e a projeção garantida não fica negativa em nenhum dia.
+    var cashIsHealthy: Bool {
+        transferBudget >= wageBill && cashProjection().firstContractedShortfall == nil
+    }
+
+    /// Quanto o teto da folha sobe ou desce em cada reunião de salários: 10%, em múltiplos de 10 mil.
+    var wageStep: Int { max(10_000, Int(Double(wageCap) * 0.1 / 10_000) * 10_000) }
+
     /// Motivo pelo qual não é possível marcar reunião agora; nil quando pode.
     func boardMeetingBlocker(_ kind: BoardRequestKind) -> String? {
         guard let selectedClubID, !isFired else { return "Você está sem clube." }
@@ -168,6 +184,15 @@ extension FootballCareer {
             if boardTarget >= teamsInUserDivision { return "A meta já é a mais modesta possível." }
             if world.projects.meetings.contains(where: { $0.clubID == selectedClubID && $0.season == season && $0.kind == .targetReview && $0.status != .rejected }) {
                 return "A meta desta temporada já foi revista."
+            }
+        case .wageIncrease:
+            if !cashIsHealthy { return "Só amplia a folha com caixa saudável: saldo para um ano de salários e projeção sem buraco." }
+            if world.projects.meetings.contains(where: { $0.clubID == selectedClubID && $0.season == season && $0.kind == .wageIncrease && $0.status != .rejected }) {
+                return "O teto salarial desta temporada já foi ampliado."
+            }
+        case .wageCut:
+            if world.projects.meetings.contains(where: { $0.clubID == selectedClubID && $0.season == season && $0.kind == .wageCut && $0.status != .rejected }) {
+                return "O teto já foi enxugado nesta temporada."
             }
         }
         return nil
@@ -196,6 +221,9 @@ extension FootballCareer {
         let earlier = world.projects.meetings.filter { $0.clubID == selectedClubID && $0.season == season }.count
         score -= Double(earlier) * 8
         if kind == .targetReview { score -= 5 }
+        // Enxugar gasto é o que a diretoria mais gosta de ouvir; ampliar folha pesa mais quando o caixa sobra.
+        if kind == .wageCut { score += 12 }
+        if kind == .wageIncrease { score += cashIsHealthy ? 4 : -10 }
         return Int(score.rounded()) + noise
     }
 
@@ -263,6 +291,22 @@ extension FootballCareer {
             world.projects.meetings[index].answer = "Meta revista de \(old)º para \(boardTarget)º lugar até o fim da temporada."
             world.projects.meetings[index].resolution = "Confiança -6 pela revisão."
             addInbox(.board, title: "Meta revista", body: world.projects.meetings[index].answer + " Confiança -6.")
+        case .wageIncrease:
+            let old = wageCap
+            wageCap += wageStep
+            world.projects.meetings[index].status = .closed
+            world.projects.meetings[index].answer = "Teto da folha subiu de \(FootballFormat.money(old)) para \(FootballFormat.money(wageCap)) por temporada."
+            world.projects.meetings[index].resolution = "O caixa continua sendo o limite: cada contrato ainda precisa caber no orçamento."
+            addInbox(.board, title: "Teto salarial ampliado", body: world.projects.meetings[index].answer)
+        case .wageCut:
+            let old = wageCap
+            // Não corta abaixo da folha que já existe: o teto nunca fica menor que o pagamento atual.
+            wageCap = max(wageBill, wageCap - wageStep)
+            boardConfidence = max(0, boardConfidence - 2)
+            world.projects.meetings[index].status = .closed
+            world.projects.meetings[index].answer = "Teto da folha caiu de \(FootballFormat.money(old)) para \(FootballFormat.money(wageCap)) por temporada."
+            world.projects.meetings[index].resolution = "Confiança -2 por abrir mão de ambição salarial."
+            addInbox(.board, title: "Folha enxugada", body: world.projects.meetings[index].answer + " Confiança -2.")
         }
     }
 
@@ -291,7 +335,7 @@ extension FootballCareer {
         let met = condition.winsCounted >= needed
         world.projects.meetings[index].status = met ? .conditionMet : .conditionFailed
         boardConfidence = met ? min(100, boardConfidence + 4) : max(0, boardConfidence - 10)
-        let summary = "\(condition.winsCounted) vitória(s) em \(condition.gamesCounted) jogo(s)"
+        let summary = "\(FootballFormat.plural(condition.winsCounted, "vitória", "vitórias")) em \(FootballFormat.plural(condition.gamesCounted, "jogo", "jogos"))"
         world.projects.meetings[index].resolution = met ? "Condição cumprida: \(summary). Confiança +4." : "Condição descumprida: \(summary). Confiança -10."
         addInbox(.board, title: met ? "Diretoria satisfeita" : "Diretoria cobra o combinado", body: world.projects.meetings[index].resolution)
     }

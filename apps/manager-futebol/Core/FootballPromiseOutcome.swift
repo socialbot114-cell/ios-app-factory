@@ -60,7 +60,7 @@ extension FootballCareer {
         switch verdict.kind {
         case .fulfilled:
             title = "Promessa cumprida"
-            summary = "\(name) começou \(promise.startsDone) jogo(s), como combinado. Moral +\(verdict.moraleChange)."
+            summary = "\(name) começou \(FootballFormat.plural(promise.startsDone, "jogo", "jogos")), como combinado. Moral +\(verdict.moraleChange)."
         case .partial:
             title = "Promessa cumprida pela metade"
             summary = "\(name) começou \(promise.startsDone) de \(promise.requiredStarts) jogos combinados. Moral \(verdict.moraleChange)."

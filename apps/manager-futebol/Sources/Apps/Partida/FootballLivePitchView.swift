@@ -285,12 +285,17 @@ struct FootballLivePitchView: View {
         let palette: [Color] = [Color(red: 0.95, green: 0.78, blue: 0.10), Color(red: 0.85, green: 0.15, blue: 0.20),
                                 Color(red: 0.10, green: 0.50, blue: 0.90), Color(red: 0.95, green: 0.95, blue: 0.95)]
         let segment: CGFloat = 38
+        // Com patrocinadores contratados, cada trecho da placa tem a cor de uma marca; sem eles, a paleta de sempre.
+        let brandColors: [Color] = career.visibleSponsors.map {
+            Color(hue: Double(FootballCareer.brandHue(of: $0.name)) / 360, saturation: 0.78, brightness: 0.92)
+        }
         for (y, reverse) in [(pitch.minY - 8, false), (pitch.maxY + 3, true)] {
             var x = -segment + CGFloat((time * 18).truncatingRemainder(dividingBy: Double(segment * 4))) * (reverse ? -1 : 1)
             var index = 0
             while x < stage.size.width + segment {
                 let rect = CGRect(x: x, y: y, width: segment - 2, height: 5)
-                context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(palette[abs(index) % palette.count].opacity(0.9)))
+                let fill = brandColors.isEmpty ? palette[abs(index) % palette.count] : brandColors[abs(index) % brandColors.count]
+                context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(fill.opacity(0.9)))
                 context.fill(Path(CGRect(x: rect.minX + 6, y: rect.midY - 0.8, width: segment - 14, height: 1.6)), with: .color(.black.opacity(0.35)))
                 x += segment
                 index += 1

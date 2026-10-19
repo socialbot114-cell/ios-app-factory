@@ -7,12 +7,16 @@ struct FootballModesView: View {
     let onStartChallenge: (ChallengeScenario) -> Void
     var onAlert: (String) -> Void = { _ in }
     var saveSlots: FootballSaveSlotsView? = nil
+    @State private var showsIntro = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Ajustes e modos",
+                                 subtitle: "Dificuldade, carreiras salvas, avisos e desafios.")
             FootballDifficultyRulesPanel(career: $career)
             if let saveSlots { saveSlots }
             FootballPhonePreferencesPanel(career: $career)
+            FootballSystemSettingsPanel(career: $career)
             FootballAdvancePausesPanel(career: $career)
             FootballActionHistoryPanel(career: career)
             if let challenge = career.challenge, let scenario = ChallengeScenario.scenario(id: challenge.scenarioID) {
@@ -20,7 +24,7 @@ struct FootballModesView: View {
                     Text(scenario.title).font(.subheadline.weight(.bold))
                     Text(scenario.summary).font(.caption).foregroundStyle(.secondary)
                     switch challenge.status {
-                    case .active: Label("Em andamento · \(scenario.seasonsAllowed) temporada(s)", systemImage: "hourglass").font(.caption)
+                    case .active: Label("Em andamento · \(FootballFormat.plural(scenario.seasonsAllowed, "temporada", "temporadas"))", systemImage: "hourglass").font(.caption)
                     case .won: Label("Vencido!", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
                     case .failed: Label(challenge.failureReason ?? "Falhou", systemImage: "xmark.seal.fill").font(.caption).foregroundStyle(.red)
                     }
@@ -51,6 +55,14 @@ struct FootballModesView: View {
                 }
                 Toggle("Mostrar dicas no painel", isOn: Binding(get: { !career.tutorialDismissed }, set: { career.tutorialDismissed = !$0 }))
                     .font(.subheadline)
+                Divider()
+                Text("Boas-vindas")
+                    .font(.subheadline.weight(.semibold))
+                Text("Reveja a apresentação do jogo: o celular, o ritmo dos dias e as decisões entre temporadas. Só a dificuldade, na última página, muda a carreira.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Rever as boas-vindas") { showsIntro = true }
+                    .buttonStyle(FootballSecondaryButtonStyle())
+                    .accessibilityIdentifier("intro-replay")
                 if career.selectedClubID != nil {
                     Divider()
                     Text("Roteiro da primeira partida")
@@ -60,12 +72,15 @@ struct FootballModesView: View {
                     Button(career.isFirstCareerGuideActive ? "Recomeçar roteiro" : "Ver roteiro da primeira partida") {
                         career.replayFirstCareerGuide()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("first-run-guide-replay")
                 }
             }
         }
         .factoryPage()
         .navigationTitle("Modos de jogo")
+        .fullScreenCover(isPresented: $showsIntro) {
+            FootballOnboardingView(career: $career) { showsIntro = false }
+        }
     }
 }

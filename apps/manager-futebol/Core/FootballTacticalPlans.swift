@@ -68,7 +68,7 @@ extension FootballCareer {
         startingXI = rebuiltLineup(keeping: plan.lineup, formation: plan.formation)
         playerRoles = plan.roles.filter { startingXI.contains($0.key) }
         penaltyTakerID = plan.penaltyTakerID.flatMap { startingXI.contains($0) ? $0 : nil } ?? penaltyTakerID
-        let note = replaced.isEmpty ? "" : " \(replaced.count) titular(es) do plano não podem jogar e foram substituídos."
+        let note = replaced.isEmpty ? "" : (replaced.count == 1 ? " 1 titular do plano não pode jogar e foi substituído." : " \(replaced.count) titulares do plano não podem jogar e foram substituídos.")
         return TacticalPlanReport(applied: true, message: "\(slot.title) aplicado: \(plan.formation.rawValue), \(plan.style.rawValue).\(note)", replaced: replaced)
     }
 
@@ -99,7 +99,7 @@ extension FootballCareer {
         lines.append("Titulares em comum: \(shared) de 11.")
         for plan in [a, b] {
             let missing = unavailableStarters(in: plan)
-            if !missing.isEmpty { lines.append("\(plan.slot.title): \(missing.count) titular(es) indisponíveis hoje.") }
+            if !missing.isEmpty { lines.append("\(plan.slot.title): " + (missing.count == 1 ? "1 titular indisponível hoje." : "\(missing.count) titulares indisponíveis hoje.")) }
         }
         return lines
     }

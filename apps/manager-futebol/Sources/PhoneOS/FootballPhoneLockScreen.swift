@@ -77,7 +77,7 @@ struct PhoneLockScreen: View {
 
     var body: some View {
         ZStack {
-            PhoneWallpaper(team: career.selectedClub, moment: career.phoneMoment)
+            PhoneWallpaper(team: career.selectedClub, moment: career.phoneMoment, style: career.world.phone.preferences.wallpaperStyle)
             VStack(spacing: 16) {
                 PhoneStatusBar(career: career).padding(.top, 8)
                 ScrollView(showsIndicators: false) {
@@ -93,7 +93,7 @@ struct PhoneLockScreen: View {
             .padding(.horizontal, 16)
         }
         .gesture(DragGesture(minimumDistance: 30).onEnded { value in if value.translation.height < -60 { onUnlock() } })
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: tick)
+        .footballHaptic(.impact(flexibility: .soft), trigger: tick)
         .task(id: transition) { await playTransition() }
     }
 

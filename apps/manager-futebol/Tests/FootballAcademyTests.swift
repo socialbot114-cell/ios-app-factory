@@ -77,14 +77,40 @@ final class FootballAcademyTests: XCTestCase {
         XCTAssertNotNil(career.canObserve(playerID: youth.id), "Sem caixa não observa")
     }
 
-    func testPointsRefillOncePerDayUpToTheMaximum() {
+    func testStartingActionsAreAboutFifteen() {
+        let career = careerWithYouth()
+        XCTAssertEqual(career.academy.points, FootballCareer.academyActionsBase)
+        XCTAssertGreaterThanOrEqual(career.academyPointsMax, 15)
+    }
+
+    func testActionsDoNotComeBackEveryDayButRenewInTheMiddleAndAtTheEnd() {
         var career = careerWithYouth()
         career.academy.points = 0
         var random = FootballRandom(seed: 3)
-        career.tickYouthDevelopment(using: &random)
-        XCTAssertEqual(career.academy.points, 1)
         for _ in 0..<20 { career.tickYouthDevelopment(using: &random) }
-        XCTAssertEqual(career.academy.points, career.academyPointsMax)
+        XCTAssertEqual(career.academy.points, 0, "Ação não volta por dia de jogo")
+
+        career.matchDayIndex = career.academyMidseasonDay - 1
+        career.tickYouthDevelopment(using: &random)
+        XCTAssertEqual(career.academy.points, 0, "Antes da metade da temporada não renova")
+
+        career.matchDayIndex = career.academyMidseasonDay
+        career.tickYouthDevelopment(using: &random)
+        XCTAssertEqual(career.academy.points, career.academyPointsMax / 2, "Na metade da temporada volta 50%")
+        career.tickYouthDevelopment(using: &random)
+        XCTAssertEqual(career.academy.points, career.academyPointsMax / 2, "Repetir o dia não soma de novo")
+
+        career.renewAcademyActionsForSeasonEnd()
+        XCTAssertEqual(career.academy.points, career.academyPointsMax, "No fim da temporada volta 100%")
+    }
+
+    func testMidseasonRenewalNeverTakesActionsAway() {
+        var career = careerWithYouth()
+        career.academy.points = career.academyPointsMax
+        career.matchDayIndex = career.academyMidseasonDay
+        var random = FootballRandom(seed: 4)
+        career.tickYouthDevelopment(using: &random)
+        XCTAssertEqual(career.academy.points, career.academyPointsMax, "Renovar não tira ações que já sobraram")
     }
 
     func testPassiveObservationAccumulatesAndRevealsTraits() throws {

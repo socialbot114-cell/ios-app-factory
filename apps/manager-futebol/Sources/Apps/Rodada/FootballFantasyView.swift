@@ -23,6 +23,8 @@ struct FootballFantasyView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Monte o time da rodada",
+                                 subtitle: "Escale, escolha o capitão e acompanhe a pontuação da rodada.")
             HStack(spacing: 12) {
                 FactoryMetric(label: "Pontos na temporada", value: String(format: "%.1f", fantasy.seasonPoints), symbol: "star.fill", tint: FootballTheme.gold)
                 FactoryMetric(label: "Títulos", value: "\(fantasy.titles)", symbol: "trophy.fill", tint: .green)
@@ -104,6 +106,7 @@ struct FootballFantasyView: View {
                                 Spacer()
                                 Text(String(format: "forma %.1f", outlook.form)).font(.caption.monospacedDigit())
                             }
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("fantasy-captain-\(outlook.playerID)")
@@ -159,7 +162,7 @@ struct FootballFantasyView: View {
                 } label: {
                     Label("Sugestão", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("fantasy-suggest")
                 Button {
                     if career.setFantasyLineup(ids: lineup, captainID: captainID) {
@@ -311,7 +314,7 @@ struct FootballFantasyView: View {
                         onAlert(career.fantasyShareBlockReason(result) ?? "Publicação indisponível.")
                     }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .disabled(career.fantasyShareBlockReason(result) != nil)
                 .accessibilityIdentifier("fantasy-share-\(result.id)")
                 if let reason = career.fantasyShareBlockReason(result) {

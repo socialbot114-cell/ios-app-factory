@@ -10,6 +10,8 @@ struct FootballEventsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Acontecimentos",
+                                 subtitle: "O que pede uma decisão sua agora e as histórias em andamento.")
             if let resultText {
                 Label(resultText, systemImage: "checkmark.circle.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
             }

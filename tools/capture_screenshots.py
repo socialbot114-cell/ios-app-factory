@@ -137,7 +137,9 @@ def capture_device(udid: str, device_name: str, family: str, app: dict, app_path
     run("xcrun", "simctl", "bootstatus", udid, "-b")
     run("xcrun", "simctl", "status_bar", udid, "override", "--time", "9:41", "--batteryState", "charged",
         "--batteryLevel", "100", "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4", check=False)
-    run("xcrun", "simctl", "ui", udid, "appearance", "light", check=False)
+    # Padrão claro; CAPTURE_APPEARANCE=dark captura o tema escuro (usado só quando pedido no workflow).
+    appearance = os.environ.get("CAPTURE_APPEARANCE", "light")
+    run("xcrun", "simctl", "ui", udid, "appearance", appearance if appearance in ("light", "dark") else "light", check=False)
     records = []
     seen_hashes = set()
     for screen in CAPTURES[app["slug"]]:

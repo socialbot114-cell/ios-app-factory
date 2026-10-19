@@ -44,7 +44,7 @@ struct FootballInboxView: View {
             if let newValue { openThreadID = newValue }
         }
         .sheet(item: $selected) { selection in
-            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
+            FootballPlayerDetailView(career: $career, playerID: selection.id)
         }
         .sheet(item: $renewal) { selection in
             FootballRenewalSheet(career: $career, playerID: selection.id)

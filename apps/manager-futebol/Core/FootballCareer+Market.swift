@@ -36,10 +36,39 @@ extension FootballCareer {
         let rank = squadRank(of: player)
         var factor = rank < 3 ? 1.7 : (rank < 11 ? 1.3 : 1.0)
         if player.contract.endSeason != 0 && player.contract.endSeason <= season { factor *= 0.7 }
-        if player.age >= 33 { factor *= 0.8 }
         if player.potential - player.overall >= 10 && player.age <= 21 { factor *= 1.15 }
         factor *= 1 - agentDiscount
-        return Int((Double(player.marketValue) * factor * difficulty.priceFactor) / 10_000) * 10_000
+        return Int((Double(askingBaseValue(for: player)) * factor * difficulty.priceFactor) / 10_000) * 10_000
+    }
+
+    /// Idade a partir da qual o valor de mercado já cai pela metade e o clube vendedor segura um piso de preço.
+    static let veteranAskingAge = 32
+    /// Piso do valor pedido por um veterano: fração do valor de um atleta de 27 anos com o mesmo geral.
+    static let veteranAskingFloor = 0.6
+
+    /// Valor usado para a pedida. O valor de mercado de quem tem 32 anos ou mais já é reduzido pela idade;
+    /// descontar de novo na pedida tornava veteranos de geral alto baratos demais.
+    func askingBaseValue(for player: FootballPlayer) -> Int {
+        guard player.age >= Self.veteranAskingAge else { return player.marketValue }
+        let prime = FootballSeason.marketValue(overall: player.overall, age: 27, potential: player.overall)
+        return max(player.marketValue, Int(Double(prime) * Self.veteranAskingFloor))
+    }
+
+    // MARK: - Parcelamento e bônus (regras comuns à proposta direta e à negociação por etapas)
+
+    /// Parcelar custa: o clube vendedor quer 3% a mais por parcela extra.
+    static let installmentSurcharge = 0.03
+
+    func installmentAdjustedAsk(_ ask: Int, installments: Int) -> Int {
+        let parts = max(1, min(4, installments))
+        return Int(Double(ask) * (1 + Self.installmentSurcharge * Double(parts - 1)) / 10_000) * 10_000
+    }
+
+    /// Quanto do bônus por 10 gols o clube vendedor desconta da taxa. Metade do valor para um atacante;
+    /// meias e zagueiros quase nunca chegam a 10 gols, e goleiros nunca.
+    func goalBonusCredit(_ bonus: Int, for player: FootballPlayer) -> Int {
+        let chance = min(1.0, Double(player.position.scoringWeight) / Double(FootballPosition.forward.scoringWeight))
+        return Int(Double(bonus) * 0.5 * chance)
     }
 
     func positionCount(teamID: Int, position: FootballPosition) -> Int {
@@ -89,8 +118,9 @@ extension FootballCareer {
             }
             swapValue = Int(Double(swap.marketValue) * 0.9)
         }
-        let ask = askingPrice(for: player)
-        let effective = bid.fee + swapValue + Int(Double(bid.goalBonus) * 0.5)
+        let ask = installmentAdjustedAsk(askingPrice(for: player), installments: bid.installments)
+        let bonusCredit = goalBonusCredit(bid.goalBonus, for: player)
+        let effective = bid.fee + swapValue + bonusCredit
         let upfront = bid.fee / max(1, bid.installments)
         if transferBudget < upfront { return .notAllowed("Caixa insuficiente para a entrada.") }
 
@@ -98,7 +128,7 @@ extension FootballCareer {
             return .clubRefuses("\(FootballSeason.teamName(player.teamID ?? 0)) recusou: pede cerca de \(FootballFormat.money(ask)).")
         }
         if effective < ask {
-            let missing = ask - swapValue - Int(Double(bid.goalBonus) * 0.5)
+            let missing = ask - swapValue - bonusCredit
             return .counter(fee: max(0, Int((Double(missing + bid.fee) / 2 / 10_000).rounded(.up)) * 10_000))
         }
         let personal = joiningAsk(for: player)

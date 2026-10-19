@@ -129,15 +129,15 @@ extension FootballCareer {
         let best = user.stats.values.max { lhs, rhs in Self.contribution(lhs) < Self.contribution(rhs) }
         if let best, Self.contribution(best) > 0, let athlete = player(best.playerID) {
             var parts: [String] = []
-            if best.goals > 0 { parts.append("\(best.goals) gol(s)") }
-            if best.assists > 0 { parts.append("\(best.assists) assistência(s)") }
-            if best.saves > 0 { parts.append("\(best.saves) defesa(s)") }
-            if best.tackles > 0 { parts.append("\(best.tackles) desarme(s)") }
-            if parts.isEmpty { parts.append("\(best.shotsOnTarget) chute(s) no alvo") }
+            if best.goals > 0 { parts.append("\(FootballFormat.plural(best.goals, "gol", "gols"))") }
+            if best.assists > 0 { parts.append("\(FootballFormat.plural(best.assists, "assistência", "assistências"))") }
+            if best.saves > 0 { parts.append("\(FootballFormat.plural(best.saves, "defesa", "defesas"))") }
+            if best.tackles > 0 { parts.append("\(FootballFormat.plural(best.tackles, "desarme", "desarmes"))") }
+            if parts.isEmpty { parts.append("\(FootballFormat.plural(best.shotsOnTarget, "chute", "chutes")) no alvo") }
             digest.starLine = "\(athlete.name) · \(parts.joined(separator: ", "))"
         }
         if user.yellowCards + user.redCards > 0 {
-            digest.cardsLine = "\(user.yellowCards) amarelo(s), \(user.redCards) vermelho(s) no seu time"
+            digest.cardsLine = "\(FootballFormat.plural(user.yellowCards, "amarelo", "amarelos")), \(FootballFormat.plural(user.redCards, "vermelho", "vermelhos")) no seu time"
         }
         let total = user.possessionAccumulator + rival.possessionAccumulator
         digest.possessionUser = total > 0 ? Int((user.possessionAccumulator / total * 100).rounded()) : 50

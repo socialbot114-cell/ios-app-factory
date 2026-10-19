@@ -82,13 +82,17 @@ final class FootballClubTests: XCTestCase {
     func testDebtAccruesInterestPressuresTheBoardAndBansSignings() throws {
         var career = career(club: 10)
         career.transferBudget = -2_000_000
-        let confidence = career.boardConfidence
+        // Mesma carreira, mesmos resultados, mas com o caixa no azul: a diferença de confiança é a pressão da dívida.
+        var healthy = career
+        healthy.transferBudget = 20_000_000
         for _ in 0..<7 {
             XCTAssertTrue(career.simulateNextMatchDay())
             career.transferBudget = min(career.transferBudget, -1_000_000)
+            XCTAssertTrue(healthy.simulateNextMatchDay())
+            healthy.transferBudget = max(healthy.transferBudget, 20_000_000)
         }
         XCTAssertTrue(career.finance.entries(season: 1).contains { $0.category == .interest })
-        XCTAssertLessThan(career.boardConfidence, confidence)
+        XCTAssertLessThan(career.boardConfidence, healthy.boardConfidence, "A dívida pesa na confiança da diretoria")
         XCTAssertTrue(career.isInDebt)
         XCTAssertTrue(career.isTransferBanned)
         let freeAgent = try XCTUnwrap(career.marketPlayers.first)

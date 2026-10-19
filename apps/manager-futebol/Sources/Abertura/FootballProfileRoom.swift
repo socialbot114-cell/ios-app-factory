@@ -131,9 +131,9 @@ struct FootballProfileRoom: View {
         .background { PhoneWallpaper(team: team(selected), moment: moment) }
         .overlay { if shadeOpen { shade } }
         .preferredColorScheme(.dark)
-        .sensoryFeedback(.selection, trigger: selected)
-        .sensoryFeedback(.success, trigger: unlocked)
-        .sensoryFeedback(.impact(weight: .light), trigger: impact)
+        .footballHaptic(.selection, trigger: selected)
+        .footballHaptic(.success, trigger: unlocked)
+        .footballHaptic(.impact(weight: .light), trigger: impact)
         .simultaneousGesture(
             DragGesture(minimumDistance: 24).onEnded { value in
                 if value.translation.height > 60, value.startLocation.y < 200, !shadeOpen {

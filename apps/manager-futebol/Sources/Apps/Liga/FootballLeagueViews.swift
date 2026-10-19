@@ -409,6 +409,7 @@ private struct FootballLeaguePlayerProfile: View {
             if let teamID = player.teamID, let team = FootballSeason.team(teamID) {
                 NavigationLink { FootballLeagueClubProfile(career: career, team: team) } label: {
                     HStack { ClubCrest(team: team, size: 32); Text(team.name); Spacer(); Image(systemName: "chevron.right") }
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("league-player-club-\(teamID)")
@@ -425,7 +426,7 @@ private struct FootballLeaguePlayerProfile: View {
                 LabeledContent("Condição", value: "\(player.condition)%")
                 LabeledContent("Moral", value: "\(player.morale)%")
                 LabeledContent("Valor de mercado", value: FootballFormat.money(player.marketValue))
-                if player.isInjured { Text("Lesionado · \(player.injuryRounds) jogo(s)").foregroundStyle(.red) }
+                if player.isInjured { Text("Lesionado · \(FootballFormat.plural(player.injuryRounds, "jogo", "jogos"))").foregroundStyle(.red) }
                 if player.isSuspended { Text("Suspenso").foregroundStyle(.red) }
             }
         }

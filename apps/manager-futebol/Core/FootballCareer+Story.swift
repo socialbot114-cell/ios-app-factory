@@ -240,7 +240,7 @@ extension FootballCareer {
         }
         let mine = called.filter { $0.teamID == selectedClubID }
         if !mine.isEmpty {
-            addInbox(.news, title: "\(mine.count) convocado(s) para a seleção",
+            addInbox(.news, title: "\(FootballFormat.plural(mine.count, "convocado", "convocados")) para a seleção",
                      body: "\(mine.map(\.name).joined(separator: ", ")) servem à seleção e ficam fora do próximo jogo, mas voltam valorizados.")
         }
         if let rivalSelectionNote = called.first(where: { $0.teamID != selectedClubID && $0.overall >= 80 }) {

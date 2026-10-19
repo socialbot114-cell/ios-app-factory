@@ -10,6 +10,8 @@ struct FootballGrowthView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Marca e patrocínio",
+                                 subtitle: "Força da marca, cota de TV e os contratos que o clube assina.")
             HStack(spacing: 12) {
                 FactoryMetric(label: "Força da marca", value: "\(growth.brand)", symbol: "sparkles", tint: FootballTheme.gold)
                 FactoryMetric(label: "Torcida", value: FootballFormat.compact(career.fanBase), symbol: "person.3.fill", tint: FootballTheme.accent)

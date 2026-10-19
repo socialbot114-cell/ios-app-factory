@@ -105,7 +105,7 @@ struct FootballOnboardingView: View {
         }
         .background { FootballBackdrop(drift: drift, imageOpacity: 0.5, zoom: 1.14, topShade: 0.35, glow: 0.18) }
         .preferredColorScheme(.dark)
-        .sensoryFeedback(.selection, trigger: page)
+        .footballHaptic(.selection, trigger: page)
         .onAppear {
             shown.insert(page)
             if !reduceMotion { drift = true }
@@ -134,7 +134,8 @@ struct FootballOnboardingView: View {
     private func pageView(_ index: Int) -> some View {
         let content = pages[index]
         let visible = shown.contains(index)
-        return ScrollView {
+        // O conteúdo ocupa pelo menos a altura da tela: páginas curtas ficam centralizadas e a da dificuldade ainda rola.
+        return GeometryReader { proxy in ScrollView {
             VStack(spacing: 18) {
                 Spacer(minLength: 24)
                 Image(systemName: content.symbol)
@@ -179,13 +180,15 @@ struct FootballOnboardingView: View {
                     }
                     if index == pages.count - 1 { difficultyPicker(visible: visible) }
                 }
-                Spacer(minLength: 12)
+                Spacer(minLength: 24)
             }
             .padding(.horizontal, 24)
             .frame(maxWidth: 520)
+            .frame(minHeight: proxy.size.height)
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
+        }
     }
 
     private func difficultyPicker(visible: Bool) -> some View {

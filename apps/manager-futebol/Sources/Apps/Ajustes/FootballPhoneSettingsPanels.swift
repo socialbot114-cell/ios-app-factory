@@ -121,3 +121,89 @@ struct FootballActionHistoryPanel: View {
         .accessibilityIdentifier("action-history")
     }
 }
+
+// MARK: - Sistema do celular
+
+/// Tema, vibração, papel de parede, ordem dos apps e relato de problema.
+struct FootballSystemSettingsPanel: View {
+    @Binding var career: FootballCareer
+
+    private var preferences: Binding<PhonePreferences> {
+        Binding(get: { career.world.phone.preferences }, set: { career.world.phone.preferences = $0 })
+    }
+
+    private var appVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—" }
+    private var appBuild: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—" }
+
+    var body: some View {
+        FactoryPanel(title: "Sistema do celular", systemImage: "iphone") {
+            Picker("Tema", selection: Binding(get: { preferences.wrappedValue.themeChoice },
+                                              set: { preferences.wrappedValue.theme = $0 == .system ? nil : $0 })) {
+                ForEach(PhoneThemeChoice.allCases) { choice in Text(choice.title).tag(choice) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("settings-theme")
+            Toggle("Vibração", isOn: Binding(get: { preferences.wrappedValue.hapticsOn },
+                                             set: { preferences.wrappedValue.hapticsEnabled = $0 ? nil : false }))
+                .font(.subheadline)
+                .accessibilityIdentifier("settings-haptics")
+            Divider()
+            Text("Papel de parede").font(.subheadline.weight(.semibold))
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 12)], alignment: .leading, spacing: 12) {
+                ForEach(PhoneWallpaperStyle.allCases) { style in swatch(style) }
+            }
+            Divider()
+            Text("Tela inicial").font(.subheadline.weight(.semibold))
+            Text("Segure um ícone na tela inicial para trocar os apps de lugar.")
+                .font(.caption).foregroundStyle(.secondary)
+            Button("Restaurar a ordem dos apps") { preferences.wrappedValue.homeOrder = nil }
+                .buttonStyle(FootballSecondaryButtonStyle())
+                .disabled(preferences.wrappedValue.homeOrder == nil)
+                .accessibilityIdentifier("settings-reset-order")
+            Divider()
+            Button("Restaurar padrões do celular") {
+                var value = preferences.wrappedValue
+                value.wallpaper = nil
+                value.theme = nil
+                value.hapticsEnabled = nil
+                value.homeOrder = nil
+                preferences.wrappedValue = value
+            }
+            .buttonStyle(FootballSecondaryButtonStyle())
+            .accessibilityIdentifier("settings-reset-phone")
+            Divider()
+            Text("Relatar um problema").font(.subheadline.weight(.semibold))
+            Text("Envia um resumo curto: versão, ponto da carreira e as últimas ações. Escreva abaixo dele o que aconteceu.")
+                .font(.caption).foregroundStyle(.secondary)
+            ShareLink(item: career.supportReport(version: appVersion, build: appBuild),
+                      subject: Text("Relato do Manager de Futebol")) {
+                Label("Compartilhar o resumo", systemImage: "square.and.arrow.up")
+            }
+            .accessibilityIdentifier("settings-report-problem")
+        }
+    }
+
+    private func swatch(_ style: PhoneWallpaperStyle) -> some View {
+        let selected = preferences.wrappedValue.wallpaperStyle == style
+        return Button {
+            preferences.wrappedValue.wallpaper = style == .club ? nil : style
+        } label: {
+            VStack(spacing: 6) {
+                PhoneWallpaper(team: career.selectedClub, moment: .morning, style: style)
+                    .frame(width: 64, height: 96)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(selected ? FootballTheme.accent : Color.primary.opacity(0.15), lineWidth: selected ? 3 : 1)
+                    }
+                    .accessibilityHidden(true)
+                Text(style.title).font(.caption2.weight(selected ? .bold : .regular)).foregroundStyle(.primary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Papel de parede \(style.title)" + (selected ? ", escolhido" : ""))
+        .accessibilityIdentifier("settings-wallpaper-\(style.rawValue)")
+    }
+}

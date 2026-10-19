@@ -68,7 +68,7 @@ extension FootballCareer {
 
         var threats: [RivalThreat] = []
         if let scorer = rivalSquad.max(by: { $0.goals < $1.goals }), scorer.goals > 0 {
-            threats.append(RivalThreat(id: "scorer", title: "Artilheiro: \(scorer.name)", detail: "\(scorer.goals) gol(s) na temporada.",
+            threats.append(RivalThreat(id: "scorer", title: "Artilheiro: \(scorer.name)", detail: "\(FootballFormat.plural(scorer.goals, "gol", "gols")) na temporada.",
                                        observed: scoutKnowledge(of: scorer.id) >= 50))
         }
         let attackers = rivalXI.filter { $0.position == .forward }
@@ -135,15 +135,15 @@ extension FootballCareer {
             rows.append(RotationRow(playerID: athlete.id, name: athlete.name, condition: athlete.condition, projectedCondition: athlete.condition,
                                     promisedStartsLeft: left, promiseDeadlineMatchDay: promise.deadlineMatchDay,
                                     advice: gamesBefore >= left ? "Escale em \(left) dos próximos \(gamesBefore) jogos para cumprir a promessa."
-                                                                 : "Só restam \(gamesBefore) jogo(s) antes do prazo: a promessa corre risco."))
+                                                                 : (gamesBefore == 1 ? "Só resta 1 jogo antes do prazo: a promessa corre risco." : "Só restam \(gamesBefore) jogos antes do prazo: a promessa corre risco.")))
         }
         let tired = rows.filter { $0.projectedCondition < 60 }.count
         let derby = upcoming.contains { FootballSeason.isDerby($0.home, $0.away) }
-        var reasons: [String] = ["\(upcoming.count) jogo(s) em \(span) dia(s) de calendário."]
+        var reasons: [String] = ["\(FootballFormat.plural(upcoming.count, "jogo")) em \(FootballFormat.plural(span, "dia")) de calendário."]
         let focus: FootballTrainingFocus
         if tired >= 3 {
             focus = .recovery
-            reasons.append("\(tired) titular(es) chegariam abaixo de 60 de condição: priorize recuperação.")
+            reasons.append(tired == 1 ? "1 titular chegaria abaixo de 60 de condição: priorize recuperação." : "\(tired) titulares chegariam abaixo de 60 de condição: priorize recuperação.")
         } else if derby {
             focus = .tactical
             reasons.append("Clássico no caminho: treino tático.")

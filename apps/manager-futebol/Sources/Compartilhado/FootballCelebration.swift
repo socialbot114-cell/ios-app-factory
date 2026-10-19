@@ -30,7 +30,7 @@ struct FootballCelebrationBurst: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
-        .sensoryFeedback(.success, trigger: fired)
+        .footballHaptic(.success, trigger: fired)
         .onAppear {
             withAnimation(.easeOut(duration: rhythm.celebrationSeconds(1.6))) { fired = true }
         }

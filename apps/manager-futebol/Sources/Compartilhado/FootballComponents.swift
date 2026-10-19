@@ -1,7 +1,15 @@
 import SwiftUI
+import UIKit
 
 enum FootballTheme {
-    static let accent = Color(red: 0.06, green: 0.47, blue: 0.30)
+    /// Verde de destaque. No tema claro é um pouco mais escuro (texto sobre o fundo claro dos botões secundários
+    /// passa de 4,46:1 para cerca de 5,6:1). No escuro é mais claro: o verde antigo dava cerca de 3:1 como texto
+    /// e quase sumia nos botões secundários; o novo dá cerca de 4,4:1 como texto e ainda cerca de 3,8:1 com texto branco por cima.
+    static let accent = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.16, green: 0.58, blue: 0.38, alpha: 1)
+            : UIColor(red: 0.04, green: 0.40, blue: 0.25, alpha: 1)
+    })
     static let pitchTop = Color(red: 0.13, green: 0.50, blue: 0.29)
     static let pitchBottom = Color(red: 0.08, green: 0.39, blue: 0.22)
     static let gold = Color(red: 0.85, green: 0.64, blue: 0.16)

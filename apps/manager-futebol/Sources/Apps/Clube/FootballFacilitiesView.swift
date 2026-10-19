@@ -26,7 +26,7 @@ struct FootballFacilitiesView: View {
                             Label("Melhorar · \(FootballFormat.money(cost)) · \(career.upgradeDuration(for: kind)) jogos", systemImage: "arrow.up.circle.fill")
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .accessibilityIdentifier("upgrade-\(kind.rawValue)")
                     } else {
                         Label("Nível máximo", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)

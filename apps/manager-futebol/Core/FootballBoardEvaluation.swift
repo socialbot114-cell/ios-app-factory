@@ -46,7 +46,7 @@ extension FootballCareer {
             let losses = recent.filter { $0 == .loss }.count
             if !recent.isEmpty {
                 score += Double(wins - losses) * 4
-                reasons.append("Últimos \(recent.count) jogos: \(wins) vitória(s), \(losses) derrota(s)")
+                reasons.append("Últimos \(recent.count) jogos: \(FootballFormat.plural(wins, "vitória", "vitórias")), \(FootballFormat.plural(losses, "derrota", "derrotas"))")
             }
         }
         return BoardFront(title: "Esportiva", score: clamp(score), reasons: reasons)
@@ -57,7 +57,7 @@ extension FootballCareer {
         var reasons: [String] = []
         if isInDebt {
             score -= 30
-            reasons.append("Caixa negativo há \(redMatchDays) dia(s): juros e risco de transfer ban")
+            reasons.append("Caixa negativo há \(FootballFormat.plural(redMatchDays, "dia", "dias")): juros e risco de transfer ban")
         }
         let projection = cashProjection()
         if let shortfall = projection.firstContractedShortfall {

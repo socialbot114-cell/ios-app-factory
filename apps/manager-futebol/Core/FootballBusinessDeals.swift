@@ -135,7 +135,7 @@ extension FootballCareer {
         let ceilingValue = Int(ceiling / 10_000) * 10_000
         if perSeason <= ceilingValue {
             closeNaming(index: index, perSeason: perSeason, seasons: years, keepTraditionalName: keepTraditionalName)
-            return .agreed("\(talk.offer.sponsor) aceitou \(FootballFormat.money(perSeason))/temporada por \(years) temporada(s).")
+            return .agreed("\(talk.offer.sponsor) aceitou \(FootballFormat.money(perSeason))/temporada por \(FootballFormat.plural(years, "temporada", "temporadas")).")
         }
         if Double(perSeason) <= Double(ceilingValue) * 1.15 {
             world.projects.deals.namingTalks[index].counterPerSeason = ceilingValue
@@ -161,7 +161,7 @@ extension FootballCareer {
         world.business.namingOffers = []
         fanMood = max(0, fanMood - backlash)
         world.projects.deals.namingTalks[index].status = .agreed
-        world.projects.deals.namingTalks[index].log.append("Acordo: \(FootballFormat.money(perSeason))/temporada por \(seasons) temporada(s).")
+        world.projects.deals.namingTalks[index].log.append("Acordo: \(FootballFormat.money(perSeason))/temporada por \(FootballFormat.plural(seasons, "temporada", "temporadas")).")
         openLedger(.naming, key: "naming", title: "Naming rights \(talk.offer.sponsor)", unit: .money,
                    forecastPerDay: Double(perSeason / FootballSeason.matchDaysPerSeason), horizonDays: seasons * FootballSeason.matchDaysPerSeason)
         let factID = "naming-\(talk.id)"

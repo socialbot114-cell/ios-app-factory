@@ -16,6 +16,10 @@ struct FootballBrandHub: View {
 
 struct FootballBrandIndicatorsPanel: View {
     let career: FootballCareer
+    @State private var showsDefinitions = false
+    @State private var showsAllMovements = false
+    /// Quantos registros de "o que mudou" aparecem antes de "Ver mais".
+    private static let visibleMovements = 3
 
     var body: some View {
         let indicators = career.brandIndicators
@@ -25,15 +29,23 @@ struct FootballBrandIndicatorsPanel: View {
                 FactoryMetric(label: "Marca do clube", value: "\(indicators.clubBrand)", symbol: "seal.fill", tint: FootballTheme.gold)
                 FactoryMetric(label: "Humor da torcida", value: "\(indicators.fanMood)", symbol: "face.smiling.inverse", tint: .green)
             }
-            ForEach(BrandIndicators.definitions.keys.sorted(), id: \.self) { name in
-                Text("\(name): \(BrandIndicators.definitions[name] ?? "")").font(.caption2).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            DisclosureGroup("Como cada número é calculado", isExpanded: $showsDefinitions) {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(BrandIndicators.definitions.keys.sorted(), id: \.self) { name in
+                        Text("\(name): \(BrandIndicators.definitions[name] ?? "")").font(.caption2).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.top, 4)
             }
-            let movements = career.brandState.movements.suffix(8).reversed()
+            .font(.caption.weight(.semibold))
+            .accessibilityIdentifier("brand-definitions")
+            let allMovements = Array(career.brandState.movements.suffix(8).reversed())
+            let movements = showsAllMovements ? allMovements : Array(allMovements.prefix(Self.visibleMovements))
             if !movements.isEmpty {
                 Divider()
                 Text("O que mudou e por quê").font(.caption.weight(.semibold))
-                ForEach(Array(movements)) { movement in
+                ForEach(movements) { movement in
                     VStack(alignment: .leading, spacing: 1) {
                         HStack {
                             Text("Dia \(movement.worldDay - (career.season - 1) * FootballSeason.matchDaysPerSeason) · \(movement.indicator)")
@@ -46,6 +58,13 @@ struct FootballBrandIndicatorsPanel: View {
                         Text(movement.causes.joined(separator: " · ")).font(.caption2).foregroundStyle(.secondary).lineLimit(3)
                     }
                     .accessibilityElement(children: .combine)
+                }
+                if allMovements.count > Self.visibleMovements {
+                    Button(showsAllMovements ? "Mostrar menos" : "Ver mais \(allMovements.count - Self.visibleMovements)") {
+                        showsAllMovements.toggle()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .accessibilityIdentifier("brand-movements-toggle")
                 }
             }
         }
@@ -97,7 +116,7 @@ struct FootballCampaignBriefPanel: View {
                         Button { channel = kind } label: {
                             Label(kind.title, systemImage: kind.symbol).font(.caption.weight(.semibold))
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .tint(channel == kind ? FootballTheme.accent : .secondary)
                         .accessibilityIdentifier("campaign-\(kind.rawValue)")
                     }
@@ -166,7 +185,7 @@ struct FootballImageContractPanel: View {
         FactoryPanel(title: "Contrato de imagem", systemImage: "signature") {
             if let contract = career.activeImageContract {
                 let days = max(0, contract.deadlineWorldDay - career.worldDay)
-                Text("\(contract.brand) · prazo em \(days) dia(s) de jogo").font(.subheadline.weight(.semibold))
+                Text("\(contract.brand) · prazo em \(FootballFormat.plural(days, "dia", "dias")) de jogo").font(.subheadline.weight(.semibold))
                 obligation("Comerciais gravados: \(contract.shootsDone)/\(contract.shootsRequired)", met: contract.shootsDone >= contract.shootsRequired)
                 obligation("Imagem do treinador ≥ \(contract.minimumImage) (hoje \(career.coachImage))", met: career.coachImage >= contract.minimumImage)
                 obligation(contract.hadCrisis ? "Houve crise de imagem" : "Nenhuma crise de imagem", met: !contract.hadCrisis)
@@ -176,7 +195,7 @@ struct FootballImageContractPanel: View {
                 Text("Obrigações em 10 dias de jogo: \(offer.shootsRequired) comerciais, imagem ≥ \(offer.minimumImage) e nenhuma crise. Cumprir rende bônus de 50%; descumprir devolve metade e custa reputação.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button("Assinar") { if !career.signImageContract() { onAlert("A proposta não está mais disponível.") } }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("image-contract-sign")
             } else {
                 Text("Marcas procuram treinadores com imagem a partir de 35. A sua está em \(career.coachImage).")

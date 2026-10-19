@@ -28,7 +28,7 @@ struct FootballNamingTalkPanel: View {
                     let value = Int(Double(talk.offer.perSeason) * ask / 10_000) * 10_000
                     Text("\(talk.offer.sponsor) oferece \(FootballFormat.money(talk.offer.perSeason))/temporada.").font(.subheadline.weight(.semibold))
                     Stepper("Pedido: \(FootballFormat.money(value))/temporada", value: $ask, in: 0.9...1.6, step: 0.05).font(.caption)
-                    Stepper("Duração: \(seasons) temporada(s)", value: $seasons, in: 1...6).font(.caption)
+                    Stepper("Duração: \(FootballFormat.plural(seasons, "temporada", "temporadas"))", value: $seasons, in: 1...6).font(.caption)
                     Toggle("Manter o nome tradicional junto (−15% no valor)", isOn: $keepName).font(.caption)
                     Text("Reação esperada da torcida: humor −\(career.namingBacklash(keepTraditionalName: keepName)).")
                         .font(.caption2).foregroundStyle(.secondary)
@@ -48,7 +48,7 @@ struct FootballNamingTalkPanel: View {
                         .font(.caption).foregroundStyle(.secondary)
                     ForEach(career.world.business.namingOffers) { offer in
                         Button("Negociar com \(offer.sponsor)") { career.startNamingTalk(offerID: offer.id) }
-                            .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                            .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                     }
                 }
             }
@@ -78,7 +78,7 @@ struct FootballSocialProjectPanel: View {
                 let block = career.socialProjectBlocker(program)
                 if let block { Text(block).font(.caption2).foregroundStyle(.orange) }
                 Button("Começar projeto") { if !career.startSocialProject(program) { onAlert(block ?? "Indisponível.") } }
-                    .buttonStyle(.bordered).disabled(block != nil)
+                    .buttonStyle(FootballSecondaryButtonStyle()).disabled(block != nil)
                     .accessibilityIdentifier("social-project-start")
             }
             if let last = career.deals.socialProjects.last(where: { !$0.isRunning }), let report = last.reports.last {
@@ -116,7 +116,7 @@ struct FootballFriendlyAgendaPanel: View {
                             onAlert(career.friendlyBlocker(matchDay: date) ?? "Não foi possível agendar.")
                         }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("friendly-schedule")
                 }
             } else {
@@ -138,7 +138,7 @@ struct FootballFriendlyAgendaPanel: View {
                 Label("Excursão agendada para a pré-temporada \(target).", systemImage: "airplane").font(.caption)
             } else {
                 Button("Agendar excursão para a próxima pré-temporada") { if !career.scheduleTour() { onAlert("Não foi possível agendar.") } }
-                    .buttonStyle(.bordered).font(.caption)
+                    .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
                     .accessibilityIdentifier("tour-schedule")
             }
         }

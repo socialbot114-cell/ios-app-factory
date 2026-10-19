@@ -55,7 +55,7 @@ final class FootballTacticalPlansTests: XCTestCase {
         XCTAssertEqual(report.replaced, [hurtID])
         XCTAssertFalse(career.startingXI.contains(hurtID))
         XCTAssertEqual(career.startingXI.count, 11)
-        XCTAssertTrue(report.message.contains("substituídos"))
+        XCTAssertTrue(report.message.contains("1 titular do plano não pode jogar e foi substituído"), "Um titular fica no singular")
         XCTAssertTrue(career.compareTacticalPlans().first?.contains("Salve os dois") ?? false)
     }
 

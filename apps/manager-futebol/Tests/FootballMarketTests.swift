@@ -89,7 +89,9 @@ final class FootballMarketTests: XCTestCase {
         let swap = try XCTUnwrap(career.clubRoster.first { $0.position == .defender && career.canRelease(playerID: $0.id) && !career.startingXI.contains($0.id) })
         let cash = career.transferBudget
         var bid = TransferBid(playerID: player.id, fee: ask, installments: 3, swapPlayerID: swap.id, goalBonus: 600_000, wage: wage)
-        bid.fee = max(0, ask - Int(Double(swap.marketValue) * 0.9) - 300_000)
+        // Parcelar em 3 vezes custa 6% a mais; o bônus de gols de um meia vale só uma parte do valor.
+        let adjusted = career.installmentAdjustedAsk(ask, installments: 3)
+        bid.fee = max(0, adjusted - Int(Double(swap.marketValue) * 0.9) - career.goalBonusCredit(600_000, for: player))
         let response = career.evaluateBid(bid)
         XCTAssertEqual(response, .accepted, "\(response)")
         XCTAssertEqual(career.submitBid(bid), .accepted)
@@ -373,7 +375,8 @@ final class FootballMarketTests: XCTestCase {
     func testMarketStateSurvivesSaveAndOldSavesLoad() throws {
         var career = career()
         let player = try target(in: career)
-        XCTAssertEqual(career.submitBid(TransferBid(playerID: player.id, fee: career.askingPrice(for: player), installments: 2, wage: career.joiningAsk(for: player).wage)), .accepted)
+        let installmentFee = career.installmentAdjustedAsk(career.askingPrice(for: player), installments: 2)
+        XCTAssertEqual(career.submitBid(TransferBid(playerID: player.id, fee: installmentFee, installments: 2, wage: career.joiningAsk(for: player).wage)), .accepted)
         career.startScoutMission(region: nil, position: nil, maxAge: 30, maxValue: 3_000_000)
         career.toggleWatch(playerID: player.id)
         career.observe(career.marketPlayers[0].id, gain: 10)

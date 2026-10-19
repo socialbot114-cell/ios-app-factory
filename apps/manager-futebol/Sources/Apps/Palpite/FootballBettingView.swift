@@ -21,6 +21,8 @@ struct FootballBettingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            FootballScreenHeader(career: career, title: "Seus palpites",
+                                 subtitle: "Fichas fictícias, sem valor real. Nada na carreira exige apostar.")
             if !captureFocus { walletPanel }
             if let note {
                 Label(note, systemImage: "ticket.fill").font(.subheadline.weight(.medium)).foregroundStyle(FootballTheme.accent)
@@ -77,7 +79,7 @@ struct FootballBettingView: View {
                 } label: {
                     Label("Bônus de fichas", systemImage: "gift.fill").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .disabled(!career.dailyBonusAvailable || career.isSelfExcluded)
                 .accessibilityIdentifier("bet-bonus")
                 if betting.fichas < FootballCareer.betMinimum {
@@ -86,7 +88,7 @@ struct FootballBettingView: View {
                     } label: {
                         Label("Fichas de emergência", systemImage: "lifepreserver.fill").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                 }
             }
             .font(.subheadline.weight(.semibold))
@@ -268,7 +270,7 @@ struct FootballBettingView: View {
                                     onAlert(career.stakeBlockReason(outrightStake) ?? "Palpite indisponível: regra de integridade ou fichas.")
                                 }
                             }
-                            .buttonStyle(.bordered).font(.caption.weight(.heavy))
+                            .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.heavy))
                         }
                     }
                 }
@@ -364,7 +366,7 @@ struct FootballBettingView: View {
             HStack(spacing: 10) {
                 ForEach([5, 10, 20], id: \.self) { days in
                     Button("Pausa de \(days) dias") { career.selfExclude(days: days) }
-                        .buttonStyle(.bordered).font(.caption.weight(.bold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                 }
             }
             Text("Apostas reais podem viciar. Aqui são só fichas de brinquedo, mas o app mantém limites e pausas como boa prática. Se apostar de verdade te preocupa, procure ajuda profissional.")

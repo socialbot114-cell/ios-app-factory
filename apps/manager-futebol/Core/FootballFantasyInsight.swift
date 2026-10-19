@@ -72,7 +72,7 @@ extension FootballCareer {
         var risk = FantasyRisk.none
         var reason: String?
         if athlete.isInjured {
-            risk = .out; reason = "Lesionado · \(athlete.injuryRounds) jogo(s)"
+            risk = .out; reason = "Lesionado · \(FootballFormat.plural(athlete.injuryRounds, "jogo", "jogos"))"
         } else if athlete.isSuspended {
             risk = .out; reason = "Suspenso"
         } else if next == nil {

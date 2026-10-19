@@ -31,6 +31,7 @@ struct FootballHome: View {
     @State private var focusedContactID: Int?
     @State private var focusedEventID: Int?
     @State private var notifiedMessage: SearchedPlayer?
+    @State private var notifiedAlert: String?
     @State private var pendingMessageID: Int?
     @State private var pendingPlayerID: Int?
     @State private var dayTransition: PhoneDayTransition?
@@ -155,11 +156,11 @@ struct FootballHome: View {
                            onLeagueSection: { tableSection = $0; openApp = .league })
         }
         .sheet(item: $searchedPlayer) { selection in
-            FootballPlayerDetailView(career: $career, playerID: selection.id, onAlert: showAlert)
+            FootballPlayerDetailView(career: $career, playerID: selection.id)
         }
         .sheet(item: $notifiedMessage) { selection in
             NavigationStack {
-                FootballInboxView(career: $career, onAlert: showAlert, onOpenApp: { app in
+                FootballInboxView(career: $career, onAlert: { notifiedAlert = $0 }, onOpenApp: { app in
                     notifiedMessage = nil
                     openApp = app
                 }, focusedMessageID: selection.id)
@@ -167,6 +168,8 @@ struct FootballHome: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { notifiedMessage = nil } } }
             }
+            // O alerta da tela de trás fica escondido com a folha aberta: esta folha mostra o próprio.
+            .sheetAlert($notifiedAlert)
         }
         .alert("Manager de Futebol", isPresented: Binding(
             get: { alertMessage != nil },
@@ -219,6 +222,17 @@ struct FootballHome: View {
             guard phase != .active, capture == nil else { return }
             FootballSaveStore().save(career, slot: activeSlot)
         }
+        .environment(\.footballHapticsEnabled, career.world.phone.preferences.hapticsOn)
+        .preferredColorScheme(Self.colorScheme(for: career.world.phone.preferences.themeChoice))
+    }
+
+    /// Tema escolhido em Ajustes; automático (nil) segue o aparelho.
+    private static func colorScheme(for choice: PhoneThemeChoice) -> ColorScheme? {
+        switch choice {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
     }
 
     // MARK: - O celular
@@ -227,6 +241,8 @@ struct FootballHome: View {
         ZStack {
             PhoneHomeScreen(career: career, onOpen: open, onNotifications: { showNotifications = true },
                             onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() },
+                            onLock: { withAnimation(.easeOut(duration: 0.35)) { locked = true } },
+                            onReorder: { ids in career.world.phone.preferences.homeOrder = ids.isEmpty ? nil : ids },
                             firstRunGuideStep: career.firstCareerGuideStep,
                             onFirstRunGuideContinue: continueFirstRunGuide,
                             onFirstRunGuideSkip: { career.skipFirstCareerGuide() },
@@ -273,7 +289,7 @@ struct FootballHome: View {
             }
         }
         .animation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: openApp)
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: openApp)
+        .footballHaptic(.impact(flexibility: .soft, intensity: 0.5), trigger: openApp)
     }
 
     private func unlock() {
@@ -403,7 +419,8 @@ struct FootballHome: View {
         switch step {
         case .welcome: open(.manager)
         case .manager: open(.squad)
-        case .tactics: closeApp()
+        // Do celular, o cartão de tática abre o Gestor: sem o app Tática aberto, fechar não avançava o roteiro.
+        case .tactics: if openApp == .squad { closeApp() } else { open(.manager) }
         case .match: startLiveMatch()
         case .liveMatch:
             if openApp == .manager { startLiveMatch() } else { open(.manager) }
@@ -412,6 +429,10 @@ struct FootballHome: View {
         case .finished, .skipped: break
         }
     }
+
+    /// Nestes apps a própria tela já lista o que pede atenção (mensagens, metas, palpites, acontecimentos):
+    /// a faixa do topo só repetia o selo do ícone. O selo da tela inicial continua.
+    private static let appsListingTheirOwnAttention: Set<PhoneApp> = [.messages, .quests, .betting, .alerts]
 
     private func appWindow(_ app: PhoneApp) -> some View {
         NavigationStack {
@@ -426,7 +447,7 @@ struct FootballHome: View {
                     FirstCareerGuideToast(step: step) { dismissFirstRunGuideToast(step) }
                         .padding(.horizontal, 16)
                 }
-                if let attention = career.phoneAppAttention(appID: app.rawValue) {
+                if !Self.appsListingTheirOwnAttention.contains(app), let attention = career.phoneAppAttention(appID: app.rawValue) {
                     PhoneAppAttentionBanner(app: app, attention: attention)
                         .padding(.horizontal, 16)
                 }
@@ -590,7 +611,7 @@ struct FootballHome: View {
         case "growth": FootballGrowthView(career: $career, onAlert: showAlert)
         case "contacts": FootballContactsView(career: $career, onAlert: showAlert)
         default:
-            FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0, onAlert: showAlert)
+            FootballPlayerDetailView(career: $career, playerID: career.startingXI.first ?? 0)
         }
     }
 
@@ -975,7 +996,7 @@ struct FootballClubSelectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             FactoryHeader(
-                eyebrow: "Nova carreira",
+                eyebrow: "Comece por aqui",
                 title: "Seu primeiro contrato",
                 subtitle: "Diga como você se chama e escolha entre seis propostas. Orçamento, meta, paciência da diretoria e pressão da torcida mudam a dificuldade da sua carreira.",
                 accent: FootballTheme.accent
@@ -1047,7 +1068,7 @@ struct FootballClubSelectionView: View {
                     term("Meta", FootballCareer.objectiveText(target: offer.boardTarget, division: division))
                 }
                 GridRow {
-                    term("Contrato", "\(offer.contractSeasons) temporada(s)")
+                    term("Contrato", FootballFormat.plural(offer.contractSeasons, "temporada"))
                     term("Luvas", FootballFormat.money(offer.signingBonus))
                 }
                 GridRow {

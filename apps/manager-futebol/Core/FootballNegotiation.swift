@@ -63,7 +63,7 @@ extension FootballCareer {
         talks.append(talk)
         let factID = "talk-\(talk.id)-open"
         recordFact(WorldFact(id: factID, source: .negotiation, worldDay: worldDay, title: "Conversa de renovação com \(athlete.name)",
-                             detail: "\(athlete.name) valoriza \(talk.topInterest.label) e espera cerca de \(FootballFormat.money(ask.wage)) por temporada, por \(ask.years) ano(s), como \(ask.status.title.lowercased()).",
+                             detail: "\(athlete.name) valoriza \(talk.topInterest.label) e espera cerca de \(FootballFormat.money(ask.wage)) por temporada, por \(FootballFormat.plural(ask.years, "ano", "anos")), como \(ask.status.title.lowercased()).",
                              playerIDs: [playerID]))
         deliverFact(factID, inbox: .general)
         return talk
@@ -152,7 +152,7 @@ extension FootballCareer {
             let factID = "talk-\(talk.id)-agreed"
             let star = isStar(athlete)
             recordFact(WorldFact(id: factID, source: .negotiation, worldDay: worldDay, title: "\(athlete.name) renova com o clube",
-                                 detail: "Depois de \(talk.rounds) rodada(s) de conversa, \(athlete.name) assinou a renovação.", playerIDs: [athlete.id], isPublic: star))
+                                 detail: "Depois de \(FootballFormat.plural(talk.rounds, "rodada", "rodadas")) de conversa, \(athlete.name) assinou a renovação.", playerIDs: [athlete.id], isPublic: star))
             if star { deliverFact(factID, inbox: .news, social: true) }
         case .refused, .expired:
             if stage == .refused, talk.rounds > 0 { recordMemory(playerID: athlete.id, kind: .negotiationBroke, id: "talk-\(talk.id)-broke") }

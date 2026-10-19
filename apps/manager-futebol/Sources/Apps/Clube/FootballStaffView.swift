@@ -20,7 +20,7 @@ struct FootballStaffView: View {
                                 Text("Habilidade \(member.ability)/20 · \(FootballFormat.money(member.wage))/temporada").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Button("Demitir", role: .destructive) { staffToFire = member.id }.buttonStyle(.bordered).font(.caption.weight(.bold))
+                            Button("Demitir", role: .destructive) { staffToFire = member.id }.buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.bold))
                         }
                     } else {
                         Text("Vaga aberta").font(.caption.weight(.semibold)).foregroundStyle(.orange)

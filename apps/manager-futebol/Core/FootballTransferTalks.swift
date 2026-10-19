@@ -109,8 +109,8 @@ extension FootballCareer {
         let ask = askingPrice(for: athlete)
         let seller = FootballSeason.teamName(world.projects.transferTalks[index].sellerID)
         world.projects.transferTalks[index].installments = parts
-        // Parcelar custa: o clube quer 3% a mais por parcela extra.
-        let needed = Int(Double(ask) * (1 + 0.03 * Double(parts - 1)) / 10_000) * 10_000
+        // Parcelar custa o mesmo aqui e na proposta direta (ver `installmentAdjustedAsk`).
+        let needed = installmentAdjustedAsk(ask, installments: parts)
         if fee >= needed {
             world.projects.transferTalks[index].fee = fee
             world.projects.transferTalks[index].stage = .personalTerms
@@ -251,7 +251,7 @@ extension FootballCareer {
         let name = players[playerIndex].name
         let factID = "talk-\(talkID)-signed"
         recordFact(WorldFact(id: factID, source: .negotiation, worldDay: worldDay, title: "\(name) assina com o \(FootballSeason.teamName(selectedClubID ?? 0))",
-                             detail: "Taxa de \(FootballFormat.money(talk.fee)) em \(talk.installments)x, salário de \(FootballFormat.money(talk.wage))/temporada por \(talk.years) ano(s), chegando como \(talk.role.title.lowercased()).",
+                             detail: "Taxa de \(FootballFormat.money(talk.fee)) em \(talk.installments)x, salário de \(FootballFormat.money(talk.wage))/temporada por \(FootballFormat.plural(talk.years, "ano", "anos")), chegando como \(talk.role.title.lowercased()).",
                              playerIDs: [talk.playerID], clubIDs: [talk.sellerID], reliability: .confirmed, isPublic: true,
                              effects: ["Entrada de \(FootballFormat.money(summary.upfront))", "Folha +\(FootballFormat.money(talk.wage))"]))
         deliverFact(factID, inbox: .transfer, social: true)

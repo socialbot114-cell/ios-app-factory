@@ -34,6 +34,8 @@ struct FootballAcademyView: View {
                 FactoryMetric(label: "Jovens", value: "\(career.youthRoster.count)/\(FootballCareer.youthRosterLimit)", symbol: "person.3.fill", tint: .blue, animatesValue: true)
             }
             .accessibilityIdentifier("academy-metrics")
+            Text("Observar e escolher mentor gastam ações. A base renova 50% na metade da temporada e 100% no fim.")
+                .font(.caption).foregroundStyle(.secondary)
             programPanel
             tryoutPanel
             scoutingPanel
@@ -47,7 +49,7 @@ struct FootballAcademyView: View {
         .factoryPage()
         .navigationTitle("Academia")
         .sheet(item: $selected) { selection in
-            FootballYouthDetailView(career: $career, playerID: selection.id, onAlert: onAlert)
+            FootballYouthDetailView(career: $career, playerID: selection.id)
         }
         .sheet(item: $reveal) { result in
             FootballTryoutRevealView(career: career, players: result.players)
@@ -96,7 +98,7 @@ struct FootballAcademyView: View {
             } label: {
                 Label("Fazer peneira · \(FootballFormat.money(career.tryoutCost))", systemImage: "figure.soccer").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("academy-tryout")
             Text("Quantas peneiras quiser, enquanto houver caixa e vaga na base. Cada uma traz de 1 a 3 jovens da região escolhida.")
             Text("Vagas na base: \(career.youthRoster.count) de \(FootballCareer.youthRosterLimit).").font(.caption).foregroundStyle(.secondary)
@@ -105,7 +107,7 @@ struct FootballAcademyView: View {
                 Button { releaseCandidate = weakest } label: {
                     Label("Liberar vaga: dispensar \(weakest.name)", systemImage: "person.badge.minus").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("academy-free-slot")
             }
         }
@@ -126,7 +128,7 @@ struct FootballAcademyView: View {
                     }
                     Spacer()
                     Button("Encerrar", role: .destructive) { career.cancelPartnership(id: partnership.id) }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(FootballSecondaryButtonStyle())
                         .font(.caption.weight(.bold))
                 }
             }
@@ -274,9 +276,10 @@ struct FootballTryoutRevealView: View {
 struct FootballYouthDetailView: View {
     @Binding var career: FootballCareer
     let playerID: Int
-    let onAlert: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var confirmsRelease = false
+    /// Recusas e confirmações desta ficha. O alerta da tela de trás não aparece enquanto a folha está aberta.
+    @State private var message: String?
 
     var body: some View {
         NavigationStack {
@@ -291,6 +294,11 @@ struct FootballYouthDetailView: View {
             .navigationTitle(career.player(playerID)?.name ?? "Jovem")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fechar") { dismiss() } } }
+        }
+        .alert("Academia", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
+            Button("OK", role: .cancel) { message = nil }
+        } message: {
+            Text(message ?? "")
         }
         .accessibilityIdentifier("academy-detail")
     }
@@ -327,7 +335,7 @@ struct FootballYouthDetailView: View {
                 mentorRow(player, followUp: followUp)
                 Text("Minutos de jogo nesta temporada: \(career.academy.minutes[player.id, default: 0]).")
                     .font(.caption.weight(.semibold))
-                Text("Mentor e observação gastam ações (\(career.academy.points)/\(career.academyPointsMax)). Uma ação volta a cada dia de jogo.")
+                Text("Mentor e observação gastam ações (\(career.academy.points)/\(career.academyPointsMax)). A base renova 50% na metade da temporada e 100% no fim.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             actions(player)
@@ -368,7 +376,7 @@ struct FootballYouthDetailView: View {
             }
             let hidden = profile.traits.count - revealed.count
             if hidden > 0 {
-                Text("\(hidden) traço(s) por descobrir.").font(.caption).foregroundStyle(.secondary)
+                Text(hidden == 1 ? "1 traço por descobrir." : "\(hidden) traços por descobrir.").font(.caption).foregroundStyle(.secondary)
             }
         }
     }
@@ -387,7 +395,7 @@ struct FootballYouthDetailView: View {
                 ForEach(career.mentorCandidates.prefix(8)) { veteran in
                     Button("\(veteran.name) · \(veteran.age) anos") {
                         if let reason = career.canAssignMentor(playerID: player.id, mentorID: veteran.id) {
-                            onAlert(reason)
+                            message = reason
                         } else {
                             career.assignMentor(playerID: player.id, mentorID: veteran.id)
                         }
@@ -404,28 +412,43 @@ struct FootballYouthDetailView: View {
         }
     }
 
+    /// Por que o jovem não sobe agora: vaga no elenco principal ou teto da folha.
+    private func promoteBlocker(_ player: FootballPlayer) -> String {
+        if career.clubRoster.count >= FootballCareer.rosterLimit {
+            return "Elenco principal cheio (\(career.clubRoster.count)/\(FootballCareer.rosterLimit)): dispense ou venda alguém antes."
+        }
+        return "A folha passaria do teto salarial. Peça a ampliação na reunião com a diretoria, no app Clube, se o caixa permitir."
+    }
+
     private func actions(_ player: FootballPlayer) -> some View {
         VStack(spacing: 10) {
             Button {
-                if let reason = career.canObserve(playerID: player.id) { onAlert(reason) } else { career.observeYouth(playerID: player.id) }
+                if let reason = career.canObserve(playerID: player.id) {
+                    message = reason
+                } else if career.observeYouth(playerID: player.id) {
+                    message = "Observação feita: a estimativa de \(player.name) ficou mais precisa."
+                }
             } label: {
                 Label("Observar de perto · \(FootballFormat.money(FootballCareer.academyObserveCost)) · 1 ação", systemImage: "binoculars.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("academy-observe")
             Button {
-                if career.promoteYouth(playerID: player.id) { dismiss() } else { onAlert("Sem vaga no elenco ou folha salarial no teto.") }
+                if career.promoteYouth(playerID: player.id) { dismiss() } else { message = promoteBlocker(player) }
             } label: {
                 Label("Promover ao elenco principal", systemImage: "arrow.up.circle.fill").frame(maxWidth: .infinity)
             }
             .buttonStyle(FactoryPrimaryButtonStyle())
             .disabled(!career.canPromote(playerID: player.id))
             .accessibilityIdentifier("academy-promote")
+            if !career.canPromote(playerID: player.id) {
+                Text(promoteBlocker(player)).font(.caption).foregroundStyle(.secondary)
+            }
             Button(role: .destructive) { confirmsRelease = true } label: {
                 Label("Dispensar", systemImage: "xmark.circle").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .confirmationDialog("Dispensar \(player.name)?", isPresented: $confirmsRelease, titleVisibility: .visible) {
                 Button("Dispensar", role: .destructive) {
                     career.releaseYouth(playerID: player.id)

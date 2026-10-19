@@ -24,19 +24,23 @@ extension FootballCareer {
             list.append(PhoneNotification(id: "crisis", title: "Crise de imagem", detail: crisis.title, symbol: "exclamationmark.triangle.fill", app: .social, priority: 3))
         }
         if let attention = phoneAppAttention(appID: PhoneApp.squad.rawValue) {
-            list.append(PhoneNotification(id: "squad-attention", title: "\(attention.count) ajuste(s) na escalação",
+            list.append(PhoneNotification(id: "squad-attention", title: "\(FootballFormat.plural(attention.count, "ajuste")) na escalação",
                                           detail: lineupWarnings.first ?? "Confira o time antes da partida.", symbol: "person.3.fill",
                                           app: .squad, priority: 2))
         }
         for event in world.events.pending {
             list.append(PhoneNotification(id: "event-\(event.id)", title: event.title, detail: "Prazo: \(shortDate(worldDay: event.expiresWorldDay)).", symbol: "exclamationmark.bubble.fill", app: .alerts, priority: 2, deadlineWorldDay: event.expiresWorldDay, eventID: event.id))
         }
-        for (index, message) in inbox.filter({ !$0.isRead }).sorted(by: { $0.id > $1.id }).enumerated() {
-            list.append(PhoneNotification(id: index == 0 ? "inbox" : "inbox-\(message.id)", title: message.title, detail: "Mensagem não lida · \(shortDate(matchDay: message.matchDay, season: message.season))", symbol: "tray.full.fill", app: .messages, messageID: message.id))
+        // Mensagens não lidas com o mesmo título viram uma notificação só ("3 mensagens não lidas"), a da mais recente.
+        for (index, group) in unreadMessageGroups.enumerated() {
+            let message = group.newest
+            let date = shortDate(matchDay: message.matchDay, season: message.season)
+            let detail = group.count == 1 ? "Mensagem não lida · \(date)" : "\(group.count) mensagens não lidas · a última em \(date)"
+            list.append(PhoneNotification(id: index == 0 ? "inbox" : "inbox-\(message.id)", title: message.title, detail: detail, symbol: "tray.full.fill", app: .messages, messageID: message.id))
         }
         if !offers.isEmpty {
             let deadline = offers.map(\.expiresAfterRound).min() ?? matchDayIndex
-            list.append(PhoneNotification(id: "offers", title: "\(offers.count) proposta(s) por seus atletas", detail: "Primeiro vencimento em \(shortDate(matchDay: deadline)).", symbol: "envelope.badge.fill", app: .market, priority: 2, deadlineWorldDay: (season - 1) * FootballSeason.matchDaysPerSeason + deadline))
+            list.append(PhoneNotification(id: "offers", title: "\(FootballFormat.plural(offers.count, "proposta")) por seus atletas", detail: "Primeiro vencimento em \(shortDate(matchDay: deadline)).", symbol: "envelope.badge.fill", app: .market, priority: 2, deadlineWorldDay: (season - 1) * FootballSeason.matchDaysPerSeason + deadline))
         }
         if !invitations.isEmpty {
             list.append(PhoneNotification(id: "invites", title: "Convite de outro clube", detail: FootballSeason.teamName(invitations[0].clubID), symbol: "envelope.open.fill", app: .club))
@@ -56,7 +60,7 @@ extension FootballCareer {
                                           app: .bank, priority: 2))
         }
         if let attention = phoneAppAttention(appID: PhoneApp.academy.rawValue) {
-            list.append(PhoneNotification(id: "academy-decisions", title: "\(attention.count) jovem(ns) pronto(s) para decidir na Academia",
+            list.append(PhoneNotification(id: "academy-decisions", title: "\(FootballFormat.plural(attention.count, "jovem", "jovens")) \(attention.count == 1 ? "pronto" : "prontos") para decidir na Academia",
                                           detail: "Abra as fichas na Academia para promover, emprestar ou dispensar.",
                                           symbol: "graduationcap.fill", app: .academy, priority: 2))
         }

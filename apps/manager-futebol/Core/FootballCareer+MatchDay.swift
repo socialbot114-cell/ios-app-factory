@@ -6,12 +6,17 @@ extension FootballCareer {
     /// Joga o próximo dia de jogo inteiro: com a partida do usuário (simulação rápida) ou sem ela.
     @discardableResult
     mutating func simulateNextMatchDay() -> Bool {
+        let advanced: Bool
         if canPlay {
             guard beginMatchDay() else { return false }
-            return finishMatchDay()
+            advanced = finishMatchDay()
+        } else if canAdvanceWithoutPlaying {
+            advanced = advanceMatchDay()
+        } else {
+            return false
         }
-        if canAdvanceWithoutPlaying { return advanceMatchDay() }
-        return false
+        closeStaleFirstCareerGuide()
+        return advanced
     }
 
     @discardableResult
@@ -315,7 +320,7 @@ extension FootballCareer {
             players[index].injuryRounds = max(players[index].injuryRounds, adjusted)
             if players[index].teamID == selectedClubID {
                 addInbox(.injury, title: "\(players[index].name) se lesionou",
-                         body: "Fora por \(adjusted) jogo(s) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
+                         body: "Fora por \(FootballFormat.plural(adjusted, "jogo", "jogos")) depois da partida contra \(FootballSeason.teamName(fixture.opponent(of: selectedClubID ?? -1))).",
                          playerID: id)
             }
         }

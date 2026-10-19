@@ -58,7 +58,7 @@ struct FootballTransferTalksPanel: View {
         case .clubOffer:
             let base = career.player(talk.playerID).map { career.askingPrice(for: $0) } ?? 0
             // Mesmo acréscimo do motor: +3% por parcela extra.
-            let ask = Int(Double(base) * (1 + 0.03 * Double(installments - 1)) / 10_000) * 10_000
+            let ask = career.installmentAdjustedAsk(base, installments: installments)
             Stepper("Parcelas: \(installments)x", value: $installments, in: 1...4).font(.caption)
             Text("O clube pede \(FootballFormat.money(ask))\(installments > 1 ? " (+3% por parcela extra)" : "").")
                 .font(.caption2).foregroundStyle(.secondary)
@@ -66,7 +66,7 @@ struct FootballTransferTalksPanel: View {
                 ForEach([0.9, 1.0], id: \.self) { share in
                     let fee = Int(Double(ask) * share / 10_000) * 10_000
                     Button(FootballFormat.money(fee)) { report(career.proposeFee(talkID: talk.id, fee: fee, installments: installments)) }
-                        .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                 }
             }
             walkAway(talk)
@@ -82,14 +82,14 @@ struct FootballTransferTalksPanel: View {
                 ForEach(SquadStatus.allCases.reversed(), id: \.self) { Text($0.title).tag($0) }
             }
             .pickerStyle(.menu)
-            Stepper("Contrato: \(years) ano(s)", value: $years, in: 1...5).font(.caption)
+            Stepper("Contrato: \(FootballFormat.plural(years, "ano", "anos"))", value: $years, in: 1...5).font(.caption)
             Text("Para esse papel e duração, o atleta espera cerca de \(FootballFormat.money(needed))/temporada.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 8) {
                 ForEach([0.85, 1.0], id: \.self) { share in
                     let wage = Int(Double(needed) * share / 5_000) * 5_000
                     Button(FootballFormat.money(wage)) { report(career.proposeTerms(talkID: talk.id, wage: wage, years: years, role: role)) }
-                        .buttonStyle(.bordered).font(.caption.weight(.semibold))
+                        .buttonStyle(FootballSecondaryButtonStyle()).font(.caption.weight(.semibold))
                 }
             }
             walkAway(talk)
@@ -101,9 +101,14 @@ struct FootballTransferTalksPanel: View {
             }
         case .agreed:
             if let summary = career.costSummary(talkID: talk.id) {
-                Text("Entrada \(FootballFormat.money(summary.upfront)) · parcelas \(FootballFormat.money(summary.laterInstallments)) · salários \(FootballFormat.money(summary.totalWages)) em \(talk.years) ano(s)")
-                    .font(.caption.monospacedDigit())
-                Text("Custo total \(FootballFormat.money(summary.total)). Menor caixa garantido depois: \(FootballFormat.money(summary.lowestProjectedCash)).")
+                VStack(spacing: 5) {
+                    costRow("Entrada agora", summary.upfront)
+                    if summary.laterInstallments > 0 { costRow("Parcelas depois", summary.laterInstallments) }
+                    costRow("Salários em \(FootballFormat.plural(talk.years, "ano", "anos"))", summary.totalWages)
+                    Divider()
+                    costRow("Custo total", summary.total, bold: true)
+                }
+                Text("Menor caixa garantido depois: \(FootballFormat.money(summary.lowestProjectedCash)).")
                     .font(.caption2).foregroundStyle(summary.lowestProjectedCash < 0 ? .red : .secondary)
                 if !summary.fitsWageCap { Text("A folha passaria do teto da diretoria.").font(.caption2).foregroundStyle(.red) }
             }
@@ -118,9 +123,18 @@ struct FootballTransferTalksPanel: View {
         }
     }
 
+    /// Uma linha de valor do custo total: rótulo à esquerda, valor alinhado à direita.
+    private func costRow(_ label: String, _ amount: Int, bold: Bool = false) -> some View {
+        HStack {
+            Text(label).font(bold ? .caption.weight(.bold) : .caption).foregroundStyle(bold ? .primary : .secondary)
+            Spacer()
+            Text(FootballFormat.money(amount)).font((bold ? Font.caption.weight(.bold) : Font.caption).monospacedDigit())
+        }
+    }
+
     private func walkAway(_ talk: TransferTalk) -> some View {
         Button("Desistir", role: .destructive) { career.walkAwayFromTransferTalk(talkID: talk.id) }
-            .buttonStyle(.bordered).font(.caption)
+            .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
     }
 
     private func report(_ outcome: TalkOutcome) {
@@ -165,7 +179,7 @@ struct FootballBriefsPanel: View {
             ForEach(career.recruitmentBriefs) { brief in briefSection(brief) }
             if creating { form } else if career.recruitmentBriefs.count < FootballCareer.maxBriefs {
                 Button { creating = true } label: { Label("Novo briefing", systemImage: "plus.circle.fill") }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                     .accessibilityIdentifier("brief-new")
             }
         }
@@ -194,7 +208,7 @@ struct FootballBriefsPanel: View {
                     creating = false
                 }
                 .buttonStyle(.borderedProminent)
-                Button("Cancelar") { creating = false }.buttonStyle(.bordered)
+                Button("Cancelar") { creating = false }.buttonStyle(FootballSecondaryButtonStyle())
             }
         }
         .padding(10)
@@ -241,13 +255,13 @@ struct FootballBriefsPanel: View {
             if !row.warnings.isEmpty { Text(row.warnings.joined(separator: " · ")).font(.caption2).foregroundStyle(.orange) }
             HStack(spacing: 8) {
                 Button(pinned ? "Tirar da comparação" : "Comparar") { career.toggleShortlist(briefID: brief.id, playerID: row.playerID) }
-                    .buttonStyle(.bordered).font(.caption)
+                    .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
                 Button("Negociar") {
                     if career.startTransferTalk(playerID: row.playerID) == nil {
                         onAlert(career.transferTalkBlocker(playerID: row.playerID) ?? "Não foi possível abrir a negociação.")
                     }
                 }
-                .buttonStyle(.bordered).font(.caption)
+                .buttonStyle(FootballSecondaryButtonStyle()).font(.caption)
                 .accessibilityIdentifier("talk-start-\(row.playerID)")
             }
         }
@@ -256,7 +270,7 @@ struct FootballBriefsPanel: View {
 
     private func reportText(_ report: RecruitmentScoutReport) -> String {
         var text = "Relatório \(report.reliability.title.lowercased()) · conhecimento \(report.knowledge)%"
-        if let age = report.ageInDays { text += age == 0 ? " · visto hoje" : " · visto há \(age) dia(s)" }
+        if let age = report.ageInDays { text += age == 0 ? " · visto hoje" : " · visto há \(FootballFormat.plural(age, "dia", "dias"))" }
         return text
     }
 }

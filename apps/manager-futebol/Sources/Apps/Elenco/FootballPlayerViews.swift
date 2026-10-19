@@ -5,9 +5,10 @@ import SwiftUI
 struct FootballPlayerDetailView: View {
     @Binding var career: FootballCareer
     let playerID: Int
-    let onAlert: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var confirmSale = false
+    /// Recusas desta ficha. Ficam aqui, e não na tela de trás, porque o alerta de trás fica escondido com a folha aberta.
+    @State private var message: String?
     @State private var showSubstitution = false
     @State private var showRenewal = false
     @State private var showBid = false
@@ -44,8 +45,13 @@ struct FootballPlayerDetailView: View {
             FootballSubstitutionSheet(career: $career, outgoingID: career.startingXI.contains(playerID) ? playerID : nil)
         }
         .sheet(isPresented: $showRenewal) { FootballRenewalSheet(career: $career, playerID: playerID) }
-        .sheet(isPresented: $showBid) { FootballBidSheet(career: $career, playerID: playerID, onAlert: onAlert) }
-        .sheet(isPresented: $showLoanOut) { FootballLoanOutSheet(career: $career, playerID: playerID, onAlert: onAlert) }
+        .sheet(isPresented: $showBid) { FootballBidSheet(career: $career, playerID: playerID, onAlert: notify) }
+        .sheet(isPresented: $showLoanOut) { FootballLoanOutSheet(career: $career, playerID: playerID, onAlert: notify) }
+        .sheetAlert($message)
+    }
+
+    private func notify(_ text: String) {
+        message = text
     }
 
     // MARK: Cabeçalho
@@ -106,7 +112,7 @@ struct FootballPlayerDetailView: View {
                 Button { showRenewal = true } label: {
                     Label("Negociar renovação", systemImage: "signature").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(FootballSecondaryButtonStyle())
                 .accessibilityIdentifier("renew-\(player.id)")
             }
         }
@@ -196,7 +202,7 @@ struct FootballPlayerDetailView: View {
                 Spacer()
                 Picker("Foco", selection: Binding(
                     get: { player.individualFocus },
-                    set: { value in if !career.setIndividualFocus(playerID: player.id, kind: value) { onAlert("Limite de programas individuais atingido.") } }
+                    set: { value in if !career.setIndividualFocus(playerID: player.id, kind: value) { notify("Limite de programas individuais atingido.") } }
                 )) {
                     Text("Nenhum").tag(AttributeKind?.none)
                     ForEach(AttributeKind.allCases.filter { $0.group != .hidden && ($0.group != .goalkeeping || player.position == .goalkeeper) }) {
@@ -212,7 +218,7 @@ struct FootballPlayerDetailView: View {
                 Menu {
                     ForEach(FootballPosition.allCases.filter { $0 != player.position && !player.learnedPositions.contains($0) }, id: \.self) { position in
                         Button(position.title) {
-                            if !career.startLearning(playerID: player.id, position: position) { onAlert("Limite de programas individuais atingido.") }
+                            if !career.startLearning(playerID: player.id, position: position) { notify("Limite de programas individuais atingido.") }
                         }
                     }
                 } label: {
@@ -246,7 +252,7 @@ struct FootballPlayerDetailView: View {
                     } label: {
                         Label("Pedir por empréstimo · \(FootballFormat.money(career.loanFee(for: player)))", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(FootballSecondaryButtonStyle())
                 }
                 watchButton(player)
             } else {
@@ -263,12 +269,12 @@ struct FootballPlayerDetailView: View {
             Button { showSubstitution = true } label: {
                 Label("Substituir este titular", systemImage: "arrow.left.arrow.right").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
         }
         if player.onLoan {
             if career.canBuyOutLoan(playerID: player.id), let option = player.purchaseOption {
                 Button {
-                    if career.buyOutLoan(playerID: player.id) { onAlert("\(player.name) agora é do clube.") }
+                    if career.buyOutLoan(playerID: player.id) { notify("\(player.name) agora é do clube.") }
                 } label: {
                     Label("Comprar por \(FootballFormat.money(option))", systemImage: "cart.fill").frame(maxWidth: .infinity)
                 }
@@ -288,27 +294,27 @@ struct FootballPlayerDetailView: View {
             Button { showLoanOut = true } label: {
                 Label("Emprestar a um clube", systemImage: "arrow.uturn.right.circle").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
             .disabled(!career.isTransferWindowOpen || !career.canRelease(playerID: player.id))
             Button {
-                if !career.promiseStarts(playerID: player.id) { onAlert("Não é possível prometer minutos a este atleta agora.") }
-                else { onAlert("Promessa feita: ele jogará de início nos próximos jogos.") }
+                if !career.promiseStarts(playerID: player.id) { notify("Não é possível prometer minutos a este atleta agora.") }
+                else { notify("Promessa feita: ele jogará de início nos próximos jogos.") }
             } label: {
                 Label("Prometer 3 jogos como titular", systemImage: "hand.thumbsup.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(FootballSecondaryButtonStyle())
         }
         Button(role: .destructive) { confirmSale = true } label: {
             Label("Vender agora por \(FootballFormat.money(price))", systemImage: "banknote").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(FootballSecondaryButtonStyle())
         .disabled(!career.canSell(playerID: player.id))
         .accessibilityIdentifier("sell-player-\(player.id)")
         Text("Venda imediata paga \(Int(FootballCareer.quickSaleRate * 100))% do valor. Propostas costumam pagar mais.")
             .font(.caption).foregroundStyle(.secondary)
             .confirmationDialog("Vender \(player.name)?", isPresented: $confirmSale, titleVisibility: .visible) {
                 Button("Vender por \(FootballFormat.money(price))", role: .destructive) {
-                    if career.sellPlayer(playerID: player.id) { dismiss() } else { onAlert("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
+                    if career.sellPlayer(playerID: player.id) { dismiss() } else { notify("Venda bloqueada: o elenco precisa continuar preenchendo a formação.") }
                 }
                 Button("Cancelar", role: .cancel) { }
             } message: {
@@ -321,7 +327,7 @@ struct FootballPlayerDetailView: View {
             Label(career.watchlist.contains(player.id) ? "Remover da lista de observação" : "Observar este atleta",
                   systemImage: career.watchlist.contains(player.id) ? "eye.slash.fill" : "eye.fill").frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(FootballSecondaryButtonStyle())
     }
 
     private func detailRow(_ title: String, _ value: String) -> some View {
@@ -379,7 +385,7 @@ struct FootballRenewalSheet: View {
                         }
                         Section("Sua oferta") {
                             Stepper("Salário: \(FootballFormat.money(wage))", value: $wage, in: 20_000...3_000_000, step: 5_000)
-                            Stepper("Duração: \(years) temporada(s)", value: $years, in: 1...5)
+                            Stepper("Duração: \(FootballFormat.plural(years, "temporada", "temporadas"))", value: $years, in: 1...5)
                             Picker("Papel prometido", selection: $status) {
                                 ForEach(SquadStatus.allCases, id: \.self) { Text($0.title).tag($0) }
                             }
@@ -463,10 +469,10 @@ struct FootballBidSheet: View {
                 if let player = career.player(playerID) {
                     Section("Negociação") {
                         Text("\(player.name) · \(FootballSeason.teamName(player.teamID ?? 0))").font(.subheadline.weight(.semibold))
-                        Text("Pedido aproximado: \(FootballFormat.money(career.askingPrice(for: player)))").font(.caption).foregroundStyle(.secondary)
+                        Text("Pedido aproximado: \(FootballFormat.money(career.installmentAdjustedAsk(career.askingPrice(for: player), installments: installments)))").font(.caption).foregroundStyle(.secondary)
                         Text("Caixa: \(FootballFormat.money(career.transferBudget))").font(.caption).foregroundStyle(.secondary)
                         if let window = career.transferWindow {
-                            Text("\(window.title): \(window.daysLeft) dia(s) restantes").font(.caption).foregroundStyle(.secondary)
+                            Text("\(window.title): \(FootballFormat.plural(window.daysLeft, "dia restante", "dias restantes"))").font(.caption).foregroundStyle(.secondary)
                         } else {
                             Label("Janela fechada", systemImage: "lock.fill").font(.caption).foregroundStyle(.red)
                         }
@@ -474,7 +480,13 @@ struct FootballBidSheet: View {
                     Section("Proposta ao clube") {
                         Stepper("Valor: \(FootballFormat.money(fee))", value: $fee, in: 0...80_000_000, step: 250_000)
                         Stepper("Parcelas: \(installments)", value: $installments, in: 1...4)
+                        if installments > 1 {
+                            Text("Parcelar custa 3% a mais por parcela extra. Já está no pedido acima.").font(.caption).foregroundStyle(.secondary)
+                        }
                         Stepper("Bônus por 10 gols: \(FootballFormat.money(goalBonus))", value: $goalBonus, in: 0...5_000_000, step: 250_000)
+                        if goalBonus > 0, player.position != .forward {
+                            Text("Para \(player.position.title.lowercased()), o clube conta só uma parte do bônus: poucos chegam a 10 gols.").font(.caption).foregroundStyle(.secondary)
+                        }
                         Picker("Troca", selection: $swapID) {
                             Text("Sem troca").tag(Int?.none)
                             ForEach(career.clubRoster.filter { !$0.isYouth && career.canRelease(playerID: $0.id) }) { own in
@@ -484,7 +496,7 @@ struct FootballBidSheet: View {
                     }
                     Section("Proposta ao atleta") {
                         Stepper("Salário: \(FootballFormat.money(wage))", value: $wage, in: 20_000...3_000_000, step: 5_000)
-                        Stepper("Contrato: \(years) temporada(s)", value: $years, in: 1...5)
+                        Stepper("Contrato: \(FootballFormat.plural(years, "temporada", "temporadas"))", value: $years, in: 1...5)
                     }
                     if let message { Section { Text(message).font(.subheadline) } }
                     Section {
@@ -528,6 +540,8 @@ struct FootballLoanOutSheet: View {
     let playerID: Int
     let onAlert: (String) -> Void
     @Environment(\.dismiss) private var dismiss
+    /// Falha de empréstimo fica nesta folha: ela continua aberta para o treinador tentar outro clube.
+    @State private var message: String?
 
     var body: some View {
         NavigationStack {
@@ -540,10 +554,11 @@ struct FootballLoanOutSheet: View {
                                     onAlert("\(player.name) foi emprestado ao \(team.name).")
                                     dismiss()
                                 } else {
-                                    onAlert("Não foi possível emprestar agora.")
+                                    message = "Não foi possível emprestar agora."
                                 }
                             } label: {
                                 HStack { ClubCrest(team: team, size: 24); Text(team.name); Spacer() }
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
@@ -555,5 +570,6 @@ struct FootballLoanOutSheet: View {
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
         }
         .tint(FootballTheme.accent)
+        .sheetAlert($message)
     }
 }

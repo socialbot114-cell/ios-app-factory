@@ -81,15 +81,30 @@ struct PhoneSignal: View {
 struct PhoneWallpaper: View {
     let team: LeagueTeam?
     var moment: PhoneMoment = .morning
+    var style: PhoneWallpaperStyle = .club
+
+    /// Cores de cada papel de parede escolhido. O do clube usa a cor do clube e o clima do dia.
+    private func palette(for style: PhoneWallpaperStyle) -> [Color] {
+        switch style {
+        case .club: return [team?.primaryColor ?? FootballTheme.accent]
+        case .pitch: return [Color(red: 0.07, green: 0.42, blue: 0.22), Color(red: 0.03, green: 0.24, blue: 0.13)]
+        case .night: return [Color(red: 0.10, green: 0.13, blue: 0.40), Color(red: 0.03, green: 0.04, blue: 0.16)]
+        case .sunset: return [Color(red: 0.95, green: 0.45, blue: 0.20), Color(red: 0.38, green: 0.14, blue: 0.40)]
+        case .graphite: return [Color(red: 0.34, green: 0.36, blue: 0.40), Color(red: 0.10, green: 0.11, blue: 0.13)]
+        }
+    }
 
     var body: some View {
-        let color = team?.primaryColor ?? FootballTheme.accent
+        let colors = palette(for: style)
+        let color = colors[0]
         ZStack {
             Color.black
-            LinearGradient(colors: [color, color.opacity(0.55), Color.black.opacity(0.92)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            Image(systemName: team?.crestSymbol ?? "soccerball").font(.system(size: 220)).foregroundStyle(.white.opacity(0.06))
+            LinearGradient(colors: [color, (colors.count > 1 ? colors[1] : color.opacity(0.55)), Color.black.opacity(0.92)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            Image(systemName: style == .club ? (team?.crestSymbol ?? "soccerball") : "soccerball")
+                .font(.system(size: 220)).foregroundStyle(.white.opacity(0.06))
                 .offset(x: 90, y: -230)
-            atmosphere
+            if style == .club { atmosphere }
         }
         .animation(.easeInOut(duration: 1.2), value: moment)
         .ignoresSafeArea()

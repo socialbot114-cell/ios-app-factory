@@ -72,8 +72,8 @@ struct YouthFollowUp: Codable, Equatable, Identifiable {
 
 struct AcademyState: Codable, Equatable {
     var followUps: [YouthFollowUp] = []
-    /// Ações de formação disponíveis: voltam uma por dia de jogo, até o máximo da academia.
-    var points = 3
+    /// Ações de formação disponíveis. Não voltam todo dia: a base renova na metade da temporada (50%) e no fim (100%).
+    var points = FootballCareer.academyActionsBase
     /// Parcerias de captação ativas (cada uma cobra manutenção a cada chegada anual).
     var partnerships: [YouthPartnership] = []
     /// Resultado do campeonato de cada categoria, por temporada.
@@ -90,7 +90,7 @@ struct AcademyState: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         followUps = try container.decodeIfPresent([YouthFollowUp].self, forKey: .followUps) ?? []
-        points = try container.decodeIfPresent(Int.self, forKey: .points) ?? 3
+        points = try container.decodeIfPresent(Int.self, forKey: .points) ?? FootballCareer.academyActionsBase
         partnerships = try container.decodeIfPresent([YouthPartnership].self, forKey: .partnerships) ?? []
         leagueResults = try container.decodeIfPresent([YouthLeagueResult].self, forKey: .leagueResults) ?? []
         minutes = try container.decodeIfPresent([Int: Int].self, forKey: .minutes) ?? [:]
@@ -230,14 +230,23 @@ extension FootballCareer {
 
     // MARK: Ações
 
+    /// Ações da base numa temporada cheia; o técnico da base acima de 6 soma uma a cada 3 pontos.
+    static let academyActionsBase = 15
+
+    /// Texto único para quando as ações acabaram: a renovação é por etapa, não por dia.
+    static let academyNoActionsText = "Sem ações disponíveis: a base renova 50% na metade da temporada e 100% no fim."
+
     var academyPointsMax: Int {
-        3 + max(0, (staffAbility(.youthCoach) ?? 6) - 6) / 3
+        Self.academyActionsBase + max(0, (staffAbility(.youthCoach) ?? 6) - 6) / 3
     }
+
+    /// Dia de jogo da metade da temporada, quando a base recebe metade das ações de volta.
+    var academyMidseasonDay: Int { FootballSeason.matchDaysPerSeason / 2 }
 
     func canObserve(playerID: Int) -> String? {
         guard youthRoster.contains(where: { $0.id == playerID }) else { return "Este jovem não está na base." }
         if isFired { return "Sem clube." }
-        if academy.points < 1 { return "Sem ações disponíveis: elas voltam a cada dia de jogo." }
+        if academy.points < 1 { return Self.academyNoActionsText }
         if transferBudget < Self.academyObserveCost { return "Caixa insuficiente." }
         return nil
     }
@@ -261,7 +270,7 @@ extension FootballCareer {
 
     func canAssignMentor(playerID: Int, mentorID: Int) -> String? {
         guard youthRoster.contains(where: { $0.id == playerID }) else { return "Este jovem não está na base." }
-        if academy.points < 1 { return "Sem ações disponíveis: elas voltam a cada dia de jogo." }
+        if academy.points < 1 { return Self.academyNoActionsText }
         guard isValidMentor(mentorID) else { return "O mentor precisa ser um veterano do elenco principal (27 anos ou mais)." }
         let others = academy.followUps.filter { $0.mentorID == mentorID && $0.playerID != playerID }.count
         if others >= Self.academyMenteeLimit { return "Este veterano já orienta dois jovens." }
@@ -283,9 +292,9 @@ extension FootballCareer {
         return true
     }
 
-    // MARK: Ritmo diário
+    // MARK: Renovação
 
-    /// Um dia de jogo: todos os jovens ganham uma semana de observação passiva e uma ação volta.
+    /// Um dia de jogo: todos os jovens ganham uma semana de observação passiva. As ações não voltam aqui.
     mutating func tickAcademy() {
         let ids = youthRoster.map(\.id)
         academy.followUps.removeAll { followUp in !ids.contains(followUp.playerID) }
@@ -298,6 +307,14 @@ extension FootballCareer {
                 academy.followUps[index].mentorID = nil
             }
         }
-        academy.points = min(academyPointsMax, academy.points + 1)
+        // Na metade da temporada, a base recebe metade do máximo. Como usa `max`, repetir o dia não soma de novo.
+        if matchDayIndex == academyMidseasonDay {
+            academy.points = max(academy.points, academyPointsMax / 2)
+        }
+    }
+
+    /// Fim da temporada: a base volta a ter todas as ações para o ano seguinte.
+    mutating func renewAcademyActionsForSeasonEnd() {
+        academy.points = academyPointsMax
     }
 }

@@ -25,6 +25,14 @@ on:
         required: false
         default: ''
         type: string
+      appearance:
+        description: Tema do simulador
+        required: false
+        default: light
+        type: choice
+        options:
+          - light
+          - dark
       families:
         description: Dispositivos de captura
         required: true
@@ -93,6 +101,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           CAPTURE_STATES: ${{ inputs.states }}
           CAPTURE_FAMILIES: ${{ inputs.families || 'iphone' }}
+          CAPTURE_APPEARANCE: ${{ inputs.appearance || 'light' }}
         run: |
           python3 tools/capture_screenshots.py \
             --slug "$APP_SLUG" --scheme "$SCHEME" \
