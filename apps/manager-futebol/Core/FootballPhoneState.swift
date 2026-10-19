@@ -113,6 +113,14 @@ struct PhonePreferences: Codable, Equatable {
     /// Ordem dos apps da tela inicial (`PhoneApp.rawValue`); nil mantém a ordem de fábrica.
     var homeOrder: [String]? = nil
 
+    /// Modo de Foco, pastas da tela inicial e sons. Opcionais: saves antigos ficam no padrão.
+    var focus: PhoneFocusMode? = nil
+    var homeFolders: [PhoneFolder]? = nil
+    var soundEnabled: Bool? = nil
+
+    var focusMode: PhoneFocusMode { focus ?? .none }
+    var soundsOn: Bool { soundEnabled ?? true }
+
     var wallpaperStyle: PhoneWallpaperStyle { wallpaper ?? .club }
     var themeChoice: PhoneThemeChoice { theme ?? .system }
     var hapticsOn: Bool { hapticsEnabled ?? true }
@@ -136,6 +144,7 @@ struct PhonePreferences: Codable, Equatable {
     /// Avisos urgentes (prioridade 3) nunca são silenciados: perder uma coletiva ou crise tem custo no jogo.
     func allows(appID: String, priority: Int) -> Bool {
         if priority >= 3 { return true }
+        if let allowed = focusMode.allowedAppIDs, !allowed.contains(appID) { return false }
         if priority < minimumPriority { return false }
         return !mutedApps.contains(appID)
     }
@@ -151,6 +160,9 @@ struct PhoneState: Codable, Equatable {
     var chat: ChatState? = nil
     /// Sugestões adiadas: id → último dia de jogo em que ficam escondidas; opcional para saves antigos.
     var snoozedSuggestions: [String: Int]? = nil
+    /// Anotações do treinador (app Notas); opcionais para saves antigos.
+    var notes: [CoachNote]? = nil
+    var nextNoteID: Int? = nil
 }
 
 /// Número único de itens que realmente pedem atenção em um app; usado no ícone e dentro do app.

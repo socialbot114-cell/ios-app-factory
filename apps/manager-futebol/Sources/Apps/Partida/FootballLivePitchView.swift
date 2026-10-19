@@ -88,13 +88,14 @@ struct FootballLivePitchView: View {
         let stageEngine = self.engine
         let reduceMotion = systemReduceMotion || career.world.phone.preferences.reduceMotion
         let celebrating = stageEngine.celebratingHome
+        let weather = career.fixtures.first(where: { $0.id == sim.fixtureID }).map { career.weather(for: $0) } ?? MatchWeather.clear
 
         return VStack(spacing: 6) {
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: FactoryCapture.screen != nil || reduceMotion || !(running || busy))) { timeline in
                 let time = timeline.date.timeIntervalSinceReferenceDate
                 Canvas { context, size in
                     stageEngine.advance(now: time, speed: rate, input: input)
-                    draw(&context, size: size, engine: stageEngine, kits: kits, crowd: crowd, time: time)
+                    draw(&context, size: size, engine: stageEngine, kits: kits, crowd: crowd, time: time, weather: weather)
                 }
             }
             .frame(height: height)
@@ -176,7 +177,7 @@ struct FootballLivePitchView: View {
 
     // MARK: - Desenho
 
-    private func draw(_ context: inout GraphicsContext, size: CGSize, engine: PitchEngine, kits: Kits, crowd: Double, time: Double) {
+    private func draw(_ context: inout GraphicsContext, size: CGSize, engine: PitchEngine, kits: Kits, crowd: Double, time: Double, weather: MatchWeather) {
         let stage = Stage(size: size)
         // Câmera: aproxima nos lances e acompanha a bola, sem mostrar além das bordas da cena.
         let zoom = CGFloat(engine.cameraZoom)
@@ -194,6 +195,26 @@ struct FootballLivePitchView: View {
         drawPitch(&context, stage: stage)
         drawActors(&context, stage: stage, engine: engine, kits: kits, time: time)
         drawLighting(&context, stage: stage)
+        context.transform = .identity
+        drawWeather(&context, size: size, weather: weather, time: time)
+    }
+
+    /// Céu fechado e chuva por cima da cena, sem seguir a câmera. Só apresentação: o clima não muda o jogo.
+    private func drawWeather(_ context: inout GraphicsContext, size: CGSize, weather: MatchWeather, time: Double) {
+        guard weather != .clear else { return }
+        context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black.opacity(weather == .rain ? 0.16 : 0.07)))
+        guard weather == .rain else { return }
+        var streaks = Path()
+        for index in 0..<46 {
+            let fraction = abs((sin(Double(index) * 12.9898) * 43_758.5453).truncatingRemainder(dividingBy: 1))
+            let x = CGFloat(fraction) * size.width
+            let speed = 260.0 + Double(index % 5) * 40
+            let travel = (time * speed + Double(index) * 37).truncatingRemainder(dividingBy: Double(size.height) + 40)
+            let y = CGFloat(travel) - 20
+            streaks.move(to: CGPoint(x: x, y: y))
+            streaks.addLine(to: CGPoint(x: x - 3, y: y + 10))
+        }
+        context.stroke(streaks, with: .color(.white.opacity(0.35)), lineWidth: 1)
     }
 
     private func drawSurroundings(_ context: inout GraphicsContext, stage: Stage, kits: Kits, crowd: Double, time: Double, celebrating: Bool?) {
@@ -289,6 +310,7 @@ struct FootballLivePitchView: View {
         let brandColors: [Color] = career.visibleSponsors.map {
             Color(hue: Double(FootballCareer.brandHue(of: $0.name)) / 360, saturation: 0.78, brightness: 0.92)
         }
+        let brandNames = career.visibleSponsors.map(\.name)
         for (y, reverse) in [(pitch.minY - 8, false), (pitch.maxY + 3, true)] {
             var x = -segment + CGFloat((time * 18).truncatingRemainder(dividingBy: Double(segment * 4))) * (reverse ? -1 : 1)
             var index = 0
@@ -296,7 +318,13 @@ struct FootballLivePitchView: View {
                 let rect = CGRect(x: x, y: y, width: segment - 2, height: 5)
                 let fill = brandColors.isEmpty ? palette[abs(index) % palette.count] : brandColors[abs(index) % brandColors.count]
                 context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(fill.opacity(0.9)))
-                context.fill(Path(CGRect(x: rect.minX + 6, y: rect.midY - 0.8, width: segment - 14, height: 1.6)), with: .color(.black.opacity(0.35)))
+                if brandNames.isEmpty {
+                    context.fill(Path(CGRect(x: rect.minX + 6, y: rect.midY - 0.8, width: segment - 14, height: 1.6)), with: .color(.black.opacity(0.35)))
+                } else {
+                    // O nome da marca, miúdo como numa placa de LED vista de longe.
+                    let name = brandNames[abs(index) % brandNames.count].uppercased()
+                    context.draw(Text(name).font(.system(size: 4.5, weight: .heavy)).foregroundColor(.white), at: CGPoint(x: rect.midX, y: rect.midY))
+                }
                 x += segment
                 index += 1
             }

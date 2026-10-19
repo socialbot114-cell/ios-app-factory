@@ -6,6 +6,7 @@ import SwiftUI
 enum PhoneApp: String, CaseIterable, Identifiable {
     case manager, squad, league, market, club, messages, social, betting, fantasy
     case life, business, quests, trophies, alerts, brand, bank, contacts, settings, legends, academy, store
+    case notes, clock
 
     var id: String { rawValue }
 
@@ -32,6 +33,8 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .legends: return "Lendas"
         case .academy: return "Academia"
         case .store: return "Loja"
+        case .notes: return "Notas"
+        case .clock: return "Relógio"
         }
     }
 
@@ -58,6 +61,8 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .legends: return "crown.fill"
         case .academy: return "graduationcap.fill"
         case .store: return "bag.fill"
+        case .notes: return "note.text"
+        case .clock: return "clock.fill"
         }
     }
 
@@ -84,6 +89,8 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .legends: return Color(red: 0.78, green: 0.58, blue: 0.08)
         case .academy: return Color(red: 0.0, green: 0.48, blue: 0.75)
         case .store: return Color(red: 0.18, green: 0.10, blue: 0.30)
+        case .notes: return Color(red: 0.86, green: 0.62, blue: 0.08)
+        case .clock: return Color(red: 0.30, green: 0.32, blue: 0.38)
         }
     }
 
@@ -111,6 +118,8 @@ enum PhoneApp: String, CaseIterable, Identifiable {
         case .legends: return "Craques eternos: pacote, craque da temporada e coleção"
         case .academy: return "Base: promessas, relatórios, mentores e ações de formação"
         case .store: return "Módulos Pro pagos: scout, análises, mercado, base e saúde, vendidos uma vez cada"
+        case .notes: return "Anotações do treinador: lembretes que ficam na carreira"
+        case .clock: return "Data do jogo e contagens: próxima partida, janela de transferências e fim da temporada"
         }
     }
 

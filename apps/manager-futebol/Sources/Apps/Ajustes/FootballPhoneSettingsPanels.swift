@@ -147,6 +147,18 @@ struct FootballSystemSettingsPanel: View {
                                              set: { preferences.wrappedValue.hapticsEnabled = $0 ? nil : false }))
                 .font(.subheadline)
                 .accessibilityIdentifier("settings-haptics")
+            Toggle("Sons", isOn: Binding(get: { preferences.wrappedValue.soundsOn },
+                                         set: { preferences.wrappedValue.soundEnabled = $0 ? nil : false }))
+                .font(.subheadline)
+                .accessibilityIdentifier("settings-sounds")
+            Picker("Foco", selection: Binding(get: { preferences.wrappedValue.focusMode },
+                                              set: { preferences.wrappedValue.focus = $0 == .none ? nil : $0 })) {
+                ForEach(PhoneFocusMode.allCases) { mode in Text(mode.title).tag(mode) }
+            }
+            .pickerStyle(.menu)
+            .accessibilityIdentifier("settings-focus")
+            Text(preferences.wrappedValue.focusMode.summary + " Avisos urgentes, como a coletiva, passam sempre.")
+                .font(.caption).foregroundStyle(.secondary)
             Divider()
             Text("Papel de parede").font(.subheadline.weight(.semibold))
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 12)], alignment: .leading, spacing: 12) {
@@ -154,11 +166,14 @@ struct FootballSystemSettingsPanel: View {
             }
             Divider()
             Text("Tela inicial").font(.subheadline.weight(.semibold))
-            Text("Segure um ícone na tela inicial para trocar os apps de lugar.")
+            Text("Segure um ícone na tela inicial para trocar os apps de lugar ou criar pastas.")
                 .font(.caption).foregroundStyle(.secondary)
-            Button("Restaurar a ordem dos apps") { preferences.wrappedValue.homeOrder = nil }
+            Button("Restaurar a ordem dos apps") {
+                preferences.wrappedValue.homeOrder = nil
+                preferences.wrappedValue.homeFolders = nil
+            }
                 .buttonStyle(FootballSecondaryButtonStyle())
-                .disabled(preferences.wrappedValue.homeOrder == nil)
+                .disabled(preferences.wrappedValue.homeOrder == nil && preferences.wrappedValue.homeFolders == nil)
                 .accessibilityIdentifier("settings-reset-order")
             Divider()
             Button("Restaurar padrões do celular") {
@@ -166,7 +181,10 @@ struct FootballSystemSettingsPanel: View {
                 value.wallpaper = nil
                 value.theme = nil
                 value.hapticsEnabled = nil
+                value.soundEnabled = nil
+                value.focus = nil
                 value.homeOrder = nil
+                value.homeFolders = nil
                 preferences.wrappedValue = value
             }
             .buttonStyle(FootballSecondaryButtonStyle())

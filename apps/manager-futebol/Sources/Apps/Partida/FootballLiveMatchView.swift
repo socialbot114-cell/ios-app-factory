@@ -146,7 +146,19 @@ struct FootballLiveMatchView: View {
         .footballHaptic(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
         .footballHaptic(.success, trigger: winAtFullTime)
         .footballHaptic(.impact(weight: .light), trigger: goalNotice?.id)
-        .onChange(of: live?.sim.minute ?? 0) { _, minute in showGoalNotices(upTo: minute) }
+        .onChange(of: live?.sim.minute ?? 0) { _, minute in
+            showGoalNotices(upTo: minute)
+            if minute == 45 { playSound(.whistle) }
+        }
+        .onChange(of: (live?.homeGoals ?? 0) + (live?.awayGoals ?? 0)) { old, new in
+            if new > old { playSound(.goal) }
+        }
+        .onChange(of: live?.sim.finished ?? false) { _, finished in
+            if finished { playSound(.whistle) }
+        }
+        .onChange(of: running) { _, isRunning in
+            if isRunning, (live?.sim.minute ?? 0) <= 1 { playSound(.kickoff) }
+        }
         .sheet(isPresented: $showSubstitutions) {
             FootballSubstitutionSheet(career: $career, outgoingID: nil)
         }
@@ -312,34 +324,40 @@ struct FootballLiveMatchView: View {
             }
             .buttonStyle(FootballSecondaryButtonStyle())
             .accessibilityIdentifier("live-pitch-expand")
-            sponsorStrip
+            sponsorStrip(live)
         }
     }
 
-    /// Quem paga o clube e onde a marca aparece: as cores das placas do campo vêm destes contratos.
+    /// O clima do jogo e quem paga o clube, com o lugar onde a marca aparece: as placas do campo usam estas marcas.
     @ViewBuilder
-    private var sponsorStrip: some View {
+    private func sponsorStrip(_ live: LiveMatchState) -> some View {
         let sponsors = career.visibleSponsors
-        if !sponsors.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(sponsors) { sponsor in
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(Color(hue: Double(FootballCareer.brandHue(of: sponsor.name)) / 360, saturation: 0.78, brightness: 0.92))
-                                .frame(width: 8, height: 8)
-                            Text("\(sponsor.role) · \(sponsor.name)").font(.caption2.weight(.semibold))
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(Color.primary.opacity(0.07), in: Capsule())
+        let weather = career.fixtures.first(where: { $0.id == live.fixtureID }).map { career.weather(for: $0) } ?? MatchWeather.clear
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: weather.symbol).font(.caption2)
+                    Text(weather.title).font(.caption2.weight(.semibold))
+                }
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(Color.primary.opacity(0.07), in: Capsule())
+                .accessibilityIdentifier("live-weather")
+                ForEach(sponsors) { sponsor in
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color(hue: Double(FootballCareer.brandHue(of: sponsor.name)) / 360, saturation: 0.78, brightness: 0.92))
+                            .frame(width: 8, height: 8)
+                        Text("\(sponsor.role) · \(sponsor.name)").font(.caption2.weight(.semibold))
                     }
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Color.primary.opacity(0.07), in: Capsule())
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Patrocinadores: " + sponsors.map { "\($0.role), \($0.name)" }.joined(separator: "; "))
-            .accessibilityIdentifier("live-sponsors")
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Clima: \(weather.title)." + (sponsors.isEmpty ? "" : " Patrocinadores: " + sponsors.map { "\($0.role), \($0.name)" }.joined(separator: "; ")))
+        .accessibilityIdentifier("live-sponsors")
     }
 
     /// Texto grande com o lance do momento e os anteriores, como um narrador de rádio.
@@ -701,6 +719,12 @@ struct FootballLiveMatchView: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("live-other-goal")
         }
+    }
+
+    /// Toca o efeito se a opção "Sons" está ligada e o arquivo existe no app.
+    private func playSound(_ cue: FootballSoundCue) {
+        FootballSounds.enabled = career.world.phone.preferences.soundsOn
+        FootballSounds.play(cue)
     }
 
     /// Mostra o gol mais recente de um jogo que importa para a tabela; saltos de relógio mostram só o último.

@@ -12,6 +12,10 @@ struct PhoneHomeScreen: View {
     var onLock: () -> Void = {}
     /// Nova ordem dos apps da grade (`PhoneApp.rawValue`); lista vazia volta à ordem de fábrica.
     var onReorder: ([String]) -> Void = { _ in }
+    /// Criar, mover, renomear e desfazer pastas.
+    var onFolderAction: (PhoneFolderAction) -> Void = { _ in }
+    /// Abre a central de controle (Foco, vibração, sons, tema).
+    var onControls: () -> Void = {}
     var firstRunGuideStep: FirstCareerGuideStep? = nil
     var onFirstRunGuideContinue: () -> Void = {}
     var onFirstRunGuideSkip: () -> Void = {}
@@ -22,12 +26,33 @@ struct PhoneHomeScreen: View {
 
     /// Modo de edição da tela inicial: toque em um app e depois em outro para trocar de lugar.
     @State private var editing = false
-    @State private var selectedForSwap: PhoneApp?
+    /// App ou pasta escolhido na edição (`PhoneApp.rawValue` ou id da pasta).
+    @State private var selectedID: String?
+    @State private var openFolder: PhoneFolderRef?
 
-    /// Apps da grade na ordem escolhida pelo jogador.
-    private var orderedGrid: [PhoneApp] {
-        PhonePreferences.ordered(PhoneApp.grid.map(\.rawValue), custom: career.world.phone.preferences.homeOrder)
-            .compactMap { PhoneApp(rawValue: $0) }
+    private enum HomeItem: Identifiable {
+        case app(PhoneApp)
+        case folder(PhoneFolder)
+
+        var id: String {
+            switch self {
+            case .app(let app): return app.rawValue
+            case .folder(let folder): return folder.id
+            }
+        }
+    }
+
+    /// Ids dos itens da grade (apps fora de pastas e as pastas), na ordem escolhida pelo jogador.
+    private var homeItemIDs: [String] {
+        career.world.phone.preferences.homeItemIDs(factory: PhoneApp.grid.map(\.rawValue))
+    }
+
+    private var homeItems: [HomeItem] {
+        let prefs = career.world.phone.preferences
+        return homeItemIDs.compactMap { id -> HomeItem? in
+            if PhonePreferences.isFolder(id) { return prefs.folder(id).map { HomeItem.folder($0) } }
+            return PhoneApp(rawValue: id).map { HomeItem.app($0) }
+        }
     }
 
     var body: some View {
@@ -37,6 +62,13 @@ struct PhoneHomeScreen: View {
             VStack(spacing: 14) {
                 HStack {
                     PhoneStatusBar(career: career)
+                    Button(action: onControls) {
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundStyle(.white).frame(width: 32, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Central de controle")
+                    .accessibilityIdentifier("phone-controls")
                     Button(action: onLock) {
                         Image(systemName: "lock.fill")
                             .foregroundStyle(.white).frame(width: 32, height: 28)
@@ -79,7 +111,12 @@ struct PhoneHomeScreen: View {
                         widgets
                         if editing { editBar }
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                            ForEach(orderedGrid) { app in icon(app, id: "app-\(app.rawValue)") }
+                            ForEach(homeItems) { item in
+                                switch item {
+                                case .app(let app): icon(app, id: "app-\(app.rawValue)")
+                                case .folder(let folder): folderIcon(folder)
+                                }
+                            }
                         }
                         Color.clear.frame(height: 16)
                     }
@@ -95,6 +132,9 @@ struct PhoneHomeScreen: View {
                 dock
             }
             .padding(.horizontal, 16)
+        }
+        .sheet(item: $openFolder) { ref in
+            PhoneFolderSheet(career: career, folderID: ref.id, onOpen: onOpen, onAction: onFolderAction)
         }
         // Puxar do topo para baixo abre o centro de notificações, como no iPhone.
         .simultaneousGesture(
@@ -190,7 +230,7 @@ struct PhoneHomeScreen: View {
     // MARK: Ícones e dock
 
     private func icon(_ app: PhoneApp, id: String) -> some View {
-        Button { if editing { tapInEditMode(app) } else { onOpen(app) } } label: {
+        Button { if editing { tapInEditMode(app.rawValue) } else { onOpen(app) } } label: {
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: app.symbol)
@@ -200,11 +240,11 @@ struct PhoneHomeScreen: View {
                         .background(LinearGradient(colors: [app.tint, app.tint.opacity(0.7)], startPoint: .top, endPoint: .bottom),
                                     in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                         .overlay {
-                            if editing && selectedForSwap == app {
+                            if editing && selectedID == app.rawValue {
                                 RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(.white, lineWidth: 3)
                             }
                         }
-                        .scaleEffect(editing && selectedForSwap == app ? 1.08 : 1)
+                        .scaleEffect(editing && selectedID == app.rawValue ? 1.08 : 1)
                     let badge = career.badge(for: app)
                     if badge > 0 {
                         // Tarefas ativas (checklist, azul) não se confundem com novidades (número, vermelho).
@@ -235,14 +275,31 @@ struct PhoneHomeScreen: View {
 
     private var editBar: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Toque em um app e depois em outro para trocá-los de lugar.")
+            Text(selectedID == nil ? "Toque em um app e depois em outro para trocá-los de lugar."
+                                   : "Toque em outro item para trocar de lugar, ou use as opções abaixo.")
                 .font(.caption.weight(.semibold)).foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
+            if let selectedID, !PhonePreferences.isFolder(selectedID) {
+                HStack(spacing: 10) {
+                    Button("Nova pasta") { onFolderAction(.create(app: selectedID)); self.selectedID = nil }
+                        .accessibilityIdentifier("home-edit-new-folder")
+                    if let folders = career.world.phone.preferences.homeFolders, !folders.isEmpty {
+                        Menu("Mover para pasta") {
+                            ForEach(folders) { folder in
+                                Button(folder.name) { onFolderAction(.move(app: selectedID, folder: folder.id)); self.selectedID = nil }
+                            }
+                        }
+                        .accessibilityIdentifier("home-edit-move-folder")
+                    }
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+            }
             HStack(spacing: 10) {
-                Button("Restaurar ordem") { selectedForSwap = nil; onReorder([]) }
+                Button("Restaurar ordem") { selectedID = nil; onReorder([]) }
                     .accessibilityIdentifier("home-edit-reset")
                 Spacer()
-                Button("Concluído") { withAnimation { editing = false; selectedForSwap = nil } }
+                Button("Concluído") { withAnimation { editing = false; selectedID = nil } }
                     .font(.caption.weight(.bold))
                     .accessibilityIdentifier("home-edit-done")
             }
@@ -253,16 +310,38 @@ struct PhoneHomeScreen: View {
         .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func tapInEditMode(_ app: PhoneApp) {
-        guard orderedGrid.contains(app) else { return }
-        if let first = selectedForSwap {
-            if first != app {
-                onReorder(PhonePreferences.swapped(orderedGrid.map(\.rawValue), first.rawValue, app.rawValue))
-            }
-            selectedForSwap = nil
+    private func tapInEditMode(_ id: String) {
+        guard homeItemIDs.contains(id) else { return }
+        if let first = selectedID {
+            if first != id { onReorder(PhonePreferences.swapped(homeItemIDs, first, id)) }
+            selectedID = nil
         } else {
-            selectedForSwap = app
+            selectedID = id
         }
+    }
+
+    private func folderIcon(_ folder: PhoneFolder) -> some View {
+        Button {
+            if editing { tapInEditMode(folder.id) } else { openFolder = PhoneFolderRef(id: folder.id) }
+        } label: {
+            VStack(spacing: 4) {
+                PhoneFolderTile(apps: folder.appIDs.compactMap { PhoneApp(rawValue: $0) })
+                    .overlay {
+                        if editing && selectedID == folder.id {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(.white, lineWidth: 3)
+                        }
+                    }
+                    .scaleEffect(editing && selectedID == folder.id ? 1.08 : 1)
+                Text(folder.name).font(.caption2.weight(.medium)).foregroundStyle(.white).lineLimit(1)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.7).onEnded { _ in
+            if !editing { withAnimation { editing = true } }
+        })
+        .accessibilityLabel("Pasta \(folder.name), \(folder.appIDs.count) apps")
+        .accessibilityIdentifier("folder-\(folder.id)")
     }
 
     private var dock: some View {

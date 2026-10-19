@@ -23,6 +23,7 @@ struct FootballHome: View {
     @State private var booting = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
     /// O celular só bloqueia quando o calendário avança (troca de dia), nunca ao abrir o jogo.
     @State private var locked = false
+    @State private var showsControls = false
     @State private var showNotifications = false
     @State private var showSearch = false
     @State private var searchSeed = ""
@@ -216,6 +217,7 @@ struct FootballHome: View {
             FootballSaveStore().save(career, slot: activeSlot)
         }
         .environment(\.footballHapticsEnabled, career.world.phone.preferences.hapticsOn)
+        .onChange(of: career.world.phone.preferences.soundsOn) { _, on in FootballSounds.enabled = on }
         .preferredColorScheme(Self.colorScheme(for: career.world.phone.preferences.themeChoice))
     }
 
@@ -236,6 +238,8 @@ struct FootballHome: View {
                             onSearch: { searchSeed = ""; showSearch = true }, onGuide: { showGuide() },
                             onLock: { withAnimation(.easeOut(duration: 0.35)) { locked = true } },
                             onReorder: { ids in career.world.phone.preferences.homeOrder = ids.isEmpty ? nil : ids },
+                            onFolderAction: handleFolderAction,
+                            onControls: { showsControls = true },
                             firstRunGuideStep: career.firstCareerGuideStep,
                             onFirstRunGuideContinue: continueFirstRunGuide,
                             onFirstRunGuideSkip: { career.skipFirstCareerGuide() },
@@ -283,6 +287,23 @@ struct FootballHome: View {
         }
         .animation(career.world.phone.preferences.reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: openApp)
         .footballHaptic(.impact(flexibility: .soft, intensity: 0.5), trigger: openApp)
+        .sheet(isPresented: $showsControls) {
+            FootballControlCenterSheet(career: $career,
+                                       onLock: { withAnimation(.easeOut(duration: 0.35)) { locked = true } },
+                                       onOpenSettings: { openApp = .settings })
+        }
+    }
+
+    /// Pastas da tela inicial: a carreira guarda a organização, e os apps nunca somem (voltam para a grade se a pasta acaba).
+    private func handleFolderAction(_ action: PhoneFolderAction) {
+        let factory = PhoneApp.grid.map(\.rawValue)
+        switch action {
+        case .create(let app): career.world.phone.preferences.createFolder(with: [app], factory: factory)
+        case .move(let app, let folder): career.world.phone.preferences.addToFolder(app: app, folder: folder, factory: factory)
+        case .remove(let app): career.world.phone.preferences.removeFromFolder(app: app)
+        case .rename(let folder, let name): career.world.phone.preferences.renameFolder(folder, to: name)
+        case .dissolve(let folder): career.world.phone.preferences.deleteFolder(folder)
+        }
     }
 
     private func unlock() {
@@ -502,6 +523,8 @@ struct FootballHome: View {
         case .legends: FootballLegendsView(career: $career)
         case .academy: FootballAcademyView(career: $career, onAlert: showAlert)
         case .store: FootballStoreView()
+        case .notes: FootballNotesView(career: $career)
+        case .clock: FootballClockView(career: career)
         case .alerts: FootballEventsView(career: $career, focusedEventID: focusedEventID)
         case .brand: FootballGrowthView(career: $career, onAlert: showAlert)
         case .bank: FootballFinanceView(career: $career, onAlert: showAlert)
