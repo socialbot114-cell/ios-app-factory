@@ -136,6 +136,7 @@ struct PhoneHomeScreen: View {
         .sheet(item: $openFolder) { ref in
             PhoneFolderSheet(career: career, folderID: ref.id, onOpen: onOpen, onAction: onFolderAction)
         }
+        .onAppear(perform: openFolderForCapture)
         // Puxar do topo para baixo abre o centro de notificações, como no iPhone.
         .simultaneousGesture(
             DragGesture(minimumDistance: 30).onEnded { value in
@@ -318,6 +319,13 @@ struct PhoneHomeScreen: View {
         } else {
             selectedID = id
         }
+    }
+
+    /// Só para capturas de tela: abre a primeira pasta criada pela rota de revisão.
+    private func openFolderForCapture() {
+        guard FactoryCapture.screen == "folder-open", openFolder == nil,
+              let first = career.world.phone.preferences.homeFolders?.first else { return }
+        openFolder = PhoneFolderRef(id: first.id)
     }
 
     private func folderIcon(_ folder: PhoneFolder) -> some View {
