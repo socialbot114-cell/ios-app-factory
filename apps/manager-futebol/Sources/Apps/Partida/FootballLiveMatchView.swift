@@ -74,7 +74,8 @@ struct FootballLiveMatchView: View {
 
     private var userTeamID: Int? { career.selectedClubID }
 
-    var body: some View {
+    /// A pilha da partida e as vibrações; as reações ao relógio ficam em `body`, para o compilador não engasgar com a cadeia inteira.
+    private var matchStack: some View {
         NavigationStack {
             ScrollView {
                 if let live {
@@ -146,6 +147,10 @@ struct FootballLiveMatchView: View {
         .footballHaptic(.warning, trigger: live?.sim.events.filter { $0.kind == .redCard }.count ?? 0)
         .footballHaptic(.success, trigger: winAtFullTime)
         .footballHaptic(.impact(weight: .light), trigger: goalNotice?.id)
+    }
+
+    var body: some View {
+        matchStack
         .onChange(of: live?.sim.minute ?? 0) { _, minute in
             showGoalNotices(upTo: minute)
             if minute == 45 { playSound(.whistle) }

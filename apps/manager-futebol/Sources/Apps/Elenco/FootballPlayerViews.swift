@@ -58,16 +58,22 @@ struct FootballPlayerDetailView: View {
 
     private func header(_ player: FootballPlayer) -> some View {
         let range = career.visibleOverallRange(of: player.id)
+        let kit = player.teamID.flatMap { FootballSeason.team($0)?.primaryColor } ?? FootballTheme.accent
         return HStack(spacing: 16) {
-            if range.lowerBound == range.upperBound {
-                RatingBadge(value: player.overall, size: 64)
-            } else {
-                Text("\(range.lowerBound)–\(range.upperBound)")
-                    .font(.system(size: 20, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
-                    .frame(width: 72, height: 64)
-                    .background(Color.gray, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            ZStack(alignment: .bottomTrailing) {
+                FootballPortraitView(player: player, kit: kit, size: 76)
+                if range.lowerBound == range.upperBound {
+                    RatingBadge(value: player.overall, size: 38).offset(x: 8, y: 6)
+                } else {
+                    Text("\(range.lowerBound)–\(range.upperBound)")
+                        .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 3)
+                        .background(Color.gray, in: Capsule())
+                        .offset(x: 8, y: 6)
+                }
             }
+            .padding(.trailing, 6)
             VStack(alignment: .leading, spacing: 4) {
                 Text(player.name).font(.title2.bold())
                 Text("\(player.detail.title) · \(player.age) anos").font(.subheadline).foregroundStyle(.secondary)

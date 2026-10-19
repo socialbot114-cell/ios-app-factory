@@ -160,6 +160,7 @@ struct FootballStarterPickerSheet: View {
 
     private func playerLine(_ player: FootballPlayer, trailing: String?) -> some View {
         HStack(spacing: 12) {
+            FootballPortraitView(player: player, kit: FootballSeason.team(player.teamID ?? -1)?.primaryColor ?? FootballTheme.accent, size: 38, face: true)
             RatingBadge(value: player.overall)
             VStack(alignment: .leading, spacing: 3) {
                 Text(player.name).font(.subheadline.weight(.semibold)).lineLimit(1)

@@ -106,16 +106,81 @@ struct ShieldShape: Shape {
     }
 }
 
+/// Hexágono, uma das formas de escudo.
+struct HexagonCrestShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width, h = rect.height
+        path.move(to: CGPoint(x: rect.minX + w * 0.5, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * 0.25))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * 0.75))
+        path.addLine(to: CGPoint(x: rect.minX + w * 0.5, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + h * 0.75))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + h * 0.25))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Faixas do escudo, desenhadas no retângulo todo e recortadas pela forma do escudo.
+struct CrestPatternShape: Shape {
+    let pattern: Int
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width, h = rect.height
+        switch pattern {
+        case 1:
+            path.addRect(CGRect(x: rect.minX + w * 0.38, y: rect.minY, width: w * 0.24, height: h))
+        case 2:
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY + h * 0.18))
+            path.addLine(to: CGPoint(x: rect.minX + w * 0.28, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * 0.82))
+            path.addLine(to: CGPoint(x: rect.minX + w * 0.72, y: rect.maxY))
+            path.closeSubpath()
+        case 3:
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY + h * 0.50))
+            path.addLine(to: CGPoint(x: rect.minX + w * 0.5, y: rect.minY + h * 0.22))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * 0.50))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + h * 0.68))
+            path.addLine(to: CGPoint(x: rect.minX + w * 0.5, y: rect.minY + h * 0.40))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + h * 0.68))
+            path.closeSubpath()
+        case 4:
+            path.addRect(CGRect(x: rect.minX, y: rect.minY + h * 0.40, width: w, height: h * 0.22))
+        default:
+            break
+        }
+        return path
+    }
+}
+
 struct ClubCrest: View {
     let team: LeagueTeam
     var size: CGFloat = 40
 
+    /// A forma do escudo depende do clube (4 formas); o desenho das faixas também (5 desenhos).
+    private func crestShape(_ index: Int) -> AnyShape {
+        switch index {
+        case 1: return AnyShape(Ellipse())
+        case 2: return AnyShape(HexagonCrestShape())
+        case 3: return AnyShape(RoundedRectangle(cornerRadius: size * 0.26, style: .continuous))
+        default: return AnyShape(ShieldShape())
+        }
+    }
+
     var body: some View {
+        let style = team.crestStyle
+        let outline = crestShape(style.shape)
         ZStack {
-            ShieldShape()
+            outline
                 .fill(LinearGradient(colors: [team.primaryColor, team.primaryColor.opacity(0.78)], startPoint: .top, endPoint: .bottom))
-            ShieldShape()
-                .strokeBorderCompat(team.secondaryColor, lineWidth: max(1.5, size * 0.06))
+            CrestPatternShape(pattern: style.pattern)
+                .fill(team.secondaryColor.opacity(0.32))
+                .clipShape(outline)
+            outline
+                .stroke(team.secondaryColor, lineWidth: max(1.5, size * 0.06))
+                .padding(max(1.5, size * 0.06) / 2)
             VStack(spacing: size * 0.02) {
                 Image(systemName: team.crestSymbol)
                     .font(.system(size: size * 0.3, weight: .bold))

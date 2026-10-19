@@ -168,4 +168,41 @@ final class FootballBuild27Tests: XCTestCase {
         while career.canPlay || career.canAdvanceWithoutPlaying { _ = career.simulateNextMatchDay() }
         XCTAssertNil(career.clockItems.first { $0.id == "season" }, "Temporada encerrada não tem contagem")
     }
+
+    // MARK: Retratos
+
+    func testPortraitsAreStablePerPersonAndUseOnlyKnownAssets() {
+        let a = FootballPortraits.spec(playerID: 42, age: 24, region: 3)
+        XCTAssertEqual(a, FootballPortraits.spec(playerID: 42, age: 24, region: 3), "O mesmo atleta tem sempre o mesmo rosto")
+        XCTAssertEqual(a.assetName, "Portrait_\(a.skin)_\(a.hair)")
+        XCTAssertEqual(a.maskName, a.assetName + "_camisa")
+        var skins = Set<String>(), hairs = Set<String>()
+        for id in 0..<600 {
+            let spec = FootballPortraits.spec(playerID: id, age: 20 + id % 18, region: id % 5)
+            XCTAssertTrue(FootballPortraits.skins.contains(spec.skin))
+            XCTAssertTrue(FootballPortraits.hairs.contains(spec.hair))
+            if spec.hair == "grisalho" { XCTAssertGreaterThanOrEqual(20 + id % 18, 33, "Cabelo grisalho só a partir dos 33 anos") }
+            skins.insert(spec.skin)
+            hairs.insert(spec.hair)
+        }
+        XCTAssertEqual(skins.count, FootballPortraits.skins.count, "Os cinco tons aparecem")
+        XCTAssertEqual(hairs.count, FootballPortraits.hairs.count, "Os sete penteados aparecem")
+        XCTAssertTrue(["curto", "grisalho", "careca"].contains(FootballPortraits.coachSpec(seed: 7).hair))
+    }
+
+    func testPortraitSkinTonesFollowTheRegionWithoutExcludingAnyone() {
+        func share(_ skin: String, region: Int) -> Double {
+            Double((0..<1_500).filter { FootballPortraits.spec(playerID: $0, age: 24, region: region).skin == skin }.count) / 1_500
+        }
+        XCTAssertGreaterThan(share("clara", region: 4), share("clara", region: 0), "Mais pele clara no Sul que no Norte")
+        XCTAssertGreaterThan(share("parda", region: 0), share("parda", region: 4))
+        for region in 0..<5 { XCTAssertGreaterThan(share("negra", region: region), 0.04, "Todos os tons existem em todas as regiões") }
+    }
+
+    func testEveryClubHasADistinctCrest() {
+        let styles = FootballSeason.teams.map(\.crestStyle)
+        XCTAssertEqual(styles.count, 20)
+        XCTAssertEqual(Set(styles.map { "\($0.shape)-\($0.pattern)" }).count, 20, "Nenhum escudo repete forma e desenho")
+        XCTAssertTrue(styles.allSatisfy { (0..<CrestStyle.shapeCount).contains($0.shape) && (0..<CrestStyle.patternCount).contains($0.pattern) })
+    }
 }

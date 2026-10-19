@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct FootballClubView: View {
     /// O estádio muda de ilustração conforme a capacidade: pequeno, médio, grande e grande à noite.
@@ -30,6 +31,14 @@ struct FootballClubView: View {
         }
     }
 
+    /// Ilustração do estádio do clube, com as cores dele. Enquanto as obras não levam o estádio a outro porte, vale a do clube;
+    /// depois, volta a do porte novo.
+    static func clubStadiumImageName(team: LeagueTeam, currentCapacity: Int) -> String {
+        let current = stadiumImageName(capacity: currentCapacity)
+        let own = "StadiumClube\(team.id)"
+        return stadiumImageName(capacity: team.capacity) == current && UIImage(named: own) != nil ? own : current
+    }
+
     @Binding var career: FootballCareer
     let onAlert: (String) -> Void
     /// Abre outro app do celular (Banco, Marca, Negócios, Ajustes) sem duplicar o que ele já mostra.
@@ -59,7 +68,7 @@ struct FootballClubView: View {
                 }
                 cityPanel(club)
                 FactoryPanel(title: "Estádio", systemImage: "sportscourt.fill") {
-                    Image(Self.stadiumImageName(capacity: career.stadiumCapacity))
+                    Image(Self.clubStadiumImageName(team: club, currentCapacity: career.stadiumCapacity))
                         .resizable()
                         .interpolation(.high)
                         .scaledToFill()
