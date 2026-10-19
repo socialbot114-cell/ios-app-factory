@@ -152,9 +152,11 @@ struct FootballMarketView: View {
                     HStack(spacing: 10) {
                         Button { selected = PlayerSelection(id: player.id) } label: { PlayerRow(player: player, showValue: true) }
                             .buttonStyle(.plain)
-                        Button { pendingSigning = player } label: { Image(systemName: "plus").font(.headline) }
+                        Button {
+                            if let reason = career.signBlockReason(playerID: player.id) { onAlert(reason) } else { pendingSigning = player }
+                        } label: { Image(systemName: "plus").font(.headline) }
                             .buttonStyle(.borderedProminent)
-                            .disabled(!career.canSign(playerID: player.id))
+                            .opacity(career.canSign(playerID: player.id) ? 1 : 0.45)
                             .accessibilityLabel("Contratar \(player.name)")
                             .accessibilityIdentifier("contract-player-\(player.id)")
                     }
@@ -320,12 +322,16 @@ struct FootballMarketView: View {
                     ForEach(career.youth(in: category)) { player in
                         VStack(alignment: .leading, spacing: 8) {
                             Button { selected = PlayerSelection(id: player.id) } label: { PlayerRow(player: player) }.buttonStyle(.plain)
+                            if let reason = career.promoteBlockReason(playerID: player.id) {
+                                Text(reason).font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                            }
                             HStack(spacing: 10) {
                                 Button("Promover") {
-                                    if !career.promoteYouth(playerID: player.id) { onAlert("Sem vaga no elenco ou folha salarial no teto.") }
+                                    if !career.promoteYouth(playerID: player.id) {
+                                        onAlert(career.promoteBlockReason(playerID: player.id) ?? "Não foi possível promover agora.")
+                                    }
                                 }
                                 .buttonStyle(.borderedProminent)
-                                .disabled(!career.canPromote(playerID: player.id))
                                 Button("Dispensar", role: .destructive) { career.releaseYouth(playerID: player.id) }.buttonStyle(FootballSecondaryButtonStyle())
                             }
                             .font(.caption.weight(.bold))

@@ -252,8 +252,8 @@ struct TransferWindow: Equatable {
     var daysLeft: Int { endDay - currentDay + 1 }
     var isLastDay: Bool { currentDay == endDay }
 
-    static let preseason = (start: 0, end: 1)
-    static let midseason = (start: 9, end: 11)
+    static let preseason = (start: 0, end: 2)
+    static let midseason = (start: 8, end: 12)
 }
 
 struct TransferBid: Equatable {

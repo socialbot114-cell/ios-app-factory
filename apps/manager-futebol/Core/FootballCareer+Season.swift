@@ -137,6 +137,8 @@ extension FootballCareer {
         refillFreeAgents(using: &marketRandom)
         runAIMarket(using: &marketRandom, intensity: 4)
         prepareNewSeasonClub(using: &marketRandom)
+        // A base e as renovações acabaram de somar à folha: o teto da nova temporada precisa acompanhar.
+        ensureWageHeadroom()
         if !FootballSeason.canFill(roster: clubRoster, formation: formation) { formation = .fourFourTwo }
         startingXI = FootballSeason.bestLineup(roster: clubRoster, formation: formation)
         scheduleSeason()

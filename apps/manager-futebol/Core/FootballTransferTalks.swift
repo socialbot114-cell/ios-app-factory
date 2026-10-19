@@ -37,6 +37,8 @@ struct TransferTalk: Codable, Equatable, Identifiable {
     var clubRefusals = 0
     var playerRefusals = 0
     var log: [String] = []
+    /// Último dia de jogo (mundo) em que alguém mexeu na negociação; sem isso ela nunca esfriava e ocupava uma das 3 vagas.
+    var lastActionWorldDay: Int? = nil
 }
 
 /// Custo total antes de assinar: o que sai agora, depois e por temporada.
@@ -64,6 +66,8 @@ extension FootballCareer {
     static let maxOpenTalks = 3
     static let counterValidityDays = 2
     static let maxRefusals = 3
+    /// Dias de jogo parada até a negociação esfriar e liberar a vaga.
+    static let talkIdleDays = 6
 
     var transferTalks: [TransferTalk] { world.projects.transferTalks }
     var openTransferTalks: [TransferTalk] { world.projects.transferTalks.filter { $0.stage.isOpen } }
@@ -74,11 +78,19 @@ extension FootballCareer {
         guard selectedClubID != nil, !isFired, liveMatch == nil else { return "Não é possível negociar agora." }
         if sellerID == selectedClubID { return "Este atleta já é seu." }
         if athlete.onLoan { return "Atleta emprestado: negocie com o clube dono." }
-        if !isTransferWindowOpen { return "A janela de transferências está fechada." }
+        if !isTransferWindowOpen { return windowClosedReason }
         if isTransferBanned { return "O clube está proibido de contratar (transfer ban)." }
         if openTalk(forPlayer: playerID) != nil { return "Já existe uma negociação aberta com este atleta." }
-        if openTransferTalks.count >= Self.maxOpenTalks { return "No máximo \(Self.maxOpenTalks) negociações ao mesmo tempo." }
+        if openTransferTalks.count >= Self.maxOpenTalks {
+            return "No máximo \(Self.maxOpenTalks) negociações ao mesmo tempo. Encerre uma das abertas (ou espere ela esfriar) para abrir outra."
+        }
         if !sellerCanSell(athlete) { return "\(FootballSeason.teamName(sellerID)) não vende este atleta agora." }
+        // Salário mínimo que o atleta aceita: se nem ele cabe no teto, a negociação inteira seria perdida na hora de assinar.
+        let minimumWage = Int(Double(joiningAsk(for: athlete).wage) * 0.95)
+        if !wageCapAllows(extra: minimumWage) {
+            let missing = wageBill + minimumWage - wageCap
+            return "A folha não comporta o salário dele: faltam \(FootballFormat.money(missing)) de folga no teto. Peça ampliação à diretoria (Clube) ou libere folha."
+        }
         return nil
     }
 
@@ -90,6 +102,7 @@ extension FootballCareer {
         talk.wage = ask.wage
         talk.years = ask.years
         talk.role = ask.status
+        talk.lastActionWorldDay = worldDay
         talk.log.append("Consulta ao \(FootballSeason.teamName(sellerID)) por \(athlete.name).")
         world.projects.nextTalkID += 1
         world.projects.transferTalks.append(talk)
@@ -105,6 +118,7 @@ extension FootballCareer {
         guard let index = talkIndex(talkID), [.clubOffer, .clubCounter].contains(world.projects.transferTalks[index].stage),
               let athlete = player(world.projects.transferTalks[index].playerID) else { return .notAllowed("Esta negociação não aceita proposta agora.") }
         let parts = max(1, min(4, installments))
+        world.projects.transferTalks[index].lastActionWorldDay = worldDay
         if transferBudget < fee / parts { return .notAllowed("Caixa insuficiente para a entrada.") }
         let ask = askingPrice(for: athlete)
         let seller = FootballSeason.teamName(world.projects.transferTalks[index].sellerID)
@@ -173,7 +187,12 @@ extension FootballCareer {
               let needed = wageNeeded(talk: world.projects.transferTalks[index], years: years, role: role) else {
             return .notAllowed("Combine a taxa com o clube antes.")
         }
+        world.projects.transferTalks[index].lastActionWorldDay = worldDay
         let ask = joiningAsk(for: athlete)
+        // Salário que não cabe no teto não adianta aceitar: avisa agora, antes de a assinatura falhar.
+        if wage >= needed, !wageCapAllows(extra: wage) {
+            return .notAllowed("A folha não comporta \(FootballFormat.money(wage))/temporada: o teto da diretoria já está no limite. Peça ampliação no Clube ou libere folha.")
+        }
         if topInterest(of: athlete) == .minutes, ask.status >= .starter, role <= .backup {
             world.projects.transferTalks[index].playerRefusals += 1
             return .refused("\(athlete.name) não aceita chegar como \(role.title.lowercased()): quer jogar.")
@@ -274,6 +293,10 @@ extension FootballCareer {
                 collapseTalk(index: index, reason: "O atleta saiu do \(FootballSeason.teamName(talk.sellerID)).")
             } else if !isTransferWindowOpen {
                 collapseTalk(index: index, reason: "A janela fechou antes do acordo.")
+            } else if worldDay - (talk.lastActionWorldDay ?? talk.startedWorldDay) >= Self.talkIdleDays, ![.clubCounter, .playerCounter].contains(talk.stage) {
+                world.projects.transferTalks[index].stage = .expired
+                world.projects.transferTalks[index].log.append("A negociação esfriou por falta de resposta.")
+                closeTalkCommitment(index: index, as: .expired)
             } else if let deadline = talk.deadlineWorldDay, worldDay >= deadline, [.clubCounter, .playerCounter].contains(talk.stage) {
                 world.projects.transferTalks[index].stage = .expired
                 world.projects.transferTalks[index].log.append("A contraproposta venceu sem resposta.")

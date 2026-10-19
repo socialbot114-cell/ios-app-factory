@@ -384,6 +384,8 @@ struct FootballCareer: Codable, Equatable {
         world = try container.decodeIfPresent(WorldState.self, forKey: .world) ?? WorldState()
         if version < 3 { migrateToWorldV3() }
         if version < 4 { migrateToPlayersV4() }
+        // Saves com o teto abaixo da folha não conseguiam contratar nem promover ninguém: sobe o teto uma vez, até a folga mínima.
+        if selectedClubID != nil, wageCap > 0, wageBill > wageCap { ensureWageHeadroom(factor: 0.10) }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -964,11 +966,14 @@ struct FootballCareer: Codable, Equatable {
     /// Por que o atleta não pode ser contratado agora (nil quando pode).
     func signBlockReason(playerID: Int) -> String? {
         guard let player = player(playerID), player.teamID == nil else { return "Atleta indisponível." }
+        if selectedClubID == nil || isFired { return "Sem clube no momento." }
         if liveMatch != nil { return "Termine a partida antes de contratar." }
         if clubRoster.count >= Self.rosterLimit { return "Elenco completo: venda um atleta antes." }
         if isTransferBanned { return "O clube está proibido de contratar por causa da dívida (transfer ban)." }
         if transferBudget < player.marketValue { return "Caixa insuficiente." }
-        if !wageCapAllows(extra: player.contract.wage) { return "A folha salarial passaria do teto definido pela diretoria." }
+        if !wageCapAllows(extra: player.contract.wage) {
+            return "A folha salarial passaria do teto: faltam \(FootballFormat.money(wageBill + player.contract.wage - wageCap)) de folga. Peça ampliação à diretoria no Clube."
+        }
         return nil
     }
 

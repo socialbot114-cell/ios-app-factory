@@ -28,6 +28,20 @@ extension FootballCareer {
 
     func wageCapAllows(extra: Int) -> Bool { wageBill + extra <= wageCap }
 
+    /// Folga mínima do teto sobre a folha. Sem ela, uma temporada ruim (teto x0,97) somada à folha que só cresce deixava o teto
+    /// abaixo da folha e travava toda contratação e toda promoção da base.
+    static let wageHeadroomFloor = 0.12
+
+    /// Garante que o teto deixe espaço para trabalhar. Retorna verdadeiro quando precisou subir.
+    @discardableResult
+    mutating func ensureWageHeadroom(factor: Double = FootballCareer.wageHeadroomFloor) -> Bool {
+        guard selectedClubID != nil else { return false }
+        let floor = Int((Double(wageBill) * (1 + factor) / 10_000).rounded(.up)) * 10_000
+        guard wageCap < floor else { return false }
+        wageCap = floor
+        return true
+    }
+
     /// Folha cobrada a cada dia de jogo.
     mutating func chargeMatchDayWages() {
         guard selectedClubID != nil else { return }

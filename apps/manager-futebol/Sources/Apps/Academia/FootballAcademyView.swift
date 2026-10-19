@@ -414,10 +414,7 @@ struct FootballYouthDetailView: View {
 
     /// Por que o jovem não sobe agora: vaga no elenco principal ou teto da folha.
     private func promoteBlocker(_ player: FootballPlayer) -> String {
-        if career.clubRoster.count >= FootballCareer.rosterLimit {
-            return "Elenco principal cheio (\(career.clubRoster.count)/\(FootballCareer.rosterLimit)): dispense ou venda alguém antes."
-        }
-        return "A folha passaria do teto salarial. Peça a ampliação na reunião com a diretoria, no app Clube, se o caixa permitir."
+        career.promoteBlockReason(playerID: player.id) ?? "Não foi possível promover agora."
     }
 
     private func actions(_ player: FootballPlayer) -> some View {

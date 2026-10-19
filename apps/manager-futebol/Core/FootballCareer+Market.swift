@@ -22,6 +22,17 @@ extension FootballCareer {
 
     var isTransferWindowOpen: Bool { transferWindow != nil }
 
+    /// Texto para quando a janela está fechada: diz quando ela abre de novo, em vez de só negar.
+    var windowClosedReason: String {
+        if isSeasonComplete { return "A temporada acabou: a janela de pré-temporada abre quando a próxima começar." }
+        let day = matchDayIndex
+        if day < TransferWindow.midseason.start {
+            let left = TransferWindow.midseason.start - day
+            return "A janela de transferências está fechada. Abre em \(FootballFormat.plural(left, "rodada", "rodadas")), na metade da temporada."
+        }
+        return "A janela de transferências está fechada até a próxima pré-temporada. Atletas sem clube podem ser contratados a qualquer hora."
+    }
+
     // MARK: - Preços e disposição dos clubes
 
     /// Posição do atleta no elenco do próprio clube (0 é o melhor).
@@ -106,7 +117,7 @@ extension FootballCareer {
         guard selectedClubID != nil, !isFired, liveMatch == nil else { return .notAllowed("Não é possível negociar agora.") }
         guard player.teamID != nil, player.teamID != selectedClubID else { return .notAllowed("Este atleta já está no seu clube ou está sem clube.") }
         guard !player.onLoan else { return .notAllowed("Atleta emprestado: negocie a compra com o clube dono.") }
-        guard isTransferWindowOpen else { return .notAllowed("A janela de transferências está fechada.") }
+        guard isTransferWindowOpen else { return .notAllowed(windowClosedReason) }
         guard !isTransferBanned else { return .notAllowed("O clube está proibido de contratar por causa da dívida (transfer ban).") }
         guard clubRoster.count < Self.rosterLimit || bid.swapPlayerID != nil else { return .notAllowed("Elenco completo.") }
         guard sellerCanSell(player) else { return .clubRefuses("\(FootballSeason.teamName(player.teamID ?? 0)) não vende: precisa deste atleta para manter o elenco.") }
@@ -221,7 +232,8 @@ extension FootballCareer {
 
     func canLoanIn(playerID: Int) -> String? {
         guard let player = player(playerID), let teamID = player.teamID, teamID != selectedClubID, !player.onLoan else { return "Atleta indisponível." }
-        guard !isFired, liveMatch == nil, isTransferWindowOpen else { return "A janela de transferências está fechada." }
+        guard !isFired, liveMatch == nil else { return "Não é possível negociar agora." }
+        guard isTransferWindowOpen else { return windowClosedReason }
         guard !isTransferBanned else { return "O clube está proibido de contratar por causa da dívida (transfer ban)." }
         guard clubRoster.count < Self.rosterLimit else { return "Elenco completo." }
         guard sellerCanSell(player) else { return "O clube não empresta este atleta agora." }
@@ -629,12 +641,25 @@ extension FootballCareer {
         }
     }
 
-    func canPromote(playerID: Int) -> Bool {
-        guard let player = player(playerID), player.isYouth, player.teamID == selectedClubID else { return false }
-        return clubRoster.count < Self.rosterLimit && wageCapAllows(extra: promotedWage(player) - player.contract.wage)
+    func canPromote(playerID: Int) -> Bool { promoteBlockReason(playerID: playerID) == nil }
+
+    /// Por que o jovem não sobe agora (nil quando pode subir).
+    func promoteBlockReason(playerID: Int) -> String? {
+        guard let player = player(playerID), player.isYouth, player.teamID == selectedClubID else { return "Este jovem não está na sua base." }
+        if isFired { return "Sem clube no momento." }
+        if liveMatch != nil { return "Termine a partida antes de promover." }
+        if clubRoster.count >= Self.rosterLimit {
+            return "Elenco principal cheio (\(clubRoster.count)/\(Self.rosterLimit)): dispense ou venda alguém antes."
+        }
+        let extra = promotedWage(player) - player.contract.wage
+        if !wageCapAllows(extra: extra) {
+            let missing = wageBill + extra - wageCap
+            return "Faltam \(FootballFormat.money(missing)) de folga na folha para ele (salário novo de \(FootballFormat.money(promotedWage(player))) por temporada). Peça ampliação do teto na reunião com a diretoria, no Clube, ou reduza a folha."
+        }
+        return nil
     }
 
-    private func promotedWage(_ player: FootballPlayer) -> Int {
+    func promotedWage(_ player: FootballPlayer) -> Int {
         max(player.contract.wage, Int(Double(PlayerContract.wage(forValue: player.marketValue)) * 0.6 / 5_000) * 5_000)
     }
 
