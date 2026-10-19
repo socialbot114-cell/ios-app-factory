@@ -149,6 +149,14 @@ struct FootballLiveMatchView: View {
         .footballHaptic(.impact(weight: .light), trigger: goalNotice?.id)
     }
 
+    /// A dica do primeiro uso na partida: só no passo da partida do guia, ou na captura "first-run-live".
+    /// Tipos explícitos para o compilador resolver a condição sem estourar o tempo de verificação.
+    private var showsFirstRunLiveToast: Bool {
+        let onLiveStep: Bool = career.firstCareerGuideStep == FirstCareerGuideStep.liveMatch
+        let capturing: Bool = FactoryCapture.screen == "first-run-live"
+        return onLiveStep && (!staticPreview || capturing)
+    }
+
     var body: some View {
         matchStack
         .onChange(of: live?.sim.minute ?? 0) { _, minute in
@@ -169,8 +177,7 @@ struct FootballLiveMatchView: View {
         }
         .onAppear {
             start()
-            if career.firstCareerGuideStep == .liveMatch,
-               !staticPreview || FactoryCapture.screen == "first-run-live" {
+            if showsFirstRunLiveToast {
                 withAnimation { showsFirstRunToast = true }
             }
         }
