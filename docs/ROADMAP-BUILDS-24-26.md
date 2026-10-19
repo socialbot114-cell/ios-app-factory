@@ -331,7 +331,7 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 
 ## 6f. Build 28 — campo vivo e correções de mercado (19/out)
 
-**Causa dos erros de contratação e de promoção da base:** o teto salarial da diretoria caía 3% a cada temporada sem a meta cumprida, enquanto a folha só crescia (renovações, jovens da base). Em uma de cada três carreiras testadas o teto terminava abaixo da folha, e aí **toda** contratação e **toda** promoção falhavam, com botão apagado e sem explicação. Medido em 72 carreiras simuladas antes da correção.
+**Causa dos erros de contratação e de promoção da base:** o teto salarial da diretoria caía 3% a cada temporada sem a meta cumprida, enquanto a folha só crescia (renovações, jovens da base). Em 3 de 12 carreiras simuladas o teto terminava abaixo da folha na segunda temporada, e aí **toda** contratação e **toda** promoção falhavam, com botão apagado e sem explicação. Além disso, 22% das negociações completas (482 de 2.278 em 96 carreiras-janela simuladas) só descobriam na assinatura que a folha não comportava o salário.
 
 **Corrigido:**
 - Teto com folga mínima de 12% sobre a folha a cada virada de temporada; saves já travados voltam a ter folga ao carregar.
