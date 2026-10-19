@@ -5,7 +5,7 @@ Este documento continua o `docs/ROADMAP-FUTOS.md`, que é cronológico e muito l
 
 ## 1. Onde estamos
 
-- **1.1 (26)** (placares ao vivo, celular, patrocinadores, cidade): branch `release/1.1-26`, em validação em 17/out. Ver a seção 6d.
+- **1.1 (26)** (placares ao vivo, celular, patrocinadores, cidade): `release/1.1-26` @ `d7283d1`, run `39011573945`, todos os passos verdes, ativado no grupo interno e Concluído no App Store Connect em 17/out. Ver a seção 6d.
 - **No TestFlight interno antes dele:** 1.1 (25), branch `release/1.1-25` @ `9cc68fd`, run `38993534322`, todos os passos verdes (gate de iPhone e iPad, archive, upload e ativação).
 - **1.1 (24)** (lógica e mercado): `release/1.1-24` @ `27bf294`, run `38965319745`, verde.
 - **1.1 (23)** (polimento de textos e toques): `release/1.1-23` @ `c59ce2f`, run `38939859482`, verde.
@@ -288,6 +288,8 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 - Tudo que escolhe, guarda ou edita do celular vai em campos opcionais do save.
 
 ## 6d. Build 26 — o que entrou, o que ficou de fora e por quê (17/out)
+
+**Estado: enviado e ativado em 17/out.** Nenhuma revisão no aparelho ainda.
 
 **Decisão de escopo:** juntar num só build tudo o que é seguro, sem mexer na economia e sem depender de arte nova, áudio ou extensões do Xcode. Cada item de lógica tem teste no Core (Linux); as telas são conferidas pelo GitHub Actions e por capturas.
 
