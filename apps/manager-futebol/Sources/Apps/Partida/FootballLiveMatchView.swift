@@ -825,15 +825,41 @@ struct FootballLiveMatchView: View {
         }
     }
 
+    /// Espera o próximo minuto. Vendo o jogo, o relógio anda pelo próprio campo: cada minuto vale `FootballPitchPacing.secondsPerMinute`
+    /// segundos de jogo e as jogadas da súmula seguram o relógio. A 2× e 4× o campo corre mais rápido e os minutos acompanham.
+    /// Com o campo fora da tela (rolou a página) vale o mesmo ritmo em tempo real; narração e testes de interface seguem o ritmo curto de leitura.
+    @MainActor private func waitForNextMinute() async {
+        let fallback = UInt64(FootballPitchPacing.realSecondsPerMinute(speed: speed) * 1_000_000_000)
+        // Narração (sem campo) e testes de interface seguem o ritmo curto de leitura de antes.
+        if FactoryCapture.isUITesting || staticPreview || viewMode != .watch {
+            try? await Task.sleep(nanoseconds: tickNanoseconds)
+            await waitForPitch()
+            return
+        }
+        var idle = 0.0
+        while !Task.isCancelled {
+            let count = career.liveMatch?.sim.events.count ?? 0
+            if pitchEngine.isAnimating {
+                idle = 0
+                if pitchEngine.consumeMinute(seconds: FootballPitchPacing.secondsPerMinute, eventCount: count) { return }
+            } else {
+                idle += 0.05
+                if idle >= 0.4 {
+                    try? await Task.sleep(nanoseconds: fallback)
+                    return
+                }
+            }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+    }
+
     private func startClock() {
         tickTask?.cancel()
         guard !staticPreview, career.liveMatch?.sim.finished == false else { return }
         running = true
         tickTask = Task { @MainActor in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: tickNanoseconds)
-                if Task.isCancelled { return }
-                await waitForPitch()
+                await waitForNextMinute()
                 if Task.isCancelled { return }
                 guard career.liveMatch?.sim.finished == false else {
                     running = false
@@ -858,7 +884,7 @@ struct FootballLiveMatchView: View {
                         running = false
                         return
                     }
-                    if !FactoryCapture.isUITesting { try? await Task.sleep(nanoseconds: 1_300_000_000) }
+                    if !FactoryCapture.isUITesting { try? await Task.sleep(nanoseconds: UInt64(1_300_000_000 / Double(max(1, speed)))) }
                 }
             }
         }

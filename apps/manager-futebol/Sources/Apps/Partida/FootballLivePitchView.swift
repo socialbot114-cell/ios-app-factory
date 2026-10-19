@@ -81,8 +81,8 @@ struct FootballLivePitchView: View {
         if FactoryCapture.screen.map({ FootballHome.liveMatchCaptures.contains($0) }) == true, !engine.isWarmed, sim.minute > 0 { engine.warmUpForCapture(input: input) }
         let eventCount = sim.events.count
         let busy = engine.isBusy(eventCount: eventCount, phase: inShootout ? .live : phase)
-        let rates: [Int: Double] = [1: 1.0, 2: 1.5, 4: 2.2]
-        let rate = running ? (rates[speed] ?? 1.0) : 1.0
+        // O multiplicador é o real: a 4× o campo corre 4 vezes mais e o relógio da partida acompanha (ver `FootballPitchPacing`).
+        let rate = running ? Double(max(1, speed)) : 1.0
         let crowd = min(1, max(0.35, 0.40 + Double(career.clubHype) / 160))
         let kits = Kits(home: homeKit, away: awayKit, homeKeeper: homeKeeperKit, awayKeeper: awayKeeperKit)
         let stageEngine = self.engine
@@ -197,6 +197,19 @@ struct FootballLivePitchView: View {
         drawLighting(&context, stage: stage)
         context.transform = .identity
         drawWeather(&context, size: size, weather: weather, time: time)
+        drawRestartLabel(&context, engine: engine, kits: kits)
+    }
+
+    /// Nome da jogada parada ("Lateral", "Escanteio"…) com a cor do time que cobra.
+    private func drawRestartLabel(_ context: inout GraphicsContext, engine: PitchEngine, kits: Kits) {
+        guard let label = engine.restartLabel else { return }
+        let color = engine.restartLabelHome ? kits.home.shirt : kits.away.shirt
+        let width = CGFloat(label.count) * 6.6 + 26
+        let rect = CGRect(x: 10, y: 10, width: width, height: 20)
+        context.fill(Path(roundedRect: rect, cornerRadius: 10), with: .color(.black.opacity(0.72)))
+        context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: rect.midY - 4, width: 8, height: 8)), with: .color(color))
+        context.stroke(Path(ellipseIn: CGRect(x: rect.minX + 7, y: rect.midY - 4, width: 8, height: 8)), with: .color(.white.opacity(0.85)), lineWidth: 0.8)
+        context.draw(Text(label).font(.system(size: 10, weight: .bold)).foregroundColor(.white), at: CGPoint(x: rect.minX + 20 + (rect.width - 26) / 2, y: rect.midY))
     }
 
     /// Céu fechado e chuva por cima da cena, sem seguir a câmera. Só apresentação: o clima não muda o jogo.
@@ -468,7 +481,8 @@ struct FootballLivePitchView: View {
             let kit = body.keeper ? (body.home ? kits.homeKeeper : kits.awayKeeper) : (body.home ? kits.home : kits.away)
             let diving = time < body.diveUntil ? body.diveSide : 0
             drawSprite(&context, at: point, height: spriteHeight, kit: kit, facing: body.facing, stride: body.stride, dive: diving,
-                       skin: skins[abs(body.id) % skins.count], hair: hair[abs(body.id / 4) % hair.count], ring: engine.carrierID == body.id)
+                       skin: skins[abs(body.id) % skins.count], hair: hair[abs(body.id / 4) % hair.count], ring: engine.carrierID == body.id,
+                       armsUp: body.pose == .throwIn)
         }
         // Bola: sombra no chão e a bola levantada pela altura.
         let ground = stage.point(engine.ballPos)
@@ -497,7 +511,7 @@ struct FootballLivePitchView: View {
     }
 
     private func drawSprite(_ context: inout GraphicsContext, at point: CGPoint, height sh: CGFloat, kit: PitchKit,
-                            facing: Double, stride: Double, dive: Double, skin: Color, hair: Color, ring: Bool) {
+                            facing: Double, stride: Double, dive: Double, skin: Color, hair: Color, ring: Bool, armsUp: Bool = false) {
         context.drawLayer { layer in
             layer.translateBy(x: point.x, y: point.y)
             if ring {
@@ -519,9 +533,14 @@ struct FootballLivePitchView: View {
             layer.fill(Path(CGRect(x: sh * 0.04 - swing, y: -sh * 0.06, width: sh * 0.11, height: sh * 0.06)), with: .color(.black.opacity(0.75)))
             // Calção.
             layer.fill(Path(roundedRect: CGRect(x: -sh * 0.18, y: -sh * 0.44, width: sh * 0.36, height: sh * 0.17), cornerRadius: 1.2), with: .color(kit.shorts))
-            // Braços.
-            layer.fill(Path(CGRect(x: -sh * 0.27 - swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.24)), with: .color(skin))
-            layer.fill(Path(CGRect(x: sh * 0.19 + swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.24)), with: .color(skin))
+            // Braços (na lateral, esticados acima da cabeça).
+            if armsUp {
+                layer.fill(Path(CGRect(x: -sh * 0.25, y: -sh * 1.06, width: sh * 0.08, height: sh * 0.34)), with: .color(skin))
+                layer.fill(Path(CGRect(x: sh * 0.17, y: -sh * 1.06, width: sh * 0.08, height: sh * 0.34)), with: .color(skin))
+            } else {
+                layer.fill(Path(CGRect(x: -sh * 0.27 - swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.24)), with: .color(skin))
+                layer.fill(Path(CGRect(x: sh * 0.19 + swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.24)), with: .color(skin))
+            }
             // Camisa com o padrão do clube.
             let shirt = Path(roundedRect: CGRect(x: -sh * 0.20, y: -sh * 0.76, width: sh * 0.40, height: sh * 0.35), cornerRadius: 2)
             layer.drawLayer { inner in

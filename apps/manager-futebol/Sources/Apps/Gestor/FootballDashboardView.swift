@@ -857,6 +857,7 @@ struct MatchEventRow: View {
         case .dribble: return "figure.run"
         case .cross: return "arrow.up.right"
         case .woodwork: return "square.dashed"
+        case .corner: return "flag.checkered.2.crossed"
         }
     }
 

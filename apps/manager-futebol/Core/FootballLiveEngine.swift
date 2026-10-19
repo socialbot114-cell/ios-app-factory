@@ -381,10 +381,7 @@ extension MatchSimulation {
         guard detailed else { return }
         let notable = xg >= 0.07 || (onTarget && random.chance(0.7)) || random.chance(0.1)
         guard notable else {
-            if cornerWon && random.chance(0.35) {
-                events.append(MatchEvent(minute: minute, kind: .chance, teamID: teamID,
-                                         text: "Escanteio para o \(FootballSeason.teamName(teamID)) depois de bola desviada."))
-            }
+            if cornerWon { appendCorner(side: side, teamID: teamID, players: players, chain: &chain) }
             return
         }
         let keeperName = rivalKeeper?.name ?? "o goleiro"
@@ -392,6 +389,7 @@ extension MatchSimulation {
             let post = chain.chance(0.5) ? "na trave" : "no travessão"
             events.append(MatchEvent(minute: minute, kind: .woodwork, teamID: teamID, text: "NA TRAVE! \(shooter.name) acerta a bola \(post)!",
                                      playerID: shooter.id, xg: (xg * 100).rounded() / 100, x: x, y: y))
+            if cornerWon { appendCorner(side: side, teamID: teamID, players: players, chain: &chain) }
             return
         }
         var text = Self.missText(type: type, onTarget: onTarget, shooter: shooter.name, keeper: keeperName, random: &random)
@@ -400,8 +398,31 @@ extension MatchSimulation {
            let lead = buildUp.missLead(passer.name) {
             text = lead + " " + text
         }
+        // O texto "espalma para escanteio" tem que bater com a estatística.
+        var cornerForShot = cornerWon
+        if !cornerForShot, text.contains("escanteio") {
+            self[side].corners += 1
+            cornerForShot = true
+        }
         events.append(MatchEvent(minute: minute, kind: onTarget ? .save : .chance, teamID: teamID, text: text, playerID: shooter.id,
                                  relatedPlayerID: onTarget ? rivalKeeper?.id : nil, xg: (xg * 100).rounded() / 100, x: x, y: y))
+        if cornerForShot { appendCorner(side: side, teamID: teamID, players: players, chain: &chain) }
+    }
+
+    /// Todo escanteio da estatística vira um lance na súmula e no campo, com o cobrador da rotina de bola parada (se houver).
+    private mutating func appendCorner(side: MatchTeamSide, teamID: Int, players: [Int: FootballPlayer], chain: inout FootballRandom) {
+        let onPitch = self[side].onPitch.compactMap { players[$0] }.filter { $0.position != .goalkeeper }
+        let taker = self[side].setPieceRoutine?.cornerTakerID.flatMap { id in onPitch.first { $0.id == id } }
+            ?? onPitch.max { $0.attributes[.passing] < $1.attributes[.passing] }
+        let teamName = FootballSeason.teamName(teamID)
+        let who = taker?.name
+        let options = who.map { name in [
+            "Escanteio para o \(teamName). \(name) vai para a cobrança.",
+            "\(teamName) ganha o escanteio e \(name) ajeita a bola na bandeirinha.",
+            "Escanteio! \(name) levanta a bola para a área do rival."
+        ] } ?? ["Escanteio para o \(teamName)."]
+        let text = options[chain.int(in: 0...(options.count - 1))]
+        events.append(MatchEvent(minute: minute, kind: .corner, teamID: teamID, text: text, playerID: taker?.id))
     }
 
     private static func missText(type: ShotType, onTarget: Bool, shooter: String, keeper: String, random: inout FootballRandom) -> String {
