@@ -2,6 +2,12 @@ import SwiftUI
 
 /// App Relógio: a data do jogo e as contagens até a próxima partida, a janela de transferências e o fim da temporada.
 struct FootballClockView: View {
+    /// Só a primeira letra em maiúscula ("Domingo, 5 de março"), sem pôr "De" nas preposições.
+    private static func sentenceCase(_ text: String) -> String {
+        guard let first = text.first else { return text }
+        return first.uppercased() + text.dropFirst()
+    }
+
     let career: FootballCareer
 
     var body: some View {
@@ -11,7 +17,7 @@ struct FootballClockView: View {
             FactoryPanel(title: "Agora", systemImage: "clock.fill") {
                 Text(FootballCalendarClock.clock(career.gameMoment))
                     .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
-                Text(FootballCalendarClock.longDate(career.gameMoment).capitalized)
+                Text(Self.sentenceCase(FootballCalendarClock.longDate(career.gameMoment)))
                     .font(.headline)
                 Text("Temporada \(career.season) · \(career.isSeasonComplete ? "campanha encerrada" : "dia de jogo \(career.matchDayIndex + 1) de \(FootballSeason.matchDaysPerSeason)")")
                     .font(.caption).foregroundStyle(.secondary)
