@@ -11,6 +11,11 @@ enum FootballPresentation: Int, CaseIterable, Comparable {
     }
 }
 
+/// Cada apresentação vira uma folha da tela do Gestor (FootballHome); o id é o próprio caso.
+extension FootballPresentation: Identifiable {
+    var id: Int { rawValue }
+}
+
 /// Decide o que está na tela agora. Uma apresentação por vez; as outras esperam na fila, em ordem, sem se perder.
 struct FootballPresentationCoordinator: Equatable {
     /// A apresentação que está na tela, se houver.

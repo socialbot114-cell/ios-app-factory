@@ -19,7 +19,8 @@ struct FootballHome: View {
     @State private var showsTitleOptions = false
     @State private var confirmsNewGame = false
     @State private var didPrepare = false
-    @State private var showPress = false
+    @State private var presentations = FootballPresentationCoordinator()
+    @State private var homeSheet: FootballPresentation?
     @State private var booting = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
     /// O celular só bloqueia quando o calendário avança (troca de dia), nunca ao abrir o jogo.
     @State private var locked = false
@@ -60,7 +61,7 @@ struct FootballHome: View {
 
     /// Tela bloqueada ou folha por cima do celular: a faixa de desbloqueio espera, para não expirar escondida.
     private var phoneIsCovered: Bool {
-        locked || showLiveMatch || showPress || showNotifications || showSearch
+        locked || showLiveMatch || presentations.current != nil || showNotifications || showSearch
             || searchedPlayer != nil || notifiedMessage != nil || seasonSummary != nil
     }
 
@@ -123,11 +124,17 @@ struct FootballHome: View {
         } message: {
             Text("A carreira atual continua salva. Dá para voltar a ela em Opções.")
         }
-        .sheet(item: $seasonSummary) { record in
-            FootballSeasonSummaryView(record: record, career: career)
-        }
-        .sheet(isPresented: $showPress) {
-            FootballPressView(career: $career)
+        .sheet(item: $homeSheet, onDismiss: { showNextPresentation() }) { presentation in
+            switch presentation {
+            case .press:
+                FootballPressView(career: $career)
+            case .summary:
+                if let record = seasonSummary {
+                    FootballSeasonSummaryView(record: record, career: career)
+                }
+            case .message, .alert, .guide:
+                EmptyView()
+            }
         }
         .sheet(isPresented: $showNotifications, onDismiss: {
             if let id = pendingMessageID {
@@ -325,8 +332,22 @@ struct FootballHome: View {
     private func presentPress(after nanoseconds: UInt64) {
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: nanoseconds)
-            showPress = true
+            requestPresentation(.press)
         }
+    }
+
+    /// Pede uma apresentação da fila (FLX-01): abre na hora se a tela está livre; senão espera a vez.
+    private func requestPresentation(_ presentation: FootballPresentation) {
+        let wasFree = presentations.current == nil
+        presentations.request(presentation)
+        if wasFree { homeSheet = presentations.current }
+    }
+
+    /// Quando uma folha fecha, a fila abre a próxima, uma de cada vez.
+    private func showNextPresentation() {
+        if presentations.current == .summary { seasonSummary = nil }
+        presentations.finishCurrent()
+        homeSheet = presentations.current
     }
 
     private func open(_ app: PhoneApp) {
@@ -451,9 +472,9 @@ struct FootballHome: View {
                 career: $career,
                 onPlayLive: startLiveMatch,
                 onAlert: showAlert,
-                onSeasonEnded: { seasonSummary = $0 },
+                onSeasonEnded: { seasonSummary = $0; requestPresentation(.summary) },
                 onNavigate: { openApp = $0 },
-                onShowPress: { showPress = true },
+                onShowPress: { requestPresentation(.press) },
                 onOpenAgenda: openAgendaItem,
                 roundBand: roundBandDay == career.matchDayIndex ? roundBand : [],
                 onOpenMidweek: openMidweek,
