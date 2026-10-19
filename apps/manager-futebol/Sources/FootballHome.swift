@@ -917,6 +917,17 @@ struct FootballHome: View {
             showSearch = true
         case "academy": openApp = .academy
         case "store": openApp = .store
+        case "notes":
+            career.addNote("Renovar com Cauê Pereira antes do fim da temporada")
+            career.addNote("Conversar com o capitão sobre o rodízio")
+            openApp = .notes
+        case "clock": openApp = .clock
+        case "control-center":
+            openApp = nil
+            showsControls = true
+        case "home-folder", "folder-open":
+            career.world.phone.preferences.createFolder(with: ["bank", "brand", "business"], factory: PhoneApp.grid.map(\.rawValue), name: "Dinheiro")
+            openApp = nil
         case "unlock":
             openApp = nil
             // Só este aviso na fila: o celular de demonstração já acumulou conquistas de outros dias.
