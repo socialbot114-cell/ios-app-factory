@@ -317,6 +317,18 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 | CLR-03, SEM-01 | A decisão da tela "Hoje" continua pendente. |
 | OS-05 a OS-08 | Central de controle, Foco, apps de sistema novos e seletor de apps: pacote próprio do celular, depois deste. |
 
+## 6e. Build 27 — o que entrou, o que ficou de fora e por quê (19/out)
+
+**Entrou (em `release/1.1-27`):**
+- **Celular:** pastas na tela inicial (criar, mover, renomear, desfazer), central de controle com Foco (Dia de jogo, Descanso, Negócios), vibração, sons e tema; apps novos **Notas** (anotações do treinador, até 50 de 280 caracteres) e **Relógio** (calendário do jogo e contagens).
+- **Partida:** clima determinístico por região e jogo (chuva escurece o campo; chip de clima), nomes das marcas nas placas, sons ligados aos lances (infra pronta, sem arquivos de áudio).
+- **Visual:** retratos de atletas e do treinador (Blender, camisa tingida com as cores do clube), escudos com 4 formas e 5 desenhos (20 combinações), 20 estádios por clube e cidade por porte.
+- **Testes:** 11 testes novos no Core (foco, pastas, notas, clima, relógio, retratos, escudos).
+
+**Limites honestos:** a diferença entre estádios do mesmo porte é sutil (cores de arquibancada e cobertura); nada foi revisado em aparelho físico; os sons só tocam quando houver arquivos `sfx-*` no app, e gerar áudio custa créditos (≈R$ 0,26 por efeito) e depende de aprovação.
+
+**Fica para os próximos builds:** economia viva com medição (ECO/ECV, PAT-02/03, CID-02), Live Activity e widget (exigem alvos Xcode e conta Apple), uniformes próprios, mais arte (treinador e contatos).
+
 ## 7. Ordem sugerida e dependências
 
 1. **Rodada no aparelho** com o 1.1 (25): iniciar carreira, comprar um jogador, simular uma rodada, virar a temporada. Não gasta build e reordena este plano.
