@@ -138,6 +138,7 @@ final class FootballClubTests: XCTestCase {
         let bonuses = career.finance.entries(season: 1).filter { $0.category == .sponsor && $0.note.contains("Bônus por vitória") }
         XCTAssertGreaterThan(bonuses.count, 0)
         XCTAssertLessThanOrEqual(bonuses.count, wins)
+        career.boardConfidence = 100 // o teste é sobre o patrocínio; demissão no fim da temporada não faz parte dele
         XCTAssertNotNil(career.startNextSeason())
         XCTAssertEqual(career.sponsorOffers.count, 3, "Contrato de 1 temporada terminou: novas ofertas")
         XCTAssertNil(career.sponsorDeal)

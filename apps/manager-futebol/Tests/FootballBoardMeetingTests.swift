@@ -87,6 +87,7 @@ final class FootballBoardMeetingTests: XCTestCase {
         XCTAssertFalse(career.finance.entries.contains { $0.note == "Verba extra da diretoria" })
         XCTAssertNotEqual(career.transferBudget, before + career.boardBoostAmount)
         XCTAssertNotNil(career.boardMeetingBlocker(.targetReview), "Novo pedido só depois do intervalo")
+        career.boardConfidence = 50 // o teste é sobre o intervalo entre pedidos, não sobre demissão no meio da temporada
         playDays(&career, FootballCareer.boardMeetingCooldown)
         XCTAssertNil(career.boardMeetingBlocker(.targetReview))
     }

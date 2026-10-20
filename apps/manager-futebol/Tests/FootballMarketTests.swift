@@ -20,19 +20,20 @@ final class FootballMarketTests: XCTestCase {
     func testTransferWindowsOpenOnlyInPreseasonAndMidseason() throws {
         var career = career()
         XCTAssertEqual(career.transferWindow?.kind, .preseason)
-        XCTAssertEqual(career.transferWindow?.daysLeft, 2)
+        XCTAssertEqual(career.transferWindow?.daysLeft, 3)
         let player = try target(in: career)
         var bid = TransferBid(playerID: player.id, fee: career.askingPrice(for: player), wage: career.joiningAsk(for: player).wage)
         bid.years = 3
         career.matchDayIndex = 5
         XCTAssertNil(career.transferWindow)
-        XCTAssertEqual(career.evaluateBid(bid), .notAllowed("A janela de transferências está fechada."))
+        XCTAssertEqual(career.evaluateBid(bid), .notAllowed(career.windowClosedReason))
+        XCTAssertTrue(career.windowClosedReason.contains("Abre em 3 rodadas"), career.windowClosedReason)
         XCTAssertFalse(career.canSell(playerID: career.clubRoster.last!.id))
         career.matchDayIndex = 10
         XCTAssertEqual(career.transferWindow?.kind, .midseason)
-        career.matchDayIndex = 11
-        XCTAssertTrue(career.transferWindow?.isLastDay ?? false)
         career.matchDayIndex = 12
+        XCTAssertTrue(career.transferWindow?.isLastDay ?? false)
+        career.matchDayIndex = 13
         XCTAssertNil(career.transferWindow)
     }
 
@@ -243,7 +244,7 @@ final class FootballMarketTests: XCTestCase {
 
     func testMarketEventsRunAtWindowEdgesAndLastDayAnnounced() throws {
         var career = career()
-        career.matchDayIndex = 1
+        career.matchDayIndex = TransferWindow.preseason.end
         career.marketCalendarEvents()
         XCTAssertTrue(career.inbox.contains { $0.title == "Último dia da janela" })
         XCTAssertFalse(career.transferLog.isEmpty)
