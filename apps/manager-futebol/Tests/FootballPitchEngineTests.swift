@@ -250,25 +250,21 @@ final class FootballPitchEngineTests: XCTestCase {
             MatchEvent(minute: 10, kind: .goal, teamID: 1, text: "GOL de pênalti!", playerID: 9, xg: 0.76, x: 0.11, y: 0.5)
         ]
         var sawLabel = false
-        var inBoxWhenKicked = Int.max
-        var sawKick = false
-        rig.run(seconds: 30) { engine in
+        var inBoxAtTheSpot: Int?
+        var inBoxWhenKicked: Int?
+        let spot = PitchVector(PitchEngine.length - 11, PitchEngine.width / 2)
+        rig.run(seconds: 40) { engine in
             if engine.restartLabel == "Pênalti" { sawLabel = true }
-            if !sawKick, engine.ballZ > 0.25 || engine.ballPos.distance(to: PitchVector(PitchEngine.length - 11, PitchEngine.width / 2)) > 2.5,
-               sawLabel, engine.celebratingHome == nil {
-                // Primeiro instante com a bola se movendo depois do rótulo: conta quantos estão na grande área.
-                let moving = engine.trail.count > 1
-                if moving {
-                    sawKick = true
-                    inBoxWhenKicked = engine.bodies.filter { body in
-                        !body.keeper && body.id != 9 && body.pos.x > PitchEngine.length - 16.5 && abs(body.pos.y - PitchEngine.width / 2) < 20.15
-                    }.count
-                }
-            }
+            guard sawLabel, inBoxWhenKicked == nil else { return }
+            let distance = engine.ballPos.distance(to: spot)
+            let inBox = engine.bodies.filter { body in
+                !body.keeper && body.id != 9 && body.pos.x > PitchEngine.length - 16.5 && abs(body.pos.y - PitchEngine.width / 2) < 20.15
+            }.count
+            if distance < 3 { inBoxAtTheSpot = inBox }
+            else if distance > 6, let last = inBoxAtTheSpot { inBoxWhenKicked = last }
         }
         XCTAssertTrue(sawLabel, "Pênalti aparece escrito")
-        XCTAssertTrue(sawKick)
-        XCTAssertLessThanOrEqual(inBoxWhenKicked, 1, "Ninguém dentro da área no chute (tolerância de um atrasado)")
+        XCTAssertEqual(inBoxWhenKicked, 0, "Ninguém dentro da grande área no momento do chute")
     }
 
     func testPenaltyThatTheLogCallsAMissIsNotAGoal() {

@@ -1142,8 +1142,8 @@ final class PitchEngine {
             ballPos = ballPos + (shooter.pos + PitchVector(shooter.facing * 0.9, 0) - ballPos) * min(1, 16 * dt)
             ballZ = 0.1
             // Pênalti do jogo corrido: espera todos saírem da área e o goleiro se postar antes do chute.
-            let ready = !next.staged || next.timer > 2.8
-            if (shooter.pos.distance(to: next.spot) < 3.5 && ready) || next.timer > (next.staged ? 4.2 : 2.6) {
+            let ready = !next.staged || next.timer > 9 || (next.timer > 2.8 && penaltyAreaSettled(next))
+            if (shooter.pos.distance(to: next.spot) < 3.5 && ready) || next.timer > (next.staged ? 10 : 2.6) {
                 fire(next)
                 return
             }
@@ -1154,6 +1154,22 @@ final class PitchEngine {
             forceCarrier(shooter.id)
         }
         plan = next
+    }
+
+    /// Lugar de espera de cada jogador de linha no pênalti: na meia-lua, fora da grande área e a mais de 9 m da marca.
+    private func penaltySlot(for body: PitchBody, plan current: Plan) -> PitchVector {
+        let goalX = current.home ? Self.length : 0
+        let dir = current.home ? 1.0 : -1.0
+        let slot = Double(body.id % 9) - 4
+        return PitchVector(goalX - dir * (19.5 + Double(body.id % 2) * 1.6), Self.width / 2 + slot * 4.6)
+    }
+
+    /// A maioria já está no seu lugar: o árbitro autoriza a cobrança (os atrasados chegam de fora da área).
+    private func penaltyAreaSettled(_ current: Plan) -> Bool {
+        let others = bodies.filter { !$0.keeper && $0.id != current.shooterID }
+        guard !others.isEmpty else { return true }
+        let placed = others.filter { $0.pos.distance(to: penaltySlot(for: $0, plan: current)) < 4.5 }.count
+        return Double(placed) / Double(others.count) >= 0.85
     }
 
     private func forceCarrier(_ id: Int) {
@@ -1748,11 +1764,8 @@ final class PitchEngine {
                 topSpeed = 8.5
             } else if let current = plan, current.penalty, current.staged, current.spotSet, !body.keeper {
                 // Todos esperam na meia-lua, fora da grande área e a mais de 9 m da marca.
-                let goalX = current.home ? length : 0
-                let dir = current.home ? 1.0 : -1.0
-                let slot = Double(body.id % 9) - 4
-                target = PitchVector(goalX - dir * (19.5 + Double(body.id % 2) * 1.6), width / 2 + slot * 4.6)
-                topSpeed = 6.8
+                target = penaltySlot(for: body, plan: current)
+                topSpeed = 7.4
             } else if carrierID == body.id {
                 let dir = body.home ? 1.0 : -1.0
                 let goalX = body.home ? length : 0
