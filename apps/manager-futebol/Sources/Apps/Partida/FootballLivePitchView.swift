@@ -567,6 +567,16 @@ struct FootballLivePitchView: View {
                 layer.fill(Path(CGRect(x: -sh * 0.27 - swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.24)), with: .color(skin))
                 layer.fill(Path(CGRect(x: sh * 0.19 + swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.24)), with: .color(skin))
             }
+            // Mangas na cor de detalhe quando o desenho do clube pede.
+            if let sleeve = kit.sleeve {
+                if armsUp {
+                    layer.fill(Path(CGRect(x: -sh * 0.25, y: -sh * 0.86, width: sh * 0.08, height: sh * 0.14)), with: .color(sleeve))
+                    layer.fill(Path(CGRect(x: sh * 0.17, y: -sh * 0.86, width: sh * 0.08, height: sh * 0.14)), with: .color(sleeve))
+                } else {
+                    layer.fill(Path(CGRect(x: -sh * 0.27 - swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.10)), with: .color(sleeve))
+                    layer.fill(Path(CGRect(x: sh * 0.19 + swing * 0.5, y: -sh * 0.72, width: sh * 0.08, height: sh * 0.10)), with: .color(sleeve))
+                }
+            }
             // Camisa com o padrão do clube.
             let shirt = Path(roundedRect: CGRect(x: -sh * 0.20, y: -sh * 0.76, width: sh * 0.40, height: sh * 0.35), cornerRadius: 2)
             layer.drawLayer { inner in
@@ -586,6 +596,32 @@ struct FootballLivePitchView: View {
                     }
                 case .halves:
                     inner.fill(Path(CGRect(x: box.midX, y: box.minY, width: box.width / 2, height: box.height)), with: .color(kit.trim))
+                case .pinstripes:
+                    for index in 0..<7 {
+                        inner.fill(Path(CGRect(x: box.minX + box.width * (0.08 + 0.14 * CGFloat(index)), y: box.minY, width: max(0.6, box.width * 0.045), height: box.height)), with: .color(kit.trim))
+                    }
+                case .chevron:
+                    var chevron = Path()
+                    chevron.move(to: CGPoint(x: box.minX, y: box.minY + box.height * 0.18))
+                    chevron.addLine(to: CGPoint(x: box.midX, y: box.minY + box.height * 0.52))
+                    chevron.addLine(to: CGPoint(x: box.maxX, y: box.minY + box.height * 0.18))
+                    chevron.addLine(to: CGPoint(x: box.maxX, y: box.minY + box.height * 0.40))
+                    chevron.addLine(to: CGPoint(x: box.midX, y: box.minY + box.height * 0.74))
+                    chevron.addLine(to: CGPoint(x: box.minX, y: box.minY + box.height * 0.40))
+                    chevron.closeSubpath()
+                    inner.fill(chevron, with: .color(kit.trim))
+                case .checks:
+                    for row in 0..<3 {
+                        for column in 0..<3 where (row + column) % 2 == 0 {
+                            inner.fill(Path(CGRect(x: box.minX + box.width * CGFloat(column) / 3, y: box.minY + box.height * CGFloat(row) / 3,
+                                                   width: box.width / 3, height: box.height / 3)), with: .color(kit.trim))
+                        }
+                    }
+                case .centerBand:
+                    inner.fill(Path(CGRect(x: box.minX + box.width * 0.36, y: box.minY, width: box.width * 0.28, height: box.height)), with: .color(kit.trim))
+                case .quarters:
+                    inner.fill(Path(CGRect(x: box.minX, y: box.minY, width: box.width / 2, height: box.height / 2)), with: .color(kit.trim))
+                    inner.fill(Path(CGRect(x: box.midX, y: box.midY, width: box.width / 2, height: box.height / 2)), with: .color(kit.trim))
                 case .sash:
                     var sash = Path()
                     sash.move(to: CGPoint(x: box.minX, y: box.minY + box.height * 0.1))

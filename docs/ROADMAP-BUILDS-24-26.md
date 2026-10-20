@@ -378,6 +378,15 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 - Inclui a correção da falta na linha de fundo (72a8fb2).
 - **Limite honesto:** os sons foram gerados por IA e não foram ouvidos no aparelho; volume e mistura podem pedir ajuste.
 
+### 6h. Build 30: impedimento, pênalti e camisas próprias
+
+- **Impedimento no campo:** a súmula já narrava o lance; agora o campo mostra a linha tracejada na altura do penúltimo defensor, o assistente na lateral com a bandeira erguida e o rótulo "Impedimento". O rival cobra a falta onde o atacante estava (nunca perto da linha de fundo).
+- **Pênalti no jogo corrido:** o evento `penaltyAwarded` da súmula prepara a cena. O rótulo "Pênalti" aparece, todos os jogadores de linha vão para a meia-lua, fora da grande área, o goleiro adversário se posta na linha e só então o cobrador chuta, com o resultado que a súmula contou (gol, defesa ou chute para fora; "isola a cobrança" não vira mais gol nem defesa).
+- **Camisas próprias (UNI-01):** dez padrões (os cinco de antes mais fios finos, chevron, xadrez, faixa central e quartos) e quatro variações (mangas e calção/meias na cor de detalhe) somam 40 combinações. `KitDesign` (no Core, testável) distribui por `id` do clube com passo 7 e os 20 clubes da liga ficam com desenhos todos diferentes.
+- **Placas de LED com nome (PAT-01 parcial):** já entrou no build 27; não foi refeito.
+- **Testes:** 3 novos no motor do campo (impedimento, pênalti com área liberada, pênalti para fora) e 2 de desenho de camisa; os 16 do motor passam no Linux.
+- **Limites honestos:** nada foi visto no aparelho; a linha de impedimento usa o penúltimo defensor no momento do apito (a posição real do atacante no lance não é reconstruída); cansaço (stamina) segue fora do jogo; economia viva (ECV, PAT-02/03, CID-02) segue para builds com medição antes e depois.
+
 ## 9. Limites do que se sabe
 
 - A rodada no aparelho **nunca foi feita**. Tudo vem de simulador, testes e simulações.

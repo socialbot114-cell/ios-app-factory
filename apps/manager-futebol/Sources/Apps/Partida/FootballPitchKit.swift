@@ -3,13 +3,15 @@ import SwiftUI
 // MARK: - Uniformes
 
 struct PitchKit {
-    enum Pattern { case solid, verticalStripes, hoops, halves, sash }
+    typealias Pattern = KitPattern
 
     var shirt: Color
     var trim: Color
     var shorts: Color
     var socks: Color
     var pattern: Pattern
+    /// Cor das mangas quando o desenho do clube tem mangas diferentes.
+    var sleeve: Color? = nil
 
     static func rgb(_ color: Color) -> (Double, Double, Double) {
         let resolved = color.resolve(in: EnvironmentValues())
@@ -25,15 +27,20 @@ struct PitchKit {
     }
 
     static func patternFor(_ teamID: Int) -> Pattern {
-        [Pattern.solid, .verticalStripes, .hoops, .halves, .sash][abs(teamID) % 5]
+        KitDesign.design(forTeam: teamID).pattern
     }
 
     static func home(_ team: LeagueTeam?) -> PitchKit {
         let primary = team?.primaryColor ?? FootballTheme.accent
         let secondary = team?.secondaryColor ?? .white
         let dark = contrast(primary, .black) < 0.28
-        return PitchKit(shirt: primary, trim: secondary, shorts: dark ? secondary : (contrast(secondary, primary) > 0.3 ? secondary : .white),
-                        socks: primary, pattern: patternFor(team?.id ?? 0))
+        let design = KitDesign.design(forTeam: team?.id ?? 0)
+        let lightShorts = dark ? secondary : (contrast(secondary, primary) > 0.3 ? secondary : .white)
+        // Calção e meias trocam de cor em metade dos clubes, para dois clubes de cores parecidas não ficarem iguais.
+        let shorts = design.invertedShorts ? primary : lightShorts
+        let socks = design.invertedShorts ? lightShorts : primary
+        return PitchKit(shirt: primary, trim: secondary, shorts: shorts, socks: socks, pattern: design.pattern,
+                        sleeve: design.contrastSleeves ? secondary : nil)
     }
 
     /// Camisa reserva: o visitante troca de uniforme quando as cores se confundem com as do mandante.
