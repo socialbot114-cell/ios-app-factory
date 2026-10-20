@@ -222,6 +222,69 @@ final class FootballPitchEngineTests: XCTestCase {
         XCTAssertEqual(consumedDuringPlay, 0, "Minuto não passa no meio do lance da súmula")
     }
 
+    // MARK: - Impedimento e pênalti no jogo corrido
+
+    func testOffsideShowsTheLineAndTheRivalTakesTheFreeKick() {
+        let rig = Rig()
+        rig.run(seconds: 15)
+        // Time 1 (mandante) é o do impedimento; o visitante cobra.
+        rig.input.events = [MatchEvent(minute: 10, kind: .offside, teamID: 1, text: "Impedimento", playerID: 9)]
+        var sawLine = false
+        var sawLabel = false
+        var kicker: Bool?
+        rig.run(seconds: 20) { engine in
+            if engine.offsideMark != nil { sawLine = true }
+            if engine.restartLabel == "Impedimento" { sawLabel = true }
+            if engine.currentRestart == .freeKick, kicker == nil { kicker = engine.restartLabelHome }
+        }
+        XCTAssertTrue(sawLine, "A linha do impedimento aparece")
+        XCTAssertTrue(sawLabel, "O nome do lance aparece")
+        XCTAssertEqual(kicker, false, "O rival do impedido cobra")
+    }
+
+    func testPenaltyClearsTheAreaAndTheKeeperWaitsOnTheLine() {
+        let rig = Rig()
+        rig.run(seconds: 15)
+        rig.input.events = [
+            MatchEvent(minute: 10, kind: .penaltyAwarded, teamID: 1, text: "Pênalti para o time", playerID: 9),
+            MatchEvent(minute: 10, kind: .goal, teamID: 1, text: "GOL de pênalti!", playerID: 9, xg: 0.76, x: 0.11, y: 0.5)
+        ]
+        var sawLabel = false
+        var inBoxWhenKicked = Int.max
+        var sawKick = false
+        rig.run(seconds: 30) { engine in
+            if engine.restartLabel == "Pênalti" { sawLabel = true }
+            if !sawKick, engine.ballZ > 0.25 || engine.ballPos.distance(to: PitchVector(PitchEngine.length - 11, PitchEngine.width / 2)) > 2.5,
+               sawLabel, engine.celebratingHome == nil {
+                // Primeiro instante com a bola se movendo depois do rótulo: conta quantos estão na grande área.
+                let moving = engine.trail.count > 1
+                if moving {
+                    sawKick = true
+                    inBoxWhenKicked = engine.bodies.filter { body in
+                        !body.keeper && body.id != 9 && body.pos.x > PitchEngine.length - 16.5 && abs(body.pos.y - PitchEngine.width / 2) < 20.15
+                    }.count
+                }
+            }
+        }
+        XCTAssertTrue(sawLabel, "Pênalti aparece escrito")
+        XCTAssertTrue(sawKick)
+        XCTAssertLessThanOrEqual(inBoxWhenKicked, 1, "Ninguém dentro da área no chute (tolerância de um atrasado)")
+    }
+
+    func testPenaltyThatTheLogCallsAMissIsNotAGoal() {
+        let rig = Rig()
+        rig.run(seconds: 15)
+        rig.input.events = [
+            MatchEvent(minute: 10, kind: .penaltyAwarded, teamID: 1, text: "Pênalti", playerID: 9),
+            MatchEvent(minute: 10, kind: .save, teamID: 1, text: "J9 isola a cobrança!", playerID: 9, xg: 0.76, x: 0.11, y: 0.5)
+        ]
+        var celebrated = false
+        rig.run(seconds: 30) { engine in
+            if engine.celebratingHome != nil { celebrated = true }
+        }
+        XCTAssertFalse(celebrated, "Pênalti para fora não vira gol")
+    }
+
     // MARK: - Resultado coerente
 
     func testPossessionFollowsTheMatchShare() {

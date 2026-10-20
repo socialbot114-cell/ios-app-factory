@@ -193,11 +193,37 @@ struct FootballLivePitchView: View {
         }
         drawSurroundings(&context, stage: stage, kits: kits, crowd: crowd, time: time, celebrating: engine.celebratingHome)
         drawPitch(&context, stage: stage)
+        drawOffside(&context, stage: stage, engine: engine, time: time)
         drawActors(&context, stage: stage, engine: engine, kits: kits, time: time)
         drawLighting(&context, stage: stage)
         context.transform = .identity
         drawWeather(&context, size: size, weather: weather, time: time)
         drawRestartLabel(&context, engine: engine, kits: kits)
+    }
+
+    /// Impedimento: linha tracejada na altura do penúltimo defensor e a bandeira do assistente erguida na lateral.
+    private func drawOffside(_ context: inout GraphicsContext, stage: Stage, engine: PitchEngine, time: Double) {
+        guard let x = engine.offsideMark else { return }
+        let top = stage.point(PitchVector(x, 0))
+        let bottom = stage.point(PitchVector(x, PitchEngine.width))
+        var line = Path()
+        line.move(to: top)
+        line.addLine(to: bottom)
+        context.stroke(line, with: .color(Color(red: 1, green: 0.85, blue: 0.2).opacity(0.85)), style: StrokeStyle(lineWidth: 1.4, dash: [5, 4]))
+        // Assistente na lateral de cima, com a bandeira para o alto e balançando de leve.
+        let sway = CGFloat(sin(time * 7)) * 1.2
+        let base = CGPoint(x: top.x, y: top.y - 3)
+        context.fill(Path(ellipseIn: CGRect(x: base.x - 3, y: base.y - 3, width: 6, height: 6)), with: .color(.black.opacity(0.85)))
+        var pole = Path()
+        pole.move(to: base)
+        pole.addLine(to: CGPoint(x: base.x + sway, y: base.y - 15))
+        context.stroke(pole, with: .color(.white), lineWidth: 1.2)
+        var flag = Path()
+        flag.move(to: CGPoint(x: base.x + sway, y: base.y - 15))
+        flag.addLine(to: CGPoint(x: base.x + sway + 8, y: base.y - 12))
+        flag.addLine(to: CGPoint(x: base.x + sway, y: base.y - 8))
+        flag.closeSubpath()
+        context.fill(flag, with: .color(Color(red: 1, green: 0.85, blue: 0.2)))
     }
 
     /// Nome da jogada parada ("Lateral", "Escanteio"…) com a cor do time que cobra.

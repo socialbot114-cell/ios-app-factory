@@ -208,6 +208,10 @@ final class PitchEngine {
         var eventY: Double?
         /// A súmula conta um escanteio logo depois deste chute: a bola sai pela linha de fundo tocada pela defesa.
         var cornerFollows = false
+        /// Pênalti marcado no jogo corrido: o campo para, os jogadores saem da área e só então o cobrador chuta.
+        var staged = false
+        /// Impedimento: a bandeira sobe e a linha dos zagueiros aparece antes da cobrança.
+        var offside = false
 
         var cornerEligible: Bool { outcome == .miss || outcome == .save }
     }
@@ -241,6 +245,8 @@ final class PitchEngine {
     /// Nome da jogada parada em andamento ("Lateral", "Escanteio"…), por alguns segundos; o desenho mostra na tela.
     private(set) var restartLabel: String?
     private(set) var restartLabelHome = true
+    /// Linha do impedimento (metros desde o gol da esquerda) enquanto o lance é mostrado; `nil` fora disso.
+    var offsideMark: Double? { time < offsideUntil ? offsideLineX : nil }
     /// Jogada parada em andamento, para quem desenha e para os testes.
     var currentRestart: PitchRestartKind? { setPiece?.kind }
     /// Segundos de jogo do campo que ainda não viraram minuto de partida.
@@ -270,6 +276,10 @@ final class PitchEngine {
 
     private var lastTouchHome = true
     private var setPiece: SetPiece?
+    /// Pênalti marcado pela súmula que ainda espera o chute (gol, defesa ou chute para fora) chegar.
+    private var pendingPenaltyHome: Bool?
+    private var offsideLineX: Double?
+    private var offsideUntil = 0.0
     private var setPieceSlots: [Int: PitchVector] = [:]
     private var scriptedCornerUntil = 0.0
     private var restartLabelUntil = 0.0
@@ -565,8 +575,12 @@ final class PitchEngine {
             switch event.kind {
             case .goal:
                 if queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .goal)) }
+            case .penaltyAwarded:
+                pendingPenaltyHome = isHome
             case .save:
-                if queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .save)) }
+                // "isola a cobrança" é pênalti para fora, narrado como defesa na súmula.
+                let outcome: Outcome = event.text.contains("isola") ? .miss : .save
+                if queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: outcome)) }
             case .woodwork:
                 if event.x != nil, queue.count < 5 { queue.append(shotPlan(event, home: isHome, outcome: .post)) }
             case .chance:
@@ -581,7 +595,14 @@ final class PitchEngine {
             case .substitution:
                 // Troca: o jogo para um instante e o time que mexeu continua com a bola.
                 if queue.count < 5 { queue.append(stoppagePlan(offenderHome: !isHome)) }
-            case .injury, .offside:
+            case .offside:
+                if queue.count < 5 {
+                    var stop = stoppagePlan(offenderHome: isHome)
+                    stop.offside = true
+                    stop.shooterID = event.playerID ?? -1
+                    queue.append(stop)
+                }
+            case .injury:
                 if queue.count < 5 { queue.append(stoppagePlan(offenderHome: isHome)) }
             default:
                 break
@@ -590,7 +611,12 @@ final class PitchEngine {
     }
 
     private func shotPlan(_ event: MatchEvent, home: Bool, outcome: Outcome) -> Plan {
-        var plan = Plan(home: home, shooterID: event.playerID ?? -1, outcome: outcome, penalty: event.text.contains("pênalti"))
+        let awaited = pendingPenaltyHome == home
+        var plan = Plan(home: home, shooterID: event.playerID ?? -1, outcome: outcome, penalty: event.text.contains("pênalti") || awaited)
+        if plan.penalty {
+            plan.staged = true
+            pendingPenaltyHome = nil
+        }
         plan.eventX = event.x
         plan.eventY = event.y
         return plan
@@ -700,6 +726,11 @@ final class PitchEngine {
         next.spotSet = true
         plan = next
         possessionHome = next.home
+        if next.penalty, next.staged {
+            restartLabel = "Pênalti"
+            restartLabelHome = next.home
+            restartLabelUntil = time + 3.0
+        }
         if carrierID != shooter.id {
             startPass(from: ballPos, targetID: shooter.id, scripted: true)
         }
@@ -1110,7 +1141,9 @@ final class PitchEngine {
         if carrierID == shooter.id, case .carried = mode {
             ballPos = ballPos + (shooter.pos + PitchVector(shooter.facing * 0.9, 0) - ballPos) * min(1, 16 * dt)
             ballZ = 0.1
-            if shooter.pos.distance(to: next.spot) < 3.5 || next.timer > 2.6 {
+            // Pênalti do jogo corrido: espera todos saírem da área e o goleiro se postar antes do chute.
+            let ready = !next.staged || next.timer > 2.8
+            if (shooter.pos.distance(to: next.spot) < 3.5 && ready) || next.timer > (next.staged ? 4.2 : 2.6) {
                 fire(next)
                 return
             }
@@ -1324,8 +1357,23 @@ final class PitchEngine {
     /// Falta, cartão, lesão ou impedimento da súmula: o rival cobra onde a bola está, com barreira quando perto da área.
     private func beginStoppage(_ stop: Plan) {
         // Falta dentro da área seria pênalti (a súmula conta à parte): a cobrança da jogada corrida nunca fica na linha de fundo.
-        let spot = PitchVector(min(Self.length - 12, max(12, ballPos.x)), min(Self.width - 2, max(2, ballPos.y)))
+        var origin = ballPos
+        if stop.offside {
+            // O assistente levanta a bandeira na linha do penúltimo defensor; o rival cobra onde o atacante estava.
+            let defenders = bodies.filter { $0.home == stop.home && !$0.keeper }
+            let ownGoalX = stop.home ? 0.0 : Self.length
+            if let last = defenders.min(by: { abs($0.pos.x - ownGoalX) < abs($1.pos.x - ownGoalX) }) {
+                offsideLineX = last.pos.x
+                offsideUntil = time + 3.4
+            }
+            if let runner = body(stop.shooterID) { origin = runner.pos }
+        }
+        let spot = PitchVector(min(Self.length - 12, max(12, origin.x)), min(Self.width - 2, max(2, origin.y)))
         beginSetPiece(.freeKick, home: stop.home, spot: spot, scripted: true)
+        if stop.offside, setPiece != nil {
+            restartLabel = "Impedimento"
+            restartLabelUntil = time + 3.0
+        }
     }
 
     /// Escanteio da súmula sem chute antes: a bola vai ao canto do lado do ataque e a cobrança acontece.
@@ -1612,6 +1660,9 @@ final class PitchEngine {
         let width = Self.width
         if body.keeper {
             let goal = PitchVector(body.home ? 0 : length, width / 2)
+            if let current = plan, current.penalty, current.staged, current.home != body.home {
+                return PitchVector(goal.x + (body.home ? 0.6 : -0.6), width / 2)
+            }
             let proximity = max(0, min(1, 1 - ballPos.distance(to: goal) / 45))
             let dir = body.home ? 1.0 : -1.0
             let x = goal.x + dir * (2.0 + 6.0 * (1 - proximity))
@@ -1695,6 +1746,13 @@ final class PitchEngine {
             } else if let current = plan, current.shooterID == body.id, current.spotSet {
                 target = current.spot
                 topSpeed = 8.5
+            } else if let current = plan, current.penalty, current.staged, current.spotSet, !body.keeper {
+                // Todos esperam na meia-lua, fora da grande área e a mais de 9 m da marca.
+                let goalX = current.home ? length : 0
+                let dir = current.home ? 1.0 : -1.0
+                let slot = Double(body.id % 9) - 4
+                target = PitchVector(goalX - dir * (19.5 + Double(body.id % 2) * 1.6), width / 2 + slot * 4.6)
+                topSpeed = 6.8
             } else if carrierID == body.id {
                 let dir = body.home ? 1.0 : -1.0
                 let goalX = body.home ? length : 0
