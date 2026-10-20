@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 20/out/2026, 16:46 (Brasília). Checagem das 16:46 (20/out): nenhum run novo desde as 15:46. **1.1 (30) segue ativo (enviado e ativado às 14:17 BRT, TestFlight nº 46, `39452636558`, `release/1.1-30` @ `3b08e05`, todos os passos verdes).** O TestFlight nº 45 (`39448233498`, `66e0226`) foi cancelado (conclusão `cancelled`) às 12:54 BRT, na hora em que o outro agente publicou o commit `3b08e05` (correção do pênalti do jogo corrido). O teste `FootballF5UITests.testSettingsCanCreateAndRestoreCareerSlot`, que falhou no nº 44, passou no nº 46 (o passo `Test iPhone and iPad` ficou verde com o mesmo commit). A captura nº 77 (`39452753387`, `3b08e05`) passou. O 29 segue ativo (run nº 42). **Não dispare nada agora: a janela de dois dias do 30 termina em 22/out às 14:17 BRT.**
+Atualizado em 20/out/2026, 17:46 (Brasília). Checagem das 17:46 (20/out): nenhum run novo desde as 16:46. **1.1 (30) segue ativo (enviado e ativado às 14:17 BRT, TestFlight nº 46, `39452636558`, `release/1.1-30` @ `3b08e05`, todos os passos verdes).** O TestFlight nº 45 (`39448233498`, `66e0226`) foi cancelado (conclusão `cancelled`) às 12:54 BRT, na hora em que o outro agente publicou o commit `3b08e05` (correção do pênalti do jogo corrido). O teste `FootballF5UITests.testSettingsCanCreateAndRestoreCareerSlot`, que falhou no nº 44, passou no nº 46 (o passo `Test iPhone and iPad` ficou verde com o mesmo commit). A captura nº 77 (`39452753387`, `3b08e05`) passou. O 29 segue ativo (run nº 42). **Não dispare nada agora: a janela de dois dias do 30 termina em 22/out às 14:17 BRT.**
 
 ## Como usar quando você acordar
 
@@ -405,14 +405,14 @@ Nada abaixo foi compilado nem visto no aparelho. Quando o V passar no branch esc
 
 ## Pacote para o agente do App Store Connect
 
-**Atualização das 16:46 (20/10): o build 30 foi enviado e ativado às 14:17 BRT (run nº 46, `39452636558`, commit `3b08e05`, correção do pênalti). Não dispare nada agora. Não reenvie o 30: o número já foi consumido. A janela de dois dias do 30 vai até 22/10 às 14:17 BRT.**
+**Atualização das 17:46 (20/10): o build 30 foi enviado e ativado às 14:17 BRT (run nº 46, `39452636558`, commit `3b08e05`, correção do pênalti). Não dispare nada agora. Não reenvie o 30: o número já foi consumido. A janela de dois dias do 30 vai até 22/10 às 14:17 BRT.**
 
 Mensagem atual, para encaminhar ao agente que cuida do App Store Connect e do TestFlight (ele tem o GitHub):
 
 ```
 Projeto socialbot114-cell/ios-app-factory (app manager-futebol, Football). Siga nesta ordem e não altere código.
 
-Estado atual (16:46 BRT, 20/out): o build 1.1 (30) foi enviado e ativado no TestFlight interno às 14:17 BRT (run nº 46, `39452636558`, `release/1.1-30` @ `3b08e05`, artefato `football-release-1.1-30`, ID 12283558969). O 1.1 (29) segue ativo (run nº 42, `39368437580`, artefato `football-release-1.1-29`, ID 12243855241, às 02:46 BRT de 20/10). O nº 45 foi cancelado (`66e0226`). O 1.1 (28) segue ativo (run nº 41, artefato `football-release-1.1-28`, ID 12234304129). O 1.1 (27) segue ativo (run nº 39, ID 12222502023). O 1.1 (26) segue ativo (run nº 38, ID 12095765897). O 1.1 (25) segue ativo (run nº 37, ID 12088327778). O 1.1 (24) segue ativo (run nº 36, ID 12078738821). O 1.1 (23) segue ativo (run nº 35, ID 12070571361). Os builds 1.1 (22) e (21) seguem ativos (runs nº 33 e nº 31). O run nº 32 (`38752128781`) falhou por número repetido: não reenvie o 21. Não dispare nada agora.
+Estado atual (17:46 BRT, 20/out): o build 1.1 (30) foi enviado e ativado no TestFlight interno às 14:17 BRT (run nº 46, `39452636558`, `release/1.1-30` @ `3b08e05`, artefato `football-release-1.1-30`, ID 12283558969). O 1.1 (29) segue ativo (run nº 42, `39368437580`, artefato `football-release-1.1-29`, ID 12243855241, às 02:46 BRT de 20/10). O nº 45 foi cancelado (`66e0226`). O 1.1 (28) segue ativo (run nº 41, artefato `football-release-1.1-28`, ID 12234304129). O 1.1 (27) segue ativo (run nº 39, ID 12222502023). O 1.1 (26) segue ativo (run nº 38, ID 12095765897). O 1.1 (25) segue ativo (run nº 37, ID 12088327778). O 1.1 (24) segue ativo (run nº 36, ID 12078738821). O 1.1 (23) segue ativo (run nº 35, ID 12070571361). Os builds 1.1 (22) e (21) seguem ativos (runs nº 33 e nº 31). O run nº 32 (`38752128781`) falhou por número repetido: não reenvie o 21. Não dispare nada agora.
 
 1. Não dispare nada agora: o build 30 acabou de ser ativado (run nº 46). O 29, o 28, o 27, o 26, o 25, o 24, o 23 e o 22 seguem ativos (runs nº 42, nº 41, nº 39, nº 38, nº 37, nº 36, nº 35 e nº 33). Não reenvie nenhum deles.
 2. Agora: preencha o campo "O que testar" do 30 com o texto da seção "Texto do TestFlight para o 1.1 (30)" abaixo. Confira também os do 29, 28, 27, 26 e 25 (seções de mesmo nome), se ainda estiverem vazios.
