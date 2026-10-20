@@ -242,6 +242,30 @@ final class FootballPitchEngineTests: XCTestCase {
         XCTAssertEqual(a.engine.stats, b.engine.stats)
     }
 
+    func testFreeKicksAreNeverTakenOnTheGoalLine() {
+        let rig = Rig()
+        var spots: [PitchVector] = []
+        var wallSeen = false
+        for round in 0..<14 {
+            rig.run(seconds: 18)
+            rig.input.events.append(MatchEvent(minute: 5 + round, kind: .yellowCard, teamID: round % 2 == 0 ? 1 : 101, text: "Cartão", playerID: nil))
+            rig.run(until: 25) { engine in
+                if engine.currentRestart == .freeKick {
+                    spots.append(engine.ballPos)
+                    return false
+                }
+                return !spots.isEmpty && engine.currentRestart == nil
+            }
+            _ = wallSeen
+            wallSeen = true
+        }
+        XCTAssertGreaterThan(spots.count, 5, "Cartões viram faltas cobradas")
+        for spot in spots {
+            XCTAssertGreaterThanOrEqual(spot.x, 11.9, "Falta na linha de fundo")
+            XCTAssertLessThanOrEqual(spot.x, PitchEngine.length - 11.9, "Falta na linha de fundo")
+        }
+    }
+
     func testPrintCalibration() {
         var lines: [String] = []
         for (speed, share) in [(1.0, 0.5), (2.0, 0.65), (4.0, 0.35)] {

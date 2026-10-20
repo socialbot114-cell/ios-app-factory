@@ -1323,7 +1323,8 @@ final class PitchEngine {
 
     /// Falta, cartão, lesão ou impedimento da súmula: o rival cobra onde a bola está, com barreira quando perto da área.
     private func beginStoppage(_ stop: Plan) {
-        let spot = PitchVector(min(Self.length - 3, max(3, ballPos.x)), min(Self.width - 2, max(2, ballPos.y)))
+        // Falta dentro da área seria pênalti (a súmula conta à parte): a cobrança da jogada corrida nunca fica na linha de fundo.
+        let spot = PitchVector(min(Self.length - 12, max(12, ballPos.x)), min(Self.width - 2, max(2, ballPos.y)))
         beginSetPiece(.freeKick, home: stop.home, spot: spot, scripted: true)
     }
 

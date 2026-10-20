@@ -347,7 +347,7 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 - Relógio pelo campo: cada minuto vale 2,5 s de jogo; 2× e 4× aceleram o campo e os minutos na mesma proporção (antes o relógio andava 6× e o campo 2,2×). Lances da súmula seguram o relógio.
 - O motor do campo foi para o Core (testável no Linux), com 12 testes novos.
 
-**Limites honestos:** sem revisão em aparelho; lateral e tiro de meta comuns acontecem de 6 a 18 vezes por tempo de campo (calibrado por simulação, não por jogos reais); impedimento e pênalti em jogo corrido seguem só na narração.
+**Limites honestos:** sem revisão em aparelho; laterais comuns acontecem de 4 a 11 vezes por jogo inteiro simulado (225 s de campo; calibrado por simulação, não por jogos reais, e abaixo dos ~40 de um jogo real para não virar festival de bola parada); impedimento e pênalti em jogo corrido seguem só na narração.
 
 ## 7. Ordem sugerida e dependências
 
