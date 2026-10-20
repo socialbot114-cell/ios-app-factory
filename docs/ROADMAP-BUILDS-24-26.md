@@ -370,6 +370,14 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 5. `football-testflight.yml` (`-f version=1.1 -f build=N`): o gate roda a navegação da partida e os testes de iPhone e iPad antes de archive, upload e ativação.
 6. Artefato antes e depois; memória do projeto atualizada com o run e o commit.
 
+### 6g. Build 29: sons
+
+- Aprovado pelo usuário em 20/10/2026 após o teste do 1.1 (28) no aparelho. Foram gerados 8 efeitos (17 créditos, cerca de R$ 2,20) em `Resources/Sounds/sfx-*.mp3`: apito curto, apito final, pontapé inicial, gol, torcida de fundo, quase gol, chute e bola na trave.
+- Ligações: apito no intervalo e em cartão; apito final; pontapé inicial ao dar play no 1º minuto; gol; trave; defesa e chance com xG a partir de 0,2 (quase gol); escanteio e pênalti (chute); torcida de fundo em repetição, baixa, só no modo "Ver jogo" com a bola rolando.
+- Lances pequenos têm trava de 1 s entre si para não se atropelarem a 2× e 4×; gol e apitos tocam sempre. Tudo respeita a opção "Sons" e não toca em testes nem capturas.
+- Inclui a correção da falta na linha de fundo (72a8fb2).
+- **Limite honesto:** os sons foram gerados por IA e não foram ouvidos no aparelho; volume e mistura podem pedir ajuste.
+
 ## 9. Limites do que se sabe
 
 - A rodada no aparelho **nunca foi feita**. Tudo vem de simulador, testes e simulações.
@@ -381,7 +389,7 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 
 1. Quando mesclar `release/1.1-22` a `release/1.1-25` em `feature/entrega-a-ritmo`?
 2. O que exatamente quebrava no onboarding e na virada de temporada? (Ainda não confirmado.)
-3. Sons (SOM-01): posso pedir a estimativa de custo da ferramenta de áudio conectada? Nenhum arquivo é gerado sem a sua aprovação.
+3. Sons (SOM-01): resolvido no build 29 (ver 6g).
 4. Live Activity e widget (IOS-01 e IOS-02): a conta Apple e o projeto Xcode permitem adicionar as extensões?
 5. Tela "Hoje" (CLR-03): vale a decisão pendente desde o 1.1 (21)?
 6. Loja (LOJ-01): ligar a compra de verdade ou retirar da tela inicial?

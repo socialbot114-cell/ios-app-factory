@@ -159,14 +159,21 @@ struct FootballLiveMatchView: View {
                 showGoalNotices(upTo: minute)
                 if minute == 45 { playSound(.whistle) }
             }
+            .onChange(of: live?.sim.events.count ?? 0) { old, new in
+                if new > old, let event = live?.sim.events.last { playEventSound(event) }
+            }
             .onChange(of: totalGoals) { old, new in
                 if new > old { playSound(.goal) }
             }
             .onChange(of: matchFinished) { _, finished in
-                if finished { playSound(.whistle) }
+                if finished {
+                    FootballSounds.stopAmbience()
+                    playSound(.whistleFinal)
+                }
             }
             .onChange(of: running) { _, isRunning in
                 if isRunning, (live?.sim.minute ?? 0) <= 1 { playSound(.kickoff) }
+                updateAmbience(running: isRunning)
             }
     }
 
@@ -176,7 +183,10 @@ struct FootballLiveMatchView: View {
                 FootballSubstitutionSheet(career: $career, outgoingID: nil)
             }
             .onAppear(perform: onAppearStart)
-            .onDisappear { tickTask?.cancel() }
+            .onDisappear {
+                tickTask?.cancel()
+                FootballSounds.stopAmbience()
+            }
     }
 
     private var totalGoals: Int {
@@ -743,6 +753,24 @@ struct FootballLiveMatchView: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("live-other-goal")
         }
+    }
+
+    /// Efeito do lance recém-narrado: trave, defesa e finalização perdida, escanteio (cobrança) e cartão.
+    private func playEventSound(_ event: MatchEvent) {
+        switch event.kind {
+        case .woodwork: playSound(.post)
+        case .save: playSound(.nearMiss)
+        case .chance where (event.xg ?? 0) >= 0.2: playSound(.nearMiss)
+        case .corner, .penaltyAwarded: playSound(.kick)
+        case .redCard, .yellowCard: playSound(.whistle)
+        default: break
+        }
+    }
+
+    /// Torcida de fundo só com a bola rolando e a opção "Sons" ligada.
+    private func updateAmbience(running isRunning: Bool) {
+        FootballSounds.enabled = career.world.phone.preferences.soundsOn
+        if isRunning, viewMode == .watch { FootballSounds.startAmbience() } else { FootballSounds.stopAmbience() }
     }
 
     /// Toca o efeito se a opção "Sons" está ligada e o arquivo existe no app.
