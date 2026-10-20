@@ -1,6 +1,6 @@
 # Pacote para o outro agente — disparar, acompanhar e relatar
 
-Atualizado em 19/out/2026, 23:46 (Brasília). Checagem das 23:46 (19/out): sem run novo desde as 22:46. **1.1 (28) enviado e ativado no TestFlight interno às 22:42 BRT de 19/out** (Football TestFlight nº 41, `39346361273`, `release/1.1-28` @ `21ed821`, artefato `football-release-1.1-28`, ID 12234304129; todos os passos verdes). **O 28 subiu pouco mais de quatro horas depois do 27, antes da janela de dois dias do 27 (até 21/out às 18:20 BRT).** O disparo foi pela conta do dono às 21:00 BRT. O 27 segue ativo (run nº 39). O head `release/1.1-28` está em `72a8fb2`, com commits que não entraram no 28. Não dispare nada agora.
+Atualizado em 20/out/2026, 00:46 (Brasília). Checagem das 00:46 (20/out): sem run novo desde as 23:46. **1.1 (28) enviado e ativado no TestFlight interno às 22:42 BRT de 19/out** (Football TestFlight nº 41, `39346361273`, `release/1.1-28` @ `21ed821`, artefato `football-release-1.1-28`, ID 12234304129; todos os passos verdes). **O 28 subiu pouco mais de quatro horas depois do 27, antes da janela de dois dias do 27 (até 21/out às 18:20 BRT).** O disparo foi pela conta do dono às 21:00 BRT. O 27 segue ativo (run nº 39). O head `release/1.1-28` está em `72a8fb2`, com commits que não entraram no 28. Não dispare nada agora.
 
 ## Como usar quando você acordar
 
