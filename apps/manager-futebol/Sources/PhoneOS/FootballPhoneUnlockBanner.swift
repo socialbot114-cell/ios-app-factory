@@ -28,6 +28,7 @@ struct PhoneUnlockBanner: View {
                         .font(.title3).foregroundStyle(.white)
                         .frame(width: 42, height: 42)
                         .background((app?.tint ?? FootballTheme.accent).gradient, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                        .modifier(FootballIconPulse(active: true, classic: rhythm == .classic))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(eyebrow).font(.caption2.weight(.heavy)).foregroundStyle(.secondary)
                         Text(notice.title).font(.subheadline.weight(.bold)).lineLimit(1)
