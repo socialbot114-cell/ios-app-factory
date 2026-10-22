@@ -59,9 +59,35 @@ Achados:
 5. **Aberto, baixa gravidade.** A revelação da peneira termina só em "Fechar", e as linhas não abrem o jovem (`FootballAcademyView.swift:236-263`).
 6. **Fora do PIL-01, sem confirmação.** Ações destrutivas sem confirmação: excluir briefing (`FootballRecruitmentView.swift:211`), "Dispensar" no Base (`FootballMarketViews.swift:329`) e `FootballAcademyView.swift:128`. A dispensa de jovem da academia já confirma (`:55-63`, `:429-437`).
 
+## Lote 3: ajustes e detalhe do jogador
+
+Mesmo método. `Elenco/FootballPlayerViews.swift` é o detalhe do jogador com três folhas (renovação, proposta a outro clube e empréstimo). A lista do elenco fica em `Tatica/FootballSquadView.swift`, ainda não auditada.
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Ajustes, padrão | Seletor de dificuldade | Não |
+| Ajustes, desafio ativo | Dificuldade desabilitada, com motivo. O primeiro controle habilitado fica abaixo. | Não |
+| Ajustes, lista de cenários | "Aceitar desafio" fica bem abaixo da dobra | Não |
+| Slots de salvamento, slot ativo | "Recomeçar", o único controle (com confirmação) | Não |
+| Detalhe, jogador rival | Só "Fechar". "Fazer proposta" fica abaixo do perfil e dos atributos. | Não |
+| Detalhe, próprio, renovável | "Negociar renovação" (perto de 500 a 600 pt) | Não |
+| Detalhe, próprio, titular ou emprestado | Nenhuma: as ações ficam no bloco "Ações", no fim | Não |
+| Detalhe, jogador livre | Nenhuma: só um texto que aponta para a aba Mercado | Não |
+| Renovação, contraproposta | "Aceitar contraproposta" | Não |
+| Renovação, sem pedido ou bloqueada | Nenhuma: só o motivo em texto | Não, há "Fechar" |
+| Proposta a outro clube | "Enviar proposta" (perto de 550 a 610 pt) | Não |
+| Empréstimo, sem destinos | Nenhuma: só o título da seção, sem motivo | Não, há "Fechar" |
+
+Achados:
+1. **Corrigido sem compilador.** O formulário de proposta a outro clube preenchia valor, salário e contrato só na última seção. Com a rolagem preguiçosa, o "Valor" aparecia como zero até o usuário descer. Agora o preenchimento acontece quando a primeira seção aparece, com a guarda `didLoad` (`Sources/Apps/Elenco/FootballPlayerViews.swift`, `FootballBidSheet`).
+2. **Aberto.** No detalhe do jogador, as ações ficam depois do perfil e dos atributos, no bloco "Ações". Para jogador rival, "Fazer proposta" fica bem abaixo da dobra. Sugestão: uma linha de ação logo abaixo do cabeçalho.
+3. **Aberto.** Empréstimo sem destinos mostra só o título da seção, sem motivo nem ação. Sugestão: explicar por que a lista está vazia.
+4. **Aberto.** Renovação sem pedido ou bloqueada mostra texto ou um formulário em branco, sem próximo passo. A mesma folha abre pela caixa de mensagens e pela oferta de fim de temporada.
+5. **Fora do PIL-01, sem confirmação.** "Desistir da conversa" encerra a renovação sem perguntar (`FootballPlayerViews.swift:390-393`). "Aceitar desafio" começa uma carreira nova com um toque (`Ajustes/FootballModesView.swift:30-37`). A venda já confirma (`:301-316`).
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os apps que faltam (Ajustes, Elenco e os demais).
+- Auditar a lista do elenco (`Sources/Apps/Tatica/FootballSquadView.swift`) e os demais apps.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.

@@ -471,6 +471,14 @@ struct FootballBidSheet: View {
                             Label("Janela fechada", systemImage: "lock.fill").font(.caption).foregroundStyle(.red)
                         }
                     }
+                    .onAppear {
+                        guard !didLoad else { return }
+                        didLoad = true
+                        fee = career.askingPrice(for: player)
+                        let ask = career.joiningAsk(for: player)
+                        wage = ask.wage
+                        years = ask.years
+                    }
                     Section("Proposta ao clube") {
                         Stepper("Valor: \(FootballFormat.money(fee))", value: $fee, in: 0...80_000_000, step: 250_000)
                         Stepper("Parcelas: \(installments)", value: $installments, in: 1...4)
@@ -489,14 +497,6 @@ struct FootballBidSheet: View {
                     if let message { Section { Text(message).font(.subheadline) } }
                     Section {
                         Button("Enviar proposta") { submit() }.accessibilityIdentifier("bid-submit")
-                    }
-                    .onAppear {
-                        guard !didLoad else { return }
-                        didLoad = true
-                        fee = career.askingPrice(for: player)
-                        let ask = career.joiningAsk(for: player)
-                        wage = ask.wage
-                        years = ask.years
                     }
                 }
             }
