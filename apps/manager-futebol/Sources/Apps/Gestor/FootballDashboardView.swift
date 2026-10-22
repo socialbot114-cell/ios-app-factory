@@ -96,6 +96,8 @@ struct FootballDashboardView: View {
         .safeAreaInset(edge: .bottom) {
             if career.liveMatch == nil, let step = career.matchdayStep {
                 nextStepBar(step)
+            } else if let pinned = pinnedStateAction {
+                pinnedBar(title: pinned.title, symbol: pinned.symbol, id: pinned.id, action: pinned.action)
             }
         }
         .overlay(alignment: .top) { quickSummaryToast }
@@ -300,6 +302,29 @@ struct FootballDashboardView: View {
             .buttonStyle(FactoryPrimaryButtonStyle())
             .accessibilityIdentifier("midweek-close")
         }
+    }
+
+    /// Ação fixa para os estados sem passo do dia, na mesma ordem em que o corpo escolhe o painel.
+    /// Na demissão não há barra: escolher um dos clubes cabe ao usuário (PIL-01).
+    private var pinnedStateAction: (title: String, symbol: String, id: String, action: () -> Void)? {
+        if career.isFired { return nil }
+        if career.offseason != nil { return ("Continuar", "play.fill", "pinned-resume-offseason", { showsOffseason = true }) }
+        if career.liveMatch != nil { return ("Voltar à partida", "play.fill", "pinned-resume-match", onPlayLive) }
+        if career.nextUserFixture == nil, career.isSeasonComplete {
+            return ("Encerrar temporada", "arrow.right.circle.fill", "pinned-end-season", { if career.beginOffseason() { showsOffseason = true } })
+        }
+        return nil
+    }
+
+    private func pinnedBar(title: String, symbol: String, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol).frame(maxWidth: .infinity)
+        }
+        .buttonStyle(FactoryPrimaryButtonStyle())
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+        .accessibilityIdentifier(id)
     }
 
     private func nextStepBar(_ step: MatchdayStep) -> some View {
