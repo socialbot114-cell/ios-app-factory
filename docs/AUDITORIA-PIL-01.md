@@ -157,9 +157,28 @@ Achados:
 2. **Aberto, baixa gravidade.** O aporte pessoal gasta o dinheiro do treinador sem confirmação (`:60-66`). Hoje só avisa quando o caixa pessoal não cobre (`:62`).
 3. **Aberto, baixa gravidade.** Em "Clube", a ilustração do estádio (190 pt, `FootballClubView.swift:47`) empurra "Gestão do clube" (`:139-146`) para perto da dobra em celulares pequenos. Sugestão: subir a gestão para logo abaixo do cabeçalho e reduzir a imagem.
 
+## Lote 8: painéis do banco, da diretoria e dos arcos
+
+Mesmo método, com leitura de `Banco/FootballCoachLoanView.swift` (57 linhas), `Banco/FootballStatementsPanel.swift` (90), `Banco/FootballCashProjectionView.swift` (193), `Clube/FootballBoardFinancePanels.swift` (50) e `Clube/FootballStoryArcPanel.swift` (88). Posições estimadas (cerca de ±50 pt).
+
+| Painel e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Aportes a devolver, com aporte ativo | "Perdoar o saldo", com confirmação | Não |
+| Extratos, com lançamentos | Seletor Clube/Treinador; linhas com origem abrem o detalhe | Não |
+| Extratos, sem lançamentos | Só o seletor e o saldo, sem texto de vazio | Não |
+| Projeção de caixa | "Simular contratação ou obra", fechado por padrão. O resumo é só leitura. | Não |
+| Diretoria: avaliação e obra | Nenhuma: painéis de leitura | Não |
+| Arcos abertos, em Alertas | Escolhas do arco e "Pedir informação", no topo da tela de acontecimentos | Não, mas um arco ocupa cerca de 500 a 600 pt |
+
+Achados:
+1. **Aberto, média.** Em Alertas, um arco aberto ocupa cerca de 500 a 600 pt. As escolhas ficam no limite da dobra em telas pequenas (`FootballStoryArcPanel.swift:32-66`). Esta é a altura que o lote 5 não tinha verificado. Sugestão: mostrar as três escolhas numa linha compacta, com a explicação atrás de um toque.
+2. **Aberto, baixa gravidade.** Decisões de arco são imediatas, sem confirmação (`FootballStoryArcPanel.swift:52`). São decisões de jogo, com prazo, mas não há como desfazê-las. Decisão sua: pedir confirmação ou não.
+3. **Aberto, baixa gravidade.** Sem lançamentos, o painel de extratos mostra só o seletor e o saldo, sem texto de vazio (`FootballStatementsPanel.swift:49-57`). Linhas sem origem ficam desabilitadas, sem explicação (`:75`).
+4. **Reforça o lote 7.** No Banco, a ordem é projeção, aportes e extratos. A primeira ação fica abaixo da dobra: o simulador da projeção (`FootballCashProjectionView.swift:21-26`) e o aporte do treinador (`FootballFinanceView.swift:56-68`).
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os painéis de empréstimo, projeção, extratos e diretoria, o `FootballStoryArcPanel` e os demais apps.
+- Auditar os demais apps: Chuteira, Contatos, Lendas, Loja, Marca, Metas, Negócios, Palpite, Rodada, Troféus e Vida.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
