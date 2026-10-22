@@ -42,7 +42,7 @@ struct FootballContactTopicsView: View {
             HStack {
                 Button("Aceitar") { onNote(career.answerContactRequest(request.id, accept: true) ?? (block ?? "Não foi possível.")) }
                     .buttonStyle(.borderedProminent).disabled(block != nil)
-                Button("Recusar") { onNote(career.answerContactRequest(request.id, accept: false) ?? "") }
+                Button("Recusar") { onNote(career.answerContactRequest(request.id, accept: false) ?? "Este pedido já não está aberto.") }
                     .buttonStyle(.bordered)
             }
             .font(.caption)

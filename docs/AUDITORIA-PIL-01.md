@@ -176,9 +176,31 @@ Achados:
 3. **Aberto, baixa gravidade.** Sem lançamentos, o painel de extratos mostra só o seletor e o saldo, sem texto de vazio (`FootballStatementsPanel.swift:49-57`). Linhas sem origem ficam desabilitadas, sem explicação (`:75`).
 4. **Reforça o lote 7.** No Banco, a ordem é projeção, aportes e extratos. A primeira ação fica abaixo da dobra: o simulador da projeção (`FootballCashProjectionView.swift:21-26`) e o aporte do treinador (`FootballFinanceView.swift:56-68`).
 
+## Lote 9: metas, troféus, lendas, loja e contatos
+
+Mesmo método, com leitura de `Metas/FootballQuestsView.swift` e `FootballGoalsPanels.swift`, `Trofeus/FootballAchievementsView.swift` e `FootballLegacyPanels.swift`, `Lendas/FootballLegendsView.swift`, `Loja/FootballStoreView.swift`, e `Contatos/FootballContactsView.swift` e `FootballContactRelationsView.swift`. Posições estimadas (cerca de ±50 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Metas | "Adotar uma meta" (menu), dentro do painel de metas, logo abaixo do topo | Não |
+| Troféus, com linha do tempo longa | Nenhuma: a linha do tempo (até 20 entradas) vem antes da galeria | Não |
+| Conquista desbloqueada | "Destacar no perfil" e o compartilhamento | Não |
+| Conquista bloqueada | Nenhuma: só o progresso | Não, há "Voltar" |
+| Lendas, com pacote pendente | "Abrir pacote", no topo | Não |
+| Lendas, sem pacote | "Joga esta temporada" e os cartões da coleção | Não |
+| Loja | Nenhuma: vitrine sem compra nesta versão | Não, há "Voltar" |
+| Contatos | "Ver ficha" e a ação do primeiro contato | Não |
+
+Achados:
+1. **Aberto, média.** Em Troféus, a linha do tempo (até 20 entradas) fica antes da galeria. Abrir uma conquista exige rolar bastante quando a carreira já tem história (`FootballAchievementsView.swift:19-20`). Sugestão: galeria antes da linha do tempo, ou mostrar as cinco últimas entradas com "ver todas".
+2. **Corrigido sem compilador.** "Destacar no perfil" ficava habilitado com o limite de destaques cheio, e o toque não fazia nada, porque `setHighlight` devolve falso. A dica abaixo já explicava, mas o botão parecia funcionar. Agora fica desabilitado nesse caso (`FootballLegacyPanels.swift`, `FootballTrophyDetailView`).
+3. **Corrigido sem compilador.** "Recusar" num pedido que já não estava aberto deixava o aviso em branco, porque a resposta era nula. Agora mostra "Este pedido já não está aberto." (`FootballContactRelationsView.swift:45`).
+4. **Aberto, baixa gravidade.** A Loja não tem ação nenhuma. É vitrine sem compra nesta versão, de propósito. Quando a compra for ligada, a ação principal precisa ficar no topo do cartão.
+5. **Aberto, baixa gravidade.** "Trocar por outra" troca uma meta sem confirmação (`FootballGoalsPanels.swift:20`). Decisão sua: pedir confirmação ou não.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Chuteira, Contatos, Lendas, Loja, Marca, Metas, Negócios, Palpite, Rodada, Troféus e Vida.
+- Auditar os demais apps: Chuteira, Marca, Negócios, Palpite, Rodada e Vida.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
