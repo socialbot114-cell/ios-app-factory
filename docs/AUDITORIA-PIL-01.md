@@ -85,9 +85,27 @@ Achados:
 4. **Aberto.** Renovação sem pedido ou bloqueada mostra texto ou um formulário em branco, sem próximo passo. A mesma folha abre pela caixa de mensagens e pela oferta de fim de temporada.
 5. **Fora do PIL-01, sem confirmação.** "Desistir da conversa" encerra a renovação sem perguntar (`FootballPlayerViews.swift:390-393`). "Aceitar desafio" começa uma carreira nova com um toque (`Ajustes/FootballModesView.swift:30-37`). A venda já confirma (`:301-316`).
 
+## Lote 4: elenco e tática
+
+Mesmo método. `Tatica/FootballSquadView.swift` (226 linhas) e `FootballTacticalPlansPanel.swift` (45 linhas), lidos por inteiro. Posições estimadas (cerca de ±50 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Elenco, clube selecionado, topo | Seletor de formação e o campo (toque num titular para trocá-lo), logo abaixo do cabeçalho e do plano de jogo | Não |
+| Elenco, lista de jogadores | Nenhuma no topo: a lista por posição é a última seção, depois de cinco painéis | Não |
+| Planos A/B, sem plano salvo | "Salvar o atual", cerca de 900 pt, abaixo da dobra | Não |
+| Planos A/B, com plano salvo, partida em andamento | "Aplicar" desabilitado, sem motivo visível | Não |
+| Sem clube selecionado | Corpo vazio. O início mostra a configuração antes, então não deve ser alcançado. | Não |
+
+Achados:
+1. **Aberto, baixa gravidade.** A lista de jogadores fica no fim da tela (`FootballSquadView.swift:59-73`). Para abrir um reserva é preciso rolar até o fim, porque titulares abrem pelo campo. Sugestão: um atalho "Reservas" perto da escalação.
+2. **Aberto.** "Aplicar" dos planos A/B fica desabilitado durante a partida sem explicação (`FootballTacticalPlansPanel.swift:29`). É o mesmo padrão dos botões desabilitados do mercado e da academia.
+3. **Aberto, fora do PIL-01.** "Escalação ideal" substitui a escalação inteira sem perguntar (`FootballSquadView.swift:35`). Não é destrutivo, mas desfaz a escalação atual sem confirmação.
+4. **Sem mudança.** O seletor de formação é a primeira escolha da tela, e o campo funciona como ação. Passa em PIL-01.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar a lista do elenco (`Sources/Apps/Tatica/FootballSquadView.swift`) e os demais apps.
+- Auditar os demais apps (Alertas, Banco, Clube, Liga, Mensagens e outros).
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
