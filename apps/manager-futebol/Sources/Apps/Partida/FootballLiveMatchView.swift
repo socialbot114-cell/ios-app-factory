@@ -462,11 +462,18 @@ struct FootballLiveMatchView: View {
             text = "Derrota. Hora de rever o plano."
             tint = .red
         }
+        // Rótulo da faixa (ANI-03): só na vitória grande e na goleada.
+        let label: String? = result == .win && victory != .regular ? victory.headline : nil
         return HStack(spacing: 8) {
             Image(systemName: result == .win ? "star.fill" : (result == .draw ? "equal.circle.fill" : "xmark.circle.fill"))
                 .accessibilityHidden(true)
                 .modifier(FootballIconPulse(active: result == .win, classic: career.world.phone.preferences.rhythmMode == .classic))
-            Text(text)
+            VStack(alignment: .leading, spacing: 2) {
+                if let label {
+                    Text(label).font(.caption2.weight(.heavy)).opacity(0.85)
+                }
+                Text(text)
+            }
         }
             .font(.headline)
             .foregroundStyle(.white)
