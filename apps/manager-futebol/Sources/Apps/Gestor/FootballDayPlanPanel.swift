@@ -5,6 +5,10 @@ struct FootballDayPlanPanel: View {
     let career: FootballCareer
     var onShowPress: () -> Void = {}
     var onNavigate: (PhoneApp) -> Void = { _ in }
+    /// Linhas de rotina fazem a mesma ação do botão fixo do Gestor (PIL-01).
+    var onPlay: () -> Void = {}
+    var onAdvance: () -> Void = {}
+    var onEndSeason: () -> Void = {}
 
     var body: some View {
         let plan = career.dayPlan()
@@ -12,8 +16,15 @@ struct FootballDayPlanPanel: View {
             FactoryPanel(title: "Plano do dia", systemImage: "sparkles") {
                 ForEach(Array(plan.enumerated()), id: \.element.id) { index, item in
                     Button {
-                        if item.id == "press" { onShowPress() }
-                        else if let app = PhoneApp(rawValue: item.appID) { onNavigate(app) }
+                        switch item.id {
+                        case "press": onShowPress()
+                        case "play": onPlay()
+                        case "advance": onAdvance()
+                        case "season-end": onEndSeason()
+                        default:
+                            if item.id.hasPrefix("prep-") { onNavigate(.squad) }
+                            else if let app = PhoneApp(rawValue: item.appID), app != .manager { onNavigate(app) }
+                        }
                     } label: {
                         HStack(alignment: .top, spacing: 10) {
                             Text("\(index + 1)").font(.caption.weight(.heavy)).foregroundStyle(.white)

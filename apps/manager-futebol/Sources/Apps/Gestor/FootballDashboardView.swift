@@ -134,7 +134,8 @@ struct FootballDashboardView: View {
     }
 
     private var dayPlanPanel: some View {
-        FootballDayPlanPanel(career: career, onShowPress: onShowPress, onNavigate: onNavigate)
+        FootballDayPlanPanel(career: career, onShowPress: onShowPress, onNavigate: onNavigate, onPlay: onPlayLive,
+                             onAdvance: { requestQuickSimulation() }, onEndSeason: { if career.beginOffseason() { showsOffseason = true } })
     }
 
     private var agendaPanel: some View {
