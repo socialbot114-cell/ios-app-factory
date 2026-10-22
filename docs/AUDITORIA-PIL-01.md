@@ -141,9 +141,25 @@ Achados:
 2. **Aberto, baixa gravidade.** A copa sem chave mostra só o texto sobre as próximas fases, sem ação (`:246-250`). Sugestão: dizer quando será o sorteio e oferecer um atalho para a tabela.
 3. **Aberto, baixa gravidade.** O relatório e o pré-jogo não têm ação para frente acima da dobra. Os links dos clubes ficam no fim da página (`:382-389`). Sugestão: levar os links para o cabeçalho.
 
+## Lote 7: banco e clube (telas principais)
+
+Mesmo método, com leitura de `Banco/FootballFinanceView.swift` (256 linhas) e `Clube/FootballClubView.swift` (221 linhas). Os painéis que essas telas chamam em outros arquivos (empréstimo, projeção, extratos, diretoria) não foram auditados. Posições estimadas (cerca de ±50 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Banco, padrão | Nenhuma: a tela abre com seis painéis de leitura (visão geral, receitas, despesas, comparação, saldo e orçamento) | Não |
+| Banco, aporte do treinador | "+ R$ 100 mil", "+ R$ 250 mil" e "+ R$ 500 mil", bem abaixo da dobra | Não |
+| Clube, celular de 6,1 pol. ou maior | "Gestão do clube" (três links), logo depois do cabeçalho e do estádio | Não |
+| Clube, celular pequeno | Os links ficam perto da borda da dobra | Não |
+
+Achados:
+1. **Aberto, média.** O Banco não tem ação visível sem rolar. A tela abre com seis painéis de leitura, e o aporte do treinador fica bem abaixo (`FootballFinanceView.swift:56-68`). Sugestão: pôr uma linha de ação logo abaixo da visão geral, com empréstimo ou aporte conforme o risco, e deixar os gráficos depois.
+2. **Aberto, baixa gravidade.** O aporte pessoal gasta o dinheiro do treinador sem confirmação (`:60-66`). Hoje só avisa quando o caixa pessoal não cobre (`:62`).
+3. **Aberto, baixa gravidade.** Em "Clube", a ilustração do estádio (190 pt, `FootballClubView.swift:47`) empurra "Gestão do clube" (`:139-146`) para perto da dobra em celulares pequenos. Sugestão: subir a gestão para logo abaixo do cabeçalho e reduzir a imagem.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Banco, Clube, `FootballStoryArcPanel` e os outros.
+- Auditar os painéis de empréstimo, projeção, extratos e diretoria, o `FootballStoryArcPanel` e os demais apps.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
