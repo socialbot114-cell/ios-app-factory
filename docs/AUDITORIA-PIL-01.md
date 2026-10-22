@@ -103,9 +103,27 @@ Achados:
 3. **Aberto, fora do PIL-01.** "Escalação ideal" substitui a escalação inteira sem perguntar (`FootballSquadView.swift:35`). Não é destrutivo, mas desfaz a escalação atual sem confirmação.
 4. **Sem mudança.** O seletor de formação é a primeira escolha da tela, e o campo funciona como ação. Passa em PIL-01.
 
+## Lote 5: alertas, painel da liga e mensagens
+
+Mesmo método, com leitura direta dos três arquivos. Não cobri `Liga/FootballLeagueViews.swift` (502 linhas) nem o painel de arcos de história (`FootballStoryArcPanel`), que a tela de alertas usa no topo.
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Alertas, com acontecimento pendente | Primeira escolha, logo depois do painel de arcos (altura não verificada) | Não |
+| Alertas, "Tudo calmo" | Nenhuma: só texto | Não, a saída é a navegação |
+| Liga, painel de análise | Nenhuma: painel só de leitura | Não, se a tela-mãe tiver ação (não auditada) |
+| Mensagens, lista de conversas | Busca, lápis "Nova conversa" e grupos (escolhas) | Não |
+| Mensagens, conversa com resposta pendente | Ações do cartão laranja, no fim da rolagem (a conversa rola até o fim ao abrir), e os atalhos fixos na base | Não |
+| Mensagens, conversa só de leitura | Texto no rodapé; ações só nas mensagens | Não, há "Voltar", salvo quando a conversa abre por notificação |
+
+Achados:
+1. **Corrigido sem compilador.** "Convencer a ficar" ignorava o retorno de `promiseStarts`, que é `Bool`. Quando a promessa não podia ser criada, nada acontecia e nada avisava. Agora segue o padrão de "Prometer 3 jogos" e mostra o aviso (`Sources/Apps/Mensagens/FootballInboxView.swift`, cartão de atleta que quer sair).
+2. **Aberto, decisão do usuário.** "Listar para venda" põe o atleta à venda sem confirmação (`FootballInboxView.swift:400-403`). "Recusar" recusa a proposta sem confirmação (`:417-420`). "Aceitar" já pede confirmação (`:53-65`). Sugestão: aplicar o mesmo padrão a "Listar para venda" e "Recusar".
+3. **Aberto, baixa gravidade.** Numa conversa aberta por notificação, o botão "Voltar" some (`:204`). A saída fica com a navegação externa, que não foi auditada aqui.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps (Alertas, Banco, Clube, Liga, Mensagens e outros).
+- Auditar os demais apps: Banco, Clube, a tabela da Liga (`Liga/FootballLeagueViews.swift`), `FootballStoryArcPanel` e os outros.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.

@@ -401,7 +401,9 @@ struct FootballInboxView: View {
                         career.setListed(playerID: playerID, listed: true)
                         career.resolveMessages(for: playerID, kinds: [.playerWantsOut])
                     }
-                    action("Convencer a ficar", "hand.thumbsup.fill", id: "msg-stay-\(message.id)") { career.promiseStarts(playerID: playerID, starts: 2) }
+                    action("Convencer a ficar", "hand.thumbsup.fill", id: "msg-stay-\(message.id)") {
+                        if !career.promiseStarts(playerID: playerID, starts: 2) { onAlert("Já existe um compromisso ou a conversa não está disponível agora.") }
+                    }
                     action("Ignorar", "xmark", id: "msg-dismiss-\(message.id)") { career.dismissRequest(playerID: playerID) }
                 }
             case .playerContract:
