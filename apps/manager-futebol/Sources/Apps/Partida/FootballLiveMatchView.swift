@@ -405,7 +405,7 @@ struct FootballLiveMatchView: View {
             guard event.kind == .goal, let teamID = event.teamID else { return nil }
             return teamID == live.userSide.teamID
         }
-        let tier = FootballVictory.tier(VictoryContext(goalsFor: userGoals, goalsAgainst: rivalGoals, cameFromBehind: FootballVictory.wasBehind(scorers: scorers), isClassic: live.sim.isDerby))
+        let tier = FootballVictory.tier(VictoryContext(goalsFor: userGoals, goalsAgainst: rivalGoals, cameFromBehind: FootballVictory.wasBehind(scorers: scorers), isClassic: live.sim.isDerby, decidesTitle: career.decidesTitle(fixtureID: live.fixtureID)))
         return VStack(alignment: .leading, spacing: 12) {
             resultBanner(result, penalties: live.sim.needsShootout, margin: userGoals - rivalGoals, tier: tier)
             if career.canRevealShootout {

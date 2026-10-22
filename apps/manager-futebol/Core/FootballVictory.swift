@@ -43,6 +43,13 @@ enum FootballVictory {
         return .regular
     }
 
+    /// A partida decide o título: é a última rodada da divisão e o clube está em 1º (ANI-03 v4).
+    /// Sem calendário, sem tabela ou sem clube escolhido, não decide.
+    static func decidesTitle(matchDay: Int, lastMatchDay: Int?, leaderID: Int?, clubID: Int?) -> Bool {
+        guard let lastMatchDay, matchDay == lastMatchDay, let clubID else { return false }
+        return leaderID == clubID
+    }
+
     /// O clube esteve atrás no placar em algum momento, pela ordem dos gols (true quando o gol foi do clube).
     static func wasBehind(scorers: [Bool]) -> Bool {
         var ours = 0
@@ -52,5 +59,17 @@ enum FootballVictory {
             if theirs > ours { return true }
         }
         return false
+    }
+}
+
+extension FootballCareer {
+    /// Liga a regra ao calendário e à tabela da divisão do jogo (ANI-03 v4).
+    /// Aproximação: a tabela é a de agora, no fim de jogo; se o resultado ou os outros jogos da rodada ainda não estiverem somados, a conta sai um passo atrás.
+    func decidesTitle(fixtureID: Int) -> Bool {
+        guard let fixture = fixtures.first(where: { $0.id == fixtureID }),
+              case .league(let division) = fixture.competition else { return false }
+        let lastMatchDay = fixtures.filter { $0.competition == fixture.competition }.map(\.matchDay).max()
+        return FootballVictory.decidesTitle(matchDay: fixture.matchDay, lastMatchDay: lastMatchDay,
+                                            leaderID: standings(for: division).first?.team.id, clubID: selectedClubID)
     }
 }

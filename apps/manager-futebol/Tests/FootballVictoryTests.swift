@@ -38,4 +38,14 @@ final class FootballVictoryTests: XCTestCase {
         XCTAssertTrue(FootballVictory.wasBehind(scorers: [true, true, false, false, false]))
         XCTAssertEqual(FootballVictory.tier(VictoryContext(goalsFor: 2, goalsAgainst: 1, cameFromBehind: FootballVictory.wasBehind(scorers: [false, true, true]))), .big)
     }
+
+    /// Decide o título só na última rodada, com o clube em 1º; em qualquer outro caso, não (ANI-03 v4).
+    func testTitleIsDecidedOnlyOnTheLastRoundWithTheClubInFirst() {
+        XCTAssertTrue(FootballVictory.decidesTitle(matchDay: 38, lastMatchDay: 38, leaderID: 7, clubID: 7))
+        XCTAssertFalse(FootballVictory.decidesTitle(matchDay: 37, lastMatchDay: 38, leaderID: 7, clubID: 7), "rodada anterior não decide")
+        XCTAssertFalse(FootballVictory.decidesTitle(matchDay: 38, lastMatchDay: 38, leaderID: 9, clubID: 7), "outro clube lidera")
+        XCTAssertFalse(FootballVictory.decidesTitle(matchDay: 38, lastMatchDay: nil, leaderID: 7, clubID: 7), "sem calendário")
+        XCTAssertFalse(FootballVictory.decidesTitle(matchDay: 38, lastMatchDay: 38, leaderID: nil, clubID: 7), "sem tabela")
+        XCTAssertFalse(FootballVictory.decidesTitle(matchDay: 38, lastMatchDay: 38, leaderID: 7, clubID: nil), "sem clube escolhido")
+    }
 }
