@@ -61,7 +61,7 @@ Achados:
 
 ## O que falta
 
-- Confirmar que `.factoryPage()` fornece a rolagem nas raízes de mercado e academia. Se não fornecer, os achados de dobra ficam piores.
+- `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
 - Auditar os apps que faltam (Ajustes, Elenco e os demais).
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
