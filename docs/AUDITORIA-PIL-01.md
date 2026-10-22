@@ -35,8 +35,33 @@ Feita em 22/out/2026, 09:46 (Brasília), por leitura do código. Sem compilador 
 3. **Aberto.** Na tela de bloqueio, a ação de decisão fica dentro da rolagem, abaixo do relógio e da faixa de dias. Sugestão: pôr o primeiro item pendente acima da faixa de dias.
 4. **Sem mudança.** No pré-jogo, o relógio começa sozinho e "Pausar" aparece depois do placar e da narração. "Sair" evita beco sem saída, então não há violação de PIL-01.
 
+## Lote 2: mercado e academia
+
+Mesmo método (leitura do código, sem aparelho). Dois achados foram conferidos no código; posições são estimativas (cerca de ±50 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Mercado, aba Livres, sem resultados | Filtro de posição e busca. Sem botão para limpar o filtro. | Não |
+| Mercado, aba Livres, elenco cheio | "Seção" e "Novo briefing". Todos os "+" desabilitados, e o motivo só aparece no rodapé. | Não, mas a compra fica bloqueada |
+| Mercado, aba Clubes, Olheiros e Base | Seletores, "Enviar olheiro" e "Fazer peneira". | Não. "Enviar olheiro" fica perto da dobra em telas de 6,1 pol. |
+| Mercado, aba Histórico | Nenhuma na seção. O seletor "Seção" fica acima. | Não, no nível da tela |
+| Recrutamento, briefing sem sugestões | Só o ícone de lixeira. Nenhuma ação para afrouxar critérios. | Não, mas o bloco não tem ação para frente |
+| Recrutamento, conversas abertas | "Aceitar", "Assinar" e "Desistir" por etapa. | Não |
+| Academia, sem jovens | "Fazer peneira", sempre habilitado, com explicação ao toque. | Não |
+| Academia, folha de um jovem | "Fechar" sempre. "Promover" e "Dispensar" no fim da rolagem. | Não |
+| Academia, revelação da peneira | "Fechar". As linhas não abrem o jovem. | Não, mas o fluxo para na lista |
+
+Achados:
+1. **Corrigido sem compilador.** Num briefing em que todos os candidatos já estavam fixados, aparecia "Ninguém conhecido cumpre o briefing" ao lado das linhas fixadas. Agora o texto depende da lista completa de candidatos, e "Sugestões do olheiro" só aparece quando há sugestões novas (`Sources/Apps/Transfer/FootballRecruitmentView.swift`, `briefSection`).
+2. **Aberto.** Botões desabilitados sem motivo visível: "+" de contratação (`FootballMarketViews.swift:157`) e "Promover" na folha de jovem (`FootballAcademyView.swift:423`). O motivo do elenco cheio fica no rodapé da lista. Sugestão: manter o botão habilitado e explicar ao toque, ou mostrar o motivo abaixo dele.
+3. **Aberto.** "Promover" e "Dispensar" da folha de jovem ficam no fim da rolagem (`FootballAcademyView.swift:407-440`), embora o cabeçalho diga "decida quem sobe para o elenco principal" (`:28`). Sugestão: subir os três botões acima do painel de Potencial.
+4. **Aberto.** O seletor "Seção" fica depois do bloco de recrutamento (`FootballMarketViews.swift:52-57`). Com um briefing de cinco sugestões, ele fica bem abaixo da dobra. Sugestão: pôr "Seção" acima do bloco.
+5. **Aberto, baixa gravidade.** A revelação da peneira termina só em "Fechar", e as linhas não abrem o jovem (`FootballAcademyView.swift:236-263`).
+6. **Fora do PIL-01, sem confirmação.** Ações destrutivas sem confirmação: excluir briefing (`FootballRecruitmentView.swift:211`), "Dispensar" no Base (`FootballMarketViews.swift:329`) e `FootballAcademyView.swift:128`. A dispensa de jovem da academia já confirma (`:55-63`, `:429-437`).
+
 ## O que falta
 
-- Auditar os outros 20 apps e as telas de Mercado e Elenco.
+- Confirmar que `.factoryPage()` fornece a rolagem nas raízes de mercado e academia. Se não fornecer, os achados de dobra ficam piores.
+- Auditar os apps que faltam (Ajustes, Elenco e os demais).
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.

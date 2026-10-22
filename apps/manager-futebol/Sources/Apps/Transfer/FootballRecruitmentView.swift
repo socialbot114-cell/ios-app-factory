@@ -203,7 +203,8 @@ struct FootballBriefsPanel: View {
 
     private func briefSection(_ brief: RecruitmentBrief) -> some View {
         let shortlist = career.shortlistComparison(for: brief)
-        let candidates = career.candidates(for: brief, limit: 5).filter { !brief.shortlist.contains($0.playerID) }
+        let matches = career.candidates(for: brief, limit: 5)
+        let candidates = matches.filter { !brief.shortlist.contains($0.playerID) }
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(brief.title).font(.subheadline.weight(.semibold))
@@ -215,9 +216,13 @@ struct FootballBriefsPanel: View {
                 Text("Comparação").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 ForEach(shortlist) { row in candidateRow(row, brief: brief, pinned: true) }
             }
-            Text(candidates.isEmpty ? "Ninguém conhecido cumpre o briefing. Mande olheiros ou afrouxe os critérios." : "Sugestões do olheiro")
-                .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            ForEach(candidates) { row in candidateRow(row, brief: brief, pinned: false) }
+            if matches.isEmpty {
+                Text("Ninguém conhecido cumpre o briefing. Mande olheiros ou afrouxe os critérios.")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            } else if !candidates.isEmpty {
+                Text("Sugestões do olheiro").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                ForEach(candidates) { row in candidateRow(row, brief: brief, pinned: false) }
+            }
         }
     }
 
