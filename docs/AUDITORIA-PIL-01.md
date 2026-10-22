@@ -121,9 +121,29 @@ Achados:
 2. **Aberto, decisão do usuário.** "Listar para venda" põe o atleta à venda sem confirmação (`FootballInboxView.swift:400-403`). "Recusar" recusa a proposta sem confirmação (`:417-420`). "Aceitar" já pede confirmação (`:53-65`). Sugestão: aplicar o mesmo padrão a "Listar para venda" e "Recusar".
 3. **Aberto, baixa gravidade.** Numa conversa aberta por notificação, o botão "Voltar" some (`:204`). A saída fica com a navegação externa, que não foi auditada aqui.
 
+## Lote 6: tabela da liga
+
+Mesmo método, com leitura de `Liga/FootballLeagueViews.swift` por inteiro (502 linhas). Posições estimadas (cerca de ±50 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Liga, Série A ou B | Seletor de seção. Cada linha da tabela abre a ficha do clube. | Não |
+| Liga, rodadas | Setas e seletor de rodada, depois da tabela inteira e da análise (muito abaixo da dobra) | Não |
+| Liga, Copa com chave | Cartões das fases; cada partida abre o relatório | Não |
+| Liga, Copa sem chave | Nenhuma: só o texto sobre as próximas fases | Não, há o seletor de seção |
+| Liga, Artilharia | Linhas de artilheiros, que abrem a ficha | Não |
+| Relatório ou pré-jogo | "Voltar". Sem ação para frente acima da dobra: os clubes ficam no fim. | Não |
+| Ficha do jogador | "Voltar" e o link do clube, logo abaixo do cabeçalho | Não |
+| Ficha do clube | "Voltar". O elenco começa cedo, com linhas que abrem a ficha do jogador. | Não |
+
+Achados:
+1. **Aberto, baixa gravidade.** A navegação de rodadas (`FootballLeagueViews.swift:118-150`) fica depois da tabela inteira e da análise. Quem quer ver a rodada atual precisa rolar bastante. Sugestão: um atalho "Rodada atual" perto do seletor de seção.
+2. **Aberto, baixa gravidade.** A copa sem chave mostra só o texto sobre as próximas fases, sem ação (`:246-250`). Sugestão: dizer quando será o sorteio e oferecer um atalho para a tabela.
+3. **Aberto, baixa gravidade.** O relatório e o pré-jogo não têm ação para frente acima da dobra. Os links dos clubes ficam no fim da página (`:382-389`). Sugestão: levar os links para o cabeçalho.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Banco, Clube, a tabela da Liga (`Liga/FootballLeagueViews.swift`), `FootballStoryArcPanel` e os outros.
+- Auditar os demais apps: Banco, Clube, `FootballStoryArcPanel` e os outros.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
