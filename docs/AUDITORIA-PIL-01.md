@@ -216,9 +216,42 @@ Achados:
 3. **Aberto, baixa gravidade.** O planejamento de dias fica depois da agenda do dia. Em telas pequenas, a primeira linha de dia fica abaixo da dobra. A agenda tem ações visíveis, então a tela passa em PIL-01.
 4. **Padrão a seguir.** Vários botões explicam o bloqueio: "Marcar" fica desabilitado com o conflito escrito acima, "Compartilhar no Chuteira" mostra o motivo embaixo, e as atividades bloqueadas avisam ao toque. Vale replicar no mercado e na academia.
 
+## Lote 11: marca e palpite+
+
+Mesmo método, com leitura de `Marca/FootballGrowthView.swift` (157 linhas), `Marca/FootballBrandImageView.swift` (198), `Marca/FootballSponsorView.swift` (43), `Palpite/FootballBettingView.swift` (374) e das ações em `Core/FootballGrowth.swift`, `Core/FootballCareer+Betting.swift` e `Core/FootballCareer+Club.swift`. Posições estimadas (cerca de ±50 pt). Na Marca a altura varia mais, porque o histórico de movimentos muda a tela.
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Marca, com proposta de TV | "Assinar" da proposta, logo depois da pressão (cerca de 350 pt) | Não |
+| Marca, sem proposta de TV | Nenhuma: as próximas ações ficam depois dos indicadores, da campanha e do contrato de imagem (cerca de 1.000 a 1.400 pt) | Não, há "Voltar" |
+| Marca, "Lançar campanha" | Nenhuma: o botão fica depois dos indicadores e de três seletores (cerca de 900 a 1.250 pt). O motivo do bloqueio aparece acima dele | Não |
+| Marca, contrato de imagem oferecido | "Assinar", depois da campanha (cerca de 1.100 a 1.500 pt) | Não |
+| Marca, cota de patrocínio oferecida | "Fechar", no fim da tela, depois do patrocinador master (mais de 1.400 pt) | Não |
+| Patrocínio, com propostas | "Assinar" da primeira proposta (cerca de 250 pt) | Não |
+| Patrocínio, sem propostas | Nenhuma: só o texto de espera | Não, há "Voltar" |
+| Palpite, carteira | "Bônus de fichas" (cerca de 200 pt). Na recarga fica desabilitado; o motivo agora aparece abaixo (achado 2) | Não |
+| Palpite, jogos da rodada | Odds do primeiro jogo (cerca de 350 pt) | Não |
+| Palpite, pausa de apostas ativa | Odds do primeiro jogo (cerca de 450 pt), habilitadas. O aviso da pausa fica no topo | Não |
+| Palpite, bilhete com seleções | "Confirmar palpite", depois de todos os jogos da rodada (cada jogo ocupa cerca de 150 pt) | Não, mas a ação fica abaixo da dobra |
+| Palpite, palpites de temporada | Odds dos seis clubes, depois de todos os jogos e do bilhete (cerca de 950 pt com quatro jogos) | Não |
+| Palpite, jogo responsável | "Pausa de N dias", no fim da tela, depois de bilhetes e palpiteiros | Não |
+
+Achados:
+1. **Aberto, média.** A Marca põe as decisões no fim. A ordem é: métricas, pressão, TV, indicadores (com até oito movimentos e as definições), campanha, contrato de imagem, patrocinador master e cotas (`FootballGrowthView.swift:13-21`). Sem proposta de TV, a primeira ação fica entre 1.000 e 1.400 pt. Sugestão: pôr as propostas (TV, cotas e contrato de imagem) logo abaixo da pressão, e os indicadores depois delas. Decisão de layout.
+2. **Corrigido sem compilador.** "Bônus de fichas" ficava desabilitado na recarga de quatro dias, sem motivo na tela. O aviso "O bônus volta a cada 4 dias de jogo." estava num caminho que o botão desabilitado nunca alcança, porque `claimDailyBonus` testa a mesma condição (`Core/FootballCareer+Betting.swift:188-196`). Agora o aviso aparece em texto abaixo dos botões enquanto a recarga durar, e o caminho morto saiu (`Sources/Apps/Palpite/FootballBettingView.swift`, `walletPanel`).
+3. **Aberto, média.** "Confirmar palpite" fica depois de todos os jogos da rodada. Quem toca numa odd do primeiro jogo precisa rolar até o fim da lista para confirmar (`FootballBettingView.swift:34-35`, `:206-242`). Sugestão: uma barra fixa no rodapé com "Bilhete (N) · Confirmar", como a barra do Gestor (`.safeAreaInset`), ou o bilhete logo abaixo da carteira. Decisão de layout.
+4. **Aberto, média.** Durante a pausa de apostas, as odds e o bilhete seguem habilitados. O aviso "Autoexclusão ativa" só sai ao confirmar o bilhete ou ao fazer um palpite de temporada (`FootballBettingView.swift:28-33`, `:159-180`; `FootballCareer+Betting.swift:158`). Sugestão: desabilitar as odds com o motivo acima da lista, ou mostrar o motivo no bilhete. Decisão sua: o que a pausa deve bloquear.
+5. **Aberto, média, decisão sua.** "Pausa de 5, 10 ou 20 dias" age na hora, sem confirmação, e fica habilitada mesmo durante uma pausa. `selfExclude` grava o novo fim sem comparar com o atual (`FootballCareer+Betting.swift:207-209`). Assim, uma pausa de 20 dias pode ser encurtada para 5 com um toque. Sugestão: uma nova pausa só estende a atual, e a ação pede confirmação.
+6. **Aberto, baixa gravidade.** Um toque em "Palpite de temporada" registra a aposta com o valor do stepper, que fica abaixo da lista. O botão mostra só a cotação (`FootballBettingView.swift:257-275`). Sugestão: mostrar o valor no botão, ou pôr o stepper acima da lista.
+7. **Aberto, baixa gravidade.** "Fechar" nas cotas de patrocínio aceita a cota na hora (`FootballGrowthView.swift:148`). A palavra pode ser lida como "dispensar", e as outras propostas de contrato dizem "Assinar". Sugestão: "Assinar", com o mesmo aviso de falha de `FootballSponsorView.swift:32`.
+8. **Fora do PIL-01, sem confirmação.** "Assinar" da TV (`FootballGrowthView.swift:66`), da cota (`:148`), do contrato de imagem (`FootballBrandImageView.swift:178`) e do patrocinador (`FootballSponsorView.swift:31`), e "Lançar campanha" (`FootballBrandImageView.swift:120-127`) agem sem pedir confirmação. Cada oferta mostra valores e prazo, mas o toque não confirma. Decisão sua.
+9. **Código sem uso.** `campaignPanel` (`FootballGrowthView.swift:76-102`) é privado e não tem referência. A campanha da tela é a de `FootballBrandImageView.swift`. Sugestão: remover numa fatia de limpeza.
+10. **Sem mudança (conferido).** Dois pontos que pareciam falhas silenciosas não são alcançados pela tela. `signTV` e `acceptSlotOffer` descartam o retorno, mas a oferta de TV some ao ser assinada, e há no máximo uma oferta por cota (`Core/FootballGrowth.swift:273-279`, `:312-337`). Propostas de patrocínio só aparecem sem contrato vigente (`Core/FootballCareer+Club.swift:372-376`), então "Assinar" não substitui um contrato em curso.
+11. **Padrão a seguir.** "Lançar campanha" mostra o motivo do bloqueio acima do botão desabilitado, e as odds bloqueadas por integridade avisam ao toque (`FootballBettingView.swift:163-164`). Vale replicar no caso da pausa (achado 4).
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Chuteira, Marca, Negócios e Palpite.
+- Auditar os demais apps: Negócios e Chuteira.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.

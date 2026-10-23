@@ -73,7 +73,7 @@ struct FootballBettingView: View {
             }
             HStack(spacing: 10) {
                 Button {
-                    if let bonus = career.claimDailyBonus() { note = "+\(bonus) fichas de bônus." } else { onAlert("O bônus volta a cada 4 dias de jogo.") }
+                    if let bonus = career.claimDailyBonus() { note = "+\(bonus) fichas de bônus." }
                 } label: {
                     Label("Bônus de fichas", systemImage: "gift.fill").frame(maxWidth: .infinity)
                 }
@@ -90,6 +90,9 @@ struct FootballBettingView: View {
                 }
             }
             .font(.subheadline.weight(.semibold))
+            if !career.dailyBonusAvailable && !career.isSelfExcluded {
+                Text("O bônus volta a cada 4 dias de jogo.").font(.caption2).foregroundStyle(.secondary)
+            }
             Text(FootballCareer.bettingRoleText)
                 .font(.caption).foregroundStyle(.secondary)
                 .accessibilityIdentifier("bet-role")
