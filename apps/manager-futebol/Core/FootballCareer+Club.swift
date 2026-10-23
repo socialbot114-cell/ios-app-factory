@@ -32,6 +32,7 @@ extension FootballCareer {
             staff.append(makeStaffMember(role: role, ability: ability, using: &random))
         }
         refreshStaffMarket(using: &random)
+        sponsorRenewal = nil
         sponsorOffers = makeSponsorOffers(using: &random)
         if let balanced = sponsorOffers.first(where: { $0.profile == "Equilibrado" }) { signSponsor(balanced) }
         setupSocial()
@@ -57,7 +58,7 @@ extension FootballCareer {
         }
         if FootballSeason.isDerby(fixture.home, fixture.away) { demand *= 1.15 }
         if fixture.competition.isCup { demand *= 1.08 }
-        demand *= ticketPrice.demandFactor * hypeAttendanceFactor
+        demand *= priceDemandFactor(for: fixture) * hypeAttendanceFactor
         let potential = Int(Double(fanBase) * demand)
         let capacity = effectiveStadiumCapacity
         let floor = Int(Double(capacity) * 0.18)
@@ -80,7 +81,7 @@ extension FootballCareer {
         book(.tv, tvIncomePerMatchDay, "Cotas de TV")
         book(.members, Int(Double(members) * 1.4 / 100) * 100, "Mensalidades dos sócios-torcedores")
         if let deal = sponsorDeal {
-            book(.sponsor, deal.fixedPerSeason / FootballSeason.matchDaysPerSeason, "Patrocínio \(deal.sponsor)")
+            book(.sponsor, Int(Double(deal.fixedPerSeason / FootballSeason.matchDaysPerSeason) * sponsorExposureFactor), "Patrocínio \(deal.sponsor)")
         }
     }
 
@@ -138,18 +139,20 @@ extension FootballCareer {
     func makeSponsorOffers(using random: inout FootballRandom) -> [SponsorOffer] {
         guard let club = selectedClub, let selectedClubID else { return [] }
         let reputation = Double(fanBase) / (Double(club.capacity) * 1.15)
-        let scale = Double(club.startingBudget) * reputation * (division(of: selectedClubID) == .serieA ? 1.0 : 0.75)
+        let scale = Double(club.startingBudget) * reputation * (division(of: selectedClubID) == .serieA ? 1.0 : 0.75) * sponsorMarketHeat(using: &random)
         var names = Self.sponsorNames
         func nextName() -> String {
             let index = random.int(in: 0...(names.count - 1))
             return names.remove(at: index)
         }
         func round(_ value: Double) -> Int { Int(value / 10_000) * 10_000 }
-        return [
+        var offers = [
             SponsorOffer(id: season * 10 + 1, sponsor: nextName(), fixedPerSeason: round(scale * 0.13), bonusPerWin: 0, titleBonus: 0, seasons: 1, profile: "Seguro"),
             SponsorOffer(id: season * 10 + 2, sponsor: nextName(), fixedPerSeason: round(scale * 0.09), bonusPerWin: round(scale * 0.004), titleBonus: round(scale * 0.05), seasons: 2, profile: "Equilibrado"),
             SponsorOffer(id: season * 10 + 3, sponsor: nextName(), fixedPerSeason: round(scale * 0.05), bonusPerWin: round(scale * 0.009), titleBonus: round(scale * 0.12), seasons: 1, profile: "Arriscado")
         ]
+        if let renewal = sponsorRenewal { offers.append(renewal) }
+        return offers
     }
 
     @discardableResult
@@ -157,6 +160,7 @@ extension FootballCareer {
         sponsorDeal = SponsorDeal(sponsor: offer.sponsor, fixedPerSeason: offer.fixedPerSeason, bonusPerWin: offer.bonusPerWin,
                                   titleBonus: offer.titleBonus, endSeason: season + offer.seasons - 1)
         sponsorOffers = []
+        sponsorRenewal = nil
         return true
     }
 
@@ -363,7 +367,10 @@ extension FootballCareer {
         if let deal = sponsorDeal, champion, deal.titleBonus > 0 {
             book(.sponsor, deal.titleBonus, "Bônus de título do patrocinador \(deal.sponsor)")
         }
-        if let deal = sponsorDeal, deal.endSeason <= season { sponsorDeal = nil }
+        if let deal = sponsorDeal, deal.endSeason <= season {
+            settleSponsorRenewal(for: deal)
+            sponsorDeal = nil
+        }
         refreshStaffMarket(using: &random)
         closeGrowthSeason()
     }

@@ -13,6 +13,9 @@ struct FootballSponsorView: View {
                     Text(deal.sponsor).font(.title3.bold())
                     Text("\(FootballFormat.money(deal.fixedPerSeason)) fixos · \(FootballFormat.money(deal.bonusPerWin)) por vitória · \(FootballFormat.money(deal.titleBonus)) pelo título · até a T\(deal.endSeason)")
                         .font(.caption).foregroundStyle(.secondary)
+                    if let note = career.sponsorMoodNote {
+                        Text(note).font(.caption).foregroundStyle(.secondary)
+                    }
                 } else {
                     Text("Sem contrato. Escolha uma proposta abaixo.").font(.subheadline).foregroundStyle(.secondary)
                 }

@@ -88,6 +88,7 @@ struct FootballCareer: Codable, Equatable {
         case fanBase
         case sponsorDeal
         case sponsorOffers
+        case sponsorRenewal
         case redMatchDays
         case secondaryTrainingFocus
         case opponentPrep
@@ -195,6 +196,8 @@ struct FootballCareer: Codable, Equatable {
     var fanBase = 40_000
     var sponsorDeal: SponsorDeal? = nil
     var sponsorOffers: [SponsorOffer] = []
+    /// Renovação preferencial do patrocinador que acabou de sair satisfeito (PAT-02); entra junto das ofertas da nova temporada.
+    var sponsorRenewal: SponsorOffer? = nil
     /// Dias de jogo seguidos com o caixa no vermelho.
     var redMatchDays = 0
     var secondaryTrainingFocus: FootballTrainingFocus? = nil
@@ -359,6 +362,7 @@ struct FootballCareer: Codable, Equatable {
             ?? Int(Double(decodedClubID.flatMap { FootballSeason.team($0)?.capacity } ?? 30_000) * 1.15)
         sponsorDeal = try container.decodeIfPresent(SponsorDeal.self, forKey: .sponsorDeal)
         sponsorOffers = try container.decodeIfPresent([SponsorOffer].self, forKey: .sponsorOffers) ?? []
+        sponsorRenewal = try container.decodeIfPresent(SponsorOffer.self, forKey: .sponsorRenewal)
         redMatchDays = try container.decodeIfPresent(Int.self, forKey: .redMatchDays) ?? 0
         secondaryTrainingFocus = try container.decodeIfPresent(FootballTrainingFocus.self, forKey: .secondaryTrainingFocus)
         opponentPrep = try container.decodeIfPresent(Bool.self, forKey: .opponentPrep) ?? false
@@ -467,6 +471,7 @@ struct FootballCareer: Codable, Equatable {
         try container.encode(fanBase, forKey: .fanBase)
         try container.encodeIfPresent(sponsorDeal, forKey: .sponsorDeal)
         try container.encode(sponsorOffers, forKey: .sponsorOffers)
+        try container.encodeIfPresent(sponsorRenewal, forKey: .sponsorRenewal)
         try container.encode(redMatchDays, forKey: .redMatchDays)
         try container.encodeIfPresent(secondaryTrainingFocus, forKey: .secondaryTrainingFocus)
         try container.encode(opponentPrep, forKey: .opponentPrep)

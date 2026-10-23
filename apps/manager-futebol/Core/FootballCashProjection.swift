@@ -86,7 +86,7 @@ extension FootballCareer {
         let upkeep = Int(Double(club.startingBudget) * 0.004 * Double(levels) / Double(perSeason) / 100) * 100
         recurring.append((.facilities, "Manutenção da estrutura", .contracted, -upkeep))
         if let deal = sponsorDeal {
-            recurring.append((.sponsor, "Patrocínio \(deal.sponsor)", .contracted, projectedAmount(.sponsor, deal.fixedPerSeason / perSeason)))
+            recurring.append((.sponsor, "Patrocínio \(deal.sponsor)", .contracted, projectedAmount(.sponsor, Int(Double(deal.fixedPerSeason / perSeason) * sponsorExposureFactor))))
         }
         if let deal = world.business.naming {
             recurring.append((.naming, "Naming rights \(deal.sponsor)", .contracted, deal.perSeason / perSeason))

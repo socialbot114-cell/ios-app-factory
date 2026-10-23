@@ -387,6 +387,29 @@ Todos os ajustes ficam em `PhonePreferences` com `decodeIfPresent`, para os save
 - **Testes:** 3 novos no motor do campo (impedimento, pênalti com área liberada, pênalti para fora) e 2 de desenho de camisa; os 16 do motor passam no Linux.
 - **Limites honestos:** nada foi visto no aparelho; a linha de impedimento usa o penúltimo defensor no momento do apito (a posição real do atacante no lance não é reconstruída); cansaço (stamina) segue fora do jogo; economia viva (ECV, PAT-02/03, CID-02) segue para builds com medição antes e depois.
 
+### 6i. Build 31: economia viva (ECV-01 parcial, ECV-02, ECV-03, PAT-02)
+
+Escolha do build: o usuário aprovou o 30 e deixou a decisão do próximo com o Claude. Entraram só os itens que dá para medir no Linux e que não mudam a média de quem joga no automático. Ficaram de fora ECV-04, ECV-05 (ciclos de crise e alta), PAT-03 e CID-02, que mexem mais fundo no equilíbrio.
+
+- **ECV-03, ingresso dinâmico:** cada jogo em casa tem um peso (clássico, mata-mata, jogo decisivo nas 8 últimas rodadas para quem briga por título ou rebaixamento, adversário grande). Quanto mais pesa, menos o preço caro afasta a torcida (perdoa 45% da perda no clássico, 30% no mata-mata e no decisivo, 20% contra adversário grande). Ingresso Normal e Popular **não mudam**. A tela Estrutura mostra o tipo do próximo jogo em casa e o preço que mais rende.
+- **ECV-02, astro e loja:** o melhor jogador do elenco (nível, fase nas últimas 5 partidas e gols) muda as vendas da loja de -6% a +15%. O efeito é zero quando o craque está 6 pontos acima dos 11 melhores, que é o normal dos clubes no começo. Sai o craque, ou se machuca, o efeito cai. A tela da loja diz quem é e quanto muda.
+- **PAT-02, satisfação do patrocinador:** o contrato ganha uma nota de 0 a 100, começando em 55. Vitória +3, derrota -3, clássico ganho +2, torcida em alta +1, estádio com 95% ou mais +1. A nota faz o pagamento fixo variar de -8% a +8% (também na projeção de caixa). Ao ficar satisfeito (75+) ou insatisfeito (30-) chega uma mensagem, uma vez. No fim do contrato, nota 70+ gera a proposta "Renovação" do mesmo patrocinador com 10% a mais por 2 temporadas; nota 30- faz a marca sair avisando. Saves antigos abrem com 55.
+- **ECV-01, mercado de patrocínio (parcial):** as propostas de cada temporada passam por uma fase do mercado de 0,92 a 1,10 (média 1,0), pela fase da torcida e por sorteio. A concorrência de rivais não entrou.
+- **Medição antes e depois** (6 campeonatos por clube, 38 rodadas, mesmas sementes; clubes 0, 5 e 15):
+
+| Clube / preço | Bilheteria por temporada | Lotação do clássico | Loja | Patrocínio |
+|---|---|---|---|---|
+| 0 Normal | 1,712 mi → 1,712 mi | 1,00 → 1,00 | 1,637 → 1,652 mi | 0,970 → 0,930 mi |
+| 0 Elite | 2,070 → 2,343 mi (+13%) | 0,72 → 0,97 | igual | |
+| 5 Normal | 0,847 → 0,847 mi | | 0,587 → 0,595 mi | 0,633 → 0,612 mi |
+| 5 Elite | 0,916 → 1,007 mi (+10%) | | | |
+| 15 Normal | 0,767 → 0,767 mi | 1,00 → 1,00 | 0,604 → 0,604 mi | 0,170 → 0,172 mi |
+| 15 Elite | 0,828 → 0,906 mi (+9%) | 0,71 → 1,00 | | |
+
+  O ingresso Normal fica **idêntico**. O Elite ainda perde para o Premium ao longo da temporada (jogo comum fica 56% a 61% cheio), então não virou escolha dominante; ele só compensa nos clássicos. A loja mexe +1% e 0%. O patrocínio ficou 3% a 4% abaixo nos clubes 0 e 5 e 1% acima no 15: parte é a fase de mercado sorteada na primeira proposta, parte é o patrocinador ainda não ter acumulado satisfação. A amostra é pequena; vale reavaliar depois de jogar uma carreira inteira.
+- **Testes:** 11 novos em `FootballLivingEconomyTests` (preço normal intocado, clássico perdoa preço caro, astro sobe e cai, forma, satisfação, avisos sem repetir, renovação e saída, save antigo, fase do mercado, frases das telas) e a sonda `FootballEconomyProbeTests`, que só imprime. Suíte do Core inteira passa.
+- **Limites honestos:** nada foi visto no aparelho; as três frases novas nas telas Estrutura, Loja e Patrocínio só foram compiladas no CI; a nota do patrocinador não conta exposição de TV.
+
 ## 9. Limites do que se sabe
 
 - A rodada no aparelho **nunca foi feita**. Tudo vem de simulador, testes e simulações.

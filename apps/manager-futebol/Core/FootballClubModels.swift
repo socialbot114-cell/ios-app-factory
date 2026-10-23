@@ -495,6 +495,36 @@ struct SponsorDeal: Codable, Equatable {
     let bonusPerWin: Int
     let titleBonus: Int
     var endSeason: Int
+    /// Satisfação do patrocinador, de 0 a 100 (PAT-02). Sobe com vitórias, torcida em alta e clássicos ganhos.
+    var satisfaction = 55
+    /// Último estado avisado ao jogador: -1 insatisfeito, 0 neutro, 1 satisfeito. Evita repetir a mensagem.
+    var notifiedTier = 0
+
+    init(sponsor: String, fixedPerSeason: Int, bonusPerWin: Int, titleBonus: Int, endSeason: Int, satisfaction: Int = 55, notifiedTier: Int = 0) {
+        self.sponsor = sponsor
+        self.fixedPerSeason = fixedPerSeason
+        self.bonusPerWin = bonusPerWin
+        self.titleBonus = titleBonus
+        self.endSeason = endSeason
+        self.satisfaction = satisfaction
+        self.notifiedTier = notifiedTier
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sponsor, fixedPerSeason, bonusPerWin, titleBonus, endSeason, satisfaction, notifiedTier
+    }
+
+    /// Saves anteriores ao build 31 não têm satisfação: o patrocinador começa neutro.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sponsor = try container.decode(String.self, forKey: .sponsor)
+        fixedPerSeason = try container.decode(Int.self, forKey: .fixedPerSeason)
+        bonusPerWin = try container.decode(Int.self, forKey: .bonusPerWin)
+        titleBonus = try container.decode(Int.self, forKey: .titleBonus)
+        endSeason = try container.decode(Int.self, forKey: .endSeason)
+        satisfaction = try container.decodeIfPresent(Int.self, forKey: .satisfaction) ?? 55
+        notifiedTier = try container.decodeIfPresent(Int.self, forKey: .notifiedTier) ?? 0
+    }
 }
 
 struct MonthReport: Equatable, Identifiable {

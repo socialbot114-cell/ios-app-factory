@@ -42,6 +42,9 @@ struct FootballFacilitiesView: View {
                 .pickerStyle(.segmented)
                 Text("Ingresso caro rende mais por torcedor e enche menos o estádio. Sócios: \(career.members.formatted(.number.locale(Locale(identifier: "pt_BR")))).")
                     .font(.caption).foregroundStyle(.secondary)
+                if let note = career.nextHomeTicketNote {
+                    Text(note).font(.caption).foregroundStyle(.secondary)
+                }
             }
         }
         .factoryPage()

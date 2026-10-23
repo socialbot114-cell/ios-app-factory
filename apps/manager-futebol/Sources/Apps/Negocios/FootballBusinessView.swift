@@ -43,6 +43,9 @@ struct FootballBusinessView: View {
             }
             .pickerStyle(.segmented)
             Text(business.shopPrice.moodNote).font(.caption).foregroundStyle(.secondary)
+            if let note = career.starShopNote {
+                Text(note).font(.caption).foregroundStyle(.secondary)
+            }
             HStack(spacing: 10) {
                 Button {
                     if career.upgradeShop() { note = "Loja ampliada." } else { onAlert("Sem caixa ou a loja já está no nível máximo.") }

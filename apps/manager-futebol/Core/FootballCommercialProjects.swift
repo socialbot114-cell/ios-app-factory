@@ -122,7 +122,7 @@ extension FootballCareer {
 
     /// Vendas da loja sem coleção: base para medir o efeito real do projeto.
     var baseMerchRevenuePerMatchDay: Int {
-        let mood = (0.7 + 0.006 * Double(fanMood)) * hypeMerchFactor
+        let mood = (0.7 + 0.006 * Double(fanMood)) * hypeMerchFactor * starMerchFactor
         let base = Double(fanBase) * 0.30 * shopRevenueFactor * world.business.shopPrice.demand * world.business.shopPrice.margin * mood
         let legacyCollection = world.business.collectionUntilWorldDay >= worldDay ? 1.3 : 1.0
         return Int(base * legacyCollection / 100) * 100

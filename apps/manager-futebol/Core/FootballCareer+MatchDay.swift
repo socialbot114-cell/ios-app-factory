@@ -476,6 +476,7 @@ extension FootballCareer {
         } else {
             lastRoundRevenue = 0
         }
+        updateSponsorSatisfaction(fixture: fixtures.first(where: { $0.id == fixture.id }) ?? fixture, result: result)
         if result == .win, let deal = sponsorDeal, deal.bonusPerWin > 0 {
             book(.sponsor, deal.bonusPerWin, "Bônus por vitória de \(deal.sponsor)")
         }
