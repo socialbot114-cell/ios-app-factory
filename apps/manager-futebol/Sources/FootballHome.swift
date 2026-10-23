@@ -689,7 +689,15 @@ struct FootballHome: View {
 
     private var continueSubtitle: String? {
         guard let club = career.selectedClub else { return nil }
-        return "\(club.name) · temporada \(career.season)"
+        var lines = ["\(club.name) · temporada \(career.season)"]
+        if let played = career.latestUserFixture {
+            lines.append("Último jogo: \(FootballCalendarClock.shortDate(FootballCalendarClock.day(season: career.season, matchDay: played.matchDay)))")
+        }
+        if let next = career.nextUserFixture, let clubID = career.selectedClubID {
+            let date = FootballCalendarClock.shortDate(FootballCalendarClock.day(season: career.season, matchDay: next.matchDay))
+            lines.append("Próximo jogo: \(date) contra \(FootballSeason.teamName(next.opponent(of: clubID)))")
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func startNewFromTitle() {

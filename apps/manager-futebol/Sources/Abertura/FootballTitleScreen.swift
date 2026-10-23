@@ -165,7 +165,7 @@ struct FootballTitleScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.title3.weight(.bold))
                     if let subtitle {
-                        Text(subtitle).font(.caption).opacity(0.8).lineLimit(1)
+                        Text(subtitle).font(.caption).opacity(0.8).lineLimit(3)
                     }
                 }
                 Spacer(minLength: 0)
