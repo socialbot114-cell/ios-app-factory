@@ -208,6 +208,7 @@ struct FootballTitleOptionsSheet: View {
     let onLoad: (Int) -> Void
     let onNew: (Int) -> Void
     let onDelete: (Int) -> Void
+    let onReviewIntro: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     private var versionText: String {
@@ -238,6 +239,13 @@ struct FootballTitleOptionsSheet: View {
                         set: { career.world.phone.preferences.reduceMotion = $0 }
                     ))
                     .accessibilityIdentifier("title-reduce-motion")
+                    Button {
+                        onReviewIntro()
+                    } label: {
+                        Label("Rever a introdução", systemImage: "book.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("title-review-intro")
                     Text(versionText).font(.caption).foregroundStyle(.secondary)
                 }
             }

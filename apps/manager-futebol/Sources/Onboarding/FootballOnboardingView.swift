@@ -19,6 +19,8 @@ enum FootballOnboardingGate {
 struct FootballOnboardingView: View {
     @Binding var career: FootballCareer
     let onFinish: () -> Void
+    /// Reexibição a partir da Opções da abertura: só as páginas de história.
+    let replay: Bool
 
     @State private var page: Int
     @State private var shown: Set<Int> = []
@@ -63,20 +65,23 @@ struct FootballOnboardingView: View {
              body: "Você pode mudar isso depois em Ajustes.", rows: []),
     ]
 
-    init(career: Binding<FootballCareer>, startPage: Int = 0, onFinish: @escaping () -> Void) {
+    init(career: Binding<FootballCareer>, startPage: Int = 0, replay: Bool = false, onFinish: @escaping () -> Void) {
         _career = career
         _page = State(initialValue: min(max(0, startPage), 4))
         self.onFinish = onFinish
+        self.replay = replay
     }
 
-    private var isLast: Bool { page == pages.count - 1 }
+    /// Última página mostrada. Na reexibição, a da história; a escolha de desafio não volta, porque grava direto na carreira.
+    private var lastPage: Int { replay ? pages.count - 2 : pages.count - 1 }
+    private var isLast: Bool { page == lastPage }
 
     var body: some View {
         VStack(spacing: 0) {
                 HStack {
                     Spacer()
                     if !isLast {
-                        Button("Pular") { page = pages.count - 1 }
+                        Button("Pular") { page = lastPage }
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.75))
                             .accessibilityIdentifier("onboarding-skip")
@@ -85,7 +90,7 @@ struct FootballOnboardingView: View {
                 .frame(height: 36)
                 .padding(.horizontal, 22)
                 TabView(selection: $page) {
-                    ForEach(0..<pages.count, id: \.self) { index in
+                    ForEach(0...lastPage, id: \.self) { index in
                         pageView(index).tag(index)
                     }
                 }
@@ -94,7 +99,7 @@ struct FootballOnboardingView: View {
                 Button {
                     if isLast { onFinish() } else { withAnimation(.easeInOut(duration: 0.35)) { page += 1 } }
                 } label: {
-                    Label(isLast ? "Escolher meu clube" : "Continuar", systemImage: isLast ? "flag.checkered" : "arrow.right")
+                    Label(isLast ? (replay ? "Fechar" : "Escolher meu clube") : "Continuar", systemImage: isLast ? (replay ? "checkmark" : "flag.checkered") : "arrow.right")
                 }
                 .buttonStyle(FactoryPrimaryButtonStyle())
                 .padding(.horizontal, 22)
@@ -118,7 +123,7 @@ struct FootballOnboardingView: View {
 
     private var dots: some View {
         HStack(spacing: 8) {
-            ForEach(0..<pages.count, id: \.self) { index in
+            ForEach(0...lastPage, id: \.self) { index in
                 Capsule()
                     .fill(index == page ? FootballTheme.gold : Color.white.opacity(0.3))
                     .frame(width: index == page ? 26 : 8, height: 8)
@@ -126,7 +131,7 @@ struct FootballOnboardingView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Página \(page + 1) de \(pages.count)")
+        .accessibilityLabel("Página \(page + 1) de \(lastPage + 1)")
     }
 
     // MARK: Páginas

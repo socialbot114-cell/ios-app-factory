@@ -14,6 +14,8 @@ struct FootballHome: View {
     @State private var roundBandDay: Int?
     @State private var seasonSummary: SeasonRecord?
     @State private var showsOnboarding = FootballOnboardingGate.shouldShow
+    @State private var introReviewRequested = false
+    @State private var showsIntroReview = false
     /// Menu de entrada (Continuar, Novo jogo, Opções); UI tests e capturas entram direto no jogo.
     @State private var showsTitle = !(FactoryCapture.isUITesting || FactoryCapture.screen != nil)
     @State private var showsTitleOptions = false
@@ -104,6 +106,9 @@ struct FootballHome: View {
             }
         }
         .tint(FootballTheme.accent)
+        .fullScreenCover(isPresented: $showsIntroReview) {
+            FootballOnboardingView(career: $career, replay: true) { showsIntroReview = false }
+        }
         .fullScreenCover(isPresented: $showLiveMatch, onDismiss: { finishRoundBand() }) {
             FootballLiveMatchView(career: $career, staticPreview: false) {
                 if career.firstCareerGuideStep == .liveMatch, career.liveMatch == nil {
@@ -112,11 +117,17 @@ struct FootballHome: View {
                 showLiveMatch = false
             }
         }
-        .sheet(isPresented: $showsTitleOptions) {
+        .sheet(isPresented: $showsTitleOptions, onDismiss: {
+            if introReviewRequested {
+                introReviewRequested = false
+                showsIntroReview = true
+            }
+        }) {
             FootballTitleOptionsSheet(career: $career, activeSlot: activeSlot, summaries: slotSummaries,
                                       onLoad: { loadSlot($0); showsTitleOptions = false; showsTitle = false },
                                       onNew: { startNewCareer(slot: $0); showsTitleOptions = false; showsTitle = false },
-                                      onDelete: deleteSlot)
+                                      onDelete: deleteSlot,
+                                      onReviewIntro: { introReviewRequested = true; showsTitleOptions = false })
         }
         .confirmationDialog("Começar uma nova carreira?", isPresented: $confirmsNewGame, titleVisibility: .visible) {
             Button("Começar nova carreira") { confirmNewGame() }
