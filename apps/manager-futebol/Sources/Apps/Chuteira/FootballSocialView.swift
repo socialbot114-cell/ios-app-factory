@@ -123,7 +123,7 @@ struct FootballSocialView: View {
                     }
                     Spacer()
                     Button("Aceitar") {
-                        if !career.acceptBrandDeal(id: offer.id) { onAlert("Você ainda não tem seguidores suficientes para este contrato.") }
+                        if !career.acceptBrandDeal(id: offer.id) { onAlert("Você já tem dois contratos de marca ativos.") }
                     }
                     .buttonStyle(.borderedProminent).font(.caption.weight(.bold))
                 }
@@ -159,7 +159,7 @@ struct FootballSocialView: View {
                         Label(FootballFormat.compact(post.shares), systemImage: "arrow.2.squarepath")
                         Label(FootballFormat.compact(post.replies), systemImage: "bubble.left")
                         Spacer()
-                        if post.author == .fan || post.author == .journalist {
+                        if post.author == .fan, post.tag != "#respondido" {
                             Button("Responder") { if career.replyToFan(postID: post.id) { lastNote = "Você respondeu \(post.name)." } }
                                 .font(.caption.weight(.bold))
                         }

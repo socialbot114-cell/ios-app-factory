@@ -280,9 +280,33 @@ Achados:
 6. **Sem mudança (conferido).** Dois pontos que pareciam falhas silenciosas não acontecem pela tela. "Aceitar" o naming só tem ofertas quando não há contrato ativo: `refreshNamingOffers` esvazia a lista quando há contrato (`Core/FootballCareer+Business.swift:55-56`), e aceitar esvazia de novo. "Jogar em casa" só aparece quando `canPlayFriendly()` é nulo, e `playFriendly` só recusaria um adversário igual ao próprio clube, que a lista já filtra.
 7. **Padrão a seguir.** "Começar projeto" e "Lançar coleção" mostram o bloqueio acima do botão desabilitado. "Ampliar" e "Turnê" avisam ao toque com o motivo (`FootballBusinessDealsView.swift:79-81`; `FootballBusinessView.swift:46`, `:138`). A negociação de naming manda cada resposta da marca para um aviso (`FootballBusinessDealsView.swift:38-42`). O retorno dos projetos é só leitura, e está certo.
 
+## Lote 13: chuteira
+
+Mesmo método, com leitura de `Chuteira/FootballSocialView.swift` (189 linhas), `FootballPublicSphereViews.swift` (188), dos botões de `FootballSocialPhotoView.swift` e das ações em `Core/FootballCareer+Social.swift` e `Core/FootballPublicSphere.swift`. Posições estimadas (cerca de ±50 pt). A linha do tempo tem até 25 publicações, então as posições abaixo dela são grosseiras.
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Chuteira, padrão | Faixa de histórias (cerca de 150 pt) e "Mensagens diretas" (cerca de 200 pt) | Não |
+| Chuteira, crise de imagem | Três respostas à crise, logo depois dos números (cerca de 320 a 520 pt) | Não |
+| Chuteira, nova publicação | "Publicar", depois do assunto, do tom, da foto e da prévia (cerca de 750 a 900 pt, abaixo da dobra de 667 pt). O motivo do bloqueio aparece abaixo do botão | Não, mas a ação fica abaixo da dobra |
+| Chuteira, contrato de marca oferecido | "Aceitar" da proposta (cerca de 900 a 1.000 pt) | Não |
+| Chuteira, linha do tempo | "Curtir" e "Responder" em cada publicação (cerca de 1.100 pt em diante) | Não |
+| Comentário sem resposta | "Responder com calma" e "Rebater", dentro da publicação (bem abaixo da linha do tempo) | Não |
+| Quem fala de você | Nenhuma: só leitura | Não, a tela tem outras ações |
+
+Achados:
+1. **Corrigido sem compilador.** "Responder" aparecia em publicações de jornalista, que `replyToFan` recusa, e continuava depois de respondido a um fã. Nos dois casos o toque não fazia nada e não avisava (`FootballSocialView.swift:162-165`; `Core/FootballCareer+Social.swift:256-258`). Agora o botão só aparece em publicação de fã sem resposta (`post.author == .fan, post.tag != "#respondido"`). A Core não responde a jornalista; se isso for preciso, a regra vem antes da tela.
+2. **Corrigido sem compilador.** O alerta de "Aceitar" contrato de marca dizia "Você ainda não tem seguidores suficientes", mas `acceptBrandDeal` só recusa com dois contratos ativos (`Core/FootballCareer+Social.swift:338-342`). A mensagem agora diz isso (`FootballSocialView.swift:126`).
+3. **Aberto, média.** "Publicar" fica abaixo da dobra, depois da faixa de histórias, da mensagem, da crise e dos três seletores (`FootballSocialView.swift:20-32`; `FootballPublicSphereViews.swift:28-97`). É a ação principal da tela. Sugestão: pôr a nova publicação logo depois dos números, ou fixar "Publicar" no rodapé. Decisão de layout.
+4. **Aberto, média.** "Rebater" aumenta a polêmica (+3 em comentário negativo, +1 nos outros) e mexe na postura dos perfis, sem aviso (`Core/FootballPublicSphere.swift:426-428`; `FootballPublicSphereViews.swift:138-140`). O rótulo não mostra o efeito, e "Responder com calma" é o padrão ao lado. Sugestão: mostrar "aumenta a polêmica" no botão, ou pedir confirmação. Decisão sua.
+5. **Aberto, baixa gravidade.** "Responder com calma" e "Rebater" falham em silêncio quando o clube já não é seu (`Core/FootballPublicSphere.swift:438`). Não verifiquei se a Chuteira abre para um clube demitido; se abrir, o toque não faz nada. Sugestão: aviso no retorno de `answerReply`, como nos outros botões. Para isso, `FootballPostThread` precisa receber `onAlert`.
+6. **Fora do PIL-01, sem confirmação.** Respostas à crise (`FootballSocialView.swift:46-47`) e "Aceitar" contrato de marca (`:125`) agem na hora. Cada resposta à crise explica o efeito no texto, e o contrato mostra pagamento e publicações. Decisão sua: pedir confirmação ou não.
+7. **Código sem uso.** `composePanel` (`FootballSocialView.swift:66-95`) não tem referência desde que a nova publicação passou a ser `FootballComposeDraftPanel`. Sugestão: remover numa fatia de limpeza.
+8. **Padrão a seguir.** A prévia de "Publicar" mostra alcance, risco e efeitos antes do toque, e o motivo do bloqueio aparece abaixo do botão desabilitado (`FootballPublicSphereViews.swift:76-97`). Vale replicar no "Rebater" (achado 4).
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Chuteira.
+- Leitura de todos os apps da lista concluída (lotes 1 a 13).
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
