@@ -61,39 +61,6 @@ struct FootballSocialView: View {
         }
     }
 
-    // MARK: Publicar
-
-    private var composePanel: some View {
-        FactoryPanel(title: "Nova publicação", systemImage: "square.and.pencil") {
-            Text("Uma publicação por dia de jogo. O tom muda o alcance, o humor da torcida e o risco de polêmica.")
-                .font(.caption).foregroundStyle(.secondary)
-            ForEach(PostTone.allCases) { tone in
-                let block = career.canPost(tone)
-                Button {
-                    if let post = career.publishPost(tone: tone) {
-                        lastNote = post.viral ? "Sua publicação viralizou! \(FootballFormat.compact(post.likes)) curtidas." : "Publicado: \(FootballFormat.compact(post.likes)) curtidas."
-                    } else {
-                        onAlert(block ?? "Não foi possível publicar agora.")
-                    }
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(tone.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                            Text(tone.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-                        }
-                        Spacer()
-                        Image(systemName: "paperplane.fill").foregroundStyle(FootballTheme.accent)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .opacity(block == nil ? 1 : 0.4)
-                .accessibilityIdentifier("post-\(tone.rawValue)")
-                if tone != PostTone.allCases.last { Divider() }
-            }
-        }
-    }
-
     // MARK: Marcas
 
     private var brandPanel: some View {

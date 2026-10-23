@@ -71,36 +71,6 @@ struct FootballGrowthView: View {
         }
     }
 
-    // MARK: Marketing
-
-    private var campaignPanel: some View {
-        FactoryPanel(title: "Campanhas de marketing", systemImage: "megaphone.fill") {
-            if let campaign = growth.campaign {
-                Label("\(campaign.kind.title) em andamento: termina no dia \(campaign.endsWorldDay)", systemImage: "hourglass").font(.subheadline.weight(.semibold))
-            }
-            ForEach(MarketingCampaign.allCases) { kind in
-                let block = career.canStartCampaign(kind)
-                Button {
-                    if !career.startCampaign(kind) { onAlert(block ?? "Indisponível.") }
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: kind.symbol).frame(width: 26).foregroundStyle(FootballTheme.accent)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(kind.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                            Text(kind.summary).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-                            Text("\(FootballFormat.money(kind.cost)) · \(kind.days) jogos").font(.caption2).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .opacity(block == nil ? 1 : 0.45)
-                .accessibilityIdentifier("campaign-\(kind.rawValue)")
-            }
-        }
-    }
-
     // MARK: Patrocínio
 
     private var masterSponsorLink: some View {
