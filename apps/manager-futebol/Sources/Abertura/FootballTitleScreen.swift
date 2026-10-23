@@ -221,7 +221,18 @@ struct FootballTitleOptionsSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 18) {
                 FootballSaveSlotsView(activeSlot: activeSlot, summaries: summaries, onLoad: onLoad, onNew: onNew, onDelete: onDelete)
+                if career.selectedClubID != nil {
+                    FootballDifficultyRulesPanel(career: $career)
+                }
                 FactoryPanel(title: "Preferências", systemImage: "slider.horizontal.3") {
+                    Picker("Ritmo", selection: Binding(
+                        get: { career.world.phone.preferences.rhythmMode },
+                        set: { career.world.phone.preferences.rhythm = $0 }
+                    )) {
+                        ForEach(FootballRhythm.allCases) { option in Text(option.title).tag(option) }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityIdentifier("title-rhythm")
                     Toggle("Reduzir movimento", isOn: Binding(
                         get: { career.world.phone.preferences.reduceMotion },
                         set: { career.world.phone.preferences.reduceMotion = $0 }
