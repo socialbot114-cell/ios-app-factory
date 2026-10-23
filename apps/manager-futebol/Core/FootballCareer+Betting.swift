@@ -204,8 +204,9 @@ extension FootballCareer {
         return 300
     }
 
+    /// Uma pausa nova só estende a atual: tocar numa pausa menor não a encurta (PIL-01, lote 11).
     mutating func selfExclude(days: Int) {
-        world.betting.selfExcludedUntilWorldDay = worldDay + max(1, days)
+        world.betting.selfExcludedUntilWorldDay = max(world.betting.selfExcludedUntilWorldDay, worldDay + max(1, days))
     }
 
     mutating func setLossLimit(_ limit: Int) {
