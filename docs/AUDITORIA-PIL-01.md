@@ -249,9 +249,40 @@ Achados:
 10. **Sem mudança (conferido).** Dois pontos que pareciam falhas silenciosas não são alcançados pela tela. `signTV` e `acceptSlotOffer` descartam o retorno, mas a oferta de TV some ao ser assinada, e há no máximo uma oferta por cota (`Core/FootballGrowth.swift:273-279`, `:312-337`). Propostas de patrocínio só aparecem sem contrato vigente (`Core/FootballCareer+Club.swift:372-376`), então "Assinar" não substitui um contrato em curso.
 11. **Padrão a seguir.** "Lançar campanha" mostra o motivo do bloqueio acima do botão desabilitado, e as odds bloqueadas por integridade avisam ao toque (`FootballBettingView.swift:163-164`). Vale replicar no caso da pausa (achado 4).
 
+## Lote 12: negócios
+
+Mesmo método, com leitura de `Negocios/FootballBusinessView.swift` (177 linhas), `FootballBusinessDealsView.swift` (148), `FootballCollectionProjectView.swift` (115), `FootballCommercialDelegationView.swift` (86) e `FootballProjectLedgerView.swift` (78), e das ações em `Core/FootballCareer+Business.swift`, `Core/FootballBusinessDeals.swift` e `Core/FootballCommercialDelegation.swift`. A tela é longa, então as posições são estimativas grosseiras (cerca de ±150 pt abaixo de 1.000 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Negócios, padrão | "Ampliar" da loja (cerca de 250 pt) | Não |
+| Coleção, sem projeto | "Lançar coleção", desabilitado com o motivo acima quando há bloqueio (cerca de 610 a 650 pt, abaixo da dobra de 667 pt) | Não |
+| Coleção, em andamento | Nenhuma: barras e ritmo, só leitura | Não, a tela tem outras ações |
+| Gerente comercial, sem contrato | "Contratar gerente" (cerca de 1.000 pt) | Não |
+| Gerente comercial, ativo | "Atualizar ordens" e "Dispensar" (cerca de 1.050 pt) | Não |
+| Retorno dos projetos | Nenhuma: leitura. A ação fica nas outras seções | Não |
+| Naming, negociação aberta | "Enviar proposta", depois de pedido, duração e interruptor (cerca de 1.400 pt) | Não |
+| Naming, ofertas sem negociação | "Negociar com X" (cerca de 1.300 pt) | Não |
+| Naming, ofertas na seção do estádio | "Aceitar" (cerca de 2.200 pt) | Não |
+| Projeto social, sem projeto | "Começar projeto", desabilitado com o motivo acima quando há bloqueio (cerca de 1.600 pt) | Não |
+| Projeto social, em etapas | Nenhuma: barra e relatório | Não |
+| Programas sociais | "Iniciar" ou "Encerrar" em cada linha (cerca de 2.300 pt) | Não |
+| Amistosos | "Jogar em casa" por adversário (cerca de 2.700 pt) | Não |
+| Agenda de amistosos, sem datas | Nenhuma: só o texto | Não, há "Voltar" |
+| Propostas de empresários | "Aceitar" por proposta (cerca de 3.050 pt) | Não |
+
+Achados:
+1. **Aberto, média.** A tela é uma coluna de nove painéis. Só a loja tem ação perto do topo (`FootballBusinessView.swift:21`). Naming, programas, amistosos e empresários ficam entre 1.000 e 3.000 pt (`:22-29`). Sugestão: uma faixa "Decisões pendentes" no topo, com as propostas abertas, e o resto em seções que se recolhem. Decisão de layout.
+2. **Aberto, baixa gravidade.** "Lançar coleção" fica abaixo da dobra em telas de 667 pt, depois do seletor de público, do porte e das métricas (`FootballCollectionProjectView.swift:54-69`). O motivo do bloqueio aparece acima do botão (linha 61), o que está certo; falta a posição. Sugestão: encurtar a explicação da previsão para o botão subir.
+3. **Aberto, média.** "Jogar em casa" joga o amistoso na hora: não pede data nem confirmação, não mostra a receita e o desgaste (que a agenda mostra), e conta no limite de amistosos da temporada (`FootballBusinessView.swift:127-131`; `Core/FootballCareer+Business.swift:114-118`). Há também dois caminhos para amistosos na mesma tela: jogar já, acima, e agendar data, na agenda do hub (`FootballBusinessDealsView.swift:100-121`). Sugestão: um caminho só, a agenda, com a estimativa antes do toque. Decisão sua.
+4. **Aberto, média.** "Aceitar" a proposta de naming direto custa 2 de humor da torcida (`Core/FootballCareer+Business.swift:74`), e a tela não avisa (`FootballBusinessView.swift:74-76`). A negociação mostra a reação antes de enviar (`FootballBusinessDealsView.swift:33-34`). Sugestão: mostrar "humor −2" no cartão da oferta.
+5. **Fora do PIL-01, sem confirmação.** "Aceitar" o naming (contrato de várias temporadas) e a proposta de empresário (comissão), "Dispensar" o gerente comercial (`FootballCommercialDelegationView.swift:75`), "Cancelar" amistoso agendado (`FootballBusinessDealsView.swift:130`), e "Iniciar" e "Encerrar" programa social (`FootballBusinessView.swift:100`) agem na hora. "Ampliar" a loja gasta caixa, mas o custo aparece no botão. Decisão sua: pedir confirmação nas ações longas e nas destrutivas.
+6. **Sem mudança (conferido).** Dois pontos que pareciam falhas silenciosas não acontecem pela tela. "Aceitar" o naming só tem ofertas quando não há contrato ativo: `refreshNamingOffers` esvazia a lista quando há contrato (`Core/FootballCareer+Business.swift:55-56`), e aceitar esvazia de novo. "Jogar em casa" só aparece quando `canPlayFriendly()` é nulo, e `playFriendly` só recusaria um adversário igual ao próprio clube, que a lista já filtra.
+7. **Padrão a seguir.** "Começar projeto" e "Lançar coleção" mostram o bloqueio acima do botão desabilitado. "Ampliar" e "Turnê" avisam ao toque com o motivo (`FootballBusinessDealsView.swift:79-81`; `FootballBusinessView.swift:46`, `:138`). A negociação de naming manda cada resposta da marca para um aviso (`FootballBusinessDealsView.swift:38-42`). O retorno dos projetos é só leitura, e está certo.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Negócios e Chuteira.
+- Auditar os demais apps: Chuteira.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
