@@ -198,9 +198,27 @@ Achados:
 4. **Aberto, baixa gravidade.** A Loja não tem ação nenhuma. É vitrine sem compra nesta versão, de propósito. Quando a compra for ligada, a ação principal precisa ficar no topo do cartão.
 5. **Aberto, baixa gravidade.** "Trocar por outra" troca uma meta sem confirmação (`FootballGoalsPanels.swift:20`). Decisão sua: pedir confirmação ou não.
 
+## Lote 10: rodada mágica e vida do treinador
+
+Mesmo método, com leitura de `Rodada/FootballFantasyView.swift` (326 linhas) e de `Vida/FootballCoachLifeView.swift` (172), `FootballLifeContinuityView.swift` (86) e `FootballPersonalPlanView.swift` (116). Posições estimadas (cerca de ±50 pt).
+
+| Tela e estado | Ação principal visível sem rolar | Beco sem saída? |
+|---|---|---|
+| Rodada, sem resultado de rodada | Próxima rodada, depois o painel de detalhe (texto) e a escalação com "Sugestão" e "Salvar time" | Não |
+| Rodada, com resultado de rodada | Nenhuma: o detalhe com 11 linhas expansíveis fica antes da escalação | Não, mas a ação do dia fica abaixo da dobra |
+| Vida, padrão | Agenda do dia: as atividades, logo depois de condição e caixa | Não |
+| Vida, planejamento de dias | Linhas de dia, depois de toda a agenda (cerca de 400 pt abaixo) | Não |
+| Vida, bens e investimentos | "Comprar", "Aplicar" e "Resgatar", no fim da tela | Não |
+
+Achados:
+1. **Aberto, média.** Na Rodada Mágica, o detalhe da última rodada vem antes da escalação (`FootballFantasyView.swift:35-38`). Com resultado, são 11 linhas expansíveis antes de "Seu time dos sonhos" e de "Salvar time" (`:227-262`). A ação do dia fica abaixo da dobra. Sugestão: escalação antes do detalhe, ou o detalhe recolhido por padrão.
+2. **Aberto, baixa gravidade.** "Vender" bens e "Resgatar" investimento agem sem confirmação (`FootballCoachLifeView.swift:121`, `:167`), e "Desmarcar" um dia também (`FootballPersonalPlanView.swift:108`). Há consequência em dinheiro ou na agenda. "Comprar" já avisa quando não pode. Decisão sua.
+3. **Aberto, baixa gravidade.** O planejamento de dias fica depois da agenda do dia. Em telas pequenas, a primeira linha de dia fica abaixo da dobra. A agenda tem ações visíveis, então a tela passa em PIL-01.
+4. **Padrão a seguir.** Vários botões explicam o bloqueio: "Marcar" fica desabilitado com o conflito escrito acima, "Compartilhar no Chuteira" mostra o motivo embaixo, e as atividades bloqueadas avisam ao toque. Vale replicar no mercado e na academia.
+
 ## O que falta
 
 - `.factoryPage()` tem ScrollView (`FactoryShared/FactoryShared.swift:143-149`), e as raízes de mercado e academia o usam (`FootballMarketViews.swift:67`, `FootballAcademyView.swift:47`). Os achados de dobra valem como escritos.
-- Auditar os demais apps: Chuteira, Marca, Negócios, Palpite, Rodada e Vida.
+- Auditar os demais apps: Chuteira, Marca, Negócios e Palpite.
 - Confirmar no aparelho as posições da tabela, principalmente o limite de 667 pt.
 - Os achados 2 e 3 pedem decisão de layout antes de mexer no código.
