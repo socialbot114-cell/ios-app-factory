@@ -137,6 +137,45 @@ final class FootballOffseasonTests: XCTestCase {
         XCTAssertEqual(career.transferBudget, 0)
     }
 
+    func testHolidayAndCampCanBeChosenAheadOfTheirStepAfterTheSeasonCloses() {
+        var career = FootballCareer.offseasonPreview(at: .review)
+        XCTAssertEqual(career.offseason?.step, .review)
+        XCTAssertTrue(career.chooseHoliday(.shortBreak))
+        XCTAssertTrue(career.chooseCamp(.homeTraining))
+        XCTAssertEqual(career.offseason?.holiday, .shortBreak)
+        XCTAssertEqual(career.offseason?.camp, .homeTraining)
+        XCTAssertEqual(career.offseason?.step, .review, "Escolher antecipado não avança a etapa")
+        XCTAssertFalse(career.chooseHoliday(.noBreak), "Só uma decisão de férias por ritual")
+        XCTAssertFalse(career.chooseCamp(.overseasTour), "Só uma preparação por ritual")
+    }
+
+    func testAheadOfItsStepTheCampStillNeedsTheCashOfTheMoment() {
+        var career = FootballCareer.offseasonPreview(at: .review)
+        career.transferBudget = 0
+        XCTAssertFalse(career.chooseCamp(.overseasTour))
+        XCTAssertNil(career.offseason?.camp)
+    }
+
+    func testHolidayAndCampAreRefusedBeforeTheSeasonCloses() {
+        var career = FootballCareer.offseasonPreview(at: .endOfSeason)
+        XCTAssertEqual(career.offseason?.step, .endOfSeason)
+        XCTAssertFalse(career.chooseHoliday(.shortBreak))
+        XCTAssertFalse(career.chooseCamp(.homeTraining))
+    }
+
+    func testEarlyHolidayAndCampDoNotBlockTheRitual() {
+        var career = FootballCareer.offseasonPreview(at: .review)
+        XCTAssertTrue(career.chooseHoliday(.shortBreak))
+        XCTAssertTrue(career.chooseCamp(.homeTraining))
+        var guardCount = 0
+        while career.isInOffseason, guardCount < 12 {
+            career.applyDefaultOffseasonDecision()
+            XCTAssertTrue(career.advanceOffseason())
+            guardCount += 1
+        }
+        XCTAssertFalse(career.isInOffseason, "O ritual termina mesmo com as escolhas feitas antes")
+    }
+
     func testPlayAndCalendarAreBlockedWhileTheRitualIsOpen() {
         var career = FootballCareer.offseasonPreview(at: .holiday)
         XCTAssertTrue(career.isInOffseason)

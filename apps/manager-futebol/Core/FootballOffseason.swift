@@ -262,9 +262,12 @@ extension FootballCareer {
 
     // MARK: Decisões
 
+    /// Férias e pré-temporada podem ser escolhidas a partir do balanço, depois de a temporada encerrar, em qualquer ordem
+    /// com as outras etapas. A escolha antecipada não avança a etapa; o ritual só passa por ela quando a escolha existe.
     @discardableResult
     mutating func chooseHoliday(_ plan: HolidayPlan) -> Bool {
-        guard var state = offseason, state.step == .holiday, state.holiday == nil, let clubID = selectedClubID else { return false }
+        guard var state = offseason, state.step.rawValue >= OffseasonStep.review.rawValue, state.holiday == nil,
+              let clubID = selectedClubID else { return false }
         for index in players.indices where players[index].teamID == clubID {
             players[index].morale = min(100, max(0, players[index].morale + plan.moraleDelta))
             players[index].condition = min(100, max(40, players[index].condition + plan.conditionDelta))
@@ -285,7 +288,7 @@ extension FootballCareer {
 
     @discardableResult
     mutating func chooseCamp(_ camp: PreseasonCamp) -> Bool {
-        guard var state = offseason, state.step == .preseason, state.camp == nil,
+        guard var state = offseason, state.step.rawValue >= OffseasonStep.review.rawValue, state.camp == nil,
               let clubID = selectedClubID, let club = selectedClub, canAffordCamp(camp) else { return false }
         let cost = camp.cost(baseBudget: club.startingBudget)
         let revenue = camp.revenue(baseBudget: club.startingBudget)
